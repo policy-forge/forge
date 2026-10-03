@@ -11,6 +11,8 @@ use super::root::{Captured, Root};
 
 const MAX_CAPTURE_BYTES: usize = 50 * 1024 * 1024;
 const MAX_RESOURCE_BYTES: usize = 10 * 1024 * 1024;
+/// Metadata effects refuse the complete current/incoming file union before resource reads.
+const MAX_EFFECT_FILES: usize = 100;
 
 /// Contract-bounded display field lengths. Exact identity is carried by the
 /// opaque provenance anchor, so truncating a display label loses no evidence.
@@ -25,9 +27,12 @@ pub(crate) struct Item {
     pub validation: Value,
 }
 
+/// Complete captured workspace state, including the raw index observation used to bind effects.
 pub(crate) struct Snapshot {
     pub index: Index,
     pub index_present: bool,
+    /// Original raw index observation for effect binding; cursor/version semantics stay unchanged.
+    captured_index: Option<Captured>,
     pub version: String,
     pub items: Vec<Item>,
     pub analysis: Option<crate::applicability::model::ApplicabilityReport>,
@@ -111,7 +116,39 @@ fn validate_oscal(bytes: &[u8], kind: crate::validate::OscalModelType) -> bool {
     })
 }
 
+/// Count every explicit current/incoming path and present raw index before opening resources.
+fn admit_effect_paths(index: &Index, present: bool, incoming: Option<&Index>) -> Result<()> {
+    let mut paths = Vec::<&str>::new();
+    if present {
+        paths.push(super::index::INDEX_PATH);
+    }
+    for registration in
+        index.resources.iter().chain(incoming.into_iter().flat_map(|incoming| &incoming.resources))
+    {
+        let path = registration.path.as_str();
+        if paths.iter().any(|old| *old != path && old.eq_ignore_ascii_case(path)) {
+            return Err(Error::containment());
+        }
+        if !paths.contains(&path) {
+            if paths.len() >= MAX_EFFECT_FILES {
+                return Err(Error::new(
+                    "invalid-request",
+                    "The prepared effect consumes more than 100 inputs. Reduce the inputs this effect binds.",
+                    false,
+                ));
+            }
+            paths.push(path);
+        }
+    }
+    Ok(())
+}
+
 impl Snapshot {
+    /// Borrow the already-read raw index without reopening files or changing snapshot identity.
+    pub(crate) fn captured_index(&self) -> Option<&Captured> {
+        self.captured_index.as_ref()
+    }
+
     /// Capture for existing synchronous launch/query/direct-effect callers.
     /// No operation lock, numeric progress or deadline is invented by this wrapper.
     pub(crate) fn capture(root: &Root) -> Result<Self> {
@@ -145,6 +182,31 @@ impl Snapshot {
         api_major: contract::ApiMajor,
         control: &mut dyn WorkControl,
     ) -> WorkResult<Self> {
+        Self::capture_selected(root, api_major, None, false, control)
+    }
+
+    /// Admit the complete bundle-effect path union after raw-index parsing and before resource reads.
+    /// Queries retain their existing thousand-registration scope and cursor algorithm.
+    pub(crate) fn capture_bundle_effect_with_control(
+        root: &Root,
+        api_major: contract::ApiMajor,
+        incoming: Option<&Index>,
+        control: &mut dyn WorkControl,
+    ) -> WorkResult<Self> {
+        if api_major != contract::ApiMajor::V2 {
+            return Err(Error::invalid().into());
+        }
+        Self::capture_selected(root, api_major, incoming, true, control)
+    }
+
+    /// Preserve one capture implementation; only explicit bundle effects add whole-union preflight.
+    fn capture_selected(
+        root: &Root,
+        api_major: contract::ApiMajor,
+        incoming: Option<&Index>,
+        effect_bound: bool,
+        control: &mut dyn WorkControl,
+    ) -> WorkResult<Self> {
         control.checkpoint(Stage::ReadIndex, ProgressUpdate::Unchanged)?;
         let captured_index = root.read_index();
         control.checkpoint(Stage::ReadIndex, ProgressUpdate::Unchanged)?;
@@ -162,6 +224,9 @@ impl Snapshot {
                 false,
             )
             .into());
+        }
+        if effect_bound {
+            admit_effect_paths(&index, index_present, incoming)?;
         }
         let total = index.resources.len();
         control
@@ -223,6 +288,7 @@ impl Snapshot {
         let mut snapshot = Self {
             index,
             index_present,
+            captured_index,
             version: crate::hashing::sha256_hex(&version_input),
             items,
             analysis: None,
@@ -838,6 +904,83 @@ fn reason_priority(reason: &str) -> usize {
 mod tests {
     use super::*;
 
+    /// Construct valid explicit registrations whose absent files must never be opened by a refused effect.
+    fn effect_preflight_index(prefix: &str, count: usize) -> Index {
+        Index {
+            resources: (0..count)
+                .map(|n| Resource {
+                    key: format!("{prefix}-{n}"),
+                    role: Role::PolicySource,
+                    path: format!("{prefix}-{n}.md"),
+                })
+                .collect(),
+            ..Index::empty()
+        }
+    }
+
+    /// Current plus raw index and current/incoming union overflow refuse before current resource reads.
+    #[test]
+    fn bundle_effect_capture_preflights_complete_union_before_resource_reads() {
+        for (current_count, incoming_count, present) in
+            [(100, 0, true), (50, 50, true), (0, 101, false)]
+        {
+            let directory = tempfile::tempdir().unwrap();
+            let current = effect_preflight_index("current", current_count);
+            if present {
+                std::fs::write(
+                    directory.path().join(super::super::index::INDEX_PATH),
+                    current.bytes().unwrap(),
+                )
+                .unwrap();
+            }
+            let root = Root::open(directory.path()).unwrap();
+            let incoming = effect_preflight_index("incoming", incoming_count);
+            let mut observer = super::super::preparation::test_support::Recorder::default();
+            let result = Snapshot::capture_bundle_effect_with_control(
+                &root,
+                contract::ApiMajor::V2,
+                Some(&incoming),
+                &mut observer,
+            );
+            assert!(
+                matches!(result,Err(WorkError::Failed(ref error)) if error.code=="invalid-request")
+            );
+            assert!(!observer.events.iter().any(|(stage, _)| *stage == Stage::CaptureResource));
+            if present {
+                assert_eq!(
+                    Snapshot::capture_for_api(&root, contract::ApiMajor::V2).err().unwrap().code,
+                    "not-found"
+                );
+            }
+        }
+    }
+
+    /// Cross-index case aliases refuse before even the current missing source can be read.
+    #[test]
+    fn bundle_effect_capture_preflights_cross_index_aliases() {
+        let directory = tempfile::tempdir().unwrap();
+        let current = effect_preflight_index("current", 1);
+        std::fs::write(
+            directory.path().join(super::super::index::INDEX_PATH),
+            current.bytes().unwrap(),
+        )
+        .unwrap();
+        let root = Root::open(directory.path()).unwrap();
+        let mut incoming = current.clone();
+        incoming.resources[0].path = incoming.resources[0].path.to_ascii_uppercase();
+        let mut observer = super::super::preparation::test_support::Recorder::default();
+        let result = Snapshot::capture_bundle_effect_with_control(
+            &root,
+            contract::ApiMajor::V2,
+            Some(&incoming),
+            &mut observer,
+        );
+        assert!(
+            matches!(result,Err(WorkError::Failed(ref error)) if error.code=="resource-containment")
+        );
+        assert!(!observer.events.iter().any(|(stage, _)| *stage == Stage::CaptureResource));
+    }
+
     #[test]
     fn setup_never_scans_unregistered_files() {
         let dir = tempfile::tempdir().unwrap();
@@ -895,6 +1038,7 @@ mod tests {
         assert_eq!(status["valid"], true, "{status}");
     }
 
+    /// Report freshness uses captured resource facts; this manual view grants no raw-index binding.
     #[test]
     fn changed_committed_report_input_is_stale_and_filterable() {
         let manifest_bytes =
@@ -908,6 +1052,7 @@ mod tests {
         let mut snapshot = Snapshot {
             index: Index::empty(),
             index_present: true,
+            captured_index: None,
             version: "v".to_owned(),
             items: vec![
                 fixture_item(Role::ApplicabilityManifest, "scope.json", manifest_bytes),
@@ -965,6 +1110,7 @@ mod tests {
         assert_eq!(short, "res_short");
     }
 
+    /// Domain-valid large mapping bytes retain their original admission without an effect index capture.
     #[test]
     fn domain_valid_large_mapping_manifest_is_accepted() {
         let mut reviewers = Vec::new();
@@ -1002,6 +1148,7 @@ mod tests {
         let snapshot = Snapshot {
             index: Index::empty(),
             index_present: true,
+            captured_index: None,
             version: "v".to_owned(),
             items: vec![fixture_item(Role::MappingCollection, "mapping.json", bytes)],
             analysis: None,
@@ -1036,6 +1183,7 @@ mod tests {
         let catalog_snapshot = Snapshot {
             index: Index::empty(),
             index_present: true,
+            captured_index: None,
             version: "v".to_owned(),
             items: vec![source, target],
             analysis: None,
@@ -1059,6 +1207,7 @@ mod tests {
         let mut snapshot = Snapshot {
             index: Index::empty(),
             index_present: true,
+            captured_index: None,
             version: "v".to_owned(),
             items: vec![
                 fixture_item(Role::MappingCollection, "mapping.json", manifest),

@@ -560,6 +560,300 @@
       "schema": "openapi:components/schemas/FrameworkImpactPriorDispositionPage",
       "expectation": "invalid",
       "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "project-bundle-effects/export-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleExportRequest",
+      "expectation": "valid",
+      "description": "Synthetic acknowledged portable target; runtime exclusion is separate."
+    },
+    {
+      "file": "project-bundle-effects/export-missing-ack-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleExportRequest",
+      "expectation": "invalid",
+      "description": "Acknowledgment is required."
+    },
+    {
+      "file": "project-bundle-effects/export-false-ack-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleExportRequest",
+      "expectation": "invalid",
+      "description": "Acknowledgment must be true."
+    },
+    {
+      "file": "project-bundle-effects/export-extra-property-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleExportRequest",
+      "expectation": "invalid",
+      "description": "No source-content opt-in exists in this closed request."
+    },
+    {
+      "file": "project-bundle-effects/export-traversal-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleExportRequest",
+      "expectation": "invalid",
+      "description": "Portable path syntax excludes traversal."
+    },
+    {
+      "file": "project-bundle-effects/import-v1-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "valid",
+      "description": "Synthetic closed request; no captured file/domain eligibility claim."
+    },
+    {
+      "file": "project-bundle-effects/import-v2-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "valid",
+      "description": "Synthetic closed request; no captured file/domain eligibility claim."
+    },
+    {
+      "file": "project-bundle-effects/import-upgrade-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "valid",
+      "description": "Synthetic closed request; no captured file/domain eligibility claim."
+    },
+    {
+      "file": "project-bundle-effects/import-missing-ack-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Replacement acknowledgment is required."
+    },
+    {
+      "file": "project-bundle-effects/import-false-ack-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Replacement acknowledgment must be true."
+    },
+    {
+      "file": "project-bundle-effects/import-string-selector-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Historical string selector is not the accepted numeric wire."
+    },
+    {
+      "file": "project-bundle-effects/import-bool-selector-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Boolean is not an integer selector."
+    },
+    {
+      "file": "project-bundle-effects/import-unsupported-selector-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Only1 or2 are selected."
+    },
+    {
+      "file": "project-bundle-effects/import-extra-property-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "No merge property is admitted."
+    },
+    {
+      "file": "project-bundle-effects/import-wrong-profile-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Existing metadata profile remains fixed."
+    },
+    {
+      "file": "project-bundle-effects/import-extra-bundle-property-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Existing metadata bundle remains closed."
+    },
+    {
+      "file": "project-bundle-effects/import-paired-index-version-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Bundle1/index2 is not a valid pair."
+    },
+    {
+      "file": "project-bundle-effects/import-index1-new-role-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Index1 retains its original seven-role authority."
+    },
+    {
+      "file": "project-bundle-effects/import-downgrade-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Bundle2 cannot select target1 in preadmission."
+    },
+    {
+      "file": "project-bundle-effects/import-preview-v2-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "valid",
+      "description": "Synthetic complete nonempty memberships and ordered removal; no actual receipt."
+    },
+    {
+      "file": "project-bundle-effects/import-preview-absent-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "valid",
+      "description": "Absent previous index is explicit null, not an invented empty current index."
+    },
+    {
+      "file": "project-bundle-effects/import-preview-upgrade-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "valid",
+      "description": "Explicit1-to-2 has separate supplied/proposed normalized hashes and complete versions."
+    },
+    {
+      "file": "project-bundle-effects/preview-missing-replacement-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "A bare legacy preview does not carry complete replacement disclosure."
+    },
+    {
+      "file": "project-bundle-effects/preview-missing-previous-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Absent previous membership requires explicit null, never omission."
+    },
+    {
+      "file": "project-bundle-effects/preview-extra-replacement-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Replacement has no inferred approval field."
+    },
+    {
+      "file": "project-bundle-effects/preview-extra-envelope-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Direct preparation has no synthetic operation field."
+    },
+    {
+      "file": "project-bundle-effects/preview-bool-count-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Observed count must be exact integer."
+    },
+    {
+      "file": "project-bundle-effects/preview-over-count-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Whole consumed-file count cannot exceed100."
+    },
+    {
+      "file": "project-bundle-effects/preview-negative-count-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Consumed-file count is nonnegative."
+    },
+    {
+      "file": "project-bundle-effects/preview-duplicate-removal-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Removed keys are unique, not duplicated observations."
+    },
+    {
+      "file": "project-bundle-effects/preview-invalid-removed-key-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Removed keys retain intrinsic index key grammar."
+    },
+    {
+      "file": "project-bundle-effects/preview-upper-hash-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Supplied normalized hash is lowercase hex."
+    },
+    {
+      "file": "project-bundle-effects/preview-proposed-version-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Only the complete existing index1 or index2 shape is admitted."
+    },
+    {
+      "file": "project-bundle-effects/preview-missing-validation-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Both wrapped validation and existing preview are required."
+    },
+    {
+      "file": "project-bundle-effects/preview-index-extra-field-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Previous index remains intrinsically closed."
+    },
+    {
+      "file": "project-bundle-effects/preview-previous-bundle-not-index-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Previous member is an index object, not a bundle envelope."
+    },
+    {
+      "file": "project-bundle-effects/preview-bare-effect-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Old EffectPreview is not the new wrapped response."
+    },
+    {
+      "file": "project-bundle-effects/error-bundle-preparation-in-progress-valid.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Fixed new safe code; HTTP status pairing is a runtime control obligation."
+    },
+    {
+      "file": "project-bundle-effects/error-bundle-preparation-budget-exceeded-valid.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Fixed new safe code; HTTP status pairing is a runtime control obligation."
+    },
+    {
+      "file": "project-bundle-effects/error-bundle-preparation-interrupted-valid.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Fixed new safe code; HTTP status pairing is a runtime control obligation."
+    },
+    {
+      "file": "project-bundle-effects/error-unknown-code-invalid.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "invalid",
+      "description": "API2 errors remain closed; no arbitrary diagnostic code."
+    },
+    {
+      "file": "project-bundle-effects/metadata-export-result-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ExportResult",
+      "expectation": "valid",
+      "description": "Existing export result shape and source-excerpts category; private artifact family is not a public enum."
     }
   ]
 }

@@ -24,29 +24,29 @@ const MAX_DECLARED_BYTES: usize = 50 * 1024 * 1024;
 /// Closed metadata wire model; source content and approval state are absent.
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct Bundle {
+pub(crate) struct Bundle {
     /// Exact identifier of this narrow resource-index bundle contract.
-    schema_version: String,
+    pub(crate) schema_version: String,
     /// Fixed metadata-only profile, never a source-content opt-in.
-    content_profile: String,
+    pub(crate) content_profile: String,
     /// Exact same-version closed index; original /1 role interpretation remains unchanged.
-    index: Index,
+    pub(crate) index: Index,
     /// Hash of normalized `Index::bytes`, not original index formatting.
-    index_sha256: String,
+    pub(crate) index_sha256: String,
     /// One exact-byte fingerprint for every index key, in index order.
-    pins: Vec<Pin>,
+    pub(crate) pins: Vec<Pin>,
 }
 
 /// Closed exact-byte pin for one explicitly indexed resource.
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct Pin {
+pub(crate) struct Pin {
     /// Exact index key; the index supplies role and portable path.
-    key: String,
+    pub(crate) key: String,
     /// Lowercase SHA256 of original resource bytes.
-    sha256: String,
+    pub(crate) sha256: String,
     /// Exact declared resource length, independently compared to captured bytes.
-    size_bytes: usize,
+    pub(crate) size_bytes: usize,
 }
 
 /// Return every registered resource's metadata without minting an effect receipt.
@@ -99,6 +99,16 @@ pub(crate) fn preview_for_api(snapshot: &Snapshot, api_major: ApiMajor) -> Resul
     });
     contract::validate_for(api_major, "ProjectBundlePreview", &reply)?;
     Ok(reply)
+}
+
+/// Encode the complete validated metadata profile for a selected-major export.
+///
+/// This consumes the same preview/decoder checks without source content or any
+/// supplied-path reads. Artifact bytes are compact JSON; the nested index hash
+/// still identifies deterministic `Index::bytes` including its newline.
+pub(crate) fn encode_metadata_for_api(snapshot: &Snapshot, api_major: ApiMajor) -> Result<Vec<u8>> {
+    let preview = preview_for_api(snapshot, api_major)?;
+    contract::encode(&preview["bundle"], MAX_BUNDLE_BYTES, false)
 }
 
 /// Compare all supplied expected pins with current registered captures only.
@@ -193,7 +203,7 @@ fn decode_bundle(value: &Value) -> Result<Bundle> {
 }
 
 /// Consume the original closed decoder for V1 and the explicit version-paired decoder for V2.
-fn decode_bundle_for_api(value: &Value, api_major: ApiMajor) -> Result<Bundle> {
+pub(crate) fn decode_bundle_for_api(value: &Value, api_major: ApiMajor) -> Result<Bundle> {
     match api_major {
         ApiMajor::V1 => decode_bundle(value),
         ApiMajor::V2 => decode_bundle_with_contract(value, ApiMajor::V2),

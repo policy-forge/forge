@@ -1017,11 +1017,11 @@ mod s3_api2_contracts {
         let one = load_openapi();
         let two = s3_api2_document();
         assert_eq!(one["info"]["version"], "1.2.0");
-        assert_eq!(two["info"]["version"], "2.1.0");
+        assert_eq!(two["info"]["version"], "2.2.0");
         let first = operations(&one);
         let second = operations(&two);
         assert_eq!(first.len(), 39);
-        assert_eq!(second.len(), 48);
+        assert_eq!(second.len(), 51);
         let mut left: Vec<_> = first
             .iter()
             .map(|operation| {
@@ -1615,7 +1615,7 @@ fn release_inventory_contains_both_current_api_families() {
         ]
     );
     for (family, (major, version, index_version)) in
-        families.iter().zip([(1, "1.2.0", "forge.workspace/1"), (2, "2.1.0", "forge.workspace/2")])
+        families.iter().zip([(1, "1.2.0", "forge.workspace/1"), (2, "2.2.0", "forge.workspace/2")])
     {
         assert_eq!(family["api_major"], major);
         assert_eq!(family["contract_version"], version);
@@ -1624,7 +1624,7 @@ fn release_inventory_contains_both_current_api_families() {
         let document = load_yaml_as_json(&repo_path(document_path));
         assert_eq!(document["info"]["version"], version);
         let declared_operations = operations(&document);
-        assert_eq!(declared_operations.len(), if major == 1 { 39 } else { 48 });
+        assert_eq!(declared_operations.len(), if major == 1 { 39 } else { 51 });
         assert!(
             declared_operations
                 .iter()

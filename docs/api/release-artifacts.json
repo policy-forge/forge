@@ -18,7 +18,7 @@
     },
     {
       "api_major": 2,
-      "contract_version": "2.1.0",
+      "contract_version": "2.2.0",
       "document": "docs/api/forge-workspace-v2.openapi.yaml",
       "capability_matrix": [
         "docs/api/capability-matrix-v2.json",

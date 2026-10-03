@@ -9,7 +9,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
-const { randomUUID, createHash } = require("node:crypto");
+const { randomUUID, createHash, webcrypto } = require("node:crypto");
 const { Blob } = require("node:buffer");
 
 const productionPath = process.env.FORGE_TEST_WORKSPACE_JS
@@ -394,7 +394,7 @@ function harness(overrides = {}, bootstrap = {"forge-api-major":"1"}) {
       /** Ignore window-level subscriptions; this source harness does not dispatch unload. */
       addEventListener() {}
     },
-    crypto: { randomUUID },
+    crypto: { randomUUID, subtle:webcrypto.subtle },
     performance: { now: () => (clock += 100) },
     setTimeout: (callback, milliseconds = 0) => {
       if (milliseconds >= 500) timers.push(callback);
@@ -411,6 +411,7 @@ function harness(overrides = {}, bootstrap = {"forge-api-major":"1"}) {
       const value = await routes[route](parsed, options);
       const status = value.status ?? 200;
       return { ok: status >= 200 && status < 300, json: async () => value.body ?? value,
+        headers: { /** Expose only explicitly authored media metadata for exact binary-download probes. */ get: name => name.toLowerCase() === "content-type" ? value.download_media_type ?? null : null },
         /** Supply only an explicitly authored binary download response; ordinary JSON remains unchanged. */
         blob: async () => { assert(value.download_blob instanceof Blob, "Missing binary download fixture"); return value.download_blob; } };
     },
@@ -3341,3 +3342,212 @@ test("S3 handled lifecycle Apply failure retains local alert focus and prior dat
   assert.equal(app.requests.some(request=>request.route==="/lifecycle/records/"+s3RecordId),false);
   assert.equal(app.byId("view").textContent.includes("recorded transition history only"),true);
 });
+
+
+/** Construct a complete synthetic index replacement; these rows establish UI facts, not native admission. */
+function s6Replacement(previous = metadataPreview(1).bundle.index, targetVersion = 1) {
+  const proposed = {schema_version:`forge.workspace/${targetVersion}`,label:"Replacement <script> π",resources:[{key:"new-key",role:"policy-source",path:"new.md"}]};
+  const hash = createHash("sha256").update(JSON.stringify(proposed,null,2)+"\n").digest("hex");
+  const preview = {...proposedWrite(),operation_type:"workspace-index-update",target:{status:previous ? "overwrite" : "create",path:"forge.workspace.json"},exact_bytes_sha256:hash};
+  return {validation:{state:"valid",error_count:0,warning_count:0,diagnostics:[]},preview,replacement:{previous_index:previous,proposed_index:proposed,
+    supplied_index_sha256:hash,proposed_index_sha256:hash,removed_resource_keys:previous ? previous.resources.filter(row=>row.key!=="new-key").map(row=>row.key) : [],consumed_file_count:previous ? previous.resources.length+2 : 1}};
+}
+
+/** Unlock and install the actual 2.2 forms while allowing only authored transport observations. */
+async function s6App(overrides = {}, readOnly = false, version = "2.2.0") {
+  const reply=s6Replacement();
+  const app=harness({
+    /** Match the explicit shell contract through the unmodified unlock handler. */
+    "/session/unlock":()=>lifecycleSession(readOnly,{contract_version:version}),
+    /** Provide a closed, complete synthetic direct import projection. */
+    "/project/bundle-imports":()=>reply,
+    /** Reload the exact synthetic receipt by its prepared identity. */
+    ["/effects/previews/"+reply.preview.preview_id]:()=>reply.preview,
+    /** A cancelled synthetic export leaves no publishable result. */
+    "/project/bundle-exports":()=>operation("cancelled",{kind:"export"}),
+    ...overrides,
+  },{"forge-api-major":"2","forge-api-contract-version":version});
+  await beginUnlock(app).action;await app.run('navigate("Trace & Reports")');return app;
+}
+
+/** Resolve the new form independently from the old local-preview/comparison metadata panel. */
+function s6Parts(app) {
+  const panel=app.byId("view").querySelector("[data-bundle-effects]");assert(panel);
+  return {panel,target:app.byLabel("Metadata export project-relative target"),sensitive:app.byLabel("I acknowledge that exported labels, keys, paths and hashes are sensitive metadata."),
+    file:app.byLabel("Choose a bundle for index replacement"),schema:app.byLabel("Replacement target index schema"),ack:app.byLabel("I acknowledge replacing the index label and all registrations; source files will not be deleted."),
+    export:app.byButton("Prepare metadata export",panel),import:app.byButton("Prepare index replacement",panel),error:panel.querySelector('[role="alert"]')};
+}
+
+/** Select exact opaque bytes and acknowledge after the chosen file has invalidated prior acknowledgment. */
+async function s6Choose(app, bytes=Buffer.from('{"schema_version":"synthetic"}'), version=1, read) {
+  const parts=s6Parts(app);const buffer=Buffer.from(bytes);
+  parts.file.files=[{name:"chosen-bundle.json",size:buffer.length,
+    /** Return the original binary slice, or a deliberately controlled asynchronous File read. */
+    async arrayBuffer(){return read ? read() : buffer.buffer.slice(buffer.byteOffset,buffer.byteOffset+buffer.byteLength);}}];
+  await parts.file.fire("change");parts.schema.value=String(version);await parts.schema.fire("change");parts.ack.checked=true;await parts.ack.fire("change");return parts;
+}
+
+/** Author a sensitive destination acknowledgment only after the actual input-change handler resets it. */
+async function s6ExportReady(app) {
+  const parts=s6Parts(app);parts.target.value="exports/metadata.json";await parts.target.fire("input");parts.sensitive.checked=true;await parts.sensitive.fire("change");return parts;
+}
+
+/** Supply the actual committed result envelope for the same exact target as its prepared receipt. */
+function s6Committed(preview) {
+  return operation("succeeded",{kind:"commit",result:{target_path:preview.target.path,committed_sha256:preview.exact_bytes_sha256,new_version:"synthetic-committed-version",write_committed:true}});
+}
+
+/** Prepare, confirm and expose the actual metadata download control with an explicitly authored JSON artifact. */
+async function s6DownloadApp(downloadOverride) {
+  const bytes=Buffer.from(JSON.stringify(metadataPreview(1).bundle));
+  const preview={...proposedWrite(),operation_type:"report-export",target:{status:"create",path:"exports/metadata.json"},exact_bytes_sha256:createHash("sha256").update(bytes).digest("hex")};
+  const app=await s6App({
+    /** A terminal export response retains only the prepared effect until explicit confirmation. */
+    "/project/bundle-exports":()=>operation("succeeded",{kind:"export",result:{preview}}),
+    /** Reload the same synthetic artifact receipt before review. */
+    ["/effects/previews/"+preview.preview_id]:()=>preview,
+    /** Acknowledge one exact synthetic commit operation. */
+    "/effects/commits":()=>operation("pending",{kind:"commit"}),
+    /** Return only the committed target identity required by the existing saved-result guards. */
+    [operationRoute]:()=>s6Committed(preview),
+    /** Supply exact artifact bytes and typed media, or an adversarial authored response. */
+    ["/project/bundle-exports/"+operationId+"/download"]:downloadOverride ?? (()=>({download_blob:new Blob([bytes]),download_media_type:"application/json; charset=utf-8"})),
+  });
+  const parts=await s6ExportReady(app);parts.export.focus();await parts.export.fire("click");
+  assert.equal(app.byId("preview-dialog").open,true);await app.byButton("Confirm this exact write",app.byId("preview-dialog")).fire("click");
+  return {app,bytes,preview,download:app.byButton("Download committed metadata bundle")};
+}
+
+// These are appended actual-asset source controls. The authored transport is not native/API admission evidence.
+for (const version of ["2.0.0","2.1.0","2.2.0"]) {
+  test("S6 effect forms require exact2.2 while S3 navigation remains available at2.1/2.2: "+version,async()=>{
+    const app=await s6App({},false,version);
+    assert.equal(!!app.byId("view").querySelector("[data-bundle-effects]"),version==="2.2.0");
+    assert.equal(app.run('titles.includes("Lifecycle & Impact")'),version!=="2.0.0");
+    assert.equal(app.requests.some(request=>["/project/bundle-imports","/project/bundle-exports"].includes(request.route)),false);
+  });
+}
+
+test("S6 readonly forms retain query access and reject both prepare controls without dispatch",async()=>{
+  const app=await s6App({},true);const parts=await s6Choose(app);parts.target.value="metadata.json";parts.sensitive.checked=true;await parts.sensitive.fire("change");
+  assert.equal(parts.import.getAttribute("aria-disabled"),"true");assert.equal(parts.export.getAttribute("aria-disabled"),"true");
+  await parts.import.fire("click");await parts.export.fire("click");
+  assert.equal(app.requests.some(request=>["/project/bundle-imports","/project/bundle-exports"].includes(request.route)),false);
+  assert.equal(metadataParts(app).preview.isConnected,true);assert.match(parts.panel.textContent,/Read-only session/);
+});
+
+test("S6 raw numeric envelope preserves BOM, Unicode and duplicate keys while keeping old verification overhead11",async()=>{
+  const app=await s6App();const raw=Buffer.from('\ufeff{"key":"π","key":"unchanged duplicate"}');const parts=await s6Choose(app,raw,2);
+  await parts.import.fire("click");const sent=app.requests.find(request=>request.route==="/project/bundle-imports");assert(sent);
+  const actual=Buffer.from(await sent.options.body.arrayBuffer());const prefix=Buffer.from('{"bundle":');const suffix=Buffer.from(',"target_index_schema_version":2,"acknowledge_index_replacement":true}');
+  assert.equal(prefix.length+suffix.length,80);assert.deepEqual(actual,Buffer.concat([prefix,raw,suffix]));assert.match(sent.options.headers["Idempotency-Key"],/^[a-f0-9-]{36}$/);
+  const verify=await app.run('bundleVerificationBody({size:2,arrayBuffer:async()=>new Uint8Array([123,125]).buffer})');assert.equal(verify.size,13);
+});
+
+for (const extra of [0,1]) {
+  test("S6 full import body boundary "+(extra ? "rejects one excess byte before read" : "allows exact1MiB"),async()=>{
+    const app=await s6App();app.run(`globalThis.s6Reads=0;globalThis.s6File={size:${1048496+extra},arrayBuffer:async()=>{s6Reads++;return new Uint8Array(${1048496+extra}).buffer;}}`);
+    if(extra){await assert.rejects(app.run('bundleImportBody(s6File,1)'),/80-byte/);assert.equal(app.run("s6Reads"),0);}
+    else {const body=await app.run('bundleImportBody(s6File,1)');assert.equal(body.size,1048576);assert.equal(app.run("s6Reads"),1);}
+  });
+}
+
+test("S6 changing file during asynchronous read retires old bytes and keeps newer form available",async()=>{
+  const app=await s6App();const reading=deferred();const parts=await s6Choose(app,Buffer.from("{}"),1,()=>reading.promise);parts.import.focus();const action=parts.import.fire("click");await settle();
+  await s6Choose(app,Buffer.from("{\"new\":true}"));assert.equal(parts.import.getAttribute("aria-disabled"),"false");
+  reading.resolve(new Uint8Array([123,125]).buffer);await action;assert.equal(app.requests.some(request=>request.route==="/project/bundle-imports"),false);assert.equal(parts.panel.getAttribute("aria-busy"),"false");
+});
+
+test("S6 destination editing resets sensitivity acknowledgment and preserves prepared-operation recovery",async()=>{
+  const delayed=deferred();const app=await s6App({"/project/bundle-exports":()=>delayed.promise});const parts=await s6ExportReady(app);parts.export.focus();const action=parts.export.fire("click");await settle();
+  parts.target.value="changed.json";await parts.target.fire("input");assert.equal(parts.sensitive.checked,false);assert.equal(parts.panel.getAttribute("aria-busy"),"false");
+  delayed.resolve(operation("succeeded",{kind:"export",result:{preview:proposedWrite()}}));await action;
+  assert.equal(app.byId("preview-dialog").open,false);assert.equal(operationParts(app).row.isConnected,true);
+  assert.equal(app.requests.filter(request=>request.route==="/project/bundle-exports").length,1);
+});
+
+test("S6 unknown import outcome retries identical raw bytes and key even after file selection changes",async()=>{
+  let attempts=0;const delayed=deferred();const reply=s6Replacement();const app=await s6App({"/project/bundle-imports":()=>++attempts===1?delayed.promise:reply});
+  const parts=await s6Choose(app,Buffer.from("{}"));parts.import.focus();const action=parts.import.fire("click");await settle();await s6Choose(app,Buffer.from('{"changed":true}'));
+  delayed.resolve({status:503,body:{code:"query-budget-exceeded",message:"Synthetic deadline",retryable:true}});await action;
+  const focus=app.document.activeElement;const recovery=requestParts(app);assert.equal(app.byId("error").hidden,true);assert.equal(app.document.activeElement===focus,true);
+  await app.byButton("Retry the same request",recovery.row).fire("click");const sent=app.requests.filter(request=>request.route==="/project/bundle-imports");assert.equal(sent.length,2);
+  assert.equal(sent[0].options.headers["Idempotency-Key"],sent[1].options.headers["Idempotency-Key"]);assert.equal(sent[0].options.body===sent[1].options.body,true);assert.equal(app.byId("preview-dialog").open,false);
+  const review=app.byButton("Review prepared write",recovery.row).fire("click");await settle();assert.equal(app.document.querySelector("dialog[open]").getAttribute("aria-labelledby"),"discard-title");await app.byButton("Discard edits").fire("click");await review;assert.equal(app.byId("preview-dialog").open,true);
+});
+
+for (const previous of [null,{schema_version:"forge.workspace/1",label:"Explicitly empty",resources:[]},metadataPreview(3).bundle.index]) {
+  test("S6 replacement retains complete membership and distinguishes "+(previous===null?"absence":previous.resources.length+" prior registrations"),async()=>{
+    const reply=s6Replacement(previous);const app=await s6App({"/project/bundle-imports":()=>reply,["/effects/previews/"+reply.preview.preview_id]:()=>reply.preview});const parts=await s6Choose(app);parts.import.focus();await parts.import.fire("click");
+    const content=app.byId("preview-content");assert.equal(app.byId("preview-dialog").open,true);assert.match(content.textContent,/Complete project index replacement/);assert.match(content.textContent,/Supplied normalized index SHA-256/);
+    assert.match(content.textContent,previous===null?/No project index was present/:new RegExp(previous.resources.length+" registrations"));
+    assert.equal(content.querySelectorAll("tbody").reduce((sum,body)=>sum+body.children.length,0),(previous?.resources.length??0)+1);
+    await app.byButton("Keep editing",app.byId("preview-dialog")).fire("click");assert.equal(app.document.activeElement===parts.import,true);assert.equal(app.requests.some(request=>request.route==="/effects/commits"),false);
+  });
+}
+
+for (const defect of ["wrong-target","wrong-hash","dropped-removed-key","unreconciled-warnings","wrong-complete-membership","undercounted-path-union","inflated-path-union"]) {
+  test("S6 rejects inconsistent replacement projection before opening receipt: "+defect,async()=>{
+    const reply=s6Replacement();if(defect==="wrong-target")reply.replacement.proposed_index.schema_version="forge.workspace/2";
+    if(defect==="wrong-hash")reply.replacement.proposed_index_sha256="b".repeat(64);
+    if(defect==="dropped-removed-key")reply.replacement.removed_resource_keys=[];
+    if(defect==="unreconciled-warnings")reply.validation.warning_count=1;
+    if(defect==="wrong-complete-membership")reply.replacement.proposed_index.resources[0].path="other.md";
+    if(defect==="undercounted-path-union")reply.replacement.consumed_file_count=2;
+    if(defect==="inflated-path-union")reply.replacement.consumed_file_count=4;
+    const app=await s6App({"/project/bundle-imports":()=>reply});const parts=await s6Choose(app);await parts.import.fire("click");
+    assert.equal(app.byId("preview-dialog").open,false);assert.equal(app.requests.some(request=>request.route.startsWith("/effects/previews/") || request.route==="/effects/commits"),false);assert.equal(requestParts(app).row.isConnected,true);
+  });
+}
+
+test("S6 committed JSON download binds authenticated route, media, hash and fixed filename without replay",async()=>{
+  const {app,bytes,download}=await s6DownloadApp();download.focus();await download.fire("click");
+  const sent=app.requests.find(request=>request.route.endsWith("/download"));assert.equal(sent.route,"/project/bundle-exports/"+operationId+"/download");assert.equal(sent.options.credentials,"omit");assert.equal(sent.options.redirect,"error");
+  assert.equal(app.document.activeElement===download,true);assert.equal(app.document.downloads.length,1);const saved=app.document.downloads[0];assert.equal(saved.filename,"forge-workspace-index-and-hashes.json");assert.deepEqual(Buffer.from(await app.objectURLs.get(saved.url).arrayBuffer()),bytes);
+  oneExactCommit(app);await app.run('dirty=false;navigate("Overview")');assert.equal(app.objectURLs.size,0);
+});
+
+for (const defect of ["media","hash","oversize"]) {
+  test("S6 committed artifact "+defect+" rejection creates no download and never repeats commit",async()=>{
+    const data=defect==="oversize"?Buffer.alloc(1048577):Buffer.from("{}");const {app,download}=await s6DownloadApp(()=>({download_blob:new Blob([data]),download_media_type:defect==="media"?"text/html":"application/json"}));
+    await download.fire("click");assert.equal(app.document.downloads.length,0);assert.equal(app.objectURLs.size,0);assert.equal(app.document.activeElement===app.byId("error"),true);oneExactCommit(app);
+  });
+}
+
+test("S6 obsolete download failure after navigation neither publishes bytes nor moves new focus",async()=>{
+  const delayed=deferred();const {app,download}=await s6DownloadApp(()=>delayed.promise);download.focus();const action=download.fire("click");await settle();await app.run('dirty=false;navigate("Overview")');
+  const focus=app.document.activeElement;const status=app.byId("status").textContent;
+  delayed.resolve({status:409,download_blob:new Blob(["{}"]),download_media_type:"application/json"});await action;
+  assert.equal(app.document.downloads.length,0);assert.equal(app.document.activeElement===focus,true);assert.equal(app.byId("status").textContent,status);assert.equal(app.byId("error").hidden,true);oneExactCommit(app);
+});
+
+
+test("S6 duplicate pending preparation remains one POST and dismissal sends no commit",async()=>{
+  const delayed=deferred();const app=await s6App({"/project/bundle-imports":()=>delayed.promise});const parts=await s6Choose(app);parts.import.focus();const first=parts.import.fire("click");await settle();
+  await parts.import.fire("click");assert.equal(app.requests.filter(request=>request.route==="/project/bundle-imports").length,1);assert.equal(parts.panel.getAttribute("aria-busy"),"true");assert.equal(app.document.activeElement===parts.import,true);
+  delayed.resolve(s6Replacement());await first;await app.byButton("Keep editing",app.byId("preview-dialog")).fire("click");assert.equal(app.document.activeElement===parts.import,true);assert.equal(app.requests.some(request=>request.route==="/effects/commits"),false);
+});
+
+test("S6 in-progress reservation retry retains raw bytes/key while typed rejection offers a fresh request",async()=>{
+  let attempts=0;const app=await s6App({"/project/bundle-imports":()=>++attempts===1?{status:409,body:{code:"bundle-preparation-in-progress",message:"Synthetic reserved preparation",retryable:true}}:{status:422,body:{code:"validation-failed",message:"Synthetic admission rejection",retryable:false}}});
+  const parts=await s6Choose(app);await parts.import.fire("click");const recovery=requestParts(app);assert.match(recovery.status.textContent,/remains in progress/);
+  await app.byButton("Retry the same request",recovery.row).fire("click");const requests=app.requests.filter(request=>request.route==="/project/bundle-imports");assert.equal(requests.length,2);assert.equal(requests[0].options.body===requests[1].options.body,true);assert.equal(requests[0].options.headers["Idempotency-Key"],requests[1].options.headers["Idempotency-Key"]);
+  assert.match(recovery.status.textContent,/server rejected/);assert.equal(app.byId("preview-dialog").open,false);assert.equal(app.requests.some(request=>request.route==="/effects/commits"),false);
+});
+
+
+// Chosen-file failures remain in the installed form and never dispatch a preparation.
+for (const defect of ["unreadable-file", "oversized-file"]) {
+  test("S6 current chosen-file failure focuses its local alert without dispatch: "+defect,async()=>{
+    const app=await s6App();
+    const parts=await s6Choose(app,Buffer.from("{}"),1,async()=>{throw new Error("Synthetic local file read failure");});
+    if(defect==="oversized-file")parts.file.files[0].size=1048497;
+    parts.import.focus();await parts.import.fire("click");
+    assert.equal(parts.error.hidden,false);
+    assert.equal(app.document.activeElement===parts.error,true);
+    assert.equal(parts.panel.getAttribute("aria-busy"),"false");
+    assert.equal(app.requests.some(request=>request.route==="/project/bundle-imports"),false);
+    assert.equal(app.byId("preview-dialog").open,false);
+    assert.equal(app.byId("error").hidden,true);
+  });
+}

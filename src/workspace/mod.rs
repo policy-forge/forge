@@ -2,6 +2,7 @@
 
 pub(crate) mod actions;
 pub(crate) mod assets;
+pub(crate) mod bundle_effects;
 pub(crate) mod bundles;
 pub(crate) mod contract;
 pub(crate) mod domain;

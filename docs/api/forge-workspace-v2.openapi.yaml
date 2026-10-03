@@ -784,7 +784,7 @@
       },
       "Error": {
         "additionalProperties": false,
-        "description": "Closed safe error envelope for the advertised contract revision. Existing code meanings are preserved. API2.1 adds typed cooperative read interruption errors; no capability, absolute path, source excerpt or debug text is retained.",
+        "description": "Closed safe error envelope for the advertised contract revision. Existing code meanings are preserved. API2.1 adds typed cooperative read interruption errors; no capability, absolute path, source excerpt or debug text is retained. API2.2 additionally declares matching pending bundle preparation (409) and direct import deadline/interruption (503). Shutdown retains the existing shutdown-in-progress status; no public import cancellation endpoint.",
         "examples": [
           {
             "code": "version-conflict",
@@ -817,7 +817,10 @@
               "shutdown-in-progress",
               "internal-error",
               "query-budget-exceeded",
-              "query-interrupted"
+              "query-interrupted",
+              "bundle-preparation-in-progress",
+              "bundle-preparation-budget-exceeded",
+              "bundle-preparation-interrupted"
             ],
             "type": "string"
           },
@@ -2243,7 +2246,7 @@
             "maxLength": 32,
             "minLength": 1,
             "type": "string",
-            "const": "2.1.0"
+            "const": "2.2.0"
           },
           "launched_at": {
             "format": "date-time",
@@ -5003,6 +5006,165 @@
         "minLength": 32,
         "pattern": "^(?:[0-9A-Fa-f]{32}|[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|\\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\\}|urn:uuid:[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})$",
         "type": "string"
+      },
+      "ProjectBundleExportRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target_path",
+          "acknowledge_sensitive_metadata"
+        ],
+        "properties": {
+          "target_path": {
+            "$ref": "#/components/schemas/ProjectRelativePath",
+            "description": "Explicit confined output; runtime rejects the index and every registered source before destination reads."
+          },
+          "acknowledge_sensitive_metadata": {
+            "type": "boolean",
+            "const": true,
+            "description": "Acknowledge that authored labels, keys, paths, hashes and sizes are included."
+          }
+        },
+        "description": "Explicit metadata-only export preparation. Runtime applies the existing output-target guard before reading the destination: the index and registered sources are forbidden. The acknowledgment covers authored labels, keys, paths, hashes and sizes; it is not a claim that metadata is secret-free. No source content, URL, archive or discovery."
+      },
+      "ProjectBundleImportRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "bundle",
+          "target_index_schema_version",
+          "acknowledge_index_replacement"
+        ],
+        "properties": {
+          "bundle": {
+            "$ref": "#/components/schemas/WorkspaceIndexBundle",
+            "description": "Complete existing paired metadata bundle; strict decoder independently verifies ordered pins and normalized hash."
+          },
+          "target_index_schema_version": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ],
+            "description": "Explicit selected index major, not a schema identifier string. Bundle1 may explicitly select2; bundle2 cannot select1. Runtime also rejects replacing a current index2 with index1."
+          },
+          "acknowledge_index_replacement": {
+            "type": "boolean",
+            "const": true,
+            "description": "Acknowledge complete ordered index replacement and possible unregistration; not domain approval."
+          }
+        },
+        "description": "Replace only the complete ordered index through a later receipt confirmation. The entire raw request, including this fixed envelope and encoding overhead, must fit 1 MiB. Raw duplicate/BOM checks precede Value admission. No merge, source copying or domain approval.",
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "bundle"
+              ],
+              "properties": {
+                "bundle": {
+                  "$ref": "#/components/schemas/WorkspaceIndexBundleV2"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "target_index_schema_version": {
+                  "const": 2
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ProjectBundleIndexReplacement": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "previous_index",
+          "proposed_index",
+          "supplied_index_sha256",
+          "proposed_index_sha256",
+          "removed_resource_keys",
+          "consumed_file_count"
+        ],
+        "properties": {
+          "previous_index": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/WorkspaceBundleIndex"
+              },
+              {
+                "$ref": "#/components/schemas/WorkspaceBundleIndexV2"
+              }
+            ],
+            "description": "Complete previous authorial membership and version; null only when the index was absent."
+          },
+          "proposed_index": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkspaceBundleIndex"
+              },
+              {
+                "$ref": "#/components/schemas/WorkspaceBundleIndexV2"
+              }
+            ],
+            "description": "Complete index after the explicit numeric selector; label and ordered registrations are preserved from the bundle."
+          },
+          "supplied_index_sha256": {
+            "$ref": "#/components/schemas/Sha256Hex",
+            "description": "SHA256 of the supplied index normalized by exact Index::bytes, including final LF; not raw snapshot bytes."
+          },
+          "proposed_index_sha256": {
+            "$ref": "#/components/schemas/Sha256Hex",
+            "description": "SHA256 of exact proposed Index::bytes after the explicit selector; equals preview.exact_bytes_sha256."
+          },
+          "removed_resource_keys": {
+            "type": "array",
+            "maxItems": 1000,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$",
+              "description": "Stable local key (1-64 characters, lowercase alphanumeric with interior hyphens, no leading or trailing hyphen), unique within the index, used by API resource metadata and effect previews."
+            },
+            "description": "Every previous key absent from the proposed index, in previous index order; no truncation."
+          },
+          "consumed_file_count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole distinct physical-file union: present raw index, current captures, incoming files and any distinct existing export destination. Same path counts once; aliases reject. Raw uploaded bundle bytes are request data, not a project-file open."
+          }
+        },
+        "description": "Complete index-replacement disclosure, independent of truncated preview text diff. Runtime verifies exact membership, ordered removals, both normalized hashes and consumed count. Metadata is sensitive; declared actors and domain decisions gain no authenticated authority from this preview."
+      },
+      "ProjectBundleImportPreview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "validation",
+          "preview",
+          "replacement"
+        ],
+        "properties": {
+          "validation": {
+            "$ref": "#/components/schemas/ValidationReport",
+            "description": "Same structured validation as preview.validation."
+          },
+          "preview": {
+            "$ref": "#/components/schemas/EffectPreview",
+            "description": "Existing single-index write preview and one-time receipt; preparation has not committed any file."
+          },
+          "replacement": {
+            "$ref": "#/components/schemas/ProjectBundleIndexReplacement",
+            "description": "Complete membership/version/hash/removal/count disclosure independent of text diff truncation."
+          }
+        },
+        "description": "Direct controlled preparation response. validation equals preview.validation; the existing preview writes only forge.workspace.json using workspace-index-update. Complete replacement membership is never truncated. No Operation/progress/cancel resource or file write is created by preparation."
       }
     },
     "securitySchemes": {
@@ -5020,7 +5182,7 @@
       "name": "MIT"
     },
     "title": "FORGE Local Workspace API",
-    "version": "2.1.0"
+    "version": "2.2.0"
   },
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "openapi": "3.1.0",
@@ -7574,6 +7736,244 @@
           },
           "503": {
             "$ref": "#/components/responses/QueryInterrupted"
+          }
+        }
+      }
+    },
+    "/api/v2/project/bundle-exports": {
+      "post": {
+        "operationId": "prepareProjectBundleExport",
+        "summary": "Prepare an acknowledged metadata JSON export",
+        "description": "API 2.2 writable preparation only; Idempotency-Key is required and query parameters are forbidden. Reuses the existing export Operation and 30-second accepted-operation budget; terminal ExportResult contains a report-export EffectPreview and removed_categories:[source-excerpts]. Metadata labels, keys, paths, hashes and sizes remain disclosed, not blanket-redacted. The whole consumed physical-file union is<=100 and 50 MiB; raw index/current captures/distinct existing destination count before admission. Existing 20 MiB/256-record/600-second retained bounds apply. Index and registered-source output targets are rejected before destination reads. A server-private metadata-JSON family binds the receipt; publication occurs only through the existing commitEffectPreview flow. No archive/source-content export.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Existing export operation; preparation does not publish a file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Version, identity or idempotency conflict; no partial admission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "description": "Only bounded strict application/json requests are admitted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectBundleExportRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/project/bundle-exports/{operation_id}/download": {
+      "get": {
+        "operationId": "downloadProjectBundleExport",
+        "summary": "Download the exact committed metadata JSON export",
+        "description": "API 2.2 authenticated selected-major read, including read-only scope. No request body, query or Idempotency-Key. Return only the exact unchanged confined bytes of a committed same-session/major metadata-JSON receipt; reject HTML-family/uncommitted/foreign receipts. Content-Type application/json, attachment filename forge-workspace-index-and-hashes.json, no-store/nosniff and restrictive headers. No serialization, family inference from filename or remote publication. The existing HTML download route independently rejects metadata-JSON receipts. Selected metadata can contain sensitive correlation data.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exact committed JSON metadata bundle bytes, not a reconstructed object.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceIndexBundle"
+                }
+              }
+            },
+            "headers": {
+              "Content-Disposition": {
+                "description": "Fixed safe attachment name.",
+                "schema": {
+                  "type": "string",
+                  "const": "attachment; filename=\"forge-workspace-index-and-hashes.json\""
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Content-Type-Options": {
+                "schema": {
+                  "type": "string",
+                  "const": "nosniff"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/ConflictVersion"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OperationIdPath"
+          }
+        ]
+      }
+    },
+    "/api/v2/project/bundle-imports": {
+      "post": {
+        "operationId": "prepareProjectBundleImport",
+        "summary": "Prepare complete acknowledged index replacement",
+        "description": "API 2.2 writable direct preparation; required Idempotency-Key and no query parameters. The sticky 10-second budget starts before bounded body read and includes queueing, capture, validation, full response construction and final retention admission. It does not promise parser/syscall preemption or response delivery by the deadline. Matching pending reservation returns retryable 409 bundle-preparation-in-progress; a different request under that key retains idempotency-key-conflict. Ready retries replay the original response/receipt without extending lifetime. Pending+ready <=256. Preparation occurs off Store lock under the existing one-job semaphore. Full response is built and validated before final owner/deadline/shutdown recheck and atomic local receipt/replay transfer. Failures release only their own reservation and retain nothing. Whole consumed physical-file union <=100 and 50 MiB includes present raw index/current captures/incoming files; aliases reject. Existing 20 MiB retention conservatively charges complete wrapped response, preview, proposed/base and private captures. Every incoming role uses its existing intrinsic admission profile; fingerprint agreement does not prove native schema, freshness or reviewer authority. Complete index replacement is disclosed in the wrapped response; only later conditional single-file Root.commit changes the index. Confirmation rechecks exact index presence/raw bytes/hash/length/identity, current snapshot and every external file identity/hash/length. No merge/source restore/multi-file transaction/cancel endpoint. Read-only preparation is rejected while old preview/query routes remain available. API1 is unchanged.",
+        "tags": [
+          "Project"
+        ],
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete direct preparation with no index write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectBundleImportPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Version, identity or idempotency conflict; no partial admission. Matching pending preparation uses retryable bundle-preparation-in-progress.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "description": "Only bounded strict application/json requests are admitted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          },
+          "503": {
+            "description": "Sticky deadline uses bundle-preparation-budget-exceeded; controlled interruption uses bundle-preparation-interrupted; both retryable. Shutdown keeps existing400 shutdown-in-progress. No prepared receipt is transferred after stop.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectBundleImportRequest"
+              }
+            }
           }
         }
       }

@@ -1,6 +1,6 @@
 # Inspect lifecycle and framework impact
 
-Launch `forge workspace --project ./example --api-major 2` and open **Lifecycle & Impact**. Contract 2.1.0 supplies this read-only view in both writable and read-only sessions. Default API1 sessions retain their existing navigation. Earlier API2/2.0.0 sessions supply registration and bundles; restart with the current server for inspection.
+Launch `forge workspace --project ./example --api-major 2` and open **Lifecycle & Impact**. Contracts 2.1.0 and 2.2.0 supply this read-only view in both writable and read-only sessions. Default API1 sessions retain their existing navigation. Earlier API2/2.0.0 sessions supply registration and bundles; restart with the current server for inspection.
 
 Create or explicitly migrate to index2, then register its inputs through **Policies & Artifacts**. Launching or inspecting never migrates an index. An absent index, an index1 awaiting explicit migration, an empty family and registered inputs needing attention have separate states.
 
