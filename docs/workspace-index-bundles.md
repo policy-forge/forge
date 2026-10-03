@@ -161,3 +161,5 @@ API v1 accepts only index1 and bundle1. The five metadata fields, complete order
 pin bijection, normalized hashing, sensitivity acknowledgment, download/POST/capture
 bounds and registered-only comparison remain the same. New-role admission profiles
 grant no freshness or approval. See [v2 migration guidance](api/migration-v2.md).
+
+API2 contract 2.2.0 separately offers [confirmed metadata export and complete index replacement](workspace-bundle-receipts.md). Those acknowledged preparations require a writable session and an exact receipt; they use their own whole-effect bounds. These existing queries retain their read-only semantics and do not restore source contents. Full source-content and multi-file import remain required S-6 work.

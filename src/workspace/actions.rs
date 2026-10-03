@@ -31,7 +31,8 @@ fn preview_reply(preview: Value) -> Reply {
 fn operation_reply(value: Value) -> Reply {
     Reply { value, schema: "Operation", status: 202 }
 }
-fn output_target(snapshot: &Snapshot, path: &str, allowed: Option<Role>) -> Result<()> {
+/// Reject index/source destinations before any producer reads or previews an output target.
+pub(crate) fn output_target(snapshot: &Snapshot, path: &str, allowed: Option<Role>) -> Result<()> {
     if path.eq_ignore_ascii_case(INDEX_PATH)
         || snapshot.items.iter().any(|item| {
             item.registration.path.eq_ignore_ascii_case(path)
@@ -252,6 +253,21 @@ pub(crate) fn prepare_with_control_for_api(
         return Err(Error::invalid().into());
     }
     let reply: WorkResult<Reply> = match (method, path) {
+        ("POST", "/api/v1/project/bundle-exports") if api_major == ApiMajor::V2 => {
+            let plan = super::bundle_effects::prepare_export(root, snapshot, request, control)?;
+            control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
+            let preview = store.preview_bundle(plan)?;
+            let reply = operation_reply(store.completed(
+                "export",
+                json!({
+                    "operation_id":"op_000000000000", "preview":preview,
+                    "redaction_summary":{"removed_categories":["source-excerpts"]}
+                }),
+            )?);
+            // Metadata labels/paths are sensitive; charge the entire retained wrapper too.
+            store.charge_reply(&reply)?;
+            Ok(reply)
+        }
         ("POST", "/api/v1/applicability/initializations" | "/api/v1/mapping/initializations") => {
             let target = text(request, "target_path")?;
             output_target(snapshot, target, None)?;

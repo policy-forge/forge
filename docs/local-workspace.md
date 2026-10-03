@@ -119,9 +119,10 @@ Every material write presents its target, create/overwrite status, validation,
 semantic summary, exact proposed hash, current hash/version, bound input hashes,
 and text diff before confirmation. Diffs are bounded and explicitly marked when
 truncated; the hash still binds the complete bytes. No autosave occurs.
-Receipts expire after ten minutes and are single-use, including failed commit
-attempts. Re-preview after an expired receipt, stale version, changed input,
-changed target, or failed confirmation.
+Receipts expire after ten minutes and are single-use once a matching commit
+attempt reaches receipt consumption. Capacity and request-mismatch rejections
+before that point preserve the receipt. Re-preview after an expired receipt,
+stale version, changed input, changed target, or consumed failed confirmation.
 
 For a current preview, a verified confirmed write refreshes its view and closes
 the preview before focus moves to the view heading. A failed refresh keeps the
@@ -238,8 +239,8 @@ Python cannot guarantee physical zeroization of immutable strings.
 
 The normative contract is [OpenAPI](api/forge-workspace-v1.openapi.yaml), with
 [compatibility policy](api/compatibility.md) and [capability matrix](api/capability-matrix.md).
-Default launches use additive unreleased contract 1.2.0; explicit v2 launches use [contract 2.1.0](api/forge-workspace-v2.openapi.yaml). It includes closed initialization,
-optional provenance references, read-only index-bundle queries, and the nine captured lifecycle and framework-impact reads described in [the inspection guide](workspace-lifecycle-impact.md). Existing domain
+Default launches use additive unreleased contract 1.2.0; explicit v2 launches use [contract 2.2.0](api/forge-workspace-v2.openapi.yaml). It includes closed initialization,
+optional provenance references, read-only index-bundle queries, and the nine captured lifecycle and framework-impact reads described in [the inspection guide](workspace-lifecycle-impact.md), plus acknowledged metadata export and complete index-replacement previews described in [the receipt guide](workspace-bundle-receipts.md). Existing domain
 `/1` meanings remain unchanged.
 The public Rust `Commands::Workspace` variant extends an exhaustive enum and
 requires a release compatibility decision for downstream matches. No release
@@ -284,8 +285,10 @@ establish neither domain approval nor import readiness or later byte stability.
 The maintained Python client still exposes `bundle_preview()` and
 `verify_bundle(bundle)` for the same read-only queries. See
 [Workspace index bundles](workspace-index-bundles.md) for its example, normalized
-index hashing, limits and errors. Receipt-backed server export/publication,
-source-content opt-in, confirmed writable import, reviewed batch binding,
+index hashing, limits and errors. These API1 queries prepare no effects. The
+separate API2.2 [metadata receipt workflow](workspace-bundle-receipts.md) supports
+acknowledged server export and confirmed replacement of the complete index.
+Source-content opt-in, multi-file import, reviewed batch binding, broader
 retention/capacity qualification and full S-6 acceptance remain open.
 
 ## Verification and remaining gates

@@ -134,14 +134,14 @@ class LifecycleClientTests(unittest.TestCase):
         self.assertEqual(client.calls, [])
 
     def test_numeric_api2_versions_keep_bootstrap_compatibility_and_gate_new_methods(self):
-        """Retain matched numeric API2 revisions; inspection still requires exact 2.1.0."""
+        """Retain numeric API2 bootstrap; inspection admits exactly 2.1.0 and 2.2.0."""
         for version in ["2.0.0", "2.1.0", "2.0.1", "2.2.0", "2.12.3"]:
             process = DescriptorProcess(self.descriptor(version))
             session = {"api_major":2, "contract_version":version, "session_id":"sess_client001", "mode":"machine", "read_only":True}
             with self.subTest(version=version), patch("workspace_client.subprocess.Popen", return_value=process), patch.object(Workspace, "request", return_value=session):
                 client = Workspace("forge", ".", api_major=2)
                 self.assertEqual(client._contract_version, version)
-                if version == "2.1.0":
+                if version in ("2.1.0", "2.2.0"):
                     self.assertEqual(client.lifecycle_records(), session)
                 else:
                     for call in self.calls(client):

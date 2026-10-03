@@ -115,7 +115,7 @@ impl ApiMajor {
     pub(crate) const fn version(self) -> &'static str {
         match self {
             Self::V1 => VERSION,
-            Self::V2 => "2.1.0",
+            Self::V2 => "2.2.0",
         }
     }
 

@@ -1,0 +1,42 @@
+{
+  "operation_id": "op_1a2b3c4d5e6f7081",
+  "preview": {
+    "preview_id": "prev_1a2b3c4d5e6f7081",
+    "operation_type": "report-export",
+    "target": {
+      "path": "exports/workspace-metadata.json",
+      "status": "create"
+    },
+    "base_sha256": null,
+    "target_version": "0f1e2d3c4b5a6978",
+    "exact_bytes_sha256": "373705bb628ca0f05a067e33ebc5a683c575e8423c70fbffc2fe2741f8a72648",
+    "input_hashes": [
+      {
+        "resource_id": "res_0f1e2d3c4b5a69788796a5b4",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "resource_id": "res_112233445566778899aabbcc",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "validation": {
+      "state": "valid",
+      "error_count": 0,
+      "warning_count": 0,
+      "diagnostics": []
+    },
+    "semantic_summary": "Synthetic complete index replacement; metadata remains sensitive.",
+    "diff_text": "Synthetic private diff text; membership is separately complete.",
+    "diff_truncated": false,
+    "receipt": {
+      "token": "rcpt_9f8e7d6c5b4a3f2e1d0c",
+      "expires_at": "2026-09-08T14:20:00Z"
+    }
+  },
+  "redaction_summary": {
+    "removed_categories": [
+      "source-excerpts"
+    ]
+  }
+}

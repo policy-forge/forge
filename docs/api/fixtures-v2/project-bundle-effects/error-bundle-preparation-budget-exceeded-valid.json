@@ -1,0 +1,5 @@
+{
+  "code": "bundle-preparation-budget-exceeded",
+  "message": "Bounded metadata preparation did not complete.",
+  "retryable": true
+}

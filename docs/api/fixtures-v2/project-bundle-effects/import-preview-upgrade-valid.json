@@ -1,0 +1,49 @@
+{
+  "validation": {
+    "state": "valid",
+    "error_count": 0,
+    "warning_count": 0,
+    "diagnostics": []
+  },
+  "preview": {
+    "preview_id": "prev_1a2b3c4d5e6f7081",
+    "operation_type": "workspace-index-update",
+    "target": {
+      "path": "forge.workspace.json",
+      "status": "overwrite"
+    },
+    "base_sha256": "d5fc4b2a9bdbbba142a035afdc5b75b9ef8593f7f44078fb2e7398a02998584a",
+    "target_version": "0123456789abcdef",
+    "exact_bytes_sha256": "c9031fc226131117ab38095d88bae5443e8bb03552937fae88d70f2ad854c11a",
+    "input_hashes": [],
+    "validation": {
+      "state": "valid",
+      "error_count": 0,
+      "warning_count": 0,
+      "diagnostics": []
+    },
+    "semantic_summary": "Synthetic complete index replacement; metadata remains sensitive.",
+    "diff_text": "Synthetic private diff text; membership is separately complete.",
+    "diff_truncated": false,
+    "receipt": {
+      "token": "rcpt_9f8e7d6c5b4a3f2e1d0c",
+      "expires_at": "2026-09-08T14:20:00Z"
+    }
+  },
+  "replacement": {
+    "previous_index": {
+      "schema_version": "forge.workspace/1",
+      "label": "Synthetic metadata",
+      "resources": []
+    },
+    "proposed_index": {
+      "schema_version": "forge.workspace/2",
+      "label": "Synthetic metadata",
+      "resources": []
+    },
+    "supplied_index_sha256": "d5fc4b2a9bdbbba142a035afdc5b75b9ef8593f7f44078fb2e7398a02998584a",
+    "proposed_index_sha256": "c9031fc226131117ab38095d88bae5443e8bb03552937fae88d70f2ad854c11a",
+    "removed_resource_keys": [],
+    "consumed_file_count": 1
+  }
+}

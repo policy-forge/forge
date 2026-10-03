@@ -1,0 +1,5 @@
+{
+  "code": "bundle-preparation-interrupted",
+  "message": "Bounded metadata preparation did not complete.",
+  "retryable": true
+}

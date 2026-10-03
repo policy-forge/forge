@@ -2334,7 +2334,7 @@ mod s3_registration_and_bundles {
             let descriptor: Value = serde_json::from_str(&result.unwrap().unwrap())
                 .expect("API2 machine descriptor JSON");
             s3_descriptor_keys(&descriptor);
-            assert!(descriptor["api_version"] == "2.1.0", "API2 descriptor version mismatch");
+            assert!(descriptor["api_version"] == "2.2.0", "API2 descriptor version mismatch");
             assert!(descriptor["api_major"] == 2, "API2 descriptor major mismatch");
             assert!(descriptor["mode"] == "machine", "API2 descriptor mode mismatch");
             assert!(descriptor["read_only"] == read_only, "API2 descriptor scope mismatch");
@@ -2362,7 +2362,7 @@ mod s3_registration_and_bundles {
                 ],
             );
             assert_eq!(session["api_major"], 2);
-            assert_eq!(session["contract_version"], "2.1.0");
+            assert_eq!(session["contract_version"], "2.2.0");
             assert_eq!(session["session_id"], descriptor["session_id"]);
             assert_eq!(session["mode"], "machine");
             assert_eq!(session["read_only"], read_only);
@@ -3382,6 +3382,290 @@ mod s3_registration_and_bundles {
         let (status, error) = s3_json(&server, "GET", &base, None, &json!({}));
         assert_eq!(status, 422, "{error}");
         bundle_assert_error(&server, &error, "validation-failed");
+        assert_eq!(bundle_project_files(&server), before);
+    }
+    /// Poll a real accepted API2 job to its bounded terminal result without synthetic progress.
+    fn s6_poll(server: &Server, accepted: &Value) -> Value {
+        let id = accepted["operation_id"].as_str().unwrap();
+        let deadline = std::time::Instant::now() + Duration::from_secs(15);
+        loop {
+            let (status, operation) =
+                s3_json(server, "GET", &format!("/api/v2/operations/{id}"), None, &json!({}));
+            assert_eq!(status, 200, "{operation}");
+            if !matches!(operation["state"].as_str(), Some("pending" | "running")) {
+                assert_eq!(operation["state"], "succeeded", "{operation}");
+                return operation;
+            }
+            assert!(std::time::Instant::now() < deadline, "API2 preparation did not settle");
+            std::thread::sleep(Duration::from_millis(20));
+        }
+    }
+
+    /// Create valid existing incoming files and a strict metadata request without source hydration.
+    fn s6_incoming_request(server: &Server, target: u8) -> Value {
+        let source = b"# Incoming policy\n\n## Rules\nS6 PRIVATE SOURCE SENTINEL\n";
+        std::fs::write(server.project.path().join("incoming.md"), source).unwrap();
+        let index = json!({"schema_version":"forge.workspace/1","label":"Explicit replacement",
+            "resources":[{"key":"incoming","role":"policy-source","path":"incoming.md"}]});
+        json!({"bundle":bundle_fixture(&index, &[source]), "target_index_schema_version":target,
+            "acknowledge_index_replacement":true})
+    }
+
+    /// Native export retries retain one accepted job; publication and JSON download remain separate.
+    #[test]
+    fn s6_metadata_export_requires_commit_and_private_json_family() {
+        let server = Server::start_api2(true, false);
+        let before = bundle_project_files(&server);
+        let request = json!({"target_path":"bundle.json","acknowledge_sensitive_metadata":true});
+        let (status, accepted) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/project/bundle-exports",
+            Some("native-control-s6-export"),
+            &request,
+        );
+        assert_eq!(status, 202, "{accepted}");
+        let operation = s6_poll(&server, &accepted);
+        let preview = &operation["result"]["preview"];
+        assert_eq!(
+            operation["result"]["redaction_summary"]["removed_categories"],
+            json!(["source-excerpts"])
+        );
+        assert_eq!(bundle_project_files(&server), before);
+        let id = operation["operation_id"].as_str().unwrap();
+        let download = format!("/api/v2/project/bundle-exports/{id}/download");
+        assert_eq!(server.request("GET", &download, true, None, "", "").0, 404);
+        s3_commit(&server, preview, "native-control-s6-export-commit");
+        let (status, headers, bytes) = server.request("GET", &download, true, None, "", "");
+        assert_eq!(status, 200);
+        assert!(headers.contains("content-type: application/json"));
+        assert!(headers.contains("attachment; filename=\"forge-workspace-index-and-hashes.json\""));
+        assert_eq!(std::fs::read(server.project.path().join("bundle.json")).unwrap(), bytes);
+        assert_eq!(
+            serde_json::from_slice::<Value>(&bytes).unwrap()["content_profile"],
+            "index-and-hashes"
+        );
+        assert!(!String::from_utf8_lossy(&bytes).contains("human-supplied clause"));
+        assert_eq!(
+            server.request("GET", &format!("/api/v2/exports/{id}/download"), true, None, "", "").0,
+            404
+        );
+        let (status, retry) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/project/bundle-exports",
+            Some("native-control-s6-export"),
+            &request,
+        );
+        assert_eq!(status, 202);
+        assert_eq!(retry, accepted);
+        let changed = json!({"target_path":"different.json","acknowledge_sensitive_metadata":true});
+        let (status, error) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/project/bundle-exports",
+            Some("native-control-s6-export"),
+            &changed,
+        );
+        assert_eq!(status, 409);
+        assert_eq!(error["code"], "idempotency-key-conflict");
+        std::fs::write(server.project.path().join("bundle.json"), b"changed metadata").unwrap();
+        assert_eq!(server.request("GET", &download, true, None, "", "").0, 409);
+    }
+
+    /// Complete membership is disclosed before one exact index write; removed source files remain intact.
+    #[test]
+    fn s6_index_import_discloses_complete_replacement_and_replays_original_receipt() {
+        let server = Server::start_api2(true, false);
+        let request = s6_incoming_request(&server, 2);
+        let before = bundle_project_files(&server);
+        let (status, reply) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/project/bundle-imports",
+            Some("native-control-s6-import"),
+            &request,
+        );
+        assert_eq!(status, 200, "{reply}");
+        bundle_assert_keys(&reply, &["validation", "preview", "replacement"]);
+        assert_eq!(reply["replacement"]["previous_index"]["schema_version"], "forge.workspace/1");
+        assert_eq!(reply["replacement"]["proposed_index"]["schema_version"], "forge.workspace/2");
+        assert_eq!(reply["replacement"]["removed_resource_keys"], json!(["policy"]));
+        assert_eq!(reply["replacement"]["consumed_file_count"], 3);
+        assert_eq!(reply["preview"]["input_hashes"].as_array().unwrap().len(), 2);
+        assert_eq!(bundle_project_files(&server), before);
+        let (status, retry) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/project/bundle-imports",
+            Some("native-control-s6-import"),
+            &request,
+        );
+        assert_eq!(status, 200);
+        assert_eq!(retry, reply);
+        s3_commit(&server, &reply["preview"], "native-control-s6-import-commit");
+        let committed = std::fs::read(server.project.path().join("forge.workspace.json")).unwrap();
+        assert_eq!(
+            bundle_fixture_sha256(&committed),
+            reply["replacement"]["proposed_index_sha256"]
+        );
+        assert_eq!(
+            serde_json::from_slice::<Value>(&committed).unwrap(),
+            reply["replacement"]["proposed_index"]
+        );
+        let after = bundle_project_files(&server);
+        for (path, bytes) in &before {
+            if path != "forge.workspace.json" {
+                assert_eq!(after.iter().find(|(name, _)| name == path).unwrap().1, *bytes);
+            }
+        }
+        let (status, retry) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/project/bundle-imports",
+            Some("native-control-s6-import"),
+            &request,
+        );
+        assert_eq!(status, 200);
+        assert_eq!(retry, reply);
+        let (status, used) = s3_json(
+            &server,
+            "GET",
+            &format!(
+                "/api/v2/effects/previews/{}",
+                reply["preview"]["preview_id"].as_str().unwrap()
+            ),
+            None,
+            &json!({}),
+        );
+        assert_eq!(status, 409);
+        assert_eq!(used["code"], "receipt-reused");
+    }
+
+    /// Actual simultaneous requests produce one original receipt or a truthful pending retry.
+    #[test]
+    fn s6_simultaneous_import_requests_keep_single_original_receipt() {
+        let server = Server::start_api2(true, false);
+        let request = s6_incoming_request(&server, 1);
+        let before = bundle_project_files(&server);
+        let barrier = std::sync::Barrier::new(2);
+        let replies = std::thread::scope(|scope| {
+            let one = scope.spawn(|| {
+                barrier.wait();
+                s3_json(
+                    &server,
+                    "POST",
+                    "/api/v2/project/bundle-imports",
+                    Some("native-control-s6-race"),
+                    &request,
+                )
+            });
+            let two = scope.spawn(|| {
+                barrier.wait();
+                s3_json(
+                    &server,
+                    "POST",
+                    "/api/v2/project/bundle-imports",
+                    Some("native-control-s6-race"),
+                    &request,
+                )
+            });
+            [one.join().unwrap(), two.join().unwrap()]
+        });
+        let success =
+            replies.iter().find(|(status, _)| *status == 200).expect("one complete import preview");
+        for (status, value) in &replies {
+            if *status == 200 {
+                assert_eq!(value, &success.1);
+            } else {
+                assert_eq!(*status, 409);
+                assert_eq!(value["code"], "bundle-preparation-in-progress");
+            }
+        }
+        let (status, retry) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/project/bundle-imports",
+            Some("native-control-s6-race"),
+            &request,
+        );
+        assert_eq!(status, 200);
+        assert_eq!(retry, success.1);
+        assert_eq!(bundle_project_files(&server), before);
+    }
+
+    /// Incoming exact-byte drift consumes a matched receipt without changing the prior index.
+    #[test]
+    fn s6_import_commit_rechecks_unregistered_input_and_preserves_previous_index() {
+        let server = Server::start_api2(true, false);
+        let request = s6_incoming_request(&server, 1);
+        let old = std::fs::read(server.project.path().join("forge.workspace.json")).unwrap();
+        let (status, reply) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/project/bundle-imports",
+            Some("native-control-s6-drift"),
+            &request,
+        );
+        assert_eq!(status, 200, "{reply}");
+        std::fs::write(
+            server.project.path().join("incoming.md"),
+            b"# Changed\n\nDifferent supplied clause\n",
+        )
+        .unwrap();
+        let commit = json!({"receipt":reply["preview"]["receipt"]["token"],"observed_version":reply["preview"]["target_version"],"confirmed":true});
+        let (status, error) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/effects/commits",
+            Some("native-control-s6-drift-commit"),
+            &commit,
+        );
+        assert_eq!(status, 409, "{error}");
+        assert_eq!(error["code"], "version-conflict");
+        assert_eq!(std::fs::read(server.project.path().join("forge.workspace.json")).unwrap(), old);
+        let (status, error) = s3_json(
+            &server,
+            "POST",
+            "/api/v2/effects/commits",
+            Some("native-control-s6-drift-reuse"),
+            &commit,
+        );
+        assert_eq!(status, 409);
+        assert_eq!(error["code"], "receipt-reused");
+    }
+
+    /// API1 lacks these routes and read-only API2 cannot prepare either authoritative effect.
+    #[test]
+    fn s6_bundle_effect_routes_preserve_namespace_and_readonly_authority() {
+        let one = Server::launch_mode(false, false);
+        let export = json!({"target_path":"bundle.json","acknowledge_sensitive_metadata":true});
+        assert_eq!(
+            one.json(
+                "POST",
+                "/api/v1/project/bundle-exports",
+                Some("native-control-s6-old"),
+                &export
+            )
+            .0,
+            404
+        );
+        let server = Server::start_api2(true, true);
+        let request = s6_incoming_request(&server, 1);
+        let before = bundle_project_files(&server);
+        for (path, value) in [
+            ("/api/v2/project/bundle-exports", &export),
+            ("/api/v2/project/bundle-imports", &request),
+        ] {
+            let (status, error) =
+                s3_json(&server, "POST", path, Some("native-control-s6-readonly"), value);
+            assert_eq!(status, 403);
+            assert_eq!(error["code"], "read-only-session");
+        }
+        assert_eq!(
+            s3_json(&server, "GET", "/api/v2/project/bundle-preview", None, &json!({})).0,
+            200
+        );
         assert_eq!(bundle_project_files(&server), before);
     }
 }

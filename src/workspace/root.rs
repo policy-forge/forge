@@ -18,9 +18,14 @@ pub(crate) struct Root {
     _ancestors: Vec<File>,
 }
 
+/// Exact confined file bytes and identity; clones retain the same captured observation.
+#[derive(Clone)]
 pub(crate) struct Captured {
+    /// Complete bytes admitted by the bounded reader.
     pub bytes: Vec<u8>,
+    /// Platform file identity used to reject replacement and aliases.
     pub identity: (u64, u64),
+    /// SHA-256 of these exact bytes, never a normalized document hash.
     pub sha256: String,
 }
 
@@ -215,8 +220,15 @@ pub(crate) struct Target {
 }
 
 impl Root {
+    /// Preserve the established ten-MiB target-base ceiling for ordinary effects.
     pub(crate) fn target(&self, path: &str) -> Result<Target> {
+        self.target_with_limit(path, 10 * 1024 * 1024)
+    }
+
+    /// Confine an output base within the caller's remaining complete capture budget.
+    pub(crate) fn target_with_limit(&self, path: &str, limit: usize) -> Result<Target> {
         validate_path(path)?;
+        let limit = limit.min(10 * 1024 * 1024);
         #[cfg(unix)]
         {
             use std::os::unix::fs::MetadataExt as _;
@@ -228,7 +240,7 @@ impl Root {
             }
             let meta = parent.metadata().map_err(|_| Error::containment())?;
             let parent_identity = (meta.dev(), meta.ino());
-            let base = self.read_internal(path, 10 * 1024 * 1024)?;
+            let base = self.read_internal(path, limit)?;
             let identity = base.as_ref().map_or_else(
                 || "absent".to_owned(),
                 |b| format!("{}:{}:{}", b.identity.0, b.identity.1, b.sha256),
@@ -258,7 +270,7 @@ impl Root {
                 }
                 parents.push(file);
             }
-            let base = self.read_internal(path, 10 * 1024 * 1024)?;
+            let base = self.read_internal(path, limit)?;
             let identity = base.as_ref().map_or_else(
                 || "absent".to_owned(),
                 |b| format!("{}:{}:{}", b.identity.0, b.identity.1, b.sha256),
@@ -582,6 +594,23 @@ mod windows_publish {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A remaining capture budget constrains existing bases while allowing absent targets.
+    #[test]
+    fn target_base_respects_remaining_capture_limit() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("output.json"), b"12345").unwrap();
+        let root = Root::open(dir.path()).unwrap();
+        let error = root.target_with_limit("output.json", 4).err().unwrap();
+        // The existing Windows confined reader intentionally collapses read failures.
+        assert_eq!(
+            error.code,
+            if cfg!(windows) { "resource-containment" } else { "payload-too-large" }
+        );
+        assert_eq!(root.target_with_limit("output.json", 5).unwrap().base.unwrap().bytes, b"12345");
+        assert!(root.target_with_limit("missing.json", 0).unwrap().base.is_none());
+        assert_eq!(root.target("output.json").unwrap().base.unwrap().bytes, b"12345");
+    }
 
     #[cfg(unix)]
     #[test]

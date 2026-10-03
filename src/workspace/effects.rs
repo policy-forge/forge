@@ -18,6 +18,15 @@ pub(crate) struct Reply {
     pub schema: &'static str,
     pub status: u16,
 }
+/// Server-authored export family; callers cannot select download media by filename.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ArtifactFamily {
+    /// Existing inert static review report.
+    ReportHtml,
+    /// Explicit index-and-hashes metadata, including sensitive labels and paths.
+    MetadataJson,
+}
+/// Session-bound proposed bytes and captured inputs for one explicit confirmed write.
 struct Receipt {
     preview: Value,
     target: Target,
@@ -27,6 +36,8 @@ struct Receipt {
     used: bool,
     committed: bool,
     external: Vec<(String, super::root::Captured)>,
+    /// Present only for a producer-owned export recipe.
+    artifact_family: Option<ArtifactFamily>,
 }
 struct Replay {
     request_hash: String,
@@ -34,11 +45,21 @@ struct Replay {
     schema: &'static str,
     status: u16,
 }
+/// One off-lock preparation owner, bound to the same request hash as ready replays.
+struct PendingReplay {
+    /// Canonical method, public path, query and admitted Value fingerprint.
+    request_hash: String,
+    /// Unique generation prevents stale workers from removing newer state.
+    nonce: String,
+}
+/// Bounded session receipts, operations, idempotency results and owned preparation reservations.
 #[derive(Default)]
 pub(crate) struct Store {
     receipts: BTreeMap<String, Receipt>,
     operations: BTreeMap<String, Value>,
     replays: BTreeMap<String, Replay>,
+    /// Reserved keys share the existing replay capacity with terminal results.
+    pending_replays: BTreeMap<String, PendingReplay>,
     retained_bytes: usize,
     /// Last complete capture count and immutable denominator for each active job.
     capture_progress: BTreeMap<String, (usize, usize)>,
@@ -50,6 +71,14 @@ fn capacity() -> Error {
     Error::new(
         "invalid-request",
         "Session retention limit reached. Finish pending work and start a new session.",
+        false,
+    )
+}
+/// Reuse the established closed error for request or reservation-owner mismatch.
+fn idempotency_conflict() -> Error {
+    Error::new(
+        "idempotency-key-conflict",
+        "The idempotency key already identifies a different request.",
         false,
     )
 }
@@ -71,6 +100,7 @@ fn now() -> String {
 }
 
 impl Store {
+    /// Return the original reply or reject a conflicting/pending reserved request.
     pub(crate) fn replay(
         &self,
         key: &str,
@@ -79,6 +109,16 @@ impl Store {
         query: &str,
         request: &Value,
     ) -> Result<Option<Reply>> {
+        if let Some(record) = self.pending_replays.get(key) {
+            if record.request_hash != request_hash(method, path, query, request)? {
+                return Err(idempotency_conflict());
+            }
+            return Err(Error::new(
+                "bundle-preparation-in-progress",
+                "This bundle preparation is still running. Retry the same request shortly.",
+                true,
+            ));
+        }
         if let Some(record) = self.replays.get(key) {
             if record.request_hash != request_hash(method, path, query, request)? {
                 return Err(Error::new(
@@ -93,11 +133,12 @@ impl Store {
                 status: record.status,
             }));
         }
-        if self.replays.len() >= MAX_RETAINED {
+        if self.replays.len().saturating_add(self.pending_replays.len()) >= MAX_RETAINED {
             return Err(capacity());
         }
         Ok(None)
     }
+    /// Retain a ready ordinary reply without overwriting an off-lock reservation.
     pub(crate) fn remember(
         &mut self,
         key: &str,
@@ -107,6 +148,9 @@ impl Store {
         request: &Value,
         reply: &Reply,
     ) -> Result<()> {
+        if self.pending_replays.contains_key(key) {
+            return Err(idempotency_conflict());
+        }
         let hash = request_hash(method, path, query, request)?;
         self.replays.insert(
             key.to_owned(),
@@ -119,6 +163,148 @@ impl Store {
         );
         Ok(())
     }
+    /// Reserve a fresh admitted request while the caller owns the shared Store lock.
+    pub(crate) fn reserve(
+        &mut self,
+        key: &str,
+        method: &str,
+        path: &str,
+        query: &str,
+        request: &Value,
+    ) -> Result<String> {
+        if self.replay(key, method, path, query, request)?.is_some() {
+            return Err(idempotency_conflict());
+        }
+        let nonce = id("prep")?;
+        let request_hash = request_hash(method, path, query, request)?;
+        self.pending_replays
+            .insert(key.to_owned(), PendingReplay { request_hash, nonce: nonce.clone() });
+        Ok(nonce)
+    }
+
+    /// Release only this generation; a late worker never erases newer or ready state.
+    pub(crate) fn release_reservation(&mut self, key: &str, nonce: &str) {
+        if self.pending_replays.get(key).is_some_and(|pending| pending.nonce == nonce) {
+            self.pending_replays.remove(key);
+        }
+    }
+
+    /// Charge a complete public wrapper conservatively before any shared retention.
+    pub(crate) fn charge_reply(&mut self, reply: &Reply) -> Result<()> {
+        let charge = contract::encode(&reply.value, 4 * 1024 * 1024, false)?
+            .len()
+            .checked_mul(4)
+            .ok_or_else(capacity)?;
+        let retained = self.retained_bytes.checked_add(charge).ok_or_else(capacity)?;
+        if retained > MAX_PREVIEW_BYTES {
+            return Err(capacity());
+        }
+        self.retained_bytes = retained;
+        Ok(())
+    }
+
+    /// Atomically transfer a fully validated local receipt and its original ready reply.
+    /// The transport checks its sticky deadline after reacquiring this Store lock.
+    pub(crate) fn retain_reserved(
+        &mut self,
+        key: &str,
+        nonce: &str,
+        mut local: Self,
+        reply: &Reply,
+    ) -> Result<()> {
+        let pending = self.pending_replays.get(key).ok_or_else(idempotency_conflict)?;
+        if pending.nonce != nonce || self.replays.contains_key(key) {
+            return Err(idempotency_conflict());
+        }
+        let retained =
+            self.retained_bytes.checked_add(local.retained_bytes).ok_or_else(capacity)?;
+        if self.receipts.len().saturating_add(local.receipts.len()) > MAX_RETAINED
+            || retained > MAX_PREVIEW_BYTES
+            || !local.operations.is_empty()
+            || !local.replays.is_empty()
+            || !local.pending_replays.is_empty()
+            || local.receipts.keys().any(|id| self.receipts.contains_key(id))
+        {
+            return Err(capacity());
+        }
+        let retained_response = Replay {
+            request_hash: pending.request_hash.clone(),
+            value: reply.value.clone(),
+            schema: reply.schema,
+            status: reply.status,
+        };
+        self.retained_bytes = retained;
+        self.receipts.append(&mut local.receipts);
+        self.replays.insert(key.to_owned(), retained_response);
+        self.pending_replays.remove(key);
+        Ok(())
+    }
+
+    /// Admit one complete metadata plan, including every private binding, before mutation.
+    pub(crate) fn preview_bundle(
+        &mut self,
+        plan: super::bundle_effects::PreparedBundle,
+    ) -> Result<Value> {
+        if plan.consumed_file_count > MAX_CONSUMED_INPUTS
+            || plan.input_hashes.len() > MAX_CONSUMED_INPUTS
+            || plan.external.len() > MAX_CONSUMED_INPUTS
+        {
+            return Err(too_many_inputs());
+        }
+        if self.receipts.len() >= MAX_RETAINED || plan.bytes.len() > 10 * 1024 * 1024 {
+            return Err(capacity());
+        }
+        let preview_id = id("prev")?;
+        let token = super::session::random_token()?;
+        let expires = (chrono::Utc::now() + chrono::TimeDelta::seconds(600))
+            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+        let (diff, truncated) = text_diff(
+            plan.target.base.as_ref().map_or(&[], |base| base.bytes.as_slice()),
+            &plan.bytes,
+        );
+        let preview = json!({"preview_id":preview_id,"operation_type":plan.kind,
+            "target":{"path":plan.target.path,"status":if plan.target.base.is_some(){"overwrite"}else{"create"}},
+            "base_sha256":plan.target.base.as_ref().map(|base|&base.sha256),"target_version":plan.target.version,
+            "exact_bytes_sha256":crate::hashing::sha256_hex(&plan.bytes),"input_hashes":plan.input_hashes,
+            "validation":super::services::validation(true,None),"semantic_summary":plan.semantic_summary,
+            "diff_text":diff,"diff_truncated":truncated,"receipt":{"token":&*token,"expires_at":expires}});
+        contract::validate_for(contract::ApiMajor::V2, "EffectPreview", &preview)?;
+        let mut charge = plan
+            .bytes
+            .len()
+            .checked_add(plan.target.base.as_ref().map_or(0, |base| base.bytes.len()))
+            .and_then(|sum| {
+                sum.checked_add(
+                    contract::encode(&preview, 1024 * 1024, false).ok()?.len().checked_mul(4)?,
+                )
+            })
+            .ok_or_else(capacity)?;
+        for (_, captured) in &plan.external {
+            charge = charge.checked_add(captured.bytes.len()).ok_or_else(capacity)?;
+        }
+        let retained = self.retained_bytes.checked_add(charge).ok_or_else(capacity)?;
+        if retained > MAX_PREVIEW_BYTES {
+            return Err(capacity());
+        }
+        self.receipts.insert(
+            preview_id,
+            Receipt {
+                preview: preview.clone(),
+                target: plan.target,
+                bytes: plan.bytes,
+                snapshot_version: plan.snapshot_version,
+                issued: Instant::now(),
+                used: false,
+                committed: false,
+                external: plan.external,
+                artifact_family: plan.artifact_family,
+            },
+        );
+        self.retained_bytes = retained;
+        Ok(preview)
+    }
+
+    /// Preserve ordinary single-file effect admission and its established preview shape.
     pub(crate) fn preview(
         &mut self,
         root: &Root,
@@ -173,6 +359,7 @@ impl Store {
                 used: false,
                 committed: false,
                 external: Vec::new(),
+                artifact_family: (kind == "report-export").then_some(ArtifactFamily::ReportHtml),
             },
         );
         Ok(preview)
@@ -449,7 +636,10 @@ impl Store {
             }
             for (path, expected) in &receipt.external {
                 let current = root.read(path, 10 * 1024 * 1024)?;
-                if current.identity != expected.identity || current.sha256 != expected.sha256 {
+                if current.identity != expected.identity
+                    || current.sha256 != expected.sha256
+                    || current.bytes.len() != expected.bytes.len()
+                {
                     return Err(conflict());
                 }
             }
@@ -459,14 +649,30 @@ impl Store {
         self.operations.insert(operation_id, op.clone());
         Ok(op)
     }
+    /// Serve only committed report bytes through the existing HTML route.
     pub(crate) fn download(&self, root: &Root, operation_id: &str) -> Result<Vec<u8>> {
+        self.download_family(root, operation_id, ArtifactFamily::ReportHtml)
+    }
+
+    /// Serve only committed metadata bytes through the new fixed JSON route.
+    pub(crate) fn download_metadata(&self, root: &Root, operation_id: &str) -> Result<Vec<u8>> {
+        self.download_family(root, operation_id, ArtifactFamily::MetadataJson)
+    }
+
+    /// Select a private producer family before reading exact current committed bytes.
+    fn download_family(
+        &self,
+        root: &Root,
+        operation_id: &str,
+        family: ArtifactFamily,
+    ) -> Result<Vec<u8>> {
         let op = self.operation(operation_id)?;
         if op["kind"] != "export" {
             return Err(unavailable());
         }
         let preview_id = op["result"]["preview"]["preview_id"].as_str().ok_or_else(unavailable)?;
         let receipt = self.receipts.get(preview_id).ok_or_else(unavailable)?;
-        if !receipt.committed {
+        if !receipt.committed || receipt.artifact_family != Some(family) {
             return Err(unavailable());
         }
         let captured = root.read(&receipt.target.path, 10 * 1024 * 1024)?;
@@ -476,6 +682,7 @@ impl Store {
         Ok(captured.bytes)
     }
 }
+/// Fingerprint the admitted Value and exact method/public path/query replay identity.
 fn request_hash(method: &str, path: &str, query: &str, value: &Value) -> Result<String> {
     Ok(crate::hashing::sha256_hex(
         &serde_json::to_vec(&json!([method, path, query, value])).map_err(|_| Error::invalid())?,
@@ -530,6 +737,200 @@ fn text_diff(old: &[u8], new: &[u8]) -> (String, bool) {
 mod tests {
     use super::*;
     use std::sync::atomic::AtomicBool;
+
+    /// A valid complete ordinary reply for reservation ownership checks.
+    fn reservation_reply() -> Reply {
+        Reply { value: json!({"state":"shutting-down"}), schema: "ShutdownResponse", status: 200 }
+    }
+
+    /// Pending requests bind method, public namespace, query and admitted payload together.
+    #[test]
+    fn pending_reservation_rejects_duplicate_and_conflicting_requests() {
+        let mut store = Store::default();
+        let request = json!({"bundle":"original"});
+        let nonce =
+            store.reserve("key", "POST", "/api/v2/project/bundle-imports", "", &request).unwrap();
+        assert_eq!(
+            store
+                .replay("key", "POST", "/api/v2/project/bundle-imports", "", &request)
+                .err()
+                .unwrap()
+                .code,
+            "bundle-preparation-in-progress"
+        );
+        for (method, path, query, value) in [
+            ("GET", "/api/v2/project/bundle-imports", "", request.clone()),
+            ("POST", "/api/v1/project/bundle-imports", "", request.clone()),
+            ("POST", "/api/v2/project/bundle-imports", "changed=1", request.clone()),
+            ("POST", "/api/v2/project/bundle-imports", "", json!({"bundle":"different"})),
+        ] {
+            assert_eq!(
+                store.replay("key", method, path, query, &value).err().unwrap().code,
+                "idempotency-key-conflict"
+            );
+        }
+        store.release_reservation("key", &nonce);
+        assert!(
+            store
+                .replay("key", "POST", "/api/v2/project/bundle-imports", "", &request)
+                .unwrap()
+                .is_none()
+        );
+    }
+
+    /// A stale worker cannot release a newer generation or replace its ready result.
+    #[test]
+    fn reservation_generation_preserves_newer_owner_and_original_ready_reply() {
+        let mut store = Store::default();
+        let request = json!({});
+        let old = store.reserve("key", "POST", "/route", "", &request).unwrap();
+        store.release_reservation("key", &old);
+        let current = store.reserve("key", "POST", "/route", "", &request).unwrap();
+        assert_ne!(old, current);
+        store.release_reservation("key", &old);
+        assert_eq!(store.pending_replays["key"].nonce, current);
+        assert_eq!(
+            store
+                .retain_reserved("key", &old, Store::default(), &reservation_reply())
+                .unwrap_err()
+                .code,
+            "idempotency-key-conflict"
+        );
+        store.retain_reserved("key", &current, Store::default(), &reservation_reply()).unwrap();
+        store.release_reservation("key", &current);
+        store.release_reservation("key", &old);
+        let replay = store.replay("key", "POST", "/route", "", &request).unwrap().unwrap();
+        assert_eq!(replay.value, reservation_reply().value);
+        assert!(store.pending_replays.is_empty());
+        assert_eq!(store.replays.len(), 1);
+    }
+
+    /// Pending and ready keys share one cap; failed retention transfers no local state.
+    #[test]
+    fn reservations_share_replay_capacity_and_transfer_atomically() {
+        let mut store = Store::default();
+        let request = json!({});
+        let nonce = store.reserve("reserved", "POST", "/route", "", &request).unwrap();
+        for index in 0..MAX_RETAINED - 1 {
+            store
+                .remember(
+                    &format!("ready-{index}"),
+                    "POST",
+                    "/route",
+                    "",
+                    &request,
+                    &reservation_reply(),
+                )
+                .unwrap();
+        }
+        assert!(store.replay("overflow", "POST", "/route", "", &request).is_err());
+        let local = Store { retained_bytes: MAX_PREVIEW_BYTES + 1, ..Store::default() };
+        assert!(store.retain_reserved("reserved", &nonce, local, &reservation_reply()).is_err());
+        assert!(store.receipts.is_empty());
+        assert_eq!(store.retained_bytes, 0);
+        assert_eq!(store.replays.len(), MAX_RETAINED - 1);
+        assert_eq!(store.pending_replays["reserved"].nonce, nonce);
+        store.release_reservation("reserved", &nonce);
+        assert!(store.replay("overflow", "POST", "/route", "", &request).unwrap().is_none());
+    }
+
+    /// Complete public replacement membership contributes to the same conservative byte cap.
+    #[test]
+    fn complete_reply_charge_refuses_without_changing_retained_bytes() {
+        let mut store = Store { retained_bytes: MAX_PREVIEW_BYTES - 1, ..Store::default() };
+        assert!(store.charge_reply(&reservation_reply()).is_err());
+        assert_eq!(store.retained_bytes, MAX_PREVIEW_BYTES - 1);
+    }
+
+    /// Prepare a real metadata export receipt without publishing its destination.
+    fn metadata_receipt(store: &mut Store, root: &Root, snapshot: &Snapshot) -> (Value, Value) {
+        let plan = super::super::bundle_effects::prepare_export(
+            root,
+            snapshot,
+            &json!({"target_path":"bundle.json","acknowledge_sensitive_metadata":true}),
+            &mut super::super::preparation::NoopControl,
+        )
+        .unwrap();
+        let preview = store.preview_bundle(plan).unwrap();
+        let operation = store
+            .completed(
+                "export",
+                json!({"operation_id":"op_000000000000",
+            "preview":preview,"redaction_summary":{"removed_categories":["source-excerpts"]}}),
+            )
+            .unwrap();
+        (preview, operation)
+    }
+
+    /// JSON and HTML routes select private committed families independently of path suffix.
+    #[test]
+    fn metadata_download_requires_commit_and_rejects_html_route() {
+        let (_directory, root, snapshot) = checkpoint_store_fixture();
+        let mut store = Store::default();
+        let (preview, operation) = metadata_receipt(&mut store, &root, &snapshot);
+        let id = operation["operation_id"].as_str().unwrap();
+        assert_eq!(store.download_metadata(&root, id).unwrap_err().code, "not-found");
+        let request = json!({"receipt":preview["receipt"]["token"],
+            "observed_version":preview["target_version"],"confirmed":true});
+        store
+            .commit_for_api(&root, &request, &AtomicBool::new(false), contract::ApiMajor::V2)
+            .unwrap();
+        let bytes = store.download_metadata(&root, id).unwrap();
+        let bundle: Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(bundle["content_profile"], "index-and-hashes");
+        assert_eq!(bundle["index"]["resources"].as_array().unwrap().len(), 1);
+        assert_eq!(store.download(&root, id).unwrap_err().code, "not-found");
+        assert!(preview["semantic_summary"].as_str().unwrap().contains("paths"));
+        assert!(!preview["semantic_summary"].as_str().unwrap().contains("secrets are excluded"));
+    }
+
+    /// Same-byte raw-index replacement invalidates a bound receipt without changing cursor identity.
+    #[test]
+    fn metadata_receipt_binds_raw_index_identity_in_addition_to_snapshot_hash() {
+        let (directory, root, snapshot) = checkpoint_store_fixture();
+        let mut store = Store::default();
+        let (preview, _) = metadata_receipt(&mut store, &root, &snapshot);
+        let original =
+            std::fs::read(directory.path().join(super::super::index::INDEX_PATH)).unwrap();
+        std::fs::write(directory.path().join("replacement.json"), &original).unwrap();
+        std::fs::rename(
+            directory.path().join("replacement.json"),
+            directory.path().join(super::super::index::INDEX_PATH),
+        )
+        .unwrap();
+        assert_eq!(Snapshot::capture(&root).unwrap().version, snapshot.version);
+        let request = json!({"receipt":preview["receipt"]["token"],
+            "observed_version":preview["target_version"],"confirmed":true});
+        assert_eq!(
+            store
+                .commit_for_api(&root, &request, &AtomicBool::new(false), contract::ApiMajor::V2)
+                .unwrap_err()
+                .code,
+            "version-conflict"
+        );
+        assert!(!directory.path().join("bundle.json").exists());
+        assert_eq!(
+            store.get_preview(preview["preview_id"].as_str().unwrap()).unwrap_err().code,
+            "receipt-reused"
+        );
+    }
+
+    /// Complete private binding admission fails before installing any preview or byte charge.
+    #[test]
+    fn metadata_plan_capacity_failure_has_no_partial_retention() {
+        let (_directory, root, snapshot) = checkpoint_store_fixture();
+        let mut store = Store { retained_bytes: MAX_PREVIEW_BYTES - 1, ..Store::default() };
+        let plan = super::super::bundle_effects::prepare_export(
+            &root,
+            &snapshot,
+            &json!({"target_path":"bundle.json","acknowledge_sensitive_metadata":true}),
+            &mut super::super::preparation::NoopControl,
+        )
+        .unwrap();
+        assert!(store.preview_bundle(plan).is_err());
+        assert!(store.receipts.is_empty());
+        assert_eq!(store.retained_bytes, MAX_PREVIEW_BYTES - 1);
+    }
     #[test]
     fn cancellation_discards_prepared_receipts_without_publishing() {
         let dir = tempfile::tempdir().unwrap();

@@ -1,9 +1,13 @@
 # Select workspace API v2
 
-API v2 adds explicit lifecycle and framework-impact registrations and versioned
-metadata bundles, plus captured lifecycle and framework-impact read views. It is selected once at launch. API v1 remains the default, with
-its original seven roles and contract 1.2.0. These are unreleased implementations;
-the current API contract version 2.1.0 does not announce a product release. The initial 2.0.0 foundation is retained in PR #193 and its historical verification receipts.
+API v2 adds explicit lifecycle and framework-impact registrations, versioned
+metadata bundles and captured read views. For a build publishing contract 2.2.0,
+it also adds acknowledged metadata export and complete index-replacement
+preparation. It is selected once at launch. API v1 remains the default, with its
+original seven roles and contract 1.2.0. These are unreleased implementations;
+contract 2.2.0 does not announce a product release. The initial 2.0.0 foundation is
+retained in PR #193, and the 2.1.0 captured inspection delivery in PR #194, with
+their historical versions and verification receipts.
 
 ## Launch and negotiate
 
@@ -16,8 +20,8 @@ python3 scripts/workspace_client.py --forge ./target/debug/forge --project ./exa
 
 A launch serves only its selected `/api/v1/` or `/api/v2/` namespace. Restart to
 select another major; credentials and retained previews belong to the original
-session. API v2 publishes `api_major: 2` and `api_version: "2.1.0"` in the sensitive
-machine descriptor, and the same major and exact `contract_version` in Session.
+session. For a build publishing 2.2.0, API v2 reports `api_major: 2` and
+`api_version: "2.2.0"` in the sensitive machine descriptor, and the same major and exact `contract_version` in Session.
 Keep the descriptor and capability out of logs. The bundled shell and maintained
 client verify this negotiation before project operations. Foreign-major paths
 return a typed 404 before authorization, replay, resource reads or effects.
@@ -102,11 +106,25 @@ The Trace & Reports panel and `bundle_preview()` / `verify_bundle(bundle)` consu
 these pairs. Both queries work in read-only sessions. API v2 can compare a supplied
 bundle1 against current index2 registrations: expected fingerprints, current-only
 resources and whole-index equality remain separate facts. Supplied unregistered
-paths are never opened. Source content and import authority are excluded.
+paths are never opened. These read queries disclose no source content and grant
+no import authority.
 
-See [the bundle guide](../workspace-index-bundles.md) for sensitivity acknowledgment,
-local download, normalized hashing and all bounds. Receipt-backed export/import,
-S-6, full S-3 acceptance, native accessibility, platform, security, human acceptance and final
+See [the metadata query guide](../workspace-index-bundles.md) for local download,
+normalized hashing and query bounds. Contract 2.2.0 separately introduces the
+[confirmed metadata and index-replacement workflow](../workspace-bundle-receipts.md):
+acknowledged export preparation, authenticated committed JSON download and a
+direct 200 index-replacement preview. Only subsequent explicit confirmation writes
+the export target or the complete index. Numeric `target_index_schema_version`
+1 or 2 selects the replacement format; migration from index1 to index2 is explicit,
+and downgrade is refused. No source files are restored or deleted.
+
+Read-only sessions retain preview/comparison queries but cannot prepare these
+writes. The write prerequisite uses a complete 100-file/50 MiB consumed union,
+including the present raw index, current registrations, incoming files and any
+distinct existing destination, plus the existing conservative 20 MiB retention
+cap. It does not increase the 1,000-registration query limit or truncate an
+over-cap write to a prefix. Full source-content and multi-file S-6, full S-3
+acceptance, native accessibility, platform, security, human acceptance and final
 integrated documentation review remain open where recorded.
 
 ## Contract and packaging artifacts
@@ -114,7 +132,14 @@ integrated documentation review remain open where recorded.
 The [v2 OpenAPI document](forge-workspace-v2.openapi.yaml),
 [v2 capability matrix](capability-matrix-v2.md), [v2 fixtures](fixtures-v2/README.md)
 and [index2 schema](../../schemas/forge.workspace-2.schema.json) are independently
-versioned alongside the unchanged v1 family. Current API1/1.2.0 declares 39 operations. API2/2.1.0 declares 48, adding nine captured read queries to the initial 39-operation foundation. The maintained client preserves numeric API2 descriptor/Session version negotiation; the inspection methods and navigation require 2.1.0.
+versioned alongside the unchanged v1 family. API1/1.2.0 declares 39 operations.
+API2/2.2.0 declares 51: the initial 39, nine captured read queries introduced in
+2.1.0, and three metadata receipt operations introduced in 2.2.0. The maintained
+client preserves matching numeric API-major-2 descriptor/Session bootstrap
+negotiation. The inspection methods and navigation explicitly admit 2.1.0 or
+2.2.0; the new metadata write/download surfaces require exactly 2.2.0. An accepted
+future major-2 bootstrap version alone does not grant either feature surface.
+Historical 2.0.0/39 and 2.1.0/48 receipts remain bound to those contracts.
 
 [release-artifacts.json](release-artifacts.json) declares both API families and
 the asset paths required in binary archives. Offline contract tests check their

@@ -64,7 +64,7 @@
       "getSession"
     ],
     "authorization": "machine",
-    "notes": "The --machine-session launch prints exactly one sensitive JSON descriptor on stdout (base URL, API version, session ID, capability, mode, process identity) outside /api/v2 with no passphrase prompt; the machine capability then authorizes getSession and the rest of the contract for headless clients (AC-18). Explicit --api-major 2 adds api_major:2 and exact api_version:2.0.0 to the descriptor."
+    "notes": "The --machine-session launch prints exactly one sensitive JSON descriptor on stdout (base URL, API version, session ID, capability, mode, process identity) outside /api/v2 with no passphrase prompt; the machine capability then authorizes getSession and the rest of the contract for headless clients (AC-18). Explicit --api-major 2 adds api_major:2 and exact api_version:2.2.0 to the descriptor."
   },
   {
     "id": "CM-06",
@@ -421,7 +421,9 @@
       "commitEffectPreview",
       "prepareReportExport",
       "initializeApplicabilityDraft",
-      "initializeMappingDraft"
+      "initializeMappingDraft",
+      "prepareProjectBundleExport",
+      "prepareProjectBundleImport"
     ],
     "authorization": "browser-write",
     "notes": "Every mutation returns the typed read-only-session error with no file change (AC-2), covering the permission-denied UX state; all read operations in CM-02, CM-06, CM-07, CM-11 through CM-13, CM-16 through CM-18, CM-20, CM-22 through CM-25, and CM-30 keep working."
@@ -524,7 +526,10 @@
       "getFrameworkImpactComparison",
       "getFrameworkImpactChanges",
       "getFrameworkImpactFindings",
-      "getFrameworkImpactPriorDispositions"
+      "getFrameworkImpactPriorDispositions",
+      "prepareProjectBundleExport",
+      "downloadProjectBundleExport",
+      "prepareProjectBundleImport"
     ],
     "authorization": "browser-write",
     "notes": "US-13 completeness entry: a write-capable session (browser or machine) can perform the entire golden path with only these operations (AC-18). This entry intentionally lists every operationId as the exhaustive coverage denominator for CI."
@@ -621,5 +626,39 @@
     ],
     "authorization": "browser-read",
     "notes": "Lifecycle & Impact view in API2.1 sessions. Shared current analysis, complete counts, five exact AND filters, bound paging and limited prior admission. No disposition write, migration apply, source excerpt or automatic approval."
+  },
+  {
+    "id": "CM-42",
+    "action": "Prepare and download an acknowledged metadata JSON export",
+    "golden_path_step": "cross-cutting",
+    "user_stories": [
+      "US-7",
+      "US-9",
+      "US-13"
+    ],
+    "operations": [
+      "prepareProjectBundleExport",
+      "downloadProjectBundleExport"
+    ],
+    "authorization": "browser-write",
+    "notes": "Preparation requires writable scope and sensitivity acknowledgment; exact committed same-session/major JSON download permits authenticated read-only scope. Existing export operation and receipt confirmation are used. Authored labels, keys, paths, hashes and sizes remain sensitive; no source content, archive, remote publish or HTML-family fallback."
+  },
+  {
+    "id": "CM-43",
+    "action": "Inspect and confirm complete acknowledged index replacement",
+    "golden_path_step": "cross-cutting",
+    "user_stories": [
+      "US-7",
+      "US-9",
+      "US-10",
+      "US-13"
+    ],
+    "operations": [
+      "prepareProjectBundleImport",
+      "getEffectPreview",
+      "commitEffectPreview"
+    ],
+    "authorization": "browser-write",
+    "notes": "Direct10-second preparation returns validation, existing EffectPreview and complete previous/proposed membership, normalized hashes, ordered removals and consumed count. Explicit1-to-2 only; no downgrade/merge/source restore. Whole100-file/50MiB union and existing retained limits fail closed; idempotent pending/ready reservations transfer only after final fences. Confirmation writes one exact index, without domain approval or multi-file transaction."
   }
 ]

@@ -164,6 +164,125 @@ fn query_error(error: WorkError) -> Error {
     }
 }
 
+/// Preserve direct preparation stops with scope-specific safe retry guidance.
+fn bundle_preparation_error(error: WorkError) -> Error {
+    match error {
+        WorkError::Failed(error) => error,
+        WorkError::Interrupted(Interruption::DeadlineExceeded) => Error::new(
+            "bundle-preparation-budget-exceeded",
+            "The bundle preparation exceeded its time budget. Reduce the inputs and retry.",
+            true,
+        ),
+        WorkError::Interrupted(Interruption::Shutdown) => {
+            Error::new("shutdown-in-progress", "The workspace is stopping.", false)
+        }
+        WorkError::Interrupted(Interruption::CancelRequested) => Error::new(
+            "bundle-preparation-interrupted",
+            "The bundle preparation stopped before retaining a receipt. Retry the request.",
+            true,
+        ),
+    }
+}
+
+/// Release one off-lock preparation generation on every ordinary or unwinding exit.
+struct ReservationGuard<'a> {
+    /// Shared session Store; no producer I/O occurs while its lock is held.
+    state: &'a State,
+    /// Exact admitted idempotency key.
+    key: &'a str,
+    /// This worker's unique owner generation, never a newer reservation.
+    nonce: String,
+}
+
+impl Drop for ReservationGuard<'_> {
+    /// A ready reply is immutable; release only a still-pending matching owner.
+    fn drop(&mut self) {
+        if let Ok(mut store) = self.state.effects.lock() {
+            store.release_reservation(self.key, &self.nonce);
+        }
+    }
+}
+
+/// Prepare a complete index replacement off-lock, then retain one owned original receipt.
+fn bundle_import_response(
+    state: &Arc<State>,
+    key: &str,
+    wire_path: &str,
+    raw_query: &str,
+    request: &Value,
+    deadline: Option<Instant>,
+) -> Result<Response<Full<Bytes>>> {
+    let mut control = ReadControl { state, deadline, interruption: None };
+    control
+        .checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)
+        .map_err(bundle_preparation_error)?;
+    let (nonce, _permit) = {
+        let mut store = state.effects.lock().map_err(|_| internal())?;
+        control
+            .checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)
+            .map_err(bundle_preparation_error)?;
+        if let Some(reply) = store.replay(key, "POST", wire_path, raw_query, request)? {
+            let response = json_response_for(state.api_major, reply.value, reply.schema)?;
+            control
+                .checkpoint(Stage::RetainPrepared, ProgressUpdate::Unchanged)
+                .map_err(bundle_preparation_error)?;
+            return Ok(response);
+        }
+        let permit = Arc::clone(&state.jobs).try_acquire_owned().map_err(|_| {
+            Error::new("invalid-request", "Another operation is running. Retry shortly.", true)
+        })?;
+        let nonce = store.reserve(key, "POST", wire_path, raw_query, request)?;
+        (nonce, permit)
+    };
+    let reservation = ReservationGuard { state, key, nonce };
+    let prepared: WorkResult<_> = (|| {
+        control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+        let incoming = super::bundles::decode_bundle_for_api(&request["bundle"], state.api_major)?;
+        control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
+        let snapshot = Snapshot::capture_bundle_effect_with_control(
+            &state.root,
+            state.api_major,
+            Some(&incoming.index),
+            &mut control,
+        )?;
+        let mut plan =
+            super::bundle_effects::prepare_import(&state.root, &snapshot, request, &mut control)?;
+        let replacement = plan.replacement.take().ok_or_else(internal)?;
+        control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
+        let mut local = super::effects::Store::default();
+        let preview = local.preview_bundle(plan)?;
+        let reply = super::effects::Reply {
+            value: json!({"validation":super::services::validation(true,None),
+                "preview":preview,"replacement":replacement}),
+            schema: "ProjectBundleImportPreview",
+            status: 200,
+        };
+        let response = json_response_for(state.api_major, reply.value.clone(), reply.schema)?;
+        local.charge_reply(&reply)?;
+        control.checkpoint(Stage::RetainPrepared, ProgressUpdate::Clear)?;
+        Ok((local, reply, response))
+    })();
+    let mut store = state.effects.lock().map_err(|_| internal())?;
+    // This fence includes Store-lock contention; no fallible response work follows retention.
+    let prepared = match control.checkpoint(Stage::RetainPrepared, ProgressUpdate::Clear) {
+        Ok(()) => prepared,
+        Err(error) => Err(error),
+    };
+    match prepared {
+        Ok((local, reply, response)) => {
+            if let Err(error) = store.retain_reserved(key, &reservation.nonce, local, &reply) {
+                store.release_reservation(key, &reservation.nonce);
+                return Err(error);
+            }
+            Ok(response)
+        }
+        Err(error) => {
+            store.release_reservation(key, &reservation.nonce);
+            Err(bundle_preparation_error(error))
+        }
+    }
+}
+
 /// The nine versioned read services; identities remain exact registered tokens.
 #[derive(Clone, Copy)]
 enum ReadQuery<'a> {
@@ -608,6 +727,11 @@ async fn respond(
             return Err(Error::new("payload-too-large", "The request body is too large.", false));
         }
         let idempotency = single_header(&request, "idempotency-key")?.map(str::to_owned);
+        // Direct bundle preparation counts bounded body reading and blocking queue wait.
+        let bundle_deadline = (method == "POST"
+            && state.api_major == ApiMajor::V2
+            && state.api_major.canonical_path(&path)? == "/api/v1/project/bundle-imports")
+            .then(|| Instant::now().checked_add(READ_QUERY_BUDGET));
         let body = tokio::time::timeout(
             Duration::from_secs(5),
             Limited::new(request.into_body(), body_limit).collect(),
@@ -623,7 +747,8 @@ async fn respond(
         })?
         .to_bytes();
         let body = zeroize::Zeroizing::new(body.to_vec());
-        let read_deadline = Instant::now().checked_add(READ_QUERY_BUDGET);
+        let read_deadline =
+            bundle_deadline.unwrap_or_else(|| Instant::now().checked_add(READ_QUERY_BUDGET));
         tokio::task::spawn_blocking(move || {
             let _permit = permit;
             dispatch(&state, &method, &path, &query, idempotency.as_deref(), &body, read_deadline)
@@ -713,6 +838,19 @@ fn dispatch(
     {
         return read_query_response(state, route, &query, read_deadline);
     }
+    if state.api_major == ApiMajor::V2
+        && method == "POST"
+        && path == "/api/v1/project/bundle-imports"
+    {
+        return bundle_import_response(
+            state,
+            idempotency.ok_or_else(Error::invalid)?,
+            wire_path,
+            raw_query,
+            payload.as_ref().ok_or_else(Error::invalid)?,
+            read_deadline,
+        );
+    }
     if method == "GET" {
         let store = state.effects.lock().map_err(|_| internal())?;
         if let Some(id) = path.strip_prefix("/api/v1/operations/") {
@@ -723,6 +861,21 @@ fn dispatch(
         }
         if let Some(id) = path.strip_prefix("/api/v1/conversions/") {
             return json_response(store.conversion(id)?, "ConversionResult");
+        }
+        if state.api_major == ApiMajor::V2
+            && let Some(id) = path
+                .strip_prefix("/api/v1/project/bundle-exports/")
+                .and_then(|tail| tail.strip_suffix("/download"))
+        {
+            let bytes = store.download_metadata(&state.root, id)?;
+            let mut response = response(200, "application/json", bytes);
+            response.headers_mut().insert(
+                "content-disposition",
+                hyper::header::HeaderValue::from_static(
+                    "attachment; filename=\"forge-workspace-index-and-hashes.json\"",
+                ),
+            );
+            return Ok(response);
         }
         if let Some(id) =
             path.strip_prefix("/api/v1/exports/").and_then(|tail| tail.strip_suffix("/download"))
@@ -764,6 +917,9 @@ fn dispatch(
                 "/api/v1/applicability/analyses" => Some("applicability-analysis"),
                 "/api/v1/mapping/builds" => Some("mapping-build"),
                 "/api/v1/exports" => Some("export"),
+                "/api/v1/project/bundle-exports" if state.api_major == ApiMajor::V2 => {
+                    Some("export")
+                }
                 _ => None,
             };
             let reply = if let Some(kind) = kind {
@@ -797,11 +953,22 @@ fn dispatch(
                         OperationControl { state: &shared, id: &id, deadline, interruption: None };
                     let result = (|| {
                         let mut local = super::effects::Store::default();
-                        let mut snapshot = Snapshot::capture_with_control_for_api(
-                            &shared.root,
-                            shared.api_major,
-                            &mut control,
-                        )?;
+                        let mut snapshot = if shared.api_major == ApiMajor::V2
+                            && path == "/api/v1/project/bundle-exports"
+                        {
+                            Snapshot::capture_bundle_effect_with_control(
+                                &shared.root,
+                                shared.api_major,
+                                None,
+                                &mut control,
+                            )?
+                        } else {
+                            Snapshot::capture_with_control_for_api(
+                                &shared.root,
+                                shared.api_major,
+                                &mut control,
+                            )?
+                        };
                         let reply = match shared.api_major {
                             ApiMajor::V1 => super::actions::prepare_with_control(
                                 &mut local,
@@ -1057,14 +1224,18 @@ fn error_response(error: &Error) -> Response<Full<Bytes>> {
         | "idempotency-key-conflict"
         | "receipt-reused"
         | "receipt-mismatch"
-        | "operation-not-cancellable" => 409,
+        | "operation-not-cancellable"
+        | "bundle-preparation-in-progress" => 409,
         "receipt-expired" => 410,
         "payload-too-large" => 413,
         "unsupported-media-type" => 415,
         "validation-failed" => 422,
         "unlock-throttled" => 429,
         "internal-error" => 500,
-        "query-budget-exceeded" | "query-interrupted" => 503,
+        "query-budget-exceeded"
+        | "query-interrupted"
+        | "bundle-preparation-budget-exceeded"
+        | "bundle-preparation-interrupted" => 503,
         _ => 400,
     };
     let bytes = serde_json::to_vec(&error).unwrap_or_else(|_| b"{\"code\":\"internal-error\",\"message\":\"Response unavailable.\",\"retryable\":false}".to_vec());
@@ -1151,7 +1322,7 @@ mod tests {
                 usize::from(major == ApiMajor::V2)
             );
             if major == ApiMajor::V2 {
-                assert!(html.contains("name=\"forge-api-contract-version\" content=\"2.1.0\""));
+                assert!(html.contains("name=\"forge-api-contract-version\" content=\"2.2.0\""));
             }
             assert!(html.contains("id=\"workspace\" hidden"));
             for (asset_path, expected, media) in [
@@ -1285,6 +1456,135 @@ mod tests {
         let safe = query_error(Error::containment().into());
         assert_eq!(safe.code, "resource-containment");
         assert_eq!(error_response(&safe).status(), 403);
+    }
+
+    /// Direct bundle failures use only the new closed API2 codes and retain shutdown semantics.
+    #[test]
+    fn bundle_preparation_interruptions_preserve_scoped_safe_envelopes() {
+        for (reason, code, status) in [
+            (Interruption::DeadlineExceeded, "bundle-preparation-budget-exceeded", 503),
+            (Interruption::CancelRequested, "bundle-preparation-interrupted", 503),
+            (Interruption::Shutdown, "shutdown-in-progress", 400),
+        ] {
+            let error = bundle_preparation_error(WorkError::Interrupted(reason));
+            assert_eq!(error.code, code);
+            assert_eq!(error_response(&error).status(), status);
+            contract::validate_for(ApiMajor::V2, "Error", &serde_json::to_value(&error).unwrap())
+                .unwrap();
+            if reason != Interruption::Shutdown {
+                assert!(
+                    contract::validate_for(
+                        ApiMajor::V1,
+                        "Error",
+                        &serde_json::to_value(&error).unwrap()
+                    )
+                    .is_err()
+                );
+            }
+        }
+        assert_eq!(
+            bundle_preparation_error(Error::containment().into()).code,
+            "resource-containment"
+        );
+    }
+
+    /// A strict empty metadata bundle for budget/capture failure boundaries, without fake pin hashes.
+    fn empty_bundle_import_request() -> Value {
+        let index = super::super::index::Index::empty();
+        json!({"bundle":{"schema_version":"forge.workspace-index-bundle/1",
+            "content_profile":"index-and-hashes","index":index,
+            "index_sha256":crate::hashing::sha256_hex(&index.bytes().unwrap()),"pins":[]},
+            "target_index_schema_version":1,"acknowledge_index_replacement":true})
+    }
+
+    /// An already exhausted body/queue budget stops before malformed index capture or reservation.
+    #[test]
+    fn bundle_import_exhausted_admission_retains_no_receipt_or_key() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("forge.workspace.json"), b"invalid index sentinel").unwrap();
+        let mut state = browser_state(Root::open(dir.path()).unwrap(), "correct long passphrase");
+        state.api_major = ApiMajor::V2;
+        let state = Arc::new(state);
+        let request = empty_bundle_import_request();
+        let error = bundle_import_response(
+            &state,
+            "key",
+            "/api/v2/project/bundle-imports",
+            "",
+            &request,
+            Some(Instant::now()),
+        )
+        .unwrap_err();
+        assert_eq!(error.code, "bundle-preparation-budget-exceeded");
+        assert_eq!(error_response(&error).status(), 503);
+        assert!(
+            state
+                .effects
+                .lock()
+                .unwrap()
+                .replay("key", "POST", "/api/v2/project/bundle-imports", "", &request)
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(
+            std::fs::read(dir.path().join("forge.workspace.json")).unwrap(),
+            b"invalid index sentinel"
+        );
+    }
+
+    /// Failed capture releases its own key, permitting a later fresh attempt without reviving state.
+    #[test]
+    fn bundle_import_capture_failure_releases_owned_reservation() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("forge.workspace.json"), b"invalid index sentinel").unwrap();
+        let mut state = browser_state(Root::open(dir.path()).unwrap(), "correct long passphrase");
+        state.api_major = ApiMajor::V2;
+        let state = Arc::new(state);
+        let request = empty_bundle_import_request();
+        let error = bundle_import_response(
+            &state,
+            "key",
+            "/api/v2/project/bundle-imports",
+            "",
+            &request,
+            Instant::now().checked_add(Duration::from_secs(10)),
+        )
+        .unwrap_err();
+        assert_eq!(error.code, "invalid-request");
+        assert!(
+            state
+                .effects
+                .lock()
+                .unwrap()
+                .replay("key", "POST", "/api/v2/project/bundle-imports", "", &request)
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(state.jobs.available_permits(), 1);
+    }
+
+    /// Worker unwinding releases its reservation instead of leaving an unretryable pending key.
+    #[test]
+    fn bundle_reservation_guard_releases_owned_key_on_worker_unwind() {
+        let dir = tempfile::tempdir().unwrap();
+        let state = browser_state(Root::open(dir.path()).unwrap(), "correct long passphrase");
+        let request = json!({});
+        let nonce =
+            state.effects.lock().unwrap().reserve("key", "POST", "/route", "", &request).unwrap();
+        let stopped = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _reservation = ReservationGuard { state: &state, key: "key", nonce };
+            panic!("synthetic producer unwind");
+        }));
+        assert!(stopped.is_err());
+        assert!(
+            state
+                .effects
+                .lock()
+                .unwrap()
+                .replay("key", "POST", "/route", "", &request)
+                .unwrap()
+                .is_none()
+        );
     }
 
     /// The consumed monotonic fence includes exact equality and fails closed.

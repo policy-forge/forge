@@ -6,6 +6,7 @@ summary: python3 scripts/workspace_client.py --forge ./target/debug/forge --proj
 """
 import argparse
 import http.client
+import hashlib
 import json
 import queue
 import re
@@ -87,10 +88,20 @@ class Workspace:
             raise ValueError("Use a documented relative API operation path")
         return self._api_prefix + path
 
-    def request(self, method, path, body=None, *, idempotency_key=None, raw=False):
-        """Send only the negotiated prefix, preserving bounds, pacing and typed errors."""
+    def request(self, method, path, body=None, *, idempotency_key=None, raw=False, raw_json_body=None, expected_media_type=None):
+        """Preserve negotiated transport; raw S6 import bytes and JSON downloads use narrow gates."""
         if not path.startswith(self._api_prefix + "/") or "#" in path or any(ord(char) < 32 for char in path):
             raise ValueError("Use a documented route for the selected API major")
+        if raw_json_body is not None:
+            if (self._api_major != 2 or self._contract_version != "2.2.0" or method != "POST"
+                or path != self.api_path("/project/bundle-imports") or body is not None
+                or type(raw_json_body) is not bytes or len(raw_json_body) > 1024 * 1024 or not idempotency_key):
+                raise ValueError("Unsupported raw metadata import request")
+        if expected_media_type is not None and (expected_media_type != "application/json" or not raw
+            or method != "GET" or self._api_major != 2 or self._contract_version != "2.2.0"
+            or not re.fullmatch(re.escape(self._api_prefix) + r"/project/bundle-exports/op_[0-9a-z]{12,80}/download", path)
+            or body is not None or idempotency_key):
+            raise ValueError("Unsupported metadata download request")
         # This synchronous client spaces calls below the documented session rate.
         delay = self._next_request_at - time.monotonic()
         if delay > 0:
@@ -100,7 +111,7 @@ class Workspace:
         encoded = None
         if method != "GET":
             headers["Content-Type"] = "application/json"
-            encoded = json.dumps({} if body is None else body, ensure_ascii=False, allow_nan=False).encode()
+            encoded = raw_json_body if raw_json_body is not None else json.dumps({} if body is None else body, ensure_ascii=False, allow_nan=False).encode()
             if len(encoded) > 14 * 1024 * 1024:
                 raise ValueError("Request exceeds the supported bound")
         if idempotency_key:
@@ -109,11 +120,14 @@ class Workspace:
         try:
             connection.request(method, path, body=encoded, headers=headers)
             response = connection.getresponse()
-            payload = response.read(MAX_RESPONSE + 1)
-            if len(payload) > MAX_RESPONSE:
+            response_bound = 1024 * 1024 if expected_media_type else MAX_RESPONSE
+            payload = response.read(response_bound + 1)
+            if len(payload) > response_bound:
                 raise RuntimeError("Response exceeds the supported bound")
             if not 200 <= response.status < 300:
                 raise WorkspaceError(json.loads(payload))
+            if expected_media_type and response.getheader("Content-Type", "").split(";", 1)[0].strip().lower() != expected_media_type:
+                raise RuntimeError("The committed metadata has an unsupported media type")
             return payload if raw else json.loads(payload)
         finally:
             connection.close()
@@ -153,8 +167,8 @@ class Workspace:
         introduced. Each cursor belongs to its unchanged capture/filter/date.
         The server retains whole-domain validation and count authority.
         """
-        if self._api_major != 2 or self._contract_version != "2.1.0":
-            raise ValueError("Lifecycle and impact reads require an explicitly negotiated API2 2.1.0 session")
+        if self._api_major != 2 or self._contract_version not in ("2.1.0", "2.2.0"):
+            raise ValueError("Lifecycle and impact reads require an explicitly negotiated API2 2.1.0 or 2.2.0 session")
         if required_date and query.get("as_of") is None:
             raise ValueError("An explicit as_of date is required")
         values = {}
@@ -236,6 +250,46 @@ class Workspace:
         """Read prior-only disposition metadata; limited admission is not current finding coverage."""
         return self._s3_read("/framework-impact/comparisons/" + self._s3_resource(comparison_id) + "/prior-dispositions",
                              page_size=page_size, cursor=cursor)
+
+    def _s6_supported(self):
+        """Gate metadata effects to2.2 while preserving numeric-major bootstrap and older reads."""
+        if self._api_major != 2 or self._contract_version != "2.2.0":
+            raise ValueError("Metadata bundle effects require API2 contract2.2.0")
+
+    def prepare_bundle_export(self, target_path, *, acknowledge_sensitive_metadata, idempotency_key):
+        """Prepare an explicit metadata output; returned export work is not a confirmed write."""
+        self._s6_supported()
+        if acknowledge_sensitive_metadata is not True or not idempotency_key:
+            raise ValueError("Sensitive metadata acknowledgment and an idempotency key are required")
+        return self.request("POST", self.api_path("/project/bundle-exports"), {
+            "target_path": target_path, "acknowledge_sensitive_metadata": True,
+        }, idempotency_key=idempotency_key)
+
+    def prepare_bundle_import(self, bundle_bytes, *, target_index_schema_version, acknowledge_index_replacement, idempotency_key):
+        """Wrap original bundle bytes for a confirmed index-only replacement, never restoring sources."""
+        self._s6_supported()
+        if (type(target_index_schema_version) is not int or target_index_schema_version not in (1, 2)
+            or acknowledge_index_replacement is not True or not idempotency_key or type(bundle_bytes) is not bytes):
+            raise ValueError("Choose a numeric index schema and acknowledge exact index replacement")
+        prefix = b'{"bundle":'
+        suffix = (',"target_index_schema_version":' + str(target_index_schema_version)
+                  + ',"acknowledge_index_replacement":true}').encode("ascii")
+        if len(bundle_bytes) > 1024 * 1024 - len(prefix) - len(suffix):
+            raise ValueError("Chosen bundle and its complete import wrapper must fit 1MiB")
+        return self.request("POST", self.api_path("/project/bundle-imports"),
+                            idempotency_key=idempotency_key, raw_json_body=prefix + bundle_bytes + suffix)
+
+    def download_bundle_export(self, operation_id, *, expected_sha256):
+        """Return exact committed JSON bytes after typed media, size and expected-hash checks."""
+        self._s6_supported()
+        if (not isinstance(operation_id, str) or not re.fullmatch(r"op_[0-9a-z]{12,80}", operation_id)
+            or not isinstance(expected_sha256, str) or not re.fullmatch(r"[a-f0-9]{64}", expected_sha256)):
+            raise ValueError("A prepared export identity and exact SHA256 are required")
+        raw = self.request("GET", self.api_path("/project/bundle-exports/" + operation_id + "/download"),
+                           raw=True, expected_media_type="application/json")
+        if hashlib.sha256(raw).hexdigest() != expected_sha256:
+            raise RuntimeError("The committed metadata bytes do not match the prepared hash")
+        return raw
 
     def wait(self, operation, timeout=35):
         """Poll retained IDs in the same negotiated session without restarting an effect."""

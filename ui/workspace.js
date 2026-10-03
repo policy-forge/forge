@@ -25,6 +25,8 @@ const requestRows = new Map();
 const retainedPagers = new WeakMap();
 // Installed metadata callbacks retire local disclosure ownership on every view epoch.
 const bundlePanels = new WeakMap();
+// Only committed metadata downloads retain locally revocable Blob handles.
+const metadataDownloadURLs = new Set();
 // Captured S3 pane reads retire independently when a parent selection/date changes.
 const inspectionReaders = new WeakMap();
 const titles = ["Overview", "Review Queue", "Framework Scope", "Mappings", "Policies & Artifacts", "Trace & Reports", ...(inspectionSupported() ? ["Lifecycle & Impact"] : [])];
@@ -48,12 +50,12 @@ function showError(error) {
 
 /** Send only declared API1 or exact supported API2 metadata; preserve pacing and raw-file generation fences. */
 async function api(path, method = "GET", body, key, rawBody, rawIsCurrent) {
-  if (![1, 2].includes(apiMajor) || apiMajor === 2 && !["2.0.0", "2.1.0"].includes(apiContractVersion)) throw new Error("This page requires matching supported workspace API assets. Relaunch with the selected API major.");
-  if (rawBody !== undefined && (path !== "/project/bundle-verifications" || method !== "POST" || !(rawBody instanceof Blob) || rawBody.size > 1024 * 1024)) throw new Error("Unsupported raw metadata comparison request.");
+  if (![1, 2].includes(apiMajor) || apiMajor === 2 && !["2.0.0", "2.1.0", "2.2.0"].includes(apiContractVersion)) throw new Error("This page requires matching supported workspace API assets. Relaunch with the selected API major.");
+  if (rawBody !== undefined && (method !== "POST" || !(rawBody instanceof Blob) || rawBody.size > 1024 * 1024 || !(path === "/project/bundle-verifications" && !key || path === "/project/bundle-imports" && bundleEffectsSupported() && !!key))) throw new Error("Unsupported raw metadata request.");
   const now=performance.now();const reserved=Math.max(now,nextRequestAt);nextRequestAt=reserved+60;
   if(reserved>now)await new Promise(resolve=>setTimeout(resolve,reserved-now));
   if (stopped) throw new Error("This workspace has stopped. Relaunch it from the terminal.");
-  if (rawBody !== undefined && rawIsCurrent && !rawIsCurrent()) throw new Error("The metadata comparison was superseded before sending.");
+  if (rawIsCurrent && !rawIsCurrent()) throw new Error("The metadata comparison was superseded before sending.");
   const headers = { "Accept": "application/json" };
   if (capability) headers["Authorization"] = `Bearer ${capability}`;
   if (method !== "GET") headers["Content-Type"] = "application/json";
@@ -252,6 +254,7 @@ async function renderView(isCurrent = () => true) {
       for (const resource of resources) fragment.append(button(`Trace ${resource.key}`, () => showProvenance(resource.resource_id)));
       if (!readOnly) fragment.append(exportForm());
       fragment.append(metadataBundlePanel());
+      if (bundleEffectsSupported()) fragment.append(bundleEffectsPanel());
     }
     if (sequence !== pending || stopped || !isCurrent()) return false;
     element("view").replaceChildren(fragment);
@@ -273,7 +276,7 @@ async function renderView(isCurrent = () => true) {
 
 /** Require the exact negotiated additive contract before exposing captured S3 reads. */
 function inspectionSupported() {
-  return apiMajor === 2 && apiContractVersion === "2.1.0";
+  return apiMajor === 2 && ["2.1.0", "2.2.0"].includes(apiContractVersion);
 }
 
 /** Validate only the exact typed identifiers/capture hashes consumed by S3 read controls. */
@@ -594,7 +597,7 @@ function inspectionSelection(caption, build, isCurrent) {
 
 /** Read lifecycle inventory/history/status/owner queues and impact comparisons without effects or implicit dates. */
 async function lifecycleImpactView() {
-  if (!inspectionSupported()) return node("p", "Lifecycle & Impact requires negotiated API2 2.1.0. Relaunch with matching assets.", "empty");
+  if (!inspectionSupported()) return node("p", "Lifecycle & Impact requires negotiated API2 2.1.0 or 2.2.0. Relaunch with matching assets.", "empty");
   let owner = pending; let lifecycleGeneration = 0; let selectedRecord = null; let appliedDate = null; let installedLifecycleGroup; let lifecycleStaging = false;
   const root = node("section"); root.setAttribute("data-inspection-panel", ""); root.setAttribute("data-paged-table", "");
   root.append(node("p", "Read-only captured lifecycle and framework-impact metadata. Keys, identities and hashes can be sensitive. Declared actors, owners, states and dispositions are unauthenticated; these views grant no transition, approval, export or write authority.", "muted"));
@@ -843,7 +846,7 @@ function pendingRequestRow(key, path, retry) {
   const article = node("article"); article.hidden = true; article.setAttribute("data-pending-request-id", key);
   const status = node("p"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.setAttribute("aria-atomic", "true"); status.setAttribute("data-request-status", ""); status.tabIndex = -1; status.setAttribute("aria-label", `Preparation request ${path} status`);
   const error = node("div"); error.hidden = true; error.setAttribute("role", "alert"); error.setAttribute("data-request-error", "");
-  const row = { key, path, article, status, error, busy: false, prepared: null };
+  const row = { key, path, article, status, error, busy: false, prepared: null, reviewContext: null };
   /** Prevent duplicate activation while keeping the initiating native control focused. */
   const requestAction = (label, action) => {
     const control = node("button", label); control.type = "button"; control.setAttribute("aria-disabled", "false");
@@ -858,16 +861,18 @@ function pendingRequestRow(key, path, retry) {
   row.review = requestAction("Review prepared write", async () => {
     if (!row.prepared || !await allowViewChange()) return;
     const origin = pending;
-    const opened = await preview(row.prepared, undefined, () => !stopped && requestRows.get(key) === row && origin === pending && !document.querySelector("dialog[open]"));
+    const opened = await preview(row.prepared, undefined, () => !stopped && requestRows.get(key) === row && origin === pending && !document.querySelector("dialog[open]"), row.reviewContext);
     if (opened && !stopped && requestRows.get(key) === row) { row.error.hidden = true; row.status.textContent = "Preparation is ready for review; no write has been confirmed."; }
   }); row.review.hidden = true;
   article.append(node("h2", `Preparation request: ${path}`), status, error, row.retry, row.review); operationRegion().append(article); requestRows.set(key, row); return row;
 }
 
-/** Announce local recovery without changing a newer destination's global error or focus. */
+/** Announce owned recovery and typed bundle rejections without changing a newer view or focus. */
 function pendingRequestFailure(row, failure) {
   row.article.hidden = false; row.error.hidden = false; row.error.textContent = failure instanceof Error ? failure.message : "The preparation could not be read.";
   row.status.textContent = row.prepared ? "Preparation is ready. The prepared write could not be loaded; review it again before confirming." :
+    ["/project/bundle-imports","/project/bundle-exports"].includes(row.path) && failure.details?.code === "bundle-preparation-in-progress" ? "Preparation remains in progress. Retry the same immutable request before preparing another write." :
+    ["/project/bundle-imports","/project/bundle-exports"].includes(row.path) && typeof failure.details?.code === "string" && failure.details?.retryable === false ? "The server rejected this request. Review its inputs and prepare a new request; no write has been confirmed." :
     failure.details?.retryable === false ? "The request response is unsupported. Relaunch the workspace before preparing another write." :
     "The request outcome is unknown. No operation ID was received. Retry the same request before preparing another write.";
   row.retry.hidden = !!row.prepared || failure.details?.retryable === false; row.review.hidden = !row.prepared;
@@ -913,7 +918,7 @@ function operationRow(id, path, origin) {
     try {
       if (!await allowViewChange()) return;
       const reviewOrigin = pending; const result = row.last.result;
-      const opened = await preview(result.preview || result.report_preview, path === "/exports" ? id : undefined, () => operationCurrent(row) && reviewOrigin === pending && !document.querySelector("dialog[open]"));
+      const opened = await preview(result.preview || result.report_preview, exportDownloadContext(path, id), () => operationCurrent(row) && reviewOrigin === pending && !document.querySelector("dialog[open]"));
       if (opened && operationCurrent(row)) { row.error.hidden = true; row.status.textContent = "Operation succeeded. Preparation is ready for review; no write has been confirmed."; }
     } catch (failure) { if (operationCurrent(row)) operationPreviewFailure(row, failure); }
     finally { row.reviewing = false; if (operationCurrent(row)) refreshOperationActions(row); }
@@ -958,7 +963,7 @@ function operationPreviewFailure(row, failure) {
 
 /** Accept this ID and state; report captured-registration facts without narrowing generic counter validation. */
 function acceptOperation(row, value) {
-  const expectedKind = { "/conversions": "conversion", "/applicability/analyses": "applicability-analysis", "/mapping/builds": "mapping-build", "/exports": "export" }[row.path];
+  const expectedKind = { "/conversions": "conversion", "/applicability/analyses": "applicability-analysis", "/mapping/builds": "mapping-build", "/exports": "export", "/project/bundle-exports": "export" }[row.path];
   if (value?.operation_id !== row.id || !expectedKind || value.kind !== expectedKind ||
       !["pending", "running", "succeeded", "failed", "cancelled"].includes(value.state) || typeof value.cancel_requested !== "boolean" ||
       !Number.isFinite(Date.parse(value.created_at)) || !Number.isFinite(Date.parse(value.updated_at))) throw new Error("The operation returned an unsupported state or identity. Check its status before continuing.");
@@ -996,8 +1001,8 @@ async function pollOperation(row, checkImmediately = false) {
       acceptOperation(row, value);
     }
     if (operationCurrent(row) && !row.terminal) operationUnknown(row, new Error("Polling reached its supported read bound. Check operation status to continue."));
-    if (operationCurrent(row) && row.last?.state === "succeeded" && row.origin === pending && !document.querySelector("dialog[open]")) {
-      await preview(row.last.result.preview || row.last.result.report_preview, row.path === "/exports" ? row.id : undefined, () => operationCurrent(row) && row.origin === pending && !document.querySelector("dialog[open]"));
+    if (operationCurrent(row) && row.last?.state === "succeeded" && row.origin === pending && (!row.autoReviewCurrent || row.autoReviewCurrent()) && !document.querySelector("dialog[open]")) {
+      await preview(row.last.result.preview || row.last.result.report_preview, exportDownloadContext(row.path, row.id), () => operationCurrent(row) && row.origin === pending && (!row.autoReviewCurrent || row.autoReviewCurrent()) && !document.querySelector("dialog[open]"));
     }
   } catch (failure) {
     if (operationCurrent(row)) {
@@ -1007,24 +1012,34 @@ async function pollOperation(row, checkImmediately = false) {
   finally { row.polling = false; if (operationCurrent(row)) refreshOperationActions(row); }
 }
 
-/** Preparation retries reuse one key until an ID is known; known work is recovered by GET. */
-async function effect(path, method, request) {
-  const key = crypto.randomUUID(); const origin = pending; let row; let recovery; let sending = false;
+/** Preparation retries retain exact admitted body/key; raw import uses its installed-owner fence. */
+async function effect(path, method, request, rawBody, requestIsCurrent, requestedIndexSchema) {
+  const key = crypto.randomUUID(); const origin = pending; let row; let recovery; let sending = false; let dispatched = false;
   /** Replay only an unacknowledged request; once acknowledged, query its existing operation. */
   const send = async () => {
     if (stopped) return;
     if (row) { await pollOperation(row, true); return; }
-    const value = await api(path, method, request, key);
+    let value;
+    try {
+      value = await api(path, method, request, key, rawBody, !requestIsCurrent && rawBody === undefined ? undefined : () => {
+        const current = dispatched || !requestIsCurrent || requestIsCurrent();
+        if (current) dispatched = true;
+        return current;
+      });
+    } catch (failure) {
+      if (!dispatched && requestIsCurrent && !requestIsCurrent()) { removePendingRequest(recovery); return; }
+      throw failure;
+    }
     if (stopped) return;
     if (value?.operation_id !== undefined || value?.state !== undefined) {
       if (typeof value.operation_id !== "string" || !/^op_[0-9a-z]{12,80}$/.test(value.operation_id)) {
         const unsupported = new Error("The operation returned an unsupported identity. Relaunch the workspace before continuing."); unsupported.details = { retryable: false }; throw unsupported;
       }
-      row = operationRow(value.operation_id, path, origin); removePendingRequest(recovery, row.status);
+      row = operationRow(value.operation_id, path, origin); row.autoReviewCurrent = requestIsCurrent; removePendingRequest(recovery, row.status);
       try {
         acceptOperation(row, value);
         if (!row.terminal) await pollOperation(row);
-        else if (row.last?.state === "succeeded" && origin === pending && !document.querySelector("dialog[open]")) await preview(row.last.result.preview || row.last.result.report_preview, path === "/exports" ? row.id : undefined, () => operationCurrent(row) && origin === pending && !document.querySelector("dialog[open]"));
+        else if (row.last?.state === "succeeded" && origin === pending && (!requestIsCurrent || requestIsCurrent()) && !document.querySelector("dialog[open]")) await preview(row.last.result.preview || row.last.result.report_preview, exportDownloadContext(path, row.id), () => operationCurrent(row) && origin === pending && (!requestIsCurrent || requestIsCurrent()) && !document.querySelector("dialog[open]"));
       } catch (failure) {
         if (operationCurrent(row)) {
           if (row.last?.state === "succeeded" && row.terminal) operationPreviewFailure(row, failure); else operationUnknown(row, failure);
@@ -1032,13 +1047,16 @@ async function effect(path, method, request) {
       }
       return;
     }
-    recovery.prepared = value.preview || value.report_preview;
+    if (path === "/project/bundle-imports") {
+      const checked = await checkedBundleImportPreview(value, requestedIndexSchema);
+      recovery.prepared = checked.preview; recovery.reviewContext = checked;
+    } else recovery.prepared = value.preview || value.report_preview;
     if (!recovery.prepared?.preview_id) throw new Error("The operation did not return a prepared write.");
     const transferFocus = document.activeElement === recovery.retry;
     recovery.article.hidden = false; recovery.retry.hidden = true; recovery.review.hidden = false; recovery.error.hidden = true;
     recovery.status.textContent = "Preparation is ready for review; no write has been confirmed.";
     if (transferFocus && recovery.status.isConnected) recovery.status.focus();
-    const opened = await preview(recovery.prepared, undefined, () => !stopped && origin === pending && !document.querySelector("dialog[open]"));
+    const opened = await preview(recovery.prepared, undefined, () => !stopped && origin === pending && (!requestIsCurrent || requestIsCurrent()) && !document.querySelector("dialog[open]"), recovery.reviewContext);
     if (opened) removePendingRequest(recovery);
   };
   /** Keep background failures local while preserving the original request's replay identity. */
@@ -1048,7 +1066,7 @@ async function effect(path, method, request) {
     try { await send(); } catch (failure) {
       if (stopped) return;
       pendingRequestFailure(recovery, failure);
-      if (origin === pending && !recovery.busy) {
+      if (origin === pending && (!requestIsCurrent || requestIsCurrent()) && !recovery.busy) {
         showError(failure);
         if (!row && !recovery.prepared && failure.details?.retryable !== false) element("error").append(button("Retry the same request", attempt));
       }
@@ -1076,14 +1094,18 @@ function previewCloseLifecycle(dialog, close = false) {
   return waiting;
 }
 
-/** Open only the current receipt; confirmed writes own their refresh and native close focus. */
-async function preview(proposed, exportOperation, isCurrent = () => !stopped) {
+/** Review current exact bytes and complete bundle replacement; confirmation owns native close focus. */
+async function preview(proposed, exportOperation, isCurrent = () => !stopped, reviewContext) {
   if (!isCurrent()) return false;
   if(!proposed?.preview_id)throw new Error("The operation did not return a prepared write.");
   const sequence = ++previewGeneration;
   const current = await api(`/effects/previews/${encodeURIComponent(proposed.preview_id)}`);
   if (previewClosePending) await previewClosePending;
   if (!isCurrent() || sequence !== previewGeneration) return false;
+  if (reviewContext && (reviewContext.preview.preview_id !== current.preview_id ||
+      reviewContext.replacement.proposed_index_sha256 !== current.exact_bytes_sha256 ||
+      current.operation_type !== "workspace-index-update" || current.target.path !== "forge.workspace.json"))
+    throw new Error("The index replacement no longer matches the exact server preview. Prepare it again.");
   const dialog = element("preview-dialog"); const content = element("preview-content");
   let viewOwner = pending;
   let closingConfirmed = false;
@@ -1104,13 +1126,33 @@ async function preview(proposed, exportOperation, isCurrent = () => !stopped) {
     node("p", `Validation: ${current.validation.state}. Target version: ${current.target_version}`),node("p", `Current hash: ${current.base_sha256 || "new file"}`),node("p", `Proposed hash: ${current.exact_bytes_sha256}`),node("p", `Receipt expires: ${current.receipt.expires_at}`),
     table("Bound input hashes",[["Resource","resource_id"],["SHA-256","sha256"]],current.input_hashes),Object.assign(node("pre",current.diff_text),{tabIndex:0}));
   if(current.diff_truncated) content.append(node("p","The text diff reached its display bound. The hash binds the complete proposed bytes."));
+  if (reviewContext) appendBundleReplacement(content, reviewContext.replacement);
   const key = crypto.randomUUID();
-  /** Download only confirmed bound export bytes through this page's selected authenticated major. */
+  /** Download a fixed prepared-route family; metadata additionally binds media, size, hash and view ownership. */
   async function downloadCommittedExport() {
-    const response=await fetch(`${apiPrefix}/exports/${encodeURIComponent(exportOperation)}/download`,{headers:{Authorization:`Bearer ${capability}`},cache:"no-store",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer"});
+    const metadata = typeof exportOperation === "object" && exportOperation?.family === "metadata-bundle";
+    const id = metadata ? exportOperation.operation_id : exportOperation;
+    const owner = pending;
+    if (metadata && (!bundleEffectsSupported() || stopped)) return;
+    try {
+    const path = metadata ? `/project/bundle-exports/${encodeURIComponent(id)}/download` : `/exports/${encodeURIComponent(id)}/download`;
+    const response=await fetch(`${apiPrefix}${path}`,{headers:{Authorization:`Bearer ${capability}`},cache:"no-store",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer"});
+    if (metadata && (stopped || owner !== pending)) return;
     if(!response.ok)throw new Error("The committed export is no longer available or its bytes changed.");
-    const blob=await response.blob();if(blob.size>4*1024*1024)throw new Error("The export exceeds the download bound.");
-    const url=URL.createObjectURL(blob);const link=node("a","Download report");link.href=url;link.download="forge-redacted-report.html";document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const blob=await response.blob();if (metadata && (stopped || owner !== pending)) return;
+    if(blob.size>(metadata?1024*1024:4*1024*1024))throw new Error("The export exceeds the download bound.");
+    if (metadata) {
+      if (response.headers.get("Content-Type")?.split(";",1)[0].trim().toLowerCase() !== "application/json") throw new Error("The committed metadata has an unsupported media type.");
+      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", await blob.arrayBuffer()));
+      const hash = Array.from(digest, byte => byte.toString(16).padStart(2,"0")).join("");
+      if (stopped || owner !== pending) return;
+      if (hash !== current.exact_bytes_sha256) throw new Error("The committed metadata bytes do not match the prepared hash.");
+      if (stopped || owner !== pending || !element("view").isConnected) return;
+    }
+    const url=URL.createObjectURL(blob);const link=node("a",metadata?"Download metadata bundle":"Download report");link.href=url;link.download=metadata?"forge-workspace-index-and-hashes.json":"forge-redacted-report.html";document.body.append(link);link.click();link.remove();
+    if (metadata) { metadataDownloadURLs.add(url);setTimeout(()=>{if(metadataDownloadURLs.delete(url))URL.revokeObjectURL(url);},1000); }
+    else setTimeout(()=>URL.revokeObjectURL(url),1000);
+    } catch (failure) { if (metadata && (stopped || owner !== pending)) return; throw failure; }
   }
   /** Await native return-focus processing before selecting the still-owned saved result target. */
   async function closeConfirmedPreview() {
@@ -1137,7 +1179,7 @@ async function preview(proposed, exportOperation, isCurrent = () => !stopped) {
       if (!previewCurrent()) return;
       const pageError = element("view").querySelector("[data-page-error]");
       const refreshError = dialog.querySelector("[role=alert]")?.textContent || (!pageError?.hidden && pageError?.textContent) || (!element("error").hidden && element("error").textContent) || "The view could not be loaded.";
-      if (exportOperation) element("view").prepend(button("Download committed redacted report", downloadCommittedExport));
+      if (exportOperation) element("view").prepend(button(typeof exportOperation === "object" ? "Download committed metadata bundle" : "Download committed redacted report", downloadCommittedExport));
       dirty = false;
       await closeConfirmedPreview();
       if (!previewCurrent(false)) return;
@@ -1333,6 +1375,7 @@ async function showProvenance(anchor) {
 }
 /** Retire installed metadata reads and acknowledgments before a view epoch changes. */
 function invalidateBundlePanels() {
+  for (const url of metadataDownloadURLs) { URL.revokeObjectURL(url); metadataDownloadURLs.delete(url); }
   for (const section of element("view").querySelectorAll("[data-bundle-panel]")) bundlePanels.get(section)?.();
 }
 
@@ -1570,4 +1613,154 @@ async function initializeForm(kind) {
   }
   form.append(node("p","After committing, register the manifest as an applicability manifest or mapping collection. Review metadata remains an assertion, not authenticated identity."));
   form.addEventListener("submit",event=>event.preventDefault());return form;
+}
+
+
+/** Admit metadata effects only on the explicitly negotiated additive2.2 contract. */
+function bundleEffectsSupported() { return apiMajor === 2 && apiContractVersion === "2.2.0"; }
+
+/** Choose artifact download family from the prepared operation route, never from authored filenames. */
+function exportDownloadContext(path, id) {
+  return path === "/exports" ? id : path === "/project/bundle-exports" ? {family:"metadata-bundle", operation_id:id} : undefined;
+}
+
+/** Check complete closed index metadata without treating it as source admission or approval. */
+function checkedReplacementIndex(value) {
+  if (!bundleClosedObject(value,["schema_version","label","resources"]) || !["forge.workspace/1","forge.workspace/2"].includes(value.schema_version) ||
+      typeof value.label !== "string" || [...value.label].length < 1 || [...value.label].length > 200 || !Array.isArray(value.resources) || value.resources.length > 1000)
+    throw new Error("The replacement returned an unsupported complete index.");
+  const keys = new Set(); const paths = new Set(); const roles = workspaceRoles(value.schema_version);
+  for (const row of value.resources) {
+    if (!bundleClosedObject(row,["key","role","path"]) || typeof row.key !== "string" || !/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(row.key) ||
+        keys.has(row.key) || !roles.includes(row.role) || typeof row.path !== "string" || row.path.length > 512 ||
+        !/^[A-Za-z0-9][A-Za-z0-9._-]*(\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/.test(row.path) || paths.has(row.path))
+      throw new Error("The replacement returned unsupported or duplicate registration metadata.");
+    keys.add(row.key); paths.add(row.path);
+  }
+  return value;
+}
+
+/** Reconcile closed public validation diagnostics before retaining a supposedly valid replacement. */
+function checkedImportValidation(value) {
+  if (!bundleClosedObject(value,["state","error_count","warning_count","diagnostics"]) || value.state !== "valid" || value.error_count !== 0 ||
+      !Number.isSafeInteger(value.warning_count) || value.warning_count < 0 || value.warning_count > 500 || !Array.isArray(value.diagnostics) || value.diagnostics.length > 500) return false;
+  let warnings=0;
+  for (const item of value.diagnostics) {
+    if (!item || typeof item !== "object" || Array.isArray(item) || Object.keys(item).some(key=>!["code","severity","message","resource_id","field"].includes(key)) ||
+        !["code","severity","message"].every(key=>Object.hasOwn(item,key)) || typeof item.code !== "string" || [...item.code].length < 3 || [...item.code].length > 100 ||
+        !["warning","info"].includes(item.severity) || typeof item.message !== "string" || [...item.message].length < 1 || [...item.message].length > 1000 ||
+        item.resource_id !== undefined && item.resource_id !== null && (typeof item.resource_id !== "string" || !/^res_[0-9a-z]{12,80}$/.test(item.resource_id)) ||
+        item.field !== undefined && item.field !== null && (typeof item.field !== "string" || [...item.field].length > 256)) return false;
+    if (item.severity === "warning") warnings++;
+  }
+  return warnings === value.warning_count;
+}
+
+/** Reconcile the new wrapped preview and complete removed membership before exact receipt review. */
+async function checkedBundleImportPreview(value, requestedIndexSchema) {
+  if (!bundleClosedObject(value,["validation","preview","replacement"]) || !checkedImportValidation(value.validation) ||
+      !value.preview?.preview_id || value.preview.operation_type !== "workspace-index-update" || value.preview.target?.path !== "forge.workspace.json")
+    throw new Error("The import did not return a valid exact index-replacement preview.");
+  const replacement = value.replacement;
+  if (!bundleClosedObject(replacement,["previous_index","proposed_index","supplied_index_sha256","proposed_index_sha256","removed_resource_keys","consumed_file_count"]) ||
+      typeof replacement.supplied_index_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(replacement.supplied_index_sha256) ||
+      typeof replacement.proposed_index_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(replacement.proposed_index_sha256) ||
+      replacement.proposed_index_sha256 !== value.preview.exact_bytes_sha256 || !Number.isSafeInteger(replacement.consumed_file_count) ||
+      replacement.consumed_file_count < 0 || replacement.consumed_file_count > 100 || !Array.isArray(replacement.removed_resource_keys) || replacement.removed_resource_keys.length > 100)
+    throw new Error("The import returned unsupported replacement hashes or capacity facts.");
+  const previous = replacement.previous_index === null ? null : checkedReplacementIndex(replacement.previous_index);
+  const proposed = checkedReplacementIndex(replacement.proposed_index);
+  if (requestedIndexSchema !== undefined && proposed.schema_version !== `forge.workspace/${requestedIndexSchema}`) throw new Error("The replacement target index version differs from the chosen request.");
+  if (previous?.schema_version === "forge.workspace/2" && proposed.schema_version === "forge.workspace/1") throw new Error("Index replacement cannot downgrade index2.");
+  const proposedKeys = new Set(proposed.resources.map(row=>row.key));
+  const removed = (previous?.resources ?? []).filter(row=>!proposedKeys.has(row.key)).map(row=>row.key);
+  if (JSON.stringify(removed) !== JSON.stringify(replacement.removed_resource_keys)) throw new Error("The replacement did not retain complete ordered removed keys.");
+  const consumedPaths = new Set([...(previous?.resources ?? []),...proposed.resources].map(row=>row.path));
+  if (previous !== null) consumedPaths.add("forge.workspace.json");
+  if (replacement.consumed_file_count !== consumedPaths.size)
+    throw new Error("The replacement consumed-file facts do not reconcile with complete membership.");
+  const normalized = {schema_version:proposed.schema_version,label:proposed.label,resources:proposed.resources.map(row=>({key:row.key,role:row.role,path:row.path}))};
+  const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",await new Blob([JSON.stringify(normalized,null,2)+"\n"]).arrayBuffer()));
+  const hash=Array.from(digest,byte=>byte.toString(16).padStart(2,"0")).join("");
+  if(hash!==replacement.proposed_index_sha256)throw new Error("The complete proposed membership differs from its normalized index hash.");
+  return value;
+}
+
+/** Show every previous/proposed registration and distinct normalized hashes before confirming replacement. */
+function appendBundleReplacement(content, replacement) {
+  content.append(node("h3","Complete project index replacement"),node("p","This changes the index label and ordered registrations. Source files are not copied or deleted; local acknowledgment is not domain approval."),
+    node("p",`Supplied normalized index SHA-256: ${replacement.supplied_index_sha256}`),node("p",`Proposed normalized index SHA-256: ${replacement.proposed_index_sha256}`),
+    node("p",`Consumed physical files: ${replacement.consumed_file_count}. Removed registration keys: ${replacement.removed_resource_keys.join(", ") || "none"}.`));
+  for (const [label,index] of [["Previous index",replacement.previous_index],["Proposed index",replacement.proposed_index]]) {
+    content.append(node("h4",label));
+    if (index === null) content.append(node("p","No project index was present."));
+    else content.append(node("p",`${index.schema_version}: ${index.label} (${index.resources.length} registrations)`),table(`${label} complete membership`,[["Key","key"],["Role","role"],["Project-relative path","path"]],index.resources));
+  }
+}
+
+/** Wrap one chosen file in the 80-byte numeric-selector envelope without parsing or rewriting raw bytes. */
+async function bundleImportBody(file, target) {
+  if (![1,2].includes(target) || !file || !Number.isSafeInteger(file.size) || file.size < 0 || typeof file.arrayBuffer !== "function") throw new Error("Choose one bundle file and an explicit target index version.");
+  const prefix = '{"bundle":'; const suffix = `,"target_index_schema_version":${target},"acknowledge_index_replacement":true}`;
+  const overhead = new Blob([prefix,suffix]).size;
+  if (file.size > 1024*1024-overhead) throw new Error("Chosen bundle and its 80-byte import wrapper must fit 1MiB.");
+  let bytes;
+  try { bytes = await file.arrayBuffer(); } catch { throw new Error("The chosen bundle could not be read. Choose it again."); }
+  if (!bytes || bytes.byteLength !== file.size) throw new Error("The chosen bundle changed while being read. Choose it again.");
+  const body = new Blob([prefix,new Uint8Array(bytes),suffix],{type:"application/json"});
+  if (body.size !== file.size+overhead || body.size > 1024*1024) throw new Error("The complete import request exceeds 1MiB.");
+  return body;
+}
+
+/** Install separate metadata-write forms without granting old query panels new mutation authority. */
+function bundleEffectsPanel() {
+  const section=node("section");section.setAttribute("data-bundle-panel","");section.setAttribute("data-bundle-effects","");
+  section.append(node("h2","Export metadata or replace the index"),node("p","API2 2.2.0 metadata-only writes require an exact server receipt. Resource contents, domain approval and multi-file restore are excluded."));
+  const error=node("div");error.setAttribute("role","alert");error.tabIndex=-1;error.hidden=true;
+  const status=node("p");status.setAttribute("role","status");status.setAttribute("aria-live","polite");
+  const exportFields=node("div");const target=fieldInput(exportFields,"Metadata export project-relative target");
+  const sensitive=fieldInput(exportFields,"I acknowledge that exported labels, keys, paths and hashes are sensitive metadata.","checkbox");sensitive.required=false;
+  const importFields=node("div");const file=fieldInput(importFields,"Choose a bundle for index replacement","file");file.required=false;file.accept=".json,application/json";
+  const schema=fieldInput(importFields,"Replacement target index schema","select",[["1","Index 1 (seven roles)"],["2","Index 2 (fifteen roles)"]]);
+  const replacement=fieldInput(importFields,"I acknowledge replacing the index label and all registrations; source files will not be deleted.","checkbox");replacement.required=false;
+  let generation=0;let busy=false;
+  /** Permit only this installed form, writable session and current view epoch to dispatch a preparation. */
+  function installed() { return bundleEffectsSupported() && !stopped && activeView === "Trace & Reports" && section.isConnected && element("view").contains(section) && !element("view").inert; }
+  /** Preserve focused controls and guard duplicate activation while editing or preparing. */
+  function actions() {
+    exportButton.setAttribute("aria-disabled",String(!installed() || readOnly || busy || !target.value || !sensitive.checked));
+    importButton.setAttribute("aria-disabled",String(!installed() || readOnly || busy || !file.files?.length || !replacement.checked || !["1","2"].includes(schema.value)));
+    section.setAttribute("aria-busy",String(busy));
+  }
+  /** Retire unsent local work and require a new acknowledgment after form values change. */
+  function changed(event) { generation++;busy=false;error.hidden=true;dirty=true;if(event.target===target)sensitive.checked=false;if(event.target===file || event.target===schema)replacement.checked=false;actions(); }
+  /** Retire stale form callbacks without altering the old query panel or newer focus. */
+  function invalidate() { generation++;busy=false;sensitive.checked=false;replacement.checked=false;actions(); }
+  /** Keep current local read failures focused without returning the dirty-cancellation sentinel. */
+  function localFailure(failure,invoker) { error.textContent=failure instanceof Error?failure.message:"The bundle preparation could not be started.";error.hidden=false;status.textContent="No preparation was confirmed. Review the error and retry explicitly.";if(document.activeElement===invoker && !document.querySelector("dialog[open]"))error.focus(); }
+  /** Prepare an explicit metadata destination; existing operation rows own status and receipt review. */
+  async function prepareExport() {
+    if (!installed() || readOnly || busy || !target.value || !sensitive.checked) return;
+    const sequence=++generation;const epoch=pending;const body={target_path:target.value,acknowledge_sensitive_metadata:true};busy=true;error.hidden=true;actions();
+    /** Editing, leaving this view or stopping retires an export that has not been dispatched. */
+    const current=()=>installed() && sequence===generation && epoch===pending;
+    try { await effect("/project/bundle-exports","POST",body,undefined,current); }
+    catch(failure) {if(installed() && sequence===generation && epoch===pending)localFailure(failure,exportButton);}
+    finally {if(sequence===generation){busy=false;actions();}}
+  }
+  /** Read the exact chosen file and retain its immutable raw body/key through ordinary request recovery. */
+  async function prepareImport() {
+    if (!installed() || readOnly || busy || !file.files?.length || !replacement.checked || !["1","2"].includes(schema.value)) return;
+    const selected=file.files[0];const targetVersion=Number(schema.value);const sequence=++generation;const epoch=pending;busy=true;error.hidden=true;actions();
+    /** A changed selection, navigation or shutdown cannot dispatch the old opaque bytes after pacing. */
+    const current=()=>installed() && sequence===generation && epoch===pending;
+    try {const body=await bundleImportBody(selected,targetVersion);if(!current())return;await effect("/project/bundle-imports","POST",undefined,body,current,targetVersion);}
+    catch(failure) {if(current())localFailure(failure,importButton);}
+    finally {if(sequence===generation){busy=false;actions();}}
+  }
+  const exportButton=node("button","Prepare metadata export");exportButton.type="button";exportButton.addEventListener("click",prepareExport);
+  const importButton=node("button","Prepare index replacement");importButton.type="button";importButton.addEventListener("click",prepareImport);
+  target.addEventListener("input",changed);sensitive.addEventListener("change",changed);file.addEventListener("change",changed);schema.addEventListener("change",changed);replacement.addEventListener("change",changed);
+  section.append(exportFields,exportButton,importFields,importButton,node("p",readOnly?"Read-only session: metadata inspection remains available, but preparing or confirming writes is disabled.":"A chosen file and its 80-byte numeric import wrapper must fit 1MiB. Every incoming file must already exist inside this project; no source is restored."),status,error);
+  bundlePanels.set(section,invalidate);actions();return section;
 }
