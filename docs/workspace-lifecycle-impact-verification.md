@@ -36,3 +36,9 @@ Chrome 154.0.8037.98 used the actual compiled server, current asset bytes and ke
 Independent bounded source, DTO, documentation and evidence arithmetic reviews retain authors' own-code exclusions. Root execution corrected test-only JSON macro syntax, an overbroad `rationale` substring assertion and an incorrect six-file provenance denominator: the native engine consumes five closure inputs. The Mapping embeds its policy identity. Original failed logs remain preserved. Early browser focus-probe failures retained a detached DOM handle; the passing successor observes the current focused region without changing product focus behavior.
 
 Platform/hosted parity, authentic interoperability and evaluation, independent security/privacy, human accessibility and pilot acceptance, dependency audit and owner decisions, S6 full import/export, release provenance and the **full final integrated documentation review across all completed roadmap work** remain open. Passing development checks and this focused guide do not close those gates.
+
+## Portable mock fixture successor
+
+The original hosted Windows API job at `fe2fcf3` failed three maintained-client mock assertions because their expected paths used Unix spelling. The client correctly resolved native absolute paths. The fixture now derives its expectations from the platform temporary directory; it creates no files and changes no production code. The original failure remains recorded.
+
+The [successor record](plans/2026-10-03-f19-windows-client-fixture-verification.json) retains two local runs of the same 25 controls and an AST census of 47/47 documented functions. The traced run observed 46 positive first-body lines; `readline` remains zero without thread hooks. These repeated runs remain 25 unique controls. All prior Rust, UI and production-client pins remain unchanged. Corrected Windows execution requires hosted readback; this local check does not establish it.
