@@ -754,7 +754,7 @@ effectiveness, certification, or remediation ownership. See
 [OSCAL Assessment Results](assessment-results.md) for the complete contract and
 trust boundaries.
 
-### 3.14 `poam` — Check an Explicit Assessment Source
+### 3.14 `poam` — Check Sources and Authored Remediation Work
 
 `forge poam init` emits an unselected `forge.poam/1` scaffold from one exact
 Assessment Results result UUID and stable key plus its local Assessment Plan,
@@ -769,12 +769,30 @@ forge validate native-poam.json --schema-type poam
 
 The first command verifies the captured source identities and emits a complete
 finding/risk inventory. It requires `--source-only`, refuses nonempty items,
-roles and parties, and does not offer `poam build`. The second command performs
+roles and parties. The second command performs
 native POA&M structural validation and the system-identity assembly check; it
 does not establish source binding or remediation workflow acceptance. POA&M
 export, source trace and generic diff remain unsupported.
 See [POA&M source foundation](poam-foundation.md) for the exact inputs, bounded
 source profile, publication limits and remaining gates.
+
+An explicitly authored plan uses a separate workflow scope:
+
+```bash
+forge poam check --manifest ./assessment-bundle/authored.json \
+  --workflow --as-of 2026-02-06 --due-soon-days 7 --format json
+forge poam build --manifest ./assessment-bundle/authored.json \
+  --as-of 2026-02-06 --output native-poam.json --report schedule.json
+```
+
+Every item selects exact source finding/risk identities and supplies declared
+owners, dates, ordered milestones and attributed append-only history. The as-of
+date is required. Exit 0 means valid ungated state, 1 a valid schedule action,
+and 2 invalid input or publication. Completion/risk acceptance is refused. Both
+new output filenames use the manifest directory so relative native source links
+retain their base. Artifact/report publication is separate and may leave a new
+artifact if the later report fails. See [authored POA&M commands](poam-cli-workflow.md)
+for explicit baselines, bounds, portable destinations and remaining acceptance.
 
 ## 4. Global Options
 

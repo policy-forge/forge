@@ -6,6 +6,7 @@ use forge::error::ForgeError;
 use forge::exit_code;
 use tracing_subscriber::EnvFilter;
 
+/// Dispatch the selected CLI and preserve valid action exits without printing an error.
 fn main() -> ExitCode {
     let cli = Cli::parse();
 
@@ -40,7 +41,8 @@ fn main() -> ExitCode {
             | ForgeError::ApplicabilityReviewRequired
             | ForgeError::FrameworkReviewRequired
             | ForgeError::AuthoringActionRequired
-            | ForgeError::AssessmentResultsReviewRequired,
+            | ForgeError::AssessmentResultsReviewRequired
+            | ForgeError::PoamActionRequired,
         ) => ExitCode::from(1u8),
         Err(e) => {
             eprintln!("Error: {e}");

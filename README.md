@@ -237,7 +237,12 @@ forge poam check --manifest ./assessment-bundle/poam.json \
 
 The inventory includes every finding and risk in that result, including satisfied
 findings and closed risks. It does not validate remediation ownership, schedule,
-review or closure. Full workflow/build support and owner acceptance remain open.
+review or closure. Separate authored `poam check --workflow --as-of YYYY-MM-DD`
+and `poam build` commands validate nonterminal ownership/history/schedules and
+generate native JSON from exact source selections. Completion and risk acceptance
+remain refused pending the recorded closure decision. Full baseline impacts,
+remaining F08 features and acceptance remain open. See the
+[authored command guide](docs/poam-cli-workflow.md).
 See [POA&M source foundation](docs/poam-foundation.md) for explicit scaffold
 inputs, limits, supported source profile and remaining gates.
 

@@ -183,6 +183,10 @@ pub enum ForgeError {
     #[error("POA&M foundation error: {0}")]
     PoamBuild(String),
 
+    /// A valid authored POA&M schedule contains explicit review or schedule actions.
+    #[error("POA&M schedule action required")]
+    PoamActionRequired,
+
     /// A valid Assessment Results baseline comparison requires human review.
     #[error("Assessment Results revision requires human review")]
     AssessmentResultsReviewRequired,
@@ -532,6 +536,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::FrameworkReviewRequired
         | ForgeError::AuthoringActionRequired
         | ForgeError::AssessmentResultsReviewRequired
+        | ForgeError::PoamActionRequired
         | ForgeError::RoundTripFailed(_) => 1,
 
         // Exit 2: Parse/Structure errors + usage/required-argument errors

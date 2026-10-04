@@ -282,9 +282,9 @@ pub enum Commands {
         #[command(subcommand)]
         command: AssessmentCommand,
     },
-    /// Scaffold a POA&M manifest and check exact source integrity
+    /// Scaffold, check exact sources, or prepare explicit nonterminal POA&M work
     Poam {
-        /// Explicit scaffold or source-only integrity operation.
+        /// Explicit scaffold, source-only integrity, authored check or build operation.
         #[command(subcommand)]
         command: PoamCommand,
     },
@@ -392,18 +392,65 @@ pub enum Commands {
 pub enum PoamCommand {
     /// Pin one explicit Assessment Results result without selecting remediation
     Init(Box<PoamInitArgs>),
-    /// Check source integrity only; this does not validate a remediation plan
+    /// Prepare explicitly authored nonterminal work and publish a new native JSON artifact
+    Build(
+        /// Explicit manifest, schedule date and new output destination declarations.
+        Box<PoamBuildArgs>,
+    ),
+    /// Check explicitly acknowledged source-only or authored workflow scope
     Check {
-        /// Closed forge.poam/1 foundation manifest
+        /// Closed forge.poam/1 manifest for the explicitly selected scope
         #[arg(long)]
         manifest: PathBuf,
-        /// Acknowledge that this foundation check covers source integrity only
-        #[arg(long, required = true)]
+        /// Acknowledge that this check covers source integrity only
+        #[arg(long, conflicts_with_all = ["workflow", "as_of", "due_soon_days", "baseline", "report"], required_unless_present = "workflow")]
         source_only: bool,
-        /// Content-minimizing source inventory format
+        /// Check authored nonterminal workflow, dates and exact source selection
+        #[arg(long, conflicts_with = "source_only")]
+        workflow: bool,
+        /// Required canonical full date for workflow scheduling; never inferred from the clock
+        #[arg(long, requires = "workflow", required_if_eq("workflow", "true"))]
+        as_of: Option<String>,
+        /// Inclusive due-soon interval in days; omitted workflow interval is zero
+        #[arg(long, requires = "workflow", value_parser = clap::value_parser!(u16).range(0..=365))]
+        due_soon_days: Option<u16>,
+        /// Optional prior authoring JSON as a confined descendant of the manifest directory
+        #[arg(long, requires = "workflow")]
+        baseline: Option<PathBuf>,
+        /// New report filename in the manifest directory; omitted reports go to stdout
+        #[arg(long, requires = "workflow")]
+        report: Option<PathBuf>,
+        /// Minimized source inventory or authored schedule format for the selected scope
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
     },
+}
+
+/// Explicit authoring inputs and new destinations for the nonterminal POA&M producer.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct PoamBuildArgs {
+    /// Confined authored manifest; its directory is the immutable relative-link base
+    #[arg(long)]
+    pub manifest: PathBuf,
+    /// Canonical explicit full date for schedule evaluation; no wall-clock default
+    #[arg(long)]
+    pub as_of: String,
+    /// Inclusive due-soon interval; zero still includes records due exactly on as-of
+    #[arg(long, default_value_t = 0, value_parser = clap::value_parser!(u16).range(0..=365))]
+    pub due_soon_days: u16,
+    /// Optional prior authoring JSON as a confined descendant of the manifest directory
+    #[arg(long)]
+    pub baseline: Option<PathBuf>,
+    /// Required new .json filename in the manifest directory, preserving all native href bases
+    #[arg(long)]
+    pub output: PathBuf,
+    /// Optional new report filename in the same directory; omitted report goes to stdout
+    #[arg(long)]
+    pub report: Option<PathBuf>,
+    /// Minimized schedule report format; native output remains OSCAL JSON
+    #[arg(long, value_enum, default_value_t = AuthorReportFormat::Json)]
+    pub format: AuthorReportFormat,
 }
 
 /// Explicit input and document identity for a zero-selection POA&M scaffold.
@@ -1751,14 +1798,59 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         },
         Commands::Poam { command } => match command {
             PoamCommand::Init(args) => crate::poam::execute_init(args),
-            PoamCommand::Check { manifest, source_only, format } => {
-                if !source_only {
-                    return Err(ForgeError::PoamBuild(
-                        "POA&M foundation check requires explicit --source-only acknowledgement"
-                            .to_string(),
-                    ));
+            PoamCommand::Build(args) => {
+                if crate::poam::workflow_cli::execute_build(args)? {
+                    Err(ForgeError::PoamActionRequired)
+                } else {
+                    Ok(())
                 }
-                crate::poam::execute_source_check(manifest, *format)
+            }
+            PoamCommand::Check {
+                manifest,
+                source_only,
+                workflow,
+                as_of,
+                due_soon_days,
+                baseline,
+                report,
+                format,
+            } => {
+                if *source_only {
+                    if *workflow
+                        || as_of.is_some()
+                        || due_soon_days.is_some()
+                        || baseline.is_some()
+                        || report.is_some()
+                    {
+                        return Err(ForgeError::PoamBuild(
+                            "source-only acknowledgement cannot be combined with workflow options"
+                                .to_string(),
+                        ));
+                    }
+                    crate::poam::execute_source_check(manifest, *format)
+                } else if *workflow {
+                    let as_of = as_of.as_deref().ok_or_else(|| {
+                        ForgeError::PoamBuild(
+                            "workflow check requires explicit canonical --as-of".to_string(),
+                        )
+                    })?;
+                    if crate::poam::workflow_cli::execute_check(
+                        manifest,
+                        as_of,
+                        due_soon_days.unwrap_or(0),
+                        baseline.as_deref(),
+                        report.as_deref(),
+                        *format,
+                    )? {
+                        Err(ForgeError::PoamActionRequired)
+                    } else {
+                        Ok(())
+                    }
+                } else {
+                    Err(ForgeError::PoamBuild(
+                        "POA&M foundation check requires explicit --source-only acknowledgement or --workflow scope".to_string(),
+                    ))
+                }
             }
         },
         Commands::Assessment { command } => match command {

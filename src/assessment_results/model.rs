@@ -1,6 +1,7 @@
 //! Typed OSCAL Assessment Results construction.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::path::{Component, Path};
 
 use serde::Serialize;
 use uuid::Uuid;
@@ -280,7 +281,8 @@ pub struct ObjectSnapshot {
 /// # Errors
 ///
 /// Returns an error when a reviewed reference is absent from the exact context
-/// or when deterministic content fingerprinting cannot be serialized.
+/// or when deterministic content fingerprinting cannot be serialized or a context
+/// receipt path cannot be rendered as a confined UTF-8 reference.
 #[allow(
     clippy::too_many_lines,
     reason = "typed deterministic assembly is kept together so ordering and trust-boundary fields remain auditable"
@@ -429,7 +431,7 @@ pub fn build(
                 risks: built_risks,
                 findings: built_findings,
             }],
-            back_matter: Some(build_back_matter(document_key, context, manifest)),
+            back_matter: Some(build_back_matter(document_key, context, manifest)?),
         },
     };
     Ok(BuiltAssessmentResults { artifact, object_snapshots })
@@ -796,29 +798,46 @@ fn conclusion_props(
     props
 }
 
+/// Build context receipts with locators relative to the AR manifest directory.
+/// Companion import hrefs remain relative to their own importing artifacts.
+///
+/// # Errors
+/// Returns an error if a declared artifact path is not a UTF-8 descendant.
 fn build_back_matter(
     document_key: &str,
     context: &LoadedContext,
     manifest: &AssessmentResultsManifest,
-) -> BackMatter {
+) -> Result<BackMatter, ForgeError> {
+    let artifacts = [
+        &manifest.context.assessment_plan,
+        &manifest.context.ssp,
+        &manifest.context.profile,
+        &manifest.context.catalog,
+    ];
     let mut resources: Vec<_> = context
         .artifact_identities()
         .into_iter()
-        .map(|identity| BackMatterResource {
-            uuid: stable_uuid(document_key, "context-resource", identity.kind).to_string(),
-            title: format!("{} context identity", identity.kind),
-            props: vec![
-                prop("context-kind", identity.kind.to_string()),
-                prop("root-uuid", identity.root_uuid.clone()),
-                prop("document-version", identity.document_version.clone()),
-                prop("oscal-version", identity.oscal_version.clone()),
-            ],
-            rlinks: vec![ResourceLink {
-                href: identity.href.clone(),
-                hashes: vec![OscalHash { algorithm: "SHA-256", value: identity.sha256.clone() }],
-            }],
+        .zip(artifacts)
+        .map(|(identity, artifact)| {
+            Ok(BackMatterResource {
+                uuid: stable_uuid(document_key, "context-resource", identity.kind).to_string(),
+                title: format!("{} context identity", identity.kind),
+                props: vec![
+                    prop("context-kind", identity.kind.to_string()),
+                    prop("root-uuid", identity.root_uuid.clone()),
+                    prop("document-version", identity.document_version.clone()),
+                    prop("oscal-version", identity.oscal_version.clone()),
+                ],
+                rlinks: vec![ResourceLink {
+                    href: context_receipt_href(&artifact.artifact)?,
+                    hashes: vec![OscalHash {
+                        algorithm: "SHA-256",
+                        value: identity.sha256.clone(),
+                    }],
+                }],
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, ForgeError>>()?;
     if let Some(index_hash) = &context.evidence_index_sha256 {
         resources.push(BackMatterResource {
             uuid: stable_uuid(document_key, "context-resource", "evidence-index").to_string(),
@@ -854,7 +873,27 @@ fn build_back_matter(
         rlinks: Vec::new(),
     }));
     resources.sort_by(|left, right| left.uuid.cmp(&right.uuid));
-    BackMatter { resources }
+    Ok(BackMatter { resources })
+}
+
+/// Render a manifest-relative artifact path using UTF-8 slash-separated components.
+///
+/// # Errors
+/// Rejects an empty path, non-descendant components, or a non-UTF-8 filename.
+fn context_receipt_href(artifact: &Path) -> Result<String, ForgeError> {
+    let segments = artifact
+        .components()
+        .map(|component| match component {
+            Component::Normal(segment) => {
+                segment.to_str().ok_or_else(|| error("context receipt artifact path must be UTF-8"))
+            }
+            _ => Err(error("context receipt artifact path must be a normalized descendant")),
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if segments.is_empty() {
+        return Err(error("context receipt artifact path must not be empty"));
+    }
+    Ok(segments.join("/"))
 }
 
 fn stable_uuid(document_key: &str, kind: &str, key: &str) -> Uuid {

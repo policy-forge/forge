@@ -54,8 +54,10 @@ put sensitive content into those identifiers.
 
 Exit 0 means valid foundation/source integrity; exit 2 means invalid,
 unsupported, stale or unsafe input. There is no schedule/review exit 1 in this
-foundation. Nonempty items/roles/parties are explicitly unsupported until full
-workflow validation exists. `poam build` is not available in F07.
+foundation. Nonempty items/roles/parties remain unsupported in source-only mode.
+The separate [authored workflow commands](poam-cli-workflow.md) validate
+nonterminal work and generate native output with an explicit as-of date; they
+retain their own schedule/action exits and pending full F08 acceptance.
 
 ## Source and bounds
 
@@ -79,11 +81,12 @@ record, 64 properties per record and 100,000 aggregate reference edges. Reports
 are capped at 10 MiB before serialization growth. Unknown native source extensions
 fail with a supported-subset error instead of being silently discarded.
 
-Some nested bundle layouts reveal inconsistent back-matter context hrefs in
-current AR output. The source check rejects a receipt whose href resolves to a
-different companion, even if its text matches an import elsewhere. This is an
-explicit source qualification boundary and requires a separately reviewed AR
-producer correction before those layouts are accepted.
+The integrated AR producer now emits context receipt hrefs from declared artifact
+paths relative to its manifest bundle, rather than copying importer-relative
+strings. POA&M source checks resolve each receipt from the actual AR directory
+and require the declared captured companion. Old malformed receipts and wrong
+targets remain refused even when a decoy has identical bytes. This correction
+does not add AR output relocation or relax the supported source subset.
 
 ## Validate a native POA&M
 

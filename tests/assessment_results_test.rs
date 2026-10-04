@@ -1217,3 +1217,111 @@ fn one_result_baseline_comparison_remains_unchanged() {
         assert_eq!(std::fs::read(&fixture.manifest).unwrap(), manifest_bytes);
     }
 }
+
+/// Verify four nested companion receipts and preserve exact importer-relative checks.
+#[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one producer control binds all four receipt identities and both import refusal cases"
+)]
+fn nested_context_receipts_use_manifest_relative_artifact_paths() {
+    let f = fixture();
+    let root = f.directory.path();
+    let nested = root.join("nested/context");
+    std::fs::create_dir_all(&nested).unwrap();
+    let companions = [
+        ("assessment_plan", "assessment-plan.json", "assessment-plan"),
+        ("ssp", "ssp.json", "system-security-plan"),
+        ("profile", "profile.json", "profile"),
+        ("catalog", "catalog.json", "catalog"),
+    ];
+    let original: Vec<_> = companions
+        .iter()
+        .map(|(_, filename, _)| std::fs::read(root.join(filename)).unwrap())
+        .collect();
+    let mut manifest: Value = serde_json::from_slice(&std::fs::read(&f.manifest).unwrap()).unwrap();
+    for (field, filename, _) in companions {
+        std::fs::rename(root.join(filename), nested.join(filename)).unwrap();
+        manifest["context"][field]["artifact"] = json!(format!("nested/context/{filename}"));
+    }
+    manifest["context"]["assessment_plan"]["href"] = json!("nested/context/assessment-plan.json");
+    write_json(&f.manifest, &manifest);
+    let args = [
+        "assessment",
+        "results",
+        "build",
+        "--manifest",
+        f.manifest.to_str().unwrap(),
+        "--output",
+        f.output.to_str().unwrap(),
+    ];
+    let output = run(&args);
+    assert_eq!(output.status.code(), Some(0), "{}", String::from_utf8_lossy(&output.stderr));
+    let built_bytes = std::fs::read(&f.output).unwrap();
+    let built: Value = serde_json::from_slice(&built_bytes).unwrap();
+    assert_eq!(
+        built["assessment-results"]["import-ap"]["href"],
+        "nested/context/assessment-plan.json"
+    );
+    let receipts = built["assessment-results"]["back-matter"]["resources"].as_array().unwrap();
+    for ((_, filename, kind), bytes) in companions.iter().zip(&original) {
+        let receipt = receipts
+            .iter()
+            .find(|receipt| {
+                receipt["props"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|prop| prop["name"] == "context-kind" && prop["value"] == *kind)
+            })
+            .unwrap();
+        let href = receipt["rlinks"][0]["href"].as_str().unwrap();
+        assert_eq!(href, format!("nested/context/{filename}"));
+        assert_eq!(
+            root.join(href).canonicalize().unwrap(),
+            nested.join(filename).canonicalize().unwrap()
+        );
+        assert_eq!(
+            receipt["rlinks"][0]["hashes"],
+            json!([
+                {"algorithm":"SHA-256", "value":common::sha256_hex(bytes)}
+            ])
+        );
+        let native: Value = serde_json::from_slice(bytes).unwrap();
+        for (name, pointer) in [
+            ("root-uuid", "/uuid"),
+            ("document-version", "/metadata/version"),
+            ("oscal-version", "/metadata/oscal-version"),
+        ] {
+            let property = receipt["props"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|prop| prop["name"] == name)
+                .unwrap();
+            assert_eq!(&property["value"], native[*kind].pointer(pointer).unwrap());
+        }
+        assert_eq!(std::fs::read(nested.join(filename)).unwrap(), *bytes);
+    }
+    let repeated = run(&args);
+    assert_eq!(repeated.status.code(), Some(0));
+    assert_eq!(std::fs::read(&f.output).unwrap(), built_bytes);
+    std::fs::create_dir(root.join("decoy")).unwrap();
+    std::fs::copy(nested.join("ssp.json"), root.join("decoy/ssp.json")).unwrap();
+    for (href, artifact, refusal) in [
+        (
+            "nested/context/ssp.json",
+            "nested/context/ssp.json",
+            "does not match the manifest companion href",
+        ),
+        ("ssp.json", "decoy/ssp.json", "does not resolve to the exact declared companion artifact"),
+    ] {
+        manifest["context"]["ssp"]["href"] = json!(href);
+        manifest["context"]["ssp"]["artifact"] = json!(artifact);
+        write_json(&f.manifest, &manifest);
+        let rejected = run(&args);
+        assert_eq!(rejected.status.code(), Some(2));
+        assert!(String::from_utf8_lossy(&rejected.stderr).contains(refusal));
+        assert_eq!(std::fs::read(&f.output).unwrap(), built_bytes);
+    }
+}

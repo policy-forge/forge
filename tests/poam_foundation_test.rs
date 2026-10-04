@@ -271,9 +271,9 @@ fn source_inventory_preserves_all_denominators_and_omits_sensitive_content() {
     }
 }
 
-/// Verify that check requires explicit source only scope and no build is advertised.
+/// Verify that check requires an explicit scope and build requires explicit date and output arguments.
 #[test]
-fn check_requires_explicit_source_only_scope_and_no_build_is_advertised() {
+fn check_requires_explicit_scope_and_build_requires_complete_arguments() {
     let f = fixture();
     scaffold(&f);
     assert_eq!(
@@ -543,6 +543,11 @@ fn directly_constructed_cli_cannot_bypass_source_only_acknowledgement() {
             command: forge::cli::PoamCommand::Check {
                 manifest: "missing.json".into(),
                 source_only: false,
+                workflow: false,
+                as_of: None,
+                due_soon_days: None,
+                baseline: None,
+                report: None,
                 format: forge::cli::AuthorReportFormat::Json,
             },
         },
@@ -878,4 +883,832 @@ fn text_inventory_preserves_complete_counts_and_source_only_scope() {
     assert!(!text.contains('\u{1b}'));
     assert!(text.contains("Source integrity only"));
     assert!(!text.contains("SENSITIVE"));
+}
+
+/// Verify actual nested AR receipts reach exact companions and reject a byte-identical decoy.
+#[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one producer-to-consumer control preserves the full nested import chain and wrong-target refusal"
+)]
+fn produced_nested_context_receipts_pass_source_only_check() {
+    let f = fixture();
+    let root = f.directory.path();
+    let mut plan = scaffold(&f);
+    let native = root.join("native");
+    let companions_dir = native.join("companions");
+    std::fs::create_dir_all(&companions_dir).unwrap();
+    let companions = [
+        ("assessment_plan", "assessment-plan.json"),
+        ("ssp", "ssp.json"),
+        ("profile", "profile.json"),
+        ("catalog", "catalog.json"),
+    ];
+    let original: Vec<_> = companions
+        .iter()
+        .map(|(_, filename)| std::fs::read(root.join(filename)).unwrap())
+        .collect();
+    let mut ar_manifest: Value =
+        serde_json::from_slice(&std::fs::read(root.join("ar-manifest.json")).unwrap()).unwrap();
+    for (field, filename) in companions {
+        std::fs::rename(root.join(filename), companions_dir.join(filename)).unwrap();
+        ar_manifest["context"][field]["artifact"] = json!(format!("companions/{filename}"));
+        plan["source"]["context"][field]["artifact"] =
+            json!(format!("native/companions/{filename}"));
+    }
+    ar_manifest["context"]["assessment_plan"]["href"] = json!("companions/assessment-plan.json");
+    plan["source"]["context"]["assessment_plan"]["href"] = json!("companions/assessment-plan.json");
+    write_json(&native.join("ar-manifest.json"), &ar_manifest);
+    let produced = run(
+        root,
+        &[
+            "assessment",
+            "results",
+            "build",
+            "--manifest",
+            "native/ar-manifest.json",
+            "--output",
+            "native/assessment-results.json",
+        ],
+    );
+    assert_eq!(produced.status.code(), Some(0), "{}", String::from_utf8_lossy(&produced.stderr));
+    let ar_path = native.join("assessment-results.json");
+    let bytes = std::fs::read(&ar_path).unwrap();
+    let ar: Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(ar["assessment-results"]["results"][0]["uuid"], f.result_uuid);
+    plan["source"]["assessment_results"]["artifact"] = json!("native/assessment-results.json");
+    plan["source"]["assessment_results"]["expected_sha256"] = json!(common::sha256_hex(&bytes));
+    write_json(&root.join("poam.json"), &plan);
+    let parsed = manifest::parse(&serde_json::to_vec(&plan).unwrap()).unwrap();
+    forge::assessment_results::context::load(&root.join("poam.json"), &parsed.source.context)
+        .unwrap();
+    let accepted = check(&f);
+    assert_eq!(accepted.status.code(), Some(0), "{}", String::from_utf8_lossy(&accepted.stderr));
+    let report: Value = serde_json::from_slice(&accepted.stdout).unwrap();
+    assert_eq!(report["validation_scope"], "source-integrity-only");
+    assert_eq!(report["workflow_validated"], false);
+    assert_eq!(report["objects"].as_array().unwrap().len(), 3);
+    assert_eq!(std::fs::read(&ar_path).unwrap(), bytes);
+    for ((_, filename), original_bytes) in companions.iter().zip(&original) {
+        assert_eq!(std::fs::read(companions_dir.join(filename)).unwrap(), *original_bytes);
+    }
+    std::fs::copy(companions_dir.join("ssp.json"), native.join("ssp.json")).unwrap();
+    let mut wrong = ar;
+    let receipt = wrong["assessment-results"]["back-matter"]["resources"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|receipt| {
+            receipt["props"].as_array().unwrap().iter().any(|prop| {
+                prop["name"] == "context-kind" && prop["value"] == "system-security-plan"
+            })
+        })
+        .unwrap();
+    receipt["rlinks"][0]["href"] = json!("ssp.json");
+    let wrong_bytes = write_json(&ar_path, &wrong);
+    plan["source"]["assessment_results"]["expected_sha256"] =
+        json!(common::sha256_hex(&wrong_bytes));
+    write_json(&root.join("poam.json"), &plan);
+    let rejected = check(&f);
+    assert_eq!(rejected.status.code(), Some(2));
+    assert_eq!(rejected.stdout, [] as [u8; 0]);
+    assert!(
+        String::from_utf8_lossy(&rejected.stderr)
+            .contains("AR context resource link resolves to a different confined companion")
+    );
+    assert_eq!(std::fs::read(&ar_path).unwrap(), wrong_bytes);
+}
+
+/// Author a nonterminal item from an exact actually captured source inventory tuple.
+fn authored_workflow(fixture: &Fixture) -> Value {
+    let mut value = scaffold(fixture);
+    let source_manifest: manifest::PoamManifest = serde_json::from_value(value.clone()).unwrap();
+    let prepared =
+        source::load(&fixture.directory.path().join("poam.json"), &source_manifest.source).unwrap();
+    let selected = prepared
+        .inventory()
+        .objects
+        .iter()
+        .find(|object| object.key == "finding-unsatisfied")
+        .unwrap();
+    value["document"]["last_modified"] = json!("2026-02-20T00:00:00Z");
+    value["roles"] = json!([{"id":"owner","title":"Synthetic owner"}]);
+    value["parties"] =
+        json!([{"key":"remediator","type":"person","name":"SENSITIVE REMEDIATOR NAME"}]);
+    let owner = json!({"role_id":"owner","party_key":"remediator","rationale":"SENSITIVE OWNERSHIP RATIONALE"});
+    let initial = json!({"key":"plan","actor":{"role_id":"owner","party_key":"remediator"},"at":"2026-01-03T00:00:00Z",
+        "from":null,"to":"planned","rationale":"SENSITIVE PLAN RATIONALE","closure":null});
+    value["items"] = json!([{"key":"work","title":"Explicit authored work","description":"Explicit authored remediation outcome",
+        "source_refs":[{"kind":selected.kind,"key":selected.key,"uuid":selected.uuid,"result_uuid":selected.result_uuid,"expected_sha256":selected.sha256}],
+        "owners":[owner],"target_date":"2026-02-10","state":"planned","history":[initial],
+        "milestones":[{"key":"step","outcome":"Explicit authored milestone outcome","target_date":"2026-02-05","depends_on":[],
+            "owners":[owner],"state":"planned","history":[initial]}]}]);
+    value
+}
+
+/// Prepare against the actual native five-file fixture without adding CLI publication behavior.
+fn prepare_authored(
+    fixture: &Fixture,
+    value: &Value,
+    baseline: Option<&[u8]>,
+) -> Result<forge::poam::workflow::PreparedWorkflow, forge::ForgeError> {
+    forge::poam::workflow::prepare(
+        &fixture.directory.path().join("poam.json"),
+        &serde_json::to_vec(value).unwrap(),
+        "2026-02-06",
+        7,
+        baseline,
+    )
+}
+
+/// Actual native AR/companion capture feeds deterministic nonempty typed artifact and complete minimized schedule.
+#[test]
+fn authored_item_preparation_is_native_source_bound_deterministic_and_nonmutating() {
+    let f = fixture();
+    let before = [
+        "assessment-results.json",
+        "assessment-plan.json",
+        "ssp.json",
+        "profile.json",
+        "catalog.json",
+    ]
+    .map(|name| (name, std::fs::read(f.directory.path().join(name)).unwrap()));
+    let value = authored_workflow(&f);
+    let one = prepare_authored(&f, &value, None).unwrap();
+    let two = prepare_authored(&f, &value, None).unwrap();
+    assert_eq!(one.artifact(), two.artifact());
+    assert_eq!(one.schedule(), two.schedule());
+    assert!(one.review_required());
+    one.verify_inputs().unwrap();
+    let artifact: Value = serde_json::from_slice(one.artifact()).unwrap();
+    assert_eq!(
+        artifact["plan-of-action-and-milestones"]["poam-items"].as_array().unwrap().len(),
+        1
+    );
+    let schema: Value =
+        serde_json::from_str(include_str!("../schemas/oscal_poam_schema.json")).unwrap();
+    assert!(jsonschema::validator_for(&schema).unwrap().is_valid(&artifact));
+    let report: Value = serde_json::from_slice(one.schedule()).unwrap();
+    assert_eq!(report["source_objects"], 3);
+    assert_eq!(report["items"], 1);
+    assert_eq!(report["milestones"], 1);
+    assert_eq!(report["rows"].as_array().unwrap().len(), 2);
+    assert_eq!(report["overdue"], 1);
+    assert_eq!(report["due_soon"], 1);
+    let text = String::from_utf8(one.schedule().to_vec()).unwrap();
+    for private in ["SENSITIVE", "remediator", "assessment-results.json", "rationale"] {
+        assert!(!text.contains(private));
+    }
+    let native = String::from_utf8(one.artifact().to_vec()).unwrap();
+    for source_prose in [
+        "SENSITIVE OBSERVATION",
+        "SENSITIVE FINDING DESCRIPTION",
+        "SENSITIVE SOURCE STATEMENT",
+        "SENSITIVE RISK STATEMENT",
+    ] {
+        assert!(!native.contains(source_prose));
+    }
+    for (name, bytes) in before {
+        assert_eq!(std::fs::read(f.directory.path().join(name)).unwrap(), bytes);
+    }
+    assert!(!f.directory.path().join("built-poam.json").exists());
+}
+
+/// Each source tuple member is checked against actual inventory rather than UUID-only or producer digest shortcuts.
+#[test]
+fn authored_item_refuses_every_stale_or_cross_domain_source_tuple_before_output() {
+    let f = fixture();
+    let value = authored_workflow(&f);
+    for (field, replacement) in [
+        ("key", json!("missing")),
+        ("kind", json!("risk")),
+        ("uuid", json!("99999999-9999-4999-8999-999999999999")),
+        ("result_uuid", json!("88888888-8888-4888-8888-888888888888")),
+        ("expected_sha256", json!("a".repeat(64))),
+    ] {
+        let mut copy = value.clone();
+        copy["items"][0]["source_refs"][0][field] = replacement;
+        assert!(prepare_authored(&f, &copy, None).is_err(), "{field}");
+    }
+    assert!(!f.directory.path().join("built-poam.json").exists());
+}
+
+/// A captured companion's changed raw bytes cannot receive a plan merely because item UUIDs still exist.
+#[test]
+fn authored_item_refuses_changed_native_companion_and_retains_other_sources() {
+    let f = fixture();
+    let value = authored_workflow(&f);
+    let ar = std::fs::read(f.directory.path().join("assessment-results.json")).unwrap();
+    let path = f.directory.path().join("catalog.json");
+    let original = std::fs::read(&path).unwrap();
+    let mut changed = original.clone();
+    changed.extend_from_slice(b" ");
+    std::fs::write(&path, &changed).unwrap();
+    assert!(prepare_authored(&f, &value, None).is_err());
+    assert_eq!(std::fs::read(f.directory.path().join("assessment-results.json")).unwrap(), ar);
+    std::fs::write(&path, &original).unwrap();
+    assert!(prepare_authored(&f, &value, None).is_ok());
+}
+
+/// Original captured input generations are rechecked immediately before the Root-owned output port.
+#[test]
+fn prepared_authored_item_detects_source_change_before_publication() {
+    let f = fixture();
+    let value = authored_workflow(&f);
+    let prepared = prepare_authored(&f, &value, None).unwrap();
+    let path = f.directory.path().join("assessment-results.json");
+    let original = std::fs::read(&path).unwrap();
+    std::fs::write(&path, b"{}").unwrap();
+    assert!(prepared.verify_inputs().is_err());
+    std::fs::write(&path, &original).unwrap();
+    assert!(prepared.verify_inputs().is_ok());
+    assert!(!f.directory.path().join("built-poam.json").exists());
+}
+
+/// Explicit prior authoring bytes guard exact history prefixes without asserting a full baseline impact report.
+#[test]
+fn actual_source_plan_accepts_nonterminal_append_and_refuses_rewritten_prior_event() {
+    let f = fixture();
+    let old = authored_workflow(&f);
+    let baseline = serde_json::to_vec(&old).unwrap();
+    let mut next = old;
+    next["items"][0]["history"].as_array_mut().unwrap().push(json!({"key":"start","actor":{"role_id":"owner","party_key":"remediator"},
+        "at":"2026-01-04T00:00:00Z","from":"planned","to":"in-progress","rationale":"Explicit underway assertion","closure":null}));
+    next["items"][0]["state"] = json!("in-progress");
+    assert!(prepare_authored(&f, &next, Some(&baseline)).is_ok());
+    next["items"][0]["history"][0]["rationale"] = json!("Overwritten original rationale");
+    assert!(prepare_authored(&f, &next, Some(&baseline)).is_err());
+}
+
+/// No implicit remediation is selected and original source-only empty scaffolds retain their own contract.
+#[test]
+fn authored_parser_does_not_turn_foundation_scaffold_into_selected_work() {
+    let f = fixture();
+    let value = scaffold(&f);
+    let bytes = serde_json::to_vec(&value).unwrap();
+    assert!(manifest::parse(&bytes).is_ok());
+    assert!(forge::poam::workflow::parse(&bytes).is_err());
+    assert!(
+        forge::poam::workflow::prepare(
+            &f.directory.path().join("poam.json"),
+            &bytes,
+            "2026-02-06",
+            7,
+            None
+        )
+        .is_err()
+    );
+}
+
+/// Persist the exact authored fixture and return original declared input bytes for nonmutation assertions.
+fn install_authored_cli(fixture: &Fixture) -> Vec<(String, Vec<u8>)> {
+    let value = authored_workflow(fixture);
+    write_json(&fixture.directory.path().join("poam.json"), &value);
+    [
+        "poam.json",
+        "assessment-results.json",
+        "assessment-plan.json",
+        "ssp.json",
+        "profile.json",
+        "catalog.json",
+    ]
+    .into_iter()
+    .map(|name| (name.to_string(), std::fs::read(fixture.directory.path().join(name)).unwrap()))
+    .collect()
+}
+
+/// Reconcile the complete original synthetic source/manifests after real command observations.
+fn assert_authored_cli_inputs(fixture: &Fixture, inputs: &[(String, Vec<u8>)]) {
+    for (name, bytes) in inputs {
+        assert_eq!(
+            &std::fs::read(fixture.directory.path().join(name)).unwrap(),
+            bytes,
+            "input {name}"
+        );
+    }
+}
+
+/// Exercise real clap admission without any hidden schedule clock or ambiguous scope fallback.
+#[test]
+fn authored_cli_requires_date_output_and_exclusive_explicit_scope() {
+    use clap::Parser as _;
+    for args in [
+        vec!["forge", "poam", "build", "--manifest", "poam.json", "--output", "native.json"],
+        vec!["forge", "poam", "build", "--manifest", "poam.json", "--as-of", "2026-01-04"],
+        vec!["forge", "poam", "check", "--manifest", "poam.json", "--workflow"],
+        vec![
+            "forge",
+            "poam",
+            "check",
+            "--manifest",
+            "poam.json",
+            "--workflow",
+            "--source-only",
+            "--as-of",
+            "2026-01-04",
+        ],
+        vec![
+            "forge",
+            "poam",
+            "check",
+            "--manifest",
+            "poam.json",
+            "--source-only",
+            "--as-of",
+            "2026-01-04",
+        ],
+        vec![
+            "forge",
+            "poam",
+            "check",
+            "--manifest",
+            "poam.json",
+            "--source-only",
+            "--due-soon-days",
+            "0",
+        ],
+        vec![
+            "forge",
+            "poam",
+            "check",
+            "--manifest",
+            "poam.json",
+            "--source-only",
+            "--baseline",
+            "prior.json",
+        ],
+        vec![
+            "forge",
+            "poam",
+            "check",
+            "--manifest",
+            "poam.json",
+            "--source-only",
+            "--report",
+            "report.json",
+        ],
+        vec![
+            "forge",
+            "poam",
+            "build",
+            "--manifest",
+            "poam.json",
+            "--as-of",
+            "2026-01-04",
+            "--output",
+            "native.json",
+            "--due-soon-days",
+            "366",
+        ],
+    ] {
+        assert!(
+            forge::cli::Cli::try_parse_from(args.clone()).is_err(),
+            "unexpected clap admission: {args:?}"
+        );
+    }
+    assert!(
+        forge::cli::Cli::try_parse_from([
+            "forge",
+            "poam",
+            "check",
+            "--manifest",
+            "poam.json",
+            "--source-only"
+        ])
+        .is_ok()
+    );
+    assert!(
+        forge::cli::Cli::try_parse_from([
+            "forge",
+            "poam",
+            "check",
+            "--manifest",
+            "poam.json",
+            "--workflow",
+            "--as-of",
+            "2026-01-04"
+        ])
+        .is_ok()
+    );
+}
+
+/// Actual workflow check emits complete minimized schedule and exit1 without changing any input or making a native file.
+#[test]
+fn authored_cli_schedule_action_is_valid_exit_one_with_complete_counts() {
+    let fixture = fixture();
+    let inputs = install_authored_cli(&fixture);
+    let root = fixture.directory.path();
+    let output = run(
+        root,
+        &[
+            "poam",
+            "check",
+            "--workflow",
+            "--manifest",
+            "poam.json",
+            "--as-of",
+            "2026-02-06",
+            "--due-soon-days",
+            "7",
+            "--format",
+            "json",
+        ],
+    );
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(output.stderr, [] as [u8; 0]);
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["source_objects"], 3);
+    assert_eq!(report["items"], 1);
+    assert_eq!(report["milestones"], 1);
+    assert_eq!(report["rows"].as_array().unwrap().len(), 2);
+    assert_eq!(report["overdue"], 1);
+    assert_eq!(report["due_soon"], 1);
+    let text = String::from_utf8(output.stdout).unwrap();
+    for private in ["SENSITIVE", "remediator", "rationale", "ssp.json", root.to_str().unwrap()] {
+        assert!(!text.contains(private));
+    }
+    assert_authored_cli_inputs(&fixture, &inputs);
+    assert!(!root.join("native.json").exists());
+    let quiet = run(
+        root,
+        &[
+            "poam",
+            "check",
+            "--workflow",
+            "--manifest",
+            "poam.json",
+            "--as-of",
+            "2026-01-04",
+            "--format",
+            "text",
+        ],
+    );
+    assert_eq!(quiet.status.code(), Some(0));
+    assert!(quiet.stdout.is_ascii());
+    assert_eq!(quiet.stderr, [] as [u8; 0]);
+}
+
+/// Invalid full dates, stale source hashes and unconfined baselines fail exit2 before any report output.
+#[test]
+fn authored_cli_invalid_or_stale_inputs_never_earn_schedule_action_credit() {
+    let fixture = fixture();
+    install_authored_cli(&fixture);
+    let root = fixture.directory.path();
+    for date in ["2026-02-30", "2026-2-06", "2026-02-06T00:00:00Z"] {
+        let output = run(
+            root,
+            &[
+                "poam",
+                "check",
+                "--workflow",
+                "--manifest",
+                "poam.json",
+                "--as-of",
+                date,
+                "--format",
+                "json",
+            ],
+        );
+        assert_eq!(output.status.code(), Some(2));
+        assert_eq!(output.stdout, [] as [u8; 0]);
+    }
+    let output = run(
+        root,
+        &[
+            "poam",
+            "check",
+            "--workflow",
+            "--manifest",
+            "poam.json",
+            "--as-of",
+            "2026-01-04",
+            "--baseline",
+            "../prior.json",
+        ],
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(output.stdout, [] as [u8; 0]);
+    std::fs::write(root.join("assessment-results.json"), b"changed actual native bytes").unwrap();
+    let output = run(
+        root,
+        &[
+            "poam",
+            "check",
+            "--workflow",
+            "--manifest",
+            "poam.json",
+            "--as-of",
+            "2026-01-04",
+            "--format",
+            "json",
+        ],
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(output.stdout, [] as [u8; 0]);
+}
+
+/// Current captured prior declaration admits append-only nonterminal history but refuses a rewritten event.
+#[test]
+fn authored_cli_consumes_explicit_baseline_and_refuses_prior_history_rewrite() {
+    let fixture = fixture();
+    install_authored_cli(&fixture);
+    let root = fixture.directory.path();
+    let original = std::fs::read(root.join("poam.json")).unwrap();
+    std::fs::write(root.join("prior.json"), &original).unwrap();
+    let mut next: Value = serde_json::from_slice(&original).unwrap();
+    next["items"][0]["state"] = json!("in-progress");
+    next["items"][0]["history"].as_array_mut().unwrap().push(json!({"key":"begin", "actor":{"role_id":"owner", "party_key":"remediator"},
+        "at":"2026-01-04T00:00:00Z", "from":"planned", "to":"in-progress", "rationale":"Explicit new assertion", "closure":null}));
+    write_json(&root.join("poam.json"), &next);
+    let accepted = run(
+        root,
+        &[
+            "poam",
+            "check",
+            "--workflow",
+            "--manifest",
+            "poam.json",
+            "--baseline",
+            "prior.json",
+            "--as-of",
+            "2026-01-04",
+            "--format",
+            "json",
+        ],
+    );
+    assert_eq!(accepted.status.code(), Some(0));
+    assert_ne!(accepted.stdout, [] as [u8; 0]);
+    next["items"][0]["history"][0]["rationale"] = json!("Rewritten old event");
+    write_json(&root.join("poam.json"), &next);
+    let refused = run(
+        root,
+        &[
+            "poam",
+            "check",
+            "--workflow",
+            "--manifest",
+            "poam.json",
+            "--baseline",
+            "prior.json",
+            "--as-of",
+            "2026-01-04",
+            "--format",
+            "json",
+        ],
+    );
+    assert_eq!(refused.status.code(), Some(2));
+    assert_eq!(refused.stdout, [] as [u8; 0]);
+    assert_eq!(std::fs::read(root.join("prior.json")).unwrap(), original);
+}
+
+/// Existing init/source-only requests remain independent of authored selection and workflow schedule options.
+#[test]
+fn authored_cli_does_not_silently_reinterpret_foundation_source_only_scope() {
+    let fixture = fixture();
+    scaffold(&fixture);
+    let root = fixture.directory.path();
+    assert_eq!(check(&fixture).status.code(), Some(0));
+    let value = authored_workflow(&fixture);
+    write_json(&root.join("poam.json"), &value);
+    let source_only = check(&fixture);
+    assert_eq!(source_only.status.code(), Some(2));
+    assert_eq!(source_only.stdout, [] as [u8; 0]);
+    let workflow = run(
+        root,
+        &[
+            "poam",
+            "check",
+            "--manifest",
+            "poam.json",
+            "--workflow",
+            "--as-of",
+            "2026-01-04",
+            "--format",
+            "json",
+        ],
+    );
+    assert_eq!(workflow.status.code(), Some(0));
+}
+
+/// Adequate proposed risk-review fields remain refused by the public shipping boundary and never change native source assertions.
+#[test]
+fn authored_cli_has_no_terminal_closure_override() {
+    let fixture = fixture();
+    let mut value = authored_workflow(&fixture);
+    let root = fixture.directory.path();
+    let foundation: manifest::PoamManifest = serde_json::from_value(scaffold(&fixture)).unwrap();
+    let prepared = source::load(&root.join("poam.json"), &foundation.source).unwrap();
+    let risk = prepared
+        .inventory()
+        .objects
+        .iter()
+        .find(|object| object.kind == manifest::SourceKind::Risk)
+        .unwrap();
+    value["items"][0]["source_refs"] = json!([{"kind":risk.kind, "key":risk.key, "uuid":risk.uuid, "result_uuid":risk.result_uuid, "expected_sha256":risk.sha256}]);
+    value["roles"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"id":"reviewer", "title":"Synthetic reviewer"}));
+    value["parties"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"key":"reviewer", "type":"person", "name":"Synthetic reviewer"}));
+    value["items"][0]["state"] = json!("accepted-risk-asserted");
+    value["items"][0]["history"].as_array_mut().unwrap().push(json!({"key":"accept", "actor":{"role_id":"owner", "party_key":"remediator"},
+        "at":"2026-01-06T00:00:00Z", "from":"planned", "to":"accepted-risk-asserted", "rationale":"Proposed explicit risk assertion",
+        "closure":{"reviewer":{"role_id":"reviewer", "party_key":"reviewer"}, "reviewed_at":"2026-01-07T00:00:00Z",
+        "rationale":"Proposed review only", "evidence":[{"key":"assertion", "href":"evidence.json", "expected_sha256":"a".repeat(64)}]}}));
+    write_json(&root.join("poam.json"), &value);
+    let inputs = ["poam.json", "assessment-results.json"]
+        .map(|name| (name.to_string(), std::fs::read(root.join(name)).unwrap()));
+    let output = run(
+        root,
+        &[
+            "poam",
+            "check",
+            "--workflow",
+            "--manifest",
+            "poam.json",
+            "--as-of",
+            "2026-02-06",
+            "--format",
+            "json",
+        ],
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(output.stdout, [] as [u8; 0]);
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("pending recorded closure disposition")
+    );
+    assert_authored_cli_inputs(&fixture, &inputs);
+}
+
+/// New native and report files are deterministic, schema-valid and based at the actual manifest directory.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn authored_cli_build_publishes_explicit_new_files_without_source_mutation() {
+    let fixture = fixture();
+    let inputs = install_authored_cli(&fixture);
+    let root = fixture.directory.path();
+    let args = [
+        "poam",
+        "build",
+        "--manifest",
+        "poam.json",
+        "--as-of",
+        "2026-01-04",
+        "--output",
+        "native.json",
+        "--report",
+        "schedule.json",
+    ];
+    let output = run(root, &args);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(output.stdout, [] as [u8; 0]);
+    assert_eq!(output.stderr, [] as [u8; 0]);
+    let artifact_bytes = std::fs::read(root.join("native.json")).unwrap();
+    let native: Value = serde_json::from_slice(&artifact_bytes).unwrap();
+    let schema: Value =
+        serde_json::from_str(include_str!("../schemas/oscal_poam_schema.json")).unwrap();
+    assert!(jsonschema::validator_for(&schema).unwrap().is_valid(&native));
+    assert_eq!(native["plan-of-action-and-milestones"]["import-ssp"]["href"], "ssp.json");
+    assert_eq!(
+        native["plan-of-action-and-milestones"]["poam-items"][0]["links"][0]["href"]
+            .as_str()
+            .unwrap()
+            .split('#')
+            .next()
+            .unwrap(),
+        "assessment-results.json"
+    );
+    let report: Value =
+        serde_json::from_slice(&std::fs::read(root.join("schedule.json")).unwrap()).unwrap();
+    assert_eq!(report["as_of"], "2026-01-04");
+    assert_authored_cli_inputs(&fixture, &inputs);
+    let output = run(root, &args);
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(output.stdout, [] as [u8; 0]);
+    assert_eq!(std::fs::read(root.join("native.json")).unwrap(), artifact_bytes);
+}
+
+/// Artifact location follows the captured manifest root, never the invoker's unrelated current directory.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn authored_cli_absolute_manifest_does_not_invent_output_href_relocation() {
+    let fixture = fixture();
+    install_authored_cli(&fixture);
+    let root = fixture.directory.path();
+    let outside = tempfile::tempdir().unwrap();
+    let manifest_path = root.join("poam.json");
+    let output = run(
+        outside.path(),
+        &[
+            "poam",
+            "build",
+            "--manifest",
+            manifest_path.to_str().unwrap(),
+            "--as-of",
+            "2026-01-04",
+            "--output",
+            "native.json",
+        ],
+    );
+    assert_eq!(output.status.code(), Some(0));
+    assert!(!outside.path().join("native.json").exists());
+    assert!(root.join("native.json").is_file());
+    let relocated = run(
+        root,
+        &[
+            "poam",
+            "build",
+            "--manifest",
+            "poam.json",
+            "--as-of",
+            "2026-01-04",
+            "--output",
+            "nested/native.json",
+        ],
+    );
+    assert_eq!(relocated.status.code(), Some(2));
+    assert_eq!(relocated.stdout, [] as [u8; 0]);
+    assert!(!root.join("nested").exists());
+}
+
+/// All output names are checked before preparation, so a known report conflict cannot leave a newly-created artifact.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn authored_cli_known_report_conflict_and_output_alias_fail_before_artifact_write() {
+    let fixture = fixture();
+    install_authored_cli(&fixture);
+    let root = fixture.directory.path();
+    std::fs::write(root.join("existing.json"), b"sentinel").unwrap();
+    for report in [
+        "existing.json",
+        "native.json",
+        "NATIVE.json",
+        "../report.json",
+        "NUL.json",
+        "bad:name.json",
+        "unicode-é.json",
+        "POAM.json",
+        "ASSESSMENT-RESULTS.json",
+    ] {
+        let output = run(
+            root,
+            &[
+                "poam",
+                "build",
+                "--manifest",
+                "poam.json",
+                "--as-of",
+                "2026-01-04",
+                "--output",
+                "native.json",
+                "--report",
+                report,
+            ],
+        );
+        assert_eq!(output.status.code(), Some(2));
+        assert_eq!(output.stdout, [] as [u8; 0]);
+        assert!(!root.join("native.json").exists());
+    }
+    let overlong = format!("{}.json", "x".repeat(124));
+    let output = run(
+        root,
+        &[
+            "poam",
+            "build",
+            "--manifest",
+            "poam.json",
+            "--as-of",
+            "2026-01-04",
+            "--output",
+            "native.json",
+            "--report",
+            &overlong,
+        ],
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert!(!root.join("native.json").exists());
+    std::fs::copy(root.join("poam.json"), root.join("prior.json")).unwrap();
+    let output = run(
+        root,
+        &[
+            "poam",
+            "build",
+            "--manifest",
+            "poam.json",
+            "--as-of",
+            "2026-01-04",
+            "--baseline",
+            "prior.json",
+            "--output",
+            "native.json",
+            "--report",
+            "PRIOR.json",
+        ],
+    );
+    assert_eq!(output.status.code(), Some(2));
+    assert!(!root.join("native.json").exists());
+    assert_eq!(std::fs::read(root.join("existing.json")).unwrap(), b"sentinel");
 }

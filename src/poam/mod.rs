@@ -1,7 +1,8 @@
-//! POA&M foundation: exact source capture and zero-selection manifests.
+//! POA&M source foundation and explicitly authored nonterminal workflow.
 //!
-//! Source checks establish input integrity only. They do not accept a remediation
-//! plan, select work, assert source review, or validate workflow/closure evidence.
+//! Source-only checks establish input integrity. The separate workflow mode checks
+//! authored ownership, history and schedules and generates native POA&M JSON; it
+//! authenticates no actor and refuses undisposed completion/risk-acceptance history.
 
 #![deny(missing_docs)]
 
@@ -13,6 +14,12 @@ pub mod manifest;
 pub mod report;
 /// Confined capture, exact companion binding and explicit source selection.
 pub mod source;
+/// Bounded author-supplied item, milestone and nonterminal assertion workflow.
+pub mod workflow;
+/// Confined authored workflow commands with explicit dates and new-file publication.
+pub mod workflow_cli;
+/// Typed native POA&M projection used by the authored workflow producer.
+mod workflow_model;
 
 use std::io::Write as _;
 use std::path::{Component, Path, PathBuf};

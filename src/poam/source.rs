@@ -315,6 +315,8 @@ fn validate_context_pins(document: &Value, context: &LoadedContext) -> Result<()
 }
 
 /// Require unique back-matter context receipts bound to exact captured companions.
+/// Resolve each receipt from the AR directory; companion import hrefs have their
+/// own importer-relative bases and are verified by the captured context loader.
 fn validate_resource_pins(
     document: &Value,
     source: &SourceManifest,
@@ -365,7 +367,7 @@ fn validate_resource_pins(
         let href = required_string(links[0].get("href"), "AR context resource href")?;
         let declaration =
             declarations.get(kind).ok_or_else(|| error("unknown AR context resource kind"))?;
-        if href != identity.href || normalized_href_path(parent, href)? != declaration.artifact {
+        if normalized_href_path(parent, href)? != declaration.artifact {
             return Err(error(
                 "AR context resource link resolves to a different confined companion",
             ));
