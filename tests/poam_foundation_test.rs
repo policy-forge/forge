@@ -4603,6 +4603,7 @@ fn s4_actual_nested_plan_companion_linkage_and_cwd_decoys_resolve_exactly() {
 fn s4_actual_cli_outputs_preflight_originals_and_preserve_portable_publication() {
     let f = s4_control_fixture(true, false);
     let prepared = s4_control_prepare(&f);
+    prepared.verify_inputs().unwrap();
     let originals = s4_control_originals(&f);
     for (path, bytes) in &originals {
         let relative = path.strip_prefix(&f.root).unwrap().to_str().unwrap();
