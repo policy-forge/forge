@@ -400,6 +400,9 @@ jobs:
       - name: Check closed OS-denial receipt and ownership controls
         run: python -B scripts/test_verify_workspace_os_denial.py
 
+      - name: Check fixed stdlib rejection-site controls
+        run: python -B scripts/test_workspace_stdlib_link_diagnostic.py
+
       - name: Check separate stdlib-gate observation controls
         run: python -B scripts/test_observe_workspace_stdlib_gate.py
 
@@ -469,6 +472,15 @@ jobs:
         with:
           name: workspace-headless-ip-denial-${{ github.sha }}
           path: headless-ip-denial-evidence/workspace-os-denial-verification.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Retain actual fixed stdlib rejection-site detail
+        if: ${{ failure() && steps.headless-denial-verification.outcome == 'failure' && steps.headless-denial-verification.outputs.stdlib_link_detail_published == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-stdlib-link-detail-${{ github.sha }}
+          path: headless-ip-denial-evidence/stdlib-unsupported-link-diagnostic.json
           if-no-files-found: error
           retention-days: 14
 
