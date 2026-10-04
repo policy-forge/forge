@@ -794,6 +794,20 @@ retain their base. Artifact/report publication is separate and may leave a new
 artifact if the later report fails. See [authored POA&M commands](poam-cli-workflow.md)
 for explicit baselines, bounds, portable destinations and remaining acceptance.
 
+Compare a prior declaration separately, including revisions refused by native
+production:
+
+```bash
+forge poam baseline --manifest ./assessment-bundle/authored.json \
+  --baseline prior.json --as-of 2026-02-06 --format json
+```
+
+Exit 0 means a complete comparison needs no review; 1 means its complete report
+needs review; 2 means invalid input/output. Prior source tuples are checked against
+the actual current source capture, without reconstructing historical freshness.
+See [baseline comparison](poam-baseline-comparison.md) for complete denominators,
+explicit reopening declarations, privacy and admission limits.
+
 ## 4. Global Options
 
 ```bash

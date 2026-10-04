@@ -9,9 +9,9 @@ use std::path::{Component, Path, PathBuf};
 
 use serde_json::Value;
 
-use super::{manifest, workflow};
+use super::{manifest, workflow, workflow_baseline};
 use crate::ForgeError;
-use crate::cli::{AuthorReportFormat, PoamBuildArgs};
+use crate::cli::{AuthorReportFormat, PoamBaselineArgs, PoamBuildArgs};
 
 /// Original declaration generation retained independently of the producer's five sources.
 struct Declaration {
@@ -83,6 +83,72 @@ pub fn execute_check(
     verify_inputs(&inputs, &prepared)?;
     emit_report(&inputs.root, report, &rendered)?;
     Ok(prepared.review_required())
+}
+
+/// Compare complete declarations and actual current sources without a native artifact.
+///
+/// A complete changed or refused comparison returns true for the valid exit-1
+/// action state. It never converts a refusal observation into artifact admission.
+/// Every declaration's original bytes and identity and all five native source
+/// generations are rechecked before the single explicit report publication/stdout.
+/// # Errors
+/// Rejects missing/unsafe/unbounded inputs, malformed closed declarations or reopen
+/// relations, invalid source capture/date, output aliases, unsupported publication
+/// and complete-output bounds or I/O failure. No partial report earns valid credit.
+pub fn execute_baseline(args: &PoamBaselineArgs) -> Result<bool, ForgeError> {
+    let inputs = capture_inputs(&args.manifest, Some(&args.baseline))?;
+    let prior =
+        inputs.baseline.as_ref().ok_or_else(|| error("baseline declaration is required"))?;
+    let reopens = args.reopens.as_deref().map(|path| capture(&inputs.root, path)).transpose()?;
+    let current = workflow_baseline::parse_declaration(&inputs.manifest.bytes)?;
+    let mut forbidden = vec![inputs.manifest.relative.clone(), prior.relative.clone()];
+    if let Some(reopens) = &reopens {
+        forbidden.push(reopens.relative.clone());
+    }
+    forbidden.extend([
+        current.source.assessment_results.artifact,
+        current.source.context.assessment_plan.artifact,
+        current.source.context.ssp.artifact,
+        current.source.context.profile.artifact,
+        current.source.context.catalog.artifact,
+    ]);
+    validate_destinations(&inputs.root, &forbidden, None, args.report.as_deref(), args.format)?;
+    let prepared = workflow_baseline::prepare(
+        &inputs.root.join(&inputs.manifest.relative),
+        &inputs.manifest.bytes,
+        &prior.bytes,
+        reopens.as_ref().map(|captured| captured.bytes.as_slice()),
+        &args.as_of,
+    )?;
+    let report = render_baseline_report(prepared.report(), args.format)?;
+    prepared.verify_inputs()?;
+    recheck(&inputs.root, &inputs.manifest)?;
+    recheck(&inputs.root, prior)?;
+    if let Some(reopens) = &reopens {
+        recheck(&inputs.root, reopens)?;
+    }
+    emit_report(&inputs.root, args.report.as_deref(), &report)?;
+    Ok(prepared.review_required())
+}
+
+/// Preserve every comparison field in JSON or escaped ASCII text under the same bound.
+fn render_baseline_report(bytes: &[u8], format: AuthorReportFormat) -> Result<Vec<u8>, ForgeError> {
+    if bytes.len() > workflow::MAX_OUTPUT_BYTES {
+        return Err(error("baseline report exceeds complete output bound"));
+    }
+    if matches!(format, AuthorReportFormat::Json) {
+        return Ok(bytes.to_vec());
+    }
+    let value: Value = serde_json::from_slice(bytes)
+        .map_err(|_| error("prepared baseline report is invalid JSON"))?;
+    let text = serde_json::to_string_pretty(&value)
+        .map_err(|_| error("baseline text rendering failed"))?;
+    let mut output = String::new();
+    for line in text.lines() {
+        append_ascii(&mut output, line)?;
+        append_newline(&mut output)?;
+    }
+    Ok(output.into_bytes())
 }
 
 /// Capture manifest and explicit prior through existing bounded held-identity primitives.
@@ -447,5 +513,45 @@ mod tests {
         std::fs::hard_link(root.join("real.json"), root.join("hard.json")).unwrap();
         assert!(capture(&root, Path::new("hard.json")).is_err());
         assert!(destination(&root, Path::new("link.json"), "json").is_err());
+    }
+}
+
+/// Proposed baseline adapter rendering controls; native CLI controls use real five-file fixtures.
+#[cfg(test)]
+mod baseline_adapter_tests {
+    use super::*;
+
+    /// Complete JSON preserves every row and the text representation escapes authored Unicode.
+    #[test]
+    fn baseline_renderer_preserves_all_fields_and_escapes_text() {
+        let value = serde_json::json!({"schema_version":"forge.poam-baseline/1",
+            "rows":[{"item_key":"key\u{202e}\u{1b}","presence":"removed"}],
+            "artifact_validated":false,"refusal_observations":["removed-identity"],
+            "items":{"previous":1,"current":0,"removed":1},"milestones":{"previous":2,"current":0,"removed":2}});
+        let bytes = serde_json::to_vec(&value).unwrap();
+        assert_eq!(render_baseline_report(&bytes, AuthorReportFormat::Json).unwrap(), bytes);
+        let text = render_baseline_report(&bytes, AuthorReportFormat::Text).unwrap();
+        assert!(text.is_ascii());
+        assert!(!text.contains(&0x1b));
+        let text = String::from_utf8(text).unwrap();
+        for expected in ["removed-identity", "artifact_validated", "milestones", "\\u{202e}"] {
+            assert!(text.contains(expected), "{expected}");
+        }
+    }
+
+    /// Complete bounds fail before returning bytes, including Unicode expansion in text.
+    #[test]
+    fn baseline_renderer_refuses_raw_and_expanded_whole_output_limits() {
+        assert!(
+            render_baseline_report(
+                &vec![b' '; workflow::MAX_OUTPUT_BYTES + 1],
+                AuthorReportFormat::Json
+            )
+            .is_err()
+        );
+        let value = serde_json::json!({"key":"é".repeat(workflow::MAX_OUTPUT_BYTES / 3)});
+        let bytes = serde_json::to_vec(&value).unwrap();
+        assert!(bytes.len() < workflow::MAX_OUTPUT_BYTES);
+        assert!(render_baseline_report(&bytes, AuthorReportFormat::Text).is_err());
     }
 }

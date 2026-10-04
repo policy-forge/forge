@@ -386,7 +386,7 @@ pub enum Commands {
     },
 }
 
-/// Mechanical POA&M foundation commands. Workflow validation is a later gate.
+/// Explicit source integrity, nonterminal workflow and read-only comparison commands.
 #[derive(Subcommand)]
 #[deny(missing_docs)]
 pub enum PoamCommand {
@@ -396,6 +396,11 @@ pub enum PoamCommand {
     Build(
         /// Explicit manifest, schedule date and new output destination declarations.
         Box<PoamBuildArgs>,
+    ),
+    /// Compare explicit current/prior declarations without preparing a native artifact
+    Baseline(
+        /// Explicit comparison inputs, date and optional new report destination.
+        Box<PoamBaselineArgs>,
     ),
     /// Check explicitly acknowledged source-only or authored workflow scope
     Check {
@@ -424,6 +429,30 @@ pub enum PoamCommand {
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
     },
+}
+
+/// Explicit bounded read-only baseline comparison inputs and optional report output.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct PoamBaselineArgs {
+    /// Current declaration; its canonical directory confines every input and report
+    #[arg(long)]
+    pub manifest: PathBuf,
+    /// Explicit prior declaration relative to the current manifest directory
+    #[arg(long)]
+    pub baseline: PathBuf,
+    /// Canonical explicit comparison date; no wall-clock default
+    #[arg(long)]
+    pub as_of: String,
+    /// Optional closed proposed-reopening array; grants no native build authority
+    #[arg(long)]
+    pub reopens: Option<PathBuf>,
+    /// Optional new report filename in the current manifest directory; otherwise stdout
+    #[arg(long)]
+    pub report: Option<PathBuf>,
+    /// Complete minimized JSON or printable ASCII text report
+    #[arg(long, value_enum, default_value_t = AuthorReportFormat::Json)]
+    pub format: AuthorReportFormat,
 }
 
 /// Explicit authoring inputs and new destinations for the nonterminal POA&M producer.
@@ -1800,6 +1829,13 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             PoamCommand::Init(args) => crate::poam::execute_init(args),
             PoamCommand::Build(args) => {
                 if crate::poam::workflow_cli::execute_build(args)? {
+                    Err(ForgeError::PoamActionRequired)
+                } else {
+                    Ok(())
+                }
+            }
+            PoamCommand::Baseline(args) => {
+                if crate::poam::workflow_cli::execute_baseline(args)? {
                     Err(ForgeError::PoamActionRequired)
                 } else {
                     Ok(())

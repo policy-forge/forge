@@ -1712,3 +1712,445 @@ fn authored_cli_known_report_conflict_and_output_alias_fail_before_artifact_writ
     assert!(!root.join("native.json").exists());
     assert_eq!(std::fs::read(root.join("existing.json")).unwrap(), b"sentinel");
 }
+
+/// Actual native source epochs classify prior not-current separately from invalid prior history or authority.
+#[test]
+fn baseline_comparison_uses_actual_current_native_generation_without_prior_freshness_claim() {
+    let f = fixture();
+    let previous = authored_workflow(&f);
+    let prior_bytes = serde_json::to_vec(&previous).unwrap();
+    ar_mutate(&f, |ar| {
+        ar["assessment-results"]["results"][0]["findings"][1]["description"] =
+            json!("SENSITIVE changed native finding prose");
+    });
+    let current = authored_workflow(&f);
+    let current_bytes = serde_json::to_vec(&current).unwrap();
+    let prepared = forge::poam::workflow_baseline::prepare(
+        &f.directory.path().join("poam.json"),
+        &current_bytes,
+        &prior_bytes,
+        None,
+        "2026-02-06",
+    )
+    .unwrap();
+    prepared.verify_inputs().unwrap();
+    let report: Value = serde_json::from_slice(prepared.report()).unwrap();
+    assert_eq!(report["current_refs_not_current"], 0);
+    assert_eq!(report["previous_refs_not_current"], 1);
+    assert_eq!(report["previous_validation"], "bounded-structural-history-only");
+    assert_eq!(report["source_declaration_changed"], true);
+    assert_eq!(report["artifact_validated"], false);
+    assert_eq!(report["previous_manifest_sha256"], common::sha256_hex(&prior_bytes));
+    assert_eq!(report["current_manifest_sha256"], common::sha256_hex(&current_bytes));
+    assert!(!String::from_utf8(prepared.report().to_vec()).unwrap().contains("SENSITIVE"));
+    assert!(!f.directory.path().join("built-poam.json").exists());
+}
+
+/// A readonly comparison retains/rechecks all five actual inputs and does not fabricate artifact publication.
+#[test]
+fn baseline_comparison_retains_real_source_generations_and_refuses_drift() {
+    let f = fixture();
+    let value = authored_workflow(&f);
+    let bytes = serde_json::to_vec(&value).unwrap();
+    let prepared = forge::poam::workflow_baseline::prepare(
+        &f.directory.path().join("poam.json"),
+        &bytes,
+        &bytes,
+        None,
+        "2026-02-06",
+    )
+    .unwrap();
+    prepared.verify_inputs().unwrap();
+    assert!(prepared.revision_rules_compatible());
+    let path = f.directory.path().join("catalog.json");
+    let original = std::fs::read(&path).unwrap();
+    let mut changed = original.clone();
+    changed.extend_from_slice(b" ");
+    std::fs::write(&path, &changed).unwrap();
+    assert!(prepared.verify_inputs().is_err());
+    assert!(!f.directory.path().join("built-poam.json").exists());
+    std::fs::write(&path, &original).unwrap();
+    assert!(prepared.verify_inputs().is_ok());
+}
+
+/// Install explicit current/prior authored declarations and retain their actual source bytes.
+fn install_baseline_cli(fixture: &Fixture) -> Vec<(String, Vec<u8>)> {
+    let mut inputs = install_authored_cli(fixture);
+    let prior = std::fs::read(fixture.directory.path().join("poam.json")).unwrap();
+    std::fs::write(fixture.directory.path().join("prior.json"), &prior).unwrap();
+    inputs.push(("prior.json".to_string(), prior));
+    inputs
+}
+
+/// Invoke the proposed readonly command with explicit date and two declaration filenames.
+fn baseline_cli(fixture: &Fixture, extra: &[&str]) -> Output {
+    let mut args = vec![
+        "poam",
+        "baseline",
+        "--manifest",
+        "poam.json",
+        "--baseline",
+        "prior.json",
+        "--as-of",
+        "2026-02-06",
+    ];
+    args.extend_from_slice(extra);
+    run(fixture.directory.path(), &args)
+}
+
+/// Actual clap requires every comparison input/date and exposes no artifact or override options.
+#[test]
+fn baseline_cli_requires_explicit_inputs_date_and_readonly_scope() {
+    let fixture = fixture();
+    install_baseline_cli(&fixture);
+    for args in [
+        vec!["poam", "baseline"],
+        vec!["poam", "baseline", "--manifest", "poam.json", "--baseline", "prior.json"],
+        vec!["poam", "baseline", "--manifest", "poam.json", "--as-of", "2026-02-06"],
+        vec!["poam", "baseline", "--baseline", "prior.json", "--as-of", "2026-02-06"],
+    ] {
+        let result = run(fixture.directory.path(), &args);
+        assert_eq!(result.status.code(), Some(2), "{args:?}");
+        assert!(result.stdout.is_empty(), "{args:?}");
+    }
+    for extra in [
+        vec!["--output", "artifact.json"],
+        vec!["--workflow"],
+        vec!["--source-only"],
+        vec!["--due-soon-days", "7"],
+        vec!["--allow-terminal"],
+    ] {
+        let result = baseline_cli(&fixture, &extra);
+        assert_eq!(result.status.code(), Some(2), "{extra:?}");
+        assert!(result.stdout.is_empty(), "{extra:?}");
+    }
+    assert!(!fixture.directory.path().join("artifact.json").exists());
+}
+
+/// An unchanged actual five-source comparison is deterministic exit0 and publishes only a new report.
+#[test]
+fn baseline_cli_unchanged_report_is_complete_deterministic_and_nonmutating() {
+    let fixture = fixture();
+    let inputs = install_baseline_cli(&fixture);
+    let first = baseline_cli(&fixture, &[]);
+    let second = baseline_cli(&fixture, &[]);
+    assert_eq!(first.status.code(), Some(0), "{}", String::from_utf8_lossy(&first.stderr));
+    assert_eq!(second.status.code(), Some(0));
+    assert_eq!(first.stdout, second.stdout);
+    let report: Value = serde_json::from_slice(&first.stdout).unwrap();
+    assert_eq!(report["schema_version"], "forge.poam-baseline/1");
+    assert_eq!(report["artifact_validated"], false);
+    assert_eq!(report["revision_rules_compatible"], true);
+    assert_eq!(
+        report["items"],
+        json!({"previous":1,"current":1,"common":1,"added":0,"removed":0,"changed":0})
+    );
+    assert_eq!(report["milestones"], report["items"]);
+    assert_eq!(report["rows"].as_array().unwrap().len(), 2);
+    assert_eq!(report["references"].as_array().unwrap().len(), 2);
+    assert_eq!(report["previous_manifest_sha256"], report["current_manifest_sha256"]);
+    assert_eq!(report["previous_validation"], "bounded-structural-history-only");
+    assert!(!String::from_utf8(first.stdout.clone()).unwrap().contains("SENSITIVE"));
+    let published = baseline_cli(&fixture, &["--report", "baseline-report.json"]);
+    assert_eq!(published.status.code(), Some(0));
+    assert_eq!(published.stdout, [] as [u8; 0]);
+    assert_eq!(
+        std::fs::read(fixture.directory.path().join("baseline-report.json")).unwrap(),
+        first.stdout
+    );
+    let refused = baseline_cli(&fixture, &["--report", "baseline-report.json"]);
+    assert_eq!(refused.status.code(), Some(2));
+    assert_eq!(refused.stdout, [] as [u8; 0]);
+    assert_eq!(
+        std::fs::read(fixture.directory.path().join("baseline-report.json")).unwrap(),
+        first.stdout
+    );
+    assert_authored_cli_inputs(&fixture, &inputs);
+}
+
+/// Compatible owner/date/outcome changes still request review rather than earning unchanged exit0.
+#[test]
+fn baseline_cli_compatible_declared_changes_are_valid_exit_one() {
+    let fixture = fixture();
+    install_baseline_cli(&fixture);
+    let root = fixture.directory.path();
+    let mut current: Value =
+        serde_json::from_slice(&std::fs::read(root.join("poam.json")).unwrap()).unwrap();
+    current["items"][0]["owners"][0]["rationale"] =
+        json!("Changed sensitive responsibility rationale");
+    current["items"][0]["target_date"] = json!("2026-02-11");
+    current["items"][0]["description"] = json!("Changed sensitive outcome");
+    current["items"][0]["milestones"][0]["outcome"] = json!("Changed sensitive milestone outcome");
+    let bytes = write_json(&root.join("poam.json"), &current);
+    let result = baseline_cli(&fixture, &[]);
+    assert_eq!(result.status.code(), Some(1), "{}", String::from_utf8_lossy(&result.stderr));
+    assert_eq!(result.stderr, [] as [u8; 0]);
+    let report: Value = serde_json::from_slice(&result.stdout).unwrap();
+    assert_eq!(report["revision_rules_compatible"], true);
+    assert_eq!(report["items"]["changed"], 1);
+    assert_eq!(report["milestones"]["changed"], 1);
+    let item = report["rows"].as_array().unwrap().iter().find(|row| row["kind"] == "item").unwrap();
+    for field in ["owners", "target-date", "outcome"] {
+        assert!(item["changes"].as_array().unwrap().contains(&json!(field)), "{field}");
+    }
+    let text = String::from_utf8(result.stdout).unwrap();
+    assert!(!text.contains("Changed sensitive"));
+    assert_eq!(std::fs::read(root.join("poam.json")).unwrap(), bytes);
+}
+
+/// Complete removals remain observable while ordinary check/build continue to refuse them.
+#[test]
+fn baseline_cli_empty_current_preserves_removed_rows_without_build_admission() {
+    let fixture = fixture();
+    install_baseline_cli(&fixture);
+    let root = fixture.directory.path();
+    let mut current: Value =
+        serde_json::from_slice(&std::fs::read(root.join("poam.json")).unwrap()).unwrap();
+    current["items"] = json!([]);
+    current["roles"] = json!([]);
+    current["parties"] = json!([]);
+    write_json(&root.join("poam.json"), &current);
+    let result = baseline_cli(&fixture, &[]);
+    assert_eq!(result.status.code(), Some(1), "{}", String::from_utf8_lossy(&result.stderr));
+    let report: Value = serde_json::from_slice(&result.stdout).unwrap();
+    assert_eq!(report["items"]["removed"], 1);
+    assert_eq!(report["items"]["current"], 0);
+    assert_eq!(report["milestones"]["removed"], 1);
+    assert_eq!(report["rows"].as_array().unwrap().len(), 2);
+    assert_eq!(report["revision_rules_compatible"], false);
+    assert_eq!(report["artifact_validated"], false);
+    let refusals = report["refusal_observations"].as_array().unwrap();
+    assert!(refusals.contains(&json!("empty-current")));
+    assert!(refusals.contains(&json!("removed-identity")));
+    let check = run(
+        root,
+        &[
+            "poam",
+            "check",
+            "--workflow",
+            "--manifest",
+            "poam.json",
+            "--baseline",
+            "prior.json",
+            "--as-of",
+            "2026-02-06",
+        ],
+    );
+    assert_eq!(check.status.code(), Some(2));
+    assert_eq!(check.stdout, [] as [u8; 0]);
+    let build = run(
+        root,
+        &[
+            "poam",
+            "build",
+            "--manifest",
+            "poam.json",
+            "--baseline",
+            "prior.json",
+            "--as-of",
+            "2026-02-06",
+            "--output",
+            "refused.json",
+        ],
+    );
+    assert_eq!(build.status.code(), Some(2));
+    assert!(!root.join("refused.json").exists());
+}
+
+/// Rewritten history is a valid comparison finding and remains invalid workflow admission.
+#[test]
+fn baseline_cli_reports_rewritten_history_without_relaxing_workflow_check() {
+    let fixture = fixture();
+    install_baseline_cli(&fixture);
+    let root = fixture.directory.path();
+    let mut current: Value =
+        serde_json::from_slice(&std::fs::read(root.join("poam.json")).unwrap()).unwrap();
+    current["items"][0]["history"][0]["rationale"] = json!("Rewritten sensitive event");
+    write_json(&root.join("poam.json"), &current);
+    let result = baseline_cli(&fixture, &[]);
+    assert_eq!(result.status.code(), Some(1));
+    let report: Value = serde_json::from_slice(&result.stdout).unwrap();
+    assert_eq!(report["revision_rules_compatible"], false);
+    assert!(
+        report["refusal_observations"].as_array().unwrap().contains(&json!("rewritten-history"))
+    );
+    let refused = run(
+        root,
+        &[
+            "poam",
+            "check",
+            "--workflow",
+            "--manifest",
+            "poam.json",
+            "--baseline",
+            "prior.json",
+            "--as-of",
+            "2026-02-06",
+        ],
+    );
+    assert_eq!(refused.status.code(), Some(2));
+    assert_eq!(refused.stdout, [] as [u8; 0]);
+}
+
+/// Stale selected tuples are complete comparison rows; invalid actual source capture is exit2.
+#[test]
+fn baseline_cli_distinguishes_stale_selection_from_invalid_source_capture() {
+    let fixture = fixture();
+    install_baseline_cli(&fixture);
+    let root = fixture.directory.path();
+    let mut current: Value =
+        serde_json::from_slice(&std::fs::read(root.join("poam.json")).unwrap()).unwrap();
+    current["items"][0]["source_refs"][0]["expected_sha256"] = json!("f".repeat(64));
+    write_json(&root.join("poam.json"), &current);
+    let result = baseline_cli(&fixture, &[]);
+    assert_eq!(result.status.code(), Some(1));
+    let report: Value = serde_json::from_slice(&result.stdout).unwrap();
+    assert_eq!(report["previous_refs_not_current"], 0);
+    assert_eq!(report["current_refs_not_current"], 1);
+    assert_eq!(report["references"].as_array().unwrap().len(), 2);
+    assert_eq!(report["revision_rules_compatible"], false);
+    assert!(
+        report["refusal_observations"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("current-reference-stale"))
+    );
+    std::fs::write(root.join("assessment-results.json"), b"{}").unwrap();
+    let invalid = baseline_cli(&fixture, &["--report", "invalid-source.json"]);
+    assert_eq!(invalid.status.code(), Some(2));
+    assert_eq!(invalid.stdout, [] as [u8; 0]);
+    assert!(!root.join("invalid-source.json").exists());
+}
+
+/// Unsafe destinations, malformed auxiliary data and declaration aliases never publish reports.
+#[test]
+fn baseline_cli_confines_all_inputs_and_preflights_report_outputs() {
+    let fixture = fixture();
+    let inputs = install_baseline_cli(&fixture);
+    let root = fixture.directory.path();
+    for extra in [
+        vec!["--report", "nested/report.json"],
+        vec!["--report", "../report.json"],
+        vec!["--report", "poam.json"],
+        vec!["--report", "PRIOR.json"],
+        vec!["--report", "SSP.json"],
+        vec!["--report", "NUL.json"],
+        vec!["--report", "report.txt"],
+        vec!["--reopens", "../outside.json", "--report", "outside-report.json"],
+    ] {
+        let result = baseline_cli(&fixture, &extra);
+        assert_eq!(result.status.code(), Some(2), "{extra:?}");
+        assert!(result.stdout.is_empty(), "{extra:?}");
+    }
+    std::fs::write(root.join("reopens.json"), b"[]").unwrap();
+    let refused =
+        baseline_cli(&fixture, &["--reopens", "reopens.json", "--report", "REOPENS.json"]);
+    assert_eq!(refused.status.code(), Some(2));
+    assert_eq!(refused.stdout, [] as [u8; 0]);
+    assert_eq!(std::fs::read(root.join("reopens.json")).unwrap(), b"[]");
+    std::fs::write(root.join("reopens.json"), b"[{\"unknown\":true}]").unwrap();
+    let invalid =
+        baseline_cli(&fixture, &["--reopens", "reopens.json", "--report", "invalid-reopen.json"]);
+    assert_eq!(invalid.status.code(), Some(2));
+    assert_eq!(invalid.stdout, [] as [u8; 0]);
+    assert!(!root.join("invalid-reopen.json").exists());
+    assert_authored_cli_inputs(&fixture, &inputs);
+}
+
+/// The public command reaches the core's canonical date check rather than accepting signed/expanded years.
+#[test]
+fn baseline_cli_rejects_noncanonical_years_and_accepts_real_leap_day() {
+    let fixture = fixture();
+    let inputs = install_baseline_cli(&fixture);
+    let root = fixture.directory.path();
+    for date in
+        ["--as-of=-0001-01-01", "--as-of=+10000-12-31", "--as-of=2026-02-29", "--as-of=2026-2-06"]
+    {
+        let result = run(
+            root,
+            &["poam", "baseline", "--manifest", "poam.json", "--baseline", "prior.json", date],
+        );
+        assert_eq!(result.status.code(), Some(2), "{date}");
+        assert!(result.stdout.is_empty(), "{date}");
+    }
+    let valid = run(
+        root,
+        &[
+            "poam",
+            "baseline",
+            "--manifest",
+            "poam.json",
+            "--baseline",
+            "prior.json",
+            "--as-of=2028-02-29",
+        ],
+    );
+    assert_eq!(valid.status.code(), Some(0), "{}", String::from_utf8_lossy(&valid.stderr));
+    let report: Value = serde_json::from_slice(&valid.stdout).unwrap();
+    assert_eq!(report["as_of"], "2028-02-29");
+    assert_authored_cli_inputs(&fixture, &inputs);
+}
+
+/// Empty prior inspection reports complete additions and a refusal reason while artifact guards remain exact.
+#[test]
+fn baseline_cli_empty_previous_explains_complete_additions_without_build_admission() {
+    let fixture = fixture();
+    install_baseline_cli(&fixture);
+    let root = fixture.directory.path();
+    let mut prior: Value =
+        serde_json::from_slice(&std::fs::read(root.join("prior.json")).unwrap()).unwrap();
+    prior["items"] = json!([]);
+    prior["roles"] = json!([]);
+    prior["parties"] = json!([]);
+    let previous = write_json(&root.join("prior.json"), &prior);
+    let comparison = baseline_cli(&fixture, &[]);
+    assert_eq!(
+        comparison.status.code(),
+        Some(1),
+        "{}",
+        String::from_utf8_lossy(&comparison.stderr)
+    );
+    let report: Value = serde_json::from_slice(&comparison.stdout).unwrap();
+    assert_eq!(report["items"]["previous"], 0);
+    assert_eq!(report["items"]["added"], 1);
+    assert_eq!(report["milestones"]["previous"], 0);
+    assert_eq!(report["milestones"]["added"], 1);
+    assert_eq!(report["rows"].as_array().unwrap().len(), 2);
+    assert_eq!(report["revision_rules_compatible"], false);
+    assert_eq!(report["artifact_validated"], false);
+    assert!(report["refusal_observations"].as_array().unwrap().contains(&json!("empty-previous")));
+    let check = run(
+        root,
+        &[
+            "poam",
+            "check",
+            "--workflow",
+            "--manifest",
+            "poam.json",
+            "--baseline",
+            "prior.json",
+            "--as-of",
+            "2026-02-06",
+        ],
+    );
+    assert_eq!(check.status.code(), Some(2));
+    assert_eq!(check.stdout, [] as [u8; 0]);
+    let build = run(
+        root,
+        &[
+            "poam",
+            "build",
+            "--manifest",
+            "poam.json",
+            "--baseline",
+            "prior.json",
+            "--as-of",
+            "2026-02-06",
+            "--output",
+            "refused-empty-prior.json",
+        ],
+    );
+    assert_eq!(build.status.code(), Some(2));
+    assert!(!root.join("refused-empty-prior.json").exists());
+    assert_eq!(std::fs::read(root.join("prior.json")).unwrap(), previous);
+}

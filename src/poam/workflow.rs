@@ -356,6 +356,22 @@ fn refuse_undisposed_closure(manifest: &WorkflowManifest) -> Result<(), ForgeErr
 
 /// Validate every authored record, reference, history and whole collection bound.
 fn validate_shape(manifest: &WorkflowManifest) -> Result<(), ForgeError> {
+    validate_shape_with_minimum(manifest, 1)
+}
+
+/// Validate complete readonly comparison structure, including an explicitly empty current plan.
+///
+/// This profile conveys no artifact, terminal, source-freshness or actor authority;
+/// the comparison module reports refusal separately and never renders an artifact.
+pub(super) fn validate_comparison_shape(manifest: &WorkflowManifest) -> Result<(), ForgeError> {
+    validate_shape_with_minimum(manifest, 0)
+}
+
+/// Share every existing shape predicate while retaining the caller's exact item minimum.
+fn validate_shape_with_minimum(
+    manifest: &WorkflowManifest,
+    minimum: usize,
+) -> Result<(), ForgeError> {
     if manifest.schema_version != manifest::MANIFEST_SCHEMA_VERSION {
         return Err(error("unsupported manifest version"));
     }
@@ -364,9 +380,10 @@ fn validate_shape(manifest: &WorkflowManifest) -> Result<(), ForgeError> {
     text(&manifest.document.version)?;
     let modified = time(&manifest.document.last_modified)?;
     manifest::validate_source(&manifest.source)?;
-    collection(manifest.roles.len(), 1, manifest::MAX_PARTIES)?;
-    collection(manifest.parties.len(), 1, manifest::MAX_PARTIES)?;
-    collection(manifest.items.len(), 1, manifest::MAX_ITEMS)?;
+    let declaration_minimum = usize::from(minimum > 0 || !manifest.items.is_empty());
+    collection(manifest.roles.len(), declaration_minimum, manifest::MAX_PARTIES)?;
+    collection(manifest.parties.len(), declaration_minimum, manifest::MAX_PARTIES)?;
+    collection(manifest.items.len(), minimum, manifest::MAX_ITEMS)?;
     preflight_whole_counts(manifest)?;
     let mut roles = BTreeSet::new();
     for role in &manifest.roles {

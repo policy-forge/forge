@@ -16,6 +16,8 @@ pub mod report;
 pub mod source;
 /// Bounded author-supplied item, milestone and nonterminal assertion workflow.
 pub mod workflow;
+/// Bounded read-only declaration comparisons with complete stable-identity changes.
+pub mod workflow_baseline;
 /// Confined authored workflow commands with explicit dates and new-file publication.
 pub mod workflow_cli;
 /// Typed native POA&M projection used by the authored workflow producer.

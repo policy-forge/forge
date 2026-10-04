@@ -240,9 +240,12 @@ findings and closed risks. It does not validate remediation ownership, schedule,
 review or closure. Separate authored `poam check --workflow --as-of YYYY-MM-DD`
 and `poam build` commands validate nonterminal ownership/history/schedules and
 generate native JSON from exact source selections. Completion and risk acceptance
-remain refused pending the recorded closure decision. Full baseline impacts,
-remaining F08 features and acceptance remain open. See the
-[authored command guide](docs/poam-cli-workflow.md).
+remain refused pending the recorded closure decision. `poam baseline` reports
+complete prior/current identity and field changes against the current source
+capture, including refused revisions, without creating a native artifact. See
+[baseline comparison](docs/poam-baseline-comparison.md) and the
+[authored command guide](docs/poam-cli-workflow.md). Remaining F08 features and
+acceptance remain open.
 See [POA&M source foundation](docs/poam-foundation.md) for explicit scaffold
 inputs, limits, supported source profile and remaining gates.
 
