@@ -248,7 +248,7 @@ fn sort_mapping_collections(mapping_collections: &mut [MappingEvidence]) {
 ///
 /// Positive mappings take precedence over reviewed no-relationship mappings, and a missing
 /// decision is treated as [`DecisionState::UnderReview`].
-fn classify(
+pub(super) fn classify(
     decision: Option<&ControlDecision>,
     positive_mapping_count: usize,
     no_relationship_count: usize,
@@ -267,8 +267,21 @@ fn classify(
     }
 }
 
+/// Project the maintained classification reason and provenance into one optional review item.
 fn review_queue_item(control: &ControlResult) -> Option<ReviewQueueItem> {
-    let reason_code = match control.classification {
+    let reason_code = review_reason(control.classification)?;
+    Some(ReviewQueueItem {
+        control_id: control.control_id.clone(),
+        reason_code,
+        owner: control.reviewer_key.clone(),
+        revisit_date: control.revisit_date.clone(),
+        policy_sources: control.policy_sources.clone(),
+    })
+}
+
+/// Return the maintained review-queue reason without cloning a computed report row.
+pub(super) fn review_reason(classification: GapClassification) -> Option<ReviewReason> {
+    Some(match classification {
         GapClassification::ApplicableMapped | GapClassification::NotApplicable => return None,
         GapClassification::ApplicableReviewedNoRelationship => {
             ReviewReason::ReviewedNoPositiveRelationship
@@ -276,13 +289,6 @@ fn review_queue_item(control: &ControlResult) -> Option<ReviewQueueItem> {
         GapClassification::ApplicableUnmapped => ReviewReason::NoReviewedMapping,
         GapClassification::Deferred => ReviewReason::DeferredScopeDecision,
         GapClassification::UnderReview => ReviewReason::ScopeDecisionRequired,
-    };
-    Some(ReviewQueueItem {
-        control_id: control.control_id.clone(),
-        reason_code,
-        owner: control.reviewer_key.clone(),
-        revisit_date: control.revisit_date.clone(),
-        policy_sources: control.policy_sources.clone(),
     })
 }
 
@@ -306,7 +312,8 @@ impl ReportFilters {
 }
 
 impl ClassificationCounts {
-    fn record(&mut self, classification: GapClassification) {
+    /// Record one already-admitted native control using the maintained classification totals.
+    pub(super) fn record(&mut self, classification: GapClassification) {
         self.total += 1;
         match classification {
             GapClassification::ApplicableMapped => self.applicable_mapped += 1,

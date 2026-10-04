@@ -1,0 +1,13 @@
+{
+  "format": "forge.f11-implementation-design-decision/1",
+  "recorded_utc": "2026-10-04T19:14:02Z",
+  "authority_source": "Direct human reply in this Codex chat",
+  "answer": "Approve this design for implementation",
+  "proposal": {"path": "/private/tmp/forge-f11-discovery-implementation-review-v3.md", "bytes": 6443, "sha256": "60c8dff16bf32c69134f19fe5de19ec59b2bb216ac5b0186ca7624fe986ca848"},
+  "v2_index_sha256": "d52da047f0166d9d8cd002221ee9608577f935e7c803969a178b91e797801f49",
+  "handoff_index_sha256": "27e405e4db5d8e5ff125bf5cd258ab9d66956f9ac62bdec95e7343f5cffc12fc",
+  "scope": "F11/F20 discovery and threat-model design for implementation: seven read-only tools, minimized approved/current disclosure, hash-pinned profiles with explicit external owner-record handoff and MCP2026-07-28 stdio, as completely described in the pinned proposal.",
+  "runtime_owner_record": "Not supplied or inferred. Actual six subject-role owner rows and trusted operator selection remain required for project disclosure.",
+  "unearned": ["New dependency or supply-chain audit approval", "Authenticated owner identity/signatures", "Actual native/source/currentness/schema/protocol implementation", "Two-client interoperability", "Adjudicated corpus/raw baseline and thresholds", "Pilot, product, security and release acceptance"],
+  "history": "Frozen V1/V2/core/handoff and independent review artifacts remain unchanged."
+}

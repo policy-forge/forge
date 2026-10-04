@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifact_key"
+  ],
+  "properties": {
+    "artifact_key": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:draft:mcp-query:get_artifact_status:1",
+  "description": "Closed domain tool arguments; protocol _meta remains extensible separately."
+}

@@ -331,6 +331,13 @@ pub enum Commands {
         command: SuggestCommand,
     },
 
+    /// Serve bounded read-only local project tools over stdio
+    Mcp {
+        /// Explicit MCP operation
+        #[command(subcommand)]
+        command: McpCommand,
+    },
+
     /// Open a local, single-user project workspace
     Workspace {
         #[arg(long)]
@@ -383,6 +390,27 @@ pub enum Commands {
         /// Override the last-modified timestamp (RFC 3339) for reproducible output.
         #[arg(long)]
         timestamp: Option<chrono::DateTime<chrono::Utc>>,
+    },
+}
+
+/// Explicit local read-only MCP operations.
+#[derive(Subcommand)]
+#[deny(missing_docs)]
+pub enum McpCommand {
+    /// Run one MCP 2026-07-28 stdio worker with explicit project and disclosure pins
+    Serve {
+        /// Project root; static discovery and missing decision pairs do not read it
+        #[arg(long)]
+        project: PathBuf,
+        /// Separate confined external directory containing the declared owner decision
+        #[arg(long)]
+        decision_root: Option<PathBuf>,
+        /// Exact raw SHA-256 of the external owner-decision original
+        #[arg(long)]
+        decision_sha256: Option<String>,
+        /// Exact raw SHA-256 of the project's declared visibility-profile original
+        #[arg(long)]
+        profile_sha256: Option<String>,
     },
 }
 
@@ -1804,6 +1832,16 @@ fn run_migrate(
 pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
     reject_unsupported_config_selector(cli)?;
     match &cli.command {
+        Commands::Mcp { command } => match command {
+            McpCommand::Serve { project, decision_root, decision_sha256, profile_sha256 } => {
+                crate::mcp::serve(
+                    project,
+                    decision_root.as_deref(),
+                    decision_sha256.as_deref(),
+                    profile_sha256.as_deref(),
+                )
+            }
+        },
         Commands::Workspace { project, read_only, machine_session, no_open, api_major } => {
             crate::workspace::launch(project, *read_only, *machine_session, *no_open, *api_major)
         }
@@ -2562,6 +2600,64 @@ mod tests {
     use clap::Parser;
 
     use super::*;
+
+    /// MCP requires an explicit project declaration instead of discovering a default path.
+    #[test]
+    fn mcp_serve_requires_explicit_project() {
+        assert!(Cli::try_parse_from(["forge", "mcp", "serve"]).is_err());
+    }
+
+    /// The CLI preserves every explicit root and raw digest for the actual admission gate.
+    #[test]
+    fn mcp_serve_preserves_selected_roots_and_digest_bytes() {
+        let cli = Cli::try_parse_from([
+            "forge",
+            "mcp",
+            "serve",
+            "--project",
+            "project-root",
+            "--decision-root",
+            "external-root",
+            "--decision-sha256",
+            "raw-decision-pin",
+            "--profile-sha256",
+            "raw-profile-pin",
+        ])
+        .unwrap();
+        let Commands::Mcp {
+            command: McpCommand::Serve { project, decision_root, decision_sha256, profile_sha256 },
+        } = cli.command
+        else {
+            panic!("expected explicit MCP serve command")
+        };
+        assert_eq!(project, PathBuf::from("project-root"));
+        assert_eq!(decision_root, Some(PathBuf::from("external-root")));
+        assert_eq!(decision_sha256.as_deref(), Some("raw-decision-pin"));
+        assert_eq!(profile_sha256.as_deref(), Some("raw-profile-pin"));
+    }
+
+    /// Missing and half-pair declarations remain available for static discovery only.
+    #[test]
+    fn mcp_serve_does_not_infer_missing_disclosure_pair_or_profile() {
+        for half_pair in [false, true] {
+            let mut arguments = vec!["forge", "mcp", "serve", "--project", "unread-project"];
+            if half_pair {
+                arguments.extend(["--decision-root", "unread-external"]);
+            }
+            let cli = Cli::try_parse_from(arguments).unwrap();
+            let Commands::Mcp {
+                command:
+                    McpCommand::Serve { project, decision_root, decision_sha256, profile_sha256 },
+            } = cli.command
+            else {
+                panic!("expected explicit MCP serve command")
+            };
+            assert_eq!(project, PathBuf::from("unread-project"));
+            assert_eq!(decision_root, half_pair.then(|| PathBuf::from("unread-external")));
+            assert_eq!(decision_sha256, None);
+            assert_eq!(profile_sha256, None);
+        }
+    }
 
     #[test]
     fn rejects_invalid_profile_timestamp_at_parse_time() {

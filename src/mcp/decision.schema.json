@@ -1,0 +1,702 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "decision_key",
+    "project_key",
+    "discovery_sha256",
+    "profile_sha256",
+    "proposal_index_sha256",
+    "protocol_revision",
+    "operator_boundary",
+    "visibility_profile",
+    "policy_decisions",
+    "evaluation_plan"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.mcp-disclosure-decision/1"
+    },
+    "decision_key": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "project_key": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "discovery_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "profile_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "proposal_index_sha256": {
+      "const": "d52da047f0166d9d8cd002221ee9608577f935e7c803969a178b91e797801f49"
+    },
+    "protocol_revision": {
+      "const": "2026-07-28"
+    },
+    "operator_boundary": {
+      "const": "operator-selected-declared-owner-record"
+    },
+    "visibility_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "project_key",
+        "discovery_sha256",
+        "enabled_tools",
+        "visible_resource_keys",
+        "noncurrent_metadata_keys",
+        "source_text_keys",
+        "schedule_keys",
+        "evidence_metadata_keys",
+        "static_report_keys",
+        "search_index_key",
+        "identity_disclosure",
+        "approved_current_basis",
+        "source_text_mode",
+        "schedule_mode",
+        "report_content_mode",
+        "evidence_bytes",
+        "network",
+        "process_execution",
+        "as_of"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "forge.mcp-visibility/1"
+        },
+        "project_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "discovery_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "enabled_tools": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "list_policies",
+              "search_requirements",
+              "get_requirement",
+              "trace_control",
+              "get_recorded_applicability",
+              "get_gap_summary",
+              "get_artifact_status"
+            ]
+          }
+        },
+        "visible_resource_keys": {
+          "type": "array",
+          "maxItems": 999,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        },
+        "noncurrent_metadata_keys": {
+          "type": "array",
+          "maxItems": 999,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        },
+        "source_text_keys": {
+          "type": "array",
+          "maxItems": 999,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        },
+        "schedule_keys": {
+          "type": "array",
+          "maxItems": 999,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        },
+        "evidence_metadata_keys": {
+          "type": "array",
+          "maxItems": 999,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        },
+        "static_report_keys": {
+          "type": "array",
+          "maxItems": 999,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        },
+        "search_index_key": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            }
+          ]
+        },
+        "identity_disclosure": {
+          "const": "bounded-token-only"
+        },
+        "approved_current_basis": {
+          "const": "caller-established-recorded-policy"
+        },
+        "source_text_mode": {
+          "enum": [
+            "omit",
+            "exact-span-opt-in"
+          ]
+        },
+        "schedule_mode": {
+          "enum": [
+            "omit",
+            "explicit-as-of"
+          ]
+        },
+        "report_content_mode": {
+          "const": "minimized-metadata"
+        },
+        "evidence_bytes": {
+          "const": false
+        },
+        "network": {
+          "const": false
+        },
+        "process_execution": {
+          "const": false
+        },
+        "as_of": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 10,
+              "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+              "description": "Canonical ASCII10-byte YYYY-MM-DD; runtime maintained chrono calendar parse required, no system clock."
+            }
+          ]
+        }
+      },
+      "description": "Proposed closed disclosure profile. Expected raw hash comes from a trusted caller. Profile bytes, a SHA256 pin, this constant, or self-reported owner/client fields do not authenticate an owner or establish approval. Complete runtime pairing/scope/policy checks required. Explicit date is part of actual raw profile/pin and captured proof, not client authority; complete mode/date/key pairing and calendar/native schedule checks required.",
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "schedule_mode"
+            ],
+            "properties": {
+              "schedule_mode": {
+                "const": "omit"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "as_of": {
+                "type": "null"
+              },
+              "schedule_keys": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "schedule_mode"
+            ],
+            "properties": {
+              "schedule_mode": {
+                "const": "explicit-as-of"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "as_of": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 10,
+                "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+                "description": "Canonical ASCII10-byte YYYY-MM-DD; runtime maintained chrono calendar parse required, no system clock."
+              },
+              "schedule_keys": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "policy_decisions": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subject",
+          "role",
+          "disposition",
+          "declared_owner_key",
+          "recorded_on",
+          "source_record_key",
+          "source_record_sha256",
+          "proposal_index_sha256",
+          "profile_sha256",
+          "discovery_sha256"
+        ],
+        "properties": {
+          "subject": {
+            "enum": [
+              "D067-E1",
+              "D067-P1",
+              "D067-P2",
+              "D067-S1",
+              "D067-S2"
+            ]
+          },
+          "role": {
+            "enum": [
+              "product",
+              "security",
+              "engineering"
+            ]
+          },
+          "disposition": {
+            "enum": [
+              "proposed",
+              "approved",
+              "refused"
+            ]
+          },
+          "declared_owner_key": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+              }
+            ]
+          },
+          "recorded_on": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 10,
+                "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+                "description": "Explicit canonical ASCII date; actual calendar parse required. No wall clock."
+              }
+            ]
+          },
+          "source_record_key": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+              }
+            ]
+          },
+          "source_record_sha256": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            ]
+          },
+          "proposal_index_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "profile_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "discovery_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "disposition"
+              ],
+              "properties": {
+                "disposition": {
+                  "const": "approved"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "declared_owner_key": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                },
+                "recorded_on": {
+                  "type": "string",
+                  "minLength": 10,
+                  "maxLength": 10,
+                  "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+                  "description": "Explicit canonical ASCII date; actual calendar parse required. No wall clock."
+                },
+                "source_record_key": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                },
+                "source_record_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "subject": {
+                    "const": "D067-P1"
+                  },
+                  "role": {
+                    "const": "product"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "subject": {
+                    "const": "D067-P2"
+                  },
+                  "role": {
+                    "const": "product"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "subject": {
+                    "const": "D067-S1"
+                  },
+                  "role": {
+                    "const": "security"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "subject": {
+                    "const": "D067-E1"
+                  },
+                  "role": {
+                    "const": "engineering"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "subject": {
+                    "const": "D067-S2"
+                  },
+                  "role": {
+                    "const": "product"
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "subject": {
+                    "const": "D067-S2"
+                  },
+                  "role": {
+                    "const": "security"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "subject",
+              "role"
+            ],
+            "properties": {
+              "subject": {
+                "const": "D067-P1"
+              },
+              "role": {
+                "const": "product"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "subject",
+              "role"
+            ],
+            "properties": {
+              "subject": {
+                "const": "D067-P2"
+              },
+              "role": {
+                "const": "product"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "subject",
+              "role"
+            ],
+            "properties": {
+              "subject": {
+                "const": "D067-S1"
+              },
+              "role": {
+                "const": "security"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "subject",
+              "role"
+            ],
+            "properties": {
+              "subject": {
+                "const": "D067-E1"
+              },
+              "role": {
+                "const": "engineering"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "subject",
+              "role"
+            ],
+            "properties": {
+              "subject": {
+                "const": "D067-S2"
+              },
+              "role": {
+                "const": "product"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "subject",
+              "role"
+            ],
+            "properties": {
+              "subject": {
+                "const": "D067-S2"
+              },
+              "role": {
+                "const": "security"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "evaluation_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "declared_owner_key",
+        "recorded_on",
+        "source_record_key",
+        "source_record_sha256",
+        "corpus_acceptance",
+        "threshold_acceptance",
+        "client_acceptance"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "pending",
+            "plan-selected"
+          ]
+        },
+        "declared_owner_key": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            }
+          ]
+        },
+        "recorded_on": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 10,
+              "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+              "description": "Explicit canonical ASCII date; actual calendar parse required. No wall clock."
+            }
+          ]
+        },
+        "source_record_key": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            }
+          ]
+        },
+        "source_record_sha256": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          ]
+        },
+        "corpus_acceptance": {
+          "const": "unearned"
+        },
+        "threshold_acceptance": {
+          "const": "unearned"
+        },
+        "client_acceptance": {
+          "const": "unearned"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "state"
+            ],
+            "properties": {
+              "state": {
+                "const": "plan-selected"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "declared_owner_key": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+              },
+              "recorded_on": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 10,
+                "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+              },
+              "source_record_key": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+              },
+              "source_record_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:draft:mcp-disclosure-decision:1",
+  "description": "Uncompiled complete-record draft. Authority comes from the stated trusted operator out-of-band selection of actual declared-owner provenance, not shape/hash/flags/UID. Runtime exact subject-role pairing, actual raw binding/calendar/proof mandatory; default unavailable."
+}

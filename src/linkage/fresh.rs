@@ -171,41 +171,140 @@ pub(crate) fn capture_local(
     limit: u64,
     allow_missing: bool,
 ) -> Result<CapturedLocal, ForgeError> {
+    prepare_local(root, relative, allow_missing)?.read(limit)
+}
+
+/// Open one actual safe original without reading its contents.
+///
+/// The private holder permits complete caller identity/count admission before any
+/// content read. It creates no owner or disclosure authority. Existing callers
+/// retain their old behavior through `capture_local`'s open/read composition.
+pub(crate) fn prepare_local(
+    root: Rc<RootGeneration>,
+    relative: &Path,
+    allow_missing: bool,
+) -> Result<PreparedLocal, ForgeError> {
     validate_relative(relative)?;
     verify_root(&root)?;
-    match open_local(&root, relative, allow_missing)? {
-        OpenedLocal::Present(mut file, identity, ancestors, directories) => {
-            let bytes = read_bounded(&mut file, limit)?;
-            if file_identity(&file)? != identity
-                || file.metadata().map_err(|_| error("cannot inspect captured original"))?.len()
-                    != bytes.len() as u64
-            {
-                return Err(error("evidence inspection original changed during capture"));
-            }
-            verify_root(&root)?;
-            Ok(CapturedLocal::Present(
-                bytes,
-                FileGeneration {
-                    root,
-                    relative: relative.to_path_buf(),
-                    ancestors,
-                    identity,
-                    _file: file,
-                    _directories: directories,
-                },
-            ))
-        }
-        OpenedLocal::Absent(missing, ancestors, directories) => {
-            verify_root(&root)?;
-            Ok(CapturedLocal::Absent(AbsenceGeneration {
-                root,
-                relative: relative.to_path_buf(),
-                missing,
-                ancestors,
-                _directories: directories,
-            }))
+    let opened = open_local(&root, relative, allow_missing)?;
+    verify_root(&root)?;
+    Ok(PreparedLocal { root, relative: relative.to_path_buf(), opened })
+}
+
+/// Actual opened leaf or typed absence, retained until identity admission and read.
+pub(crate) struct PreparedLocal {
+    /// Same qualified root used for the actual native open.
+    root: Rc<RootGeneration>,
+    /// Validated exact descendant spelling, never an absolute authority path.
+    relative: PathBuf,
+    /// Held no-follow native file/ancestor handles or actual typed absence.
+    opened: OpenedLocal,
+}
+
+impl PreparedLocal {
+    /// Borrow the actual present identity before reading; absence has no fake identity.
+    pub(crate) fn identity(&self) -> Option<(u64, u64)> {
+        match &self.opened {
+            OpenedLocal::Present(_, identity, _, _) => Some(*identity),
+            OpenedLocal::Absent(_, _, _) => None,
         }
     }
+
+    /// Observe held-file length for complete pre-read budgeting without allocating bytes.
+    pub(crate) fn observed_size(&self) -> Result<u64, ForgeError> {
+        match &self.opened {
+            OpenedLocal::Present(file, identity, _, _) => {
+                if file_identity(file)? != *identity {
+                    return Err(error("opened inspection input identity changed"));
+                }
+                file.metadata()
+                    .map(|metadata| metadata.len())
+                    .map_err(|_| error("cannot measure opened inspection input"))
+            }
+            OpenedLocal::Absent(_, _, _) => Ok(0),
+        }
+    }
+
+    /// Consume the held open through the bounded reader and actual generation checks.
+    pub(crate) fn read(self, limit: u64) -> Result<CapturedLocal, ForgeError> {
+        let Self { root, relative, opened } = self;
+        match opened {
+            OpenedLocal::Present(mut file, identity, ancestors, directories) => {
+                let bytes = read_bounded(&mut file, limit)?;
+                if file_identity(&file)? != identity
+                    || file.metadata().map_err(|_| error("cannot inspect captured original"))?.len()
+                        != bytes.len() as u64
+                {
+                    return Err(error("evidence inspection original changed during capture"));
+                }
+                verify_root(&root)?;
+                Ok(CapturedLocal::Present(
+                    bytes,
+                    FileGeneration {
+                        root,
+                        relative,
+                        ancestors,
+                        identity,
+                        _file: file,
+                        _directories: directories,
+                    },
+                ))
+            }
+            OpenedLocal::Absent(missing, ancestors, directories) => {
+                verify_root(&root)?;
+                Ok(CapturedLocal::Absent(AbsenceGeneration {
+                    root,
+                    relative,
+                    missing,
+                    ancestors,
+                    _directories: directories,
+                }))
+            }
+        }
+    }
+}
+
+/// Compare actual held root identities with the other complete held ancestry.
+///
+/// Shared ancestors such as `/` do not make disjoint descendant roots overlap;
+/// one complete root must equal the other root or one of its actual ancestors.
+pub(crate) fn roots_overlap(left: &RootGeneration, right: &RootGeneration) -> bool {
+    left.identity == right.identity
+        || left.ancestors.iter().any(|ancestor| ancestor.identity == right.identity)
+        || right.ancestors.iter().any(|ancestor| ancestor.identity == left.identity)
+}
+
+/// Hash the complete actual private original generation without exposing its native IDs/paths.
+/// This is cursor invalidation metadata, not detached content or owner authority.
+pub(crate) fn original_generation_digest(original: &CapturedLocal) -> String {
+    use sha2::{Digest as _, Sha256};
+    let mut digest = Sha256::new();
+    let (root, relative, ancestors) = match original {
+        CapturedLocal::Present(_, file) => {
+            digest.update([1]);
+            digest.update(file.identity.0.to_le_bytes());
+            digest.update(file.identity.1.to_le_bytes());
+            (&file.root, &file.relative, &file.ancestors)
+        }
+        CapturedLocal::Absent(absence) => {
+            digest.update([0]);
+            let missing = absence.missing.as_os_str().as_encoded_bytes();
+            digest.update((missing.len() as u64).to_le_bytes());
+            digest.update(missing);
+            (&absence.root, &absence.relative, &absence.ancestors)
+        }
+    };
+    let path = relative.as_os_str().as_encoded_bytes();
+    digest.update((path.len() as u64).to_le_bytes());
+    digest.update(path);
+    for directory in root.ancestors.iter().chain(ancestors) {
+        let path = directory.path.as_os_str().as_encoded_bytes();
+        digest.update((path.len() as u64).to_le_bytes());
+        digest.update(path);
+        digest.update(directory.identity.0.to_le_bytes());
+        digest.update(directory.identity.1.to_le_bytes());
+    }
+    crate::hashing::lower_hex(&digest.finalize())
 }
 
 /// Stream-compare exact full bytes, identity, safe ancestry and EOF without retaining a second input Vec.
@@ -1733,5 +1832,86 @@ mod tests {
             LocalBindingStatus::Matched
         ));
         assert!(proof.verify_inputs().is_ok());
+    }
+}
+
+/// Proposed genuine Unix handle controls for the additive before-read seam.
+#[cfg(all(test, unix))]
+mod disclosure_held_tests {
+    use super::*;
+    use std::io::Seek as _;
+
+    /// Holding/identity/size admission performs no content read on the actual file descriptor.
+    #[test]
+    fn held_identity_precedes_actual_content_read() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().canonicalize().unwrap();
+        std::fs::write(path.join("input.txt"), b"actual original").unwrap();
+        let root = Rc::new(qualify_root(&path).unwrap());
+        let mut held = prepare_local(root, Path::new("input.txt"), false).unwrap();
+        assert!(held.identity().is_some());
+        assert_eq!(held.observed_size().unwrap(), 15);
+        let OpenedLocal::Present(file, _, _, _) = &mut held.opened else {
+            panic!("present fixture");
+        };
+        assert_eq!(file.stream_position().unwrap(), 0);
+        let CapturedLocal::Present(bytes, original) = held.read(15).unwrap() else {
+            panic!("present original");
+        };
+        assert_eq!(bytes, b"actual original");
+        verify_file(&original, &bytes).unwrap();
+    }
+
+    /// A held old file remains the original but cannot authorize a replaced current pathname.
+    #[test]
+    fn actual_held_original_requires_final_path_generation() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().canonicalize().unwrap();
+        std::fs::write(path.join("input.txt"), b"old").unwrap();
+        let held =
+            prepare_local(Rc::new(qualify_root(&path).unwrap()), Path::new("input.txt"), false)
+                .unwrap();
+        std::fs::rename(path.join("input.txt"), path.join("retained.txt")).unwrap();
+        std::fs::write(path.join("input.txt"), b"new").unwrap();
+        let CapturedLocal::Present(bytes, original) = held.read(3).unwrap() else {
+            panic!("present original");
+        };
+        assert_eq!(bytes, b"old");
+        assert!(verify_file(&original, &bytes).is_err());
+    }
+
+    /// Actual sibling roots may share ancestry while equal/nested roots cannot be disjoint.
+    #[test]
+    fn held_root_overlap_compares_final_roots_not_shared_prefixes() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().canonicalize().unwrap();
+        std::fs::create_dir(path.join("one")).unwrap();
+        std::fs::create_dir(path.join("two")).unwrap();
+        let parent = qualify_root(&path).unwrap();
+        let one = qualify_root(&path.join("one")).unwrap();
+        let two = qualify_root(&path.join("two")).unwrap();
+        assert!(roots_overlap(&parent, &one));
+        assert!(roots_overlap(&one, &one));
+        assert!(!roots_overlap(&one, &two));
+    }
+
+    /// Identical missing spelling under a changed actual ancestor gets a different cursor generation.
+    #[test]
+    fn original_generation_includes_actual_absence_ancestors() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().canonicalize().unwrap();
+        std::fs::create_dir(path.join("nested")).unwrap();
+        let root = Rc::new(qualify_root(&path).unwrap());
+        let first =
+            capture_local(Rc::clone(&root), Path::new("nested/missing.txt"), 8, true).unwrap();
+        let before = original_generation_digest(&first);
+        std::fs::rename(path.join("nested"), path.join("old-nested")).unwrap();
+        std::fs::create_dir(path.join("nested")).unwrap();
+        let second = capture_local(root, Path::new("nested/missing.txt"), 8, true).unwrap();
+        assert_ne!(before, original_generation_digest(&second));
+        let CapturedLocal::Absent(old) = first else {
+            panic!("typed absence");
+        };
+        assert!(verify_absence(&old).is_err());
     }
 }

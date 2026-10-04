@@ -62,6 +62,8 @@ pub mod lifecycle;
 pub mod linkage;
 /// Human-reviewed OSCAL Control Mapping workflows.
 pub mod mapping;
+/// Explicit local read-only MCP transport and disclosure gates.
+pub(crate) mod mcp;
 /// Read-only policy revision migration analysis.
 pub mod migration;
 /// Core policy document domain model and assembly.

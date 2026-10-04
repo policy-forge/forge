@@ -1,0 +1,932 @@
+{
+  "format": "forge.f11-pre-pr-verification/2",
+  "recorded_utc": "2026-10-04T23:30:33.476026+00:00",
+  "source_basis": "acf57c85fd05dac7347ebafaac8d6a44cd55a355",
+  "source_state": "Working-tree F11 source; exact complete source pins below; not a published commit or acceptance receipt.",
+  "approval": {
+    "identity": {
+      "path": "/private/tmp/forge-f11-implementation-approval-v1.json",
+      "bytes": 1421,
+      "sha256": "252340dd7e14541c0fa46070dc0742ef1e277c0d4fdc67cd0c1a97381dfc9086"
+    },
+    "record": {
+      "format": "forge.f11-implementation-design-decision/1",
+      "recorded_utc": "2026-10-04T19:14:02Z",
+      "authority_source": "Direct human reply in this Codex chat",
+      "answer": "Approve this design for implementation",
+      "proposal": {
+        "path": "/private/tmp/forge-f11-discovery-implementation-review-v3.md",
+        "bytes": 6443,
+        "sha256": "60c8dff16bf32c69134f19fe5de19ec59b2bb216ac5b0186ca7624fe986ca848"
+      },
+      "v2_index_sha256": "d52da047f0166d9d8cd002221ee9608577f935e7c803969a178b91e797801f49",
+      "handoff_index_sha256": "27e405e4db5d8e5ff125bf5cd258ab9d66956f9ac62bdec95e7343f5cffc12fc",
+      "scope": "F11/F20 discovery and threat-model design for implementation: seven read-only tools, minimized approved/current disclosure, hash-pinned profiles with explicit external owner-record handoff and MCP2026-07-28 stdio, as completely described in the pinned proposal.",
+      "runtime_owner_record": "Not supplied or inferred. Actual six subject-role owner rows and trusted operator selection remain required for project disclosure.",
+      "unearned": [
+        "New dependency or supply-chain audit approval",
+        "Authenticated owner identity/signatures",
+        "Actual native/source/currentness/schema/protocol implementation",
+        "Two-client interoperability",
+        "Adjudicated corpus/raw baseline and thresholds",
+        "Pilot, product, security and release acceptance"
+      ],
+      "history": "Frozen V1/V2/core/handoff and independent review artifacts remain unchanged."
+    }
+  },
+  "documentation_inputs": [
+    {
+      "path": "README.md",
+      "bytes": 29330,
+      "sha256": "8bbea33086f82b2e01e45f6647bab845e12cd8ea3e9a5057798cab4d0bb106f1"
+    },
+    {
+      "path": "docs/usage-guide.md",
+      "bytes": 46490,
+      "sha256": "7168d71d8dfeb11b3ed1d998e0c133acf3d728e6e5ca9c2d21f1b566ca46d4c8"
+    },
+    {
+      "path": "docs/mcp.md",
+      "bytes": 11015,
+      "sha256": "60cb3f3abab8bb260e6bda7ce3087295b9f56d7e3107c8052385f4a6c465795d"
+    }
+  ],
+  "open_gates": [
+    "Windows compilation, strict lint and actual native pipe controls",
+    "Two independent MCP clients",
+    "Real project owner records and lawful disclosure authority",
+    "Adjudicated corpus and raw-document baseline with agreed metrics and thresholds",
+    "MCP resources and all remaining F20 evidence/report/index work",
+    "Full-goal final documentation review",
+    "Dependency/schema/pilot/security/product/release gates and verified 2.0.0 RC"
+  ],
+  "qualification": "Authentic engineering checks only; no human, client, corpus, audit, product, release, merge or publication acceptance.",
+  "complete_evidence_archive": {
+    "path": "evidence/2026-10-04-f11-pre-pr-verification-v1.json.gz",
+    "bytes": 976283,
+    "sha256": "010ad4bdac41fff25279865e8c08fb27ab5d83a641905f91cd8a67fd94655550",
+    "decompressed_pin": {
+      "bytes": 16045433,
+      "sha256": "45502cc87aaa0146ff6379234d72c3bd442d3c0ac3f00ae5363696254f81d643"
+    },
+    "qualification": "Lossless gzip of the complete V1 receipt, including source pins, census, exact selected LLVM segments/function/region maps, zero-count functions, actual logs and full CLI requests/responses. No measurement is recomputed or removed from the archive."
+  },
+  "rustdoc": {
+    "basis": "acf57c85fd05dac7347ebafaac8d6a44cd55a355",
+    "selected_body_functions": {
+      "total": 529,
+      "documented": 529,
+      "missing": []
+    },
+    "selected_body_scopes": {
+      "production-lexical": 287,
+      "external-cfg-test": 210,
+      "cfg-test": 32
+    },
+    "selected_semicolon_function_prototypes": {
+      "total": 16,
+      "documented": 16,
+      "missing": []
+    },
+    "selected_named_types": {
+      "total": 168,
+      "documented": 168,
+      "missing": []
+    },
+    "selected_registered_test_declarations": 154,
+    "limits": [
+      "Exact lexical line-leading named function-body/prototype cohorts in all changed and new Rust files; not a whole-repository or expanded compiler AST census.",
+      "Prototypes have no function bodies and remain separate from callable-body counts. Platform-conditioned same-name bodies are ordered distinct occurrences.",
+      "External *_tests.rs functions are separate physical test cohorts; registered literal declarations do not prove platform registration or execution.",
+      "Adjacent outer Rustdoc across attributes only; module docs, ordinary comments, field/variant docs and runtime test coverage are not function docstrings."
+    ],
+    "original_census_pin": {
+      "path": "/private/tmp/forge-f11-rustdoc-census-v2/census.json",
+      "bytes": 1023153,
+      "sha256": "ecadc7a2e04c5aaf967c675273b66d44993b9f1b6a3646ce445bf2e286044950"
+    }
+  },
+  "llvm": {
+    "raw_export": {
+      "path": "/private/tmp/forge-f11-whole-llvm-v1.json",
+      "bytes": 26034470,
+      "sha256": "b55ba224e4c803272cb208eeb69a1ca3dfdb22648027470eb4022a821a5418ba"
+    },
+    "type": "llvm.coverage.json.export",
+    "version": "3.1.0",
+    "cargo_llvm_cov": {
+      "version": "0.8.7",
+      "manifest_path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/Cargo.toml"
+    },
+    "whole_totals": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 9988,
+        "covered": 8398,
+        "percent": 84.0808970764918
+      },
+      "instantiations": {
+        "count": 18305,
+        "covered": 12043,
+        "percent": 65.79076754984978
+      },
+      "lines": {
+        "count": 102406,
+        "covered": 93912,
+        "percent": 91.70556412710192
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 182405,
+        "covered": 165450,
+        "notcovered": 16955,
+        "percent": 90.70475041802582
+      }
+    },
+    "test_summaries": 73,
+    "passed": 3536,
+    "failed": 0,
+    "ignored": 3,
+    "absent_selected_files": [
+      {
+        "path": "src/applicability/captured_tests.rs",
+        "measurement": null
+      },
+      {
+        "path": "src/lib.rs",
+        "measurement": null
+      },
+      {
+        "path": "src/mcp/disclosure_tests.rs",
+        "measurement": null
+      },
+      {
+        "path": "src/mcp/queries_tests.rs",
+        "measurement": null
+      },
+      {
+        "path": "src/mcp/stdio_captured_tests.rs",
+        "measurement": null
+      },
+      {
+        "path": "src/mcp/stdio_tests.rs",
+        "measurement": null
+      },
+      {
+        "path": "src/mcp/windows_input.rs",
+        "measurement": null
+      },
+      {
+        "path": "src/mcp/windows_input_tests.rs",
+        "measurement": null
+      }
+    ],
+    "limits": [
+      "Raw export retained unchanged at its recorded local path; whole-workspace totals include all instrumented files, not only the F11 slice.",
+      "Per-file segments and complete selected function/region maps are retained, including zero-count rows. External test files may have no standalone attribution.",
+      "Branch and MC/DC denominators of zero are unavailable, not 100 percent. Windows source was not compiled or executed on macOS.",
+      "src/mcp/mod.rs is 0/23 measured lines in this campaign; the subsequent actual CLI smoke has separate profiles and is not backfilled into this export."
+    ],
+    "selected_file_summaries": [
+      {
+        "path": "src/applicability/captured.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 70,
+            "covered": 68,
+            "percent": 97.14285714285714
+          },
+          "instantiations": {
+            "count": 172,
+            "covered": 78,
+            "percent": 45.34883720930232
+          },
+          "lines": {
+            "count": 647,
+            "covered": 626,
+            "percent": 96.75425038639877
+          },
+          "regions": {
+            "count": 1120,
+            "covered": 1020,
+            "notcovered": 100,
+            "percent": 91.07142857142857
+          }
+        }
+      },
+      {
+        "path": "src/applicability/mod.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 127,
+            "covered": 103,
+            "percent": 81.10236220472441
+          },
+          "instantiations": {
+            "count": 247,
+            "covered": 156,
+            "percent": 63.1578947368421
+          },
+          "lines": {
+            "count": 1522,
+            "covered": 1328,
+            "percent": 87.25361366622865
+          },
+          "regions": {
+            "count": 2395,
+            "covered": 2085,
+            "notcovered": 310,
+            "percent": 87.05636743215031
+          }
+        }
+      },
+      {
+        "path": "src/applicability/model.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 32,
+            "covered": 32,
+            "percent": 100.0
+          },
+          "instantiations": {
+            "count": 59,
+            "covered": 54,
+            "percent": 91.52542372881356
+          },
+          "lines": {
+            "count": 208,
+            "covered": 208,
+            "percent": 100.0
+          },
+          "regions": {
+            "count": 274,
+            "covered": 274,
+            "notcovered": 0,
+            "percent": 100.0
+          }
+        }
+      },
+      {
+        "path": "src/cli/mod.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 66,
+            "covered": 63,
+            "percent": 95.45454545454545
+          },
+          "instantiations": {
+            "count": 78,
+            "covered": 63,
+            "percent": 80.76923076923077
+          },
+          "lines": {
+            "count": 1362,
+            "covered": 1274,
+            "percent": 93.53891336270192
+          },
+          "regions": {
+            "count": 1846,
+            "covered": 1736,
+            "notcovered": 110,
+            "percent": 94.04117009750813
+          }
+        }
+      },
+      {
+        "path": "src/linkage/fresh.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 106,
+            "covered": 69,
+            "percent": 65.09433962264151
+          },
+          "instantiations": {
+            "count": 198,
+            "covered": 115,
+            "percent": 58.08080808080808
+          },
+          "lines": {
+            "count": 1338,
+            "covered": 1239,
+            "percent": 92.60089686098657
+          },
+          "regions": {
+            "count": 2213,
+            "covered": 2003,
+            "notcovered": 210,
+            "percent": 90.51061906913692
+          }
+        }
+      },
+      {
+        "path": "src/main.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 2,
+            "covered": 2,
+            "percent": 100.0
+          },
+          "instantiations": {
+            "count": 4,
+            "covered": 2,
+            "percent": 50.0
+          },
+          "lines": {
+            "count": 25,
+            "covered": 25,
+            "percent": 100.0
+          },
+          "regions": {
+            "count": 33,
+            "covered": 33,
+            "notcovered": 0,
+            "percent": 100.0
+          }
+        }
+      },
+      {
+        "path": "src/mapping/inventory.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 81,
+            "covered": 53,
+            "percent": 65.4320987654321
+          },
+          "instantiations": {
+            "count": 176,
+            "covered": 96,
+            "percent": 54.54545454545454
+          },
+          "lines": {
+            "count": 739,
+            "covered": 599,
+            "percent": 81.0554803788904
+          },
+          "regions": {
+            "count": 1244,
+            "covered": 1037,
+            "notcovered": 207,
+            "percent": 83.36012861736334
+          }
+        }
+      },
+      {
+        "path": "src/mcp/artifact_status.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 88,
+            "covered": 79,
+            "percent": 89.77272727272727
+          },
+          "instantiations": {
+            "count": 148,
+            "covered": 81,
+            "percent": 54.729729729729726
+          },
+          "lines": {
+            "count": 944,
+            "covered": 908,
+            "percent": 96.18644067796612
+          },
+          "regions": {
+            "count": 1758,
+            "covered": 1664,
+            "notcovered": 94,
+            "percent": 94.65301478953356
+          }
+        }
+      },
+      {
+        "path": "src/mcp/catalog.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 15,
+            "covered": 14,
+            "percent": 93.33333333333333
+          },
+          "instantiations": {
+            "count": 30,
+            "covered": 14,
+            "percent": 46.666666666666664
+          },
+          "lines": {
+            "count": 119,
+            "covered": 115,
+            "percent": 96.63865546218486
+          },
+          "regions": {
+            "count": 210,
+            "covered": 184,
+            "notcovered": 26,
+            "percent": 87.61904761904762
+          }
+        }
+      },
+      {
+        "path": "src/mcp/disclosure.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 96,
+            "covered": 81,
+            "percent": 84.375
+          },
+          "instantiations": {
+            "count": 192,
+            "covered": 81,
+            "percent": 42.1875
+          },
+          "lines": {
+            "count": 790,
+            "covered": 733,
+            "percent": 92.78481012658227
+          },
+          "regions": {
+            "count": 1384,
+            "covered": 1228,
+            "notcovered": 156,
+            "percent": 88.72832369942196
+          }
+        }
+      },
+      {
+        "path": "src/mcp/mod.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 2,
+            "covered": 0,
+            "percent": 0.0
+          },
+          "instantiations": {
+            "count": 4,
+            "covered": 0,
+            "percent": 0.0
+          },
+          "lines": {
+            "count": 23,
+            "covered": 0,
+            "percent": 0.0
+          },
+          "regions": {
+            "count": 23,
+            "covered": 0,
+            "notcovered": 23,
+            "percent": 0.0
+          }
+        }
+      },
+      {
+        "path": "src/mcp/queries.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 49,
+            "covered": 46,
+            "percent": 93.87755102040816
+          },
+          "instantiations": {
+            "count": 153,
+            "covered": 73,
+            "percent": 47.7124183006536
+          },
+          "lines": {
+            "count": 524,
+            "covered": 501,
+            "percent": 95.61068702290076
+          },
+          "regions": {
+            "count": 933,
+            "covered": 867,
+            "notcovered": 66,
+            "percent": 92.92604501607717
+          }
+        }
+      },
+      {
+        "path": "src/mcp/recorded.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 34,
+            "covered": 31,
+            "percent": 91.17647058823528
+          },
+          "instantiations": {
+            "count": 74,
+            "covered": 35,
+            "percent": 47.2972972972973
+          },
+          "lines": {
+            "count": 483,
+            "covered": 432,
+            "percent": 89.44099378881988
+          },
+          "regions": {
+            "count": 1023,
+            "covered": 868,
+            "notcovered": 155,
+            "percent": 84.84848484848484
+          }
+        }
+      },
+      {
+        "path": "src/mcp/requirements.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 19,
+            "covered": 18,
+            "percent": 94.73684210526316
+          },
+          "instantiations": {
+            "count": 38,
+            "covered": 18,
+            "percent": 47.368421052631575
+          },
+          "lines": {
+            "count": 272,
+            "covered": 254,
+            "percent": 93.38235294117648
+          },
+          "regions": {
+            "count": 490,
+            "covered": 420,
+            "notcovered": 70,
+            "percent": 85.71428571428571
+          }
+        }
+      },
+      {
+        "path": "src/mcp/stdio.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 38,
+            "covered": 35,
+            "percent": 92.10526315789474
+          },
+          "instantiations": {
+            "count": 98,
+            "covered": 51,
+            "percent": 52.04081632653062
+          },
+          "lines": {
+            "count": 413,
+            "covered": 345,
+            "percent": 83.53510895883775
+          },
+          "regions": {
+            "count": 707,
+            "covered": 546,
+            "notcovered": 161,
+            "percent": 77.22772277227723
+          }
+        }
+      },
+      {
+        "path": "src/mcp/wire.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 60,
+            "covered": 48,
+            "percent": 80.0
+          },
+          "instantiations": {
+            "count": 155,
+            "covered": 60,
+            "percent": 38.70967741935484
+          },
+          "lines": {
+            "count": 352,
+            "covered": 296,
+            "percent": 84.0909090909091
+          },
+          "regions": {
+            "count": 618,
+            "covered": 523,
+            "notcovered": 95,
+            "percent": 84.62783171521036
+          }
+        }
+      }
+    ],
+    "selected_function_maps": 2083,
+    "zero_count_function_maps": 859
+  },
+  "native_cli_smoke": {
+    "format": "forge.f11-native-cli-smoke/1",
+    "binary": {
+      "path": "/private/tmp/forge-f11-llvm-1.99.0-v1/debug/forge",
+      "bytes": 78980320,
+      "sha256": "aa358e546d2915dc62c680dbd4a90e3b265ed95e3a95331ac5b22e090661d96e"
+    },
+    "accepted_responses": 22,
+    "separate_profiles": [
+      "/private/tmp/forge-f11-cli-smoke-v1/separate-smoke-89431.profraw",
+      "/private/tmp/forge-f11-cli-smoke-v1/separate-smoke-89432.profraw"
+    ],
+    "qualification": "Actual macOS CLI child/pipe protocol smoke only; missing/half-pair disclosure. No positive real owner scope, Windows, external MCP client, corpus, syscall non-read proof or acceptance credit."
+  },
+  "jobs": {
+    "f11-whole-llvm-v1": {
+      "identity": {
+        "path": "/private/tmp/forge-root-job-f11-whole-llvm-v1.json",
+        "bytes": 181290,
+        "sha256": "3299cdff07bb93e42302bf4f314c65fabd90b83f5018c34beaf33ddde74e417a"
+      },
+      "command": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "env",
+        "PATH=/Users/bluby/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin:/opt/homebrew/bin:/usr/bin:/bin",
+        "CARGO_TARGET_DIR=/private/tmp/forge-f19-source-normal-1.99.0",
+        "CARGO_LLVM_COV_TARGET_DIR=/private/tmp/forge-f11-llvm-1.99.0-v1",
+        "CARGO_NET_OFFLINE=true",
+        "CARGO_BUILD_JOBS=2",
+        "CARGO_INCREMENTAL=0",
+        "CARGO_PROFILE_DEV_DEBUG=0",
+        "CARGO_PROFILE_TEST_DEBUG=0",
+        "RUSTC_WRAPPER=",
+        "RUSTC_WORKSPACE_WRAPPER=",
+        "cargo",
+        "llvm-cov",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--json",
+        "--output-path",
+        "/private/tmp/forge-f11-whole-llvm-v1.json",
+        "--",
+        "--test-threads=2"
+      ],
+      "exit_code": 0,
+      "source_unchanged": true,
+      "protected_config_unchanged": true,
+      "log": {
+        "path": "/private/tmp/forge-root-job-f11-whole-llvm-v1.log",
+        "bytes": 309905,
+        "sha256": "1fbf7864a087ec5bd35caf4a56b33a4d3df030071e8a33df2d724e39d8a44668"
+      }
+    },
+    "f11-final-strict-clippy-v1": {
+      "identity": {
+        "path": "/private/tmp/forge-root-job-f11-final-strict-clippy-v1.json",
+        "bytes": 181143,
+        "sha256": "086d8cfb716cc0a82bf8787ed85dbe055b1df53dee8750343f88329dd9c1811e"
+      },
+      "command": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "env",
+        "PATH=/Users/bluby/.rustup/toolchains/1.99.0-aarch64-apple-darwin/bin:/opt/homebrew/bin:/usr/bin:/bin",
+        "CARGO_TARGET_DIR=/private/tmp/forge-f19-source-normal-1.99.0",
+        "CARGO_NET_OFFLINE=true",
+        "CARGO_BUILD_JOBS=2",
+        "CARGO_INCREMENTAL=0",
+        "CARGO_PROFILE_DEV_DEBUG=0",
+        "CARGO_PROFILE_TEST_DEBUG=0",
+        "RUSTC_WRAPPER=",
+        "RUSTC_WORKSPACE_WRAPPER=",
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "source_unchanged": true,
+      "protected_config_unchanged": true,
+      "log": {
+        "path": "/private/tmp/forge-root-job-f11-final-strict-clippy-v1.log",
+        "bytes": 148,
+        "sha256": "7d94dad717c4a3b81d0cfa9bea3356a31f1803ee7f4b4bcb2ae235b774f9dd5d"
+      }
+    },
+    "f11-native-cli-smoke-v1": {
+      "identity": {
+        "path": "/private/tmp/forge-root-job-f11-native-cli-smoke-v1.json",
+        "bytes": 180752,
+        "sha256": "267f31944a7f79ba79b9209df4a21640c7b099dadd038e4814c73b8dee600da4"
+      },
+      "command": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "/private/tmp/forge-f11-cli-smoke-v1.py",
+        "--forge",
+        "/private/tmp/forge-f11-llvm-1.99.0-v1/debug/forge"
+      ],
+      "exit_code": 0,
+      "source_unchanged": true,
+      "protected_config_unchanged": true,
+      "log": {
+        "path": "/private/tmp/forge-root-job-f11-native-cli-smoke-v1.log",
+        "bytes": 93,
+        "sha256": "ca96f2460cdb7b1fb80a4c8e5684d63bffb7179cbcd3a92964ae511224d983a1"
+      }
+    }
+  }
+}

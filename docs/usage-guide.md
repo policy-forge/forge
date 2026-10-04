@@ -27,6 +27,10 @@ The help output lists conversion, validation, profile, mapping, migration,
 configuration, drift, traceability, and lifecycle workflows. Use
 `forge <SUBCOMMAND> --help` for the exact command contract in this release.
 
+For local agent queries, see [the MCP guide](mcp.md). `forge mcp serve` exposes
+seven read-only tools over stdio, with an explicit project and reviewed disclosure
+scope. Static discovery does not authorize project data.
+
 ## 2. Writing a Policy Document
 
 FORGE accepts Markdown files (`.md` / `.markdown`) with optional YAML frontmatter. Headings become OSCAL groups; list items, tables, and paragraphs become control statements.
