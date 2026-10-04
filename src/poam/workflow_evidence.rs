@@ -907,10 +907,33 @@ fn relative(path: &Path) -> Result<(), ForgeError> {
 }
 
 /// Resolve only an explicit absolute input under the actual original qualified plan root.
+///
+/// Check native raw spelling before portable component projection. Portable name
+/// checks use a slash-joined view; captures retain the original native descendant.
 fn descendant(root: &Path, input: &Path) -> Result<PathBuf, ForgeError> {
+    if !input.is_absolute() || !crate::linkage::has_normalized_path_spelling(input) {
+        return Err(error("local path is not a normalized confined descendant"));
+    }
     let relative_path =
         input.strip_prefix(root).map_err(|_| error("input is outside the qualified plan root"))?;
-    relative(relative_path)?;
+    let raw = relative_path.to_str().ok_or_else(|| error("local path is not UTF-8"))?;
+    if raw.len() > MAX_PATH_BYTES {
+        return Err(error("local path is not a normalized confined descendant"));
+    }
+    fresh::validate_relative(relative_path)
+        .map_err(|_| error("local path is not a normalized confined descendant"))?;
+    let mut portable = String::with_capacity(raw.len());
+    for component in relative_path.components() {
+        let Component::Normal(name) = component else {
+            return Err(error("local path is not a normalized confined descendant"));
+        };
+        let part = name.to_str().ok_or_else(|| error("local path is not UTF-8"))?;
+        if !portable.is_empty() {
+            portable.push('/');
+        }
+        portable.push_str(part);
+    }
+    relative(Path::new(&portable))?;
     Ok(relative_path.to_path_buf())
 }
 
@@ -1176,5 +1199,70 @@ mod tests {
         assert_eq!(row.source_refs.0.len(), 30);
         // This is a syntactic DTO/counting-writer control. No detached native
         // source/evidence proof or PreparedEvidence is fabricated here.
+    }
+
+    /// Native nested descendants retain their actual spelling, including Windows separators.
+    /// This exercises the actual platform Path parser, not source capture or native freshness.
+    #[test]
+    fn native_descendant_spelling_is_preserved_for_capture() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().canonicalize().unwrap();
+        let expected = Path::new("companions").join("links.json");
+        let input = root.join(&expected);
+        let actual = descendant(&root, &input).unwrap();
+        assert_eq!(actual.as_os_str(), expected.as_os_str());
+        fresh::validate_relative(&actual).unwrap();
+        relative(Path::new("companions/links.json")).unwrap();
+        #[cfg(windows)]
+        {
+            let native = Path::new(r"companions\links.json");
+            assert_eq!(
+                descendant(&root, &root.join(native)).unwrap().as_os_str(),
+                native.as_os_str()
+            );
+            assert!(relative(native).is_err());
+        }
+        #[cfg(not(windows))]
+        assert!(descendant(&root, &root.join(r"companions\links.json")).is_err());
+    }
+
+    /// Raw dot, parent, repeated and trailing separator aliases are refused before component projection.
+    #[test]
+    fn native_descendant_raw_aliases_are_not_hidden_by_projection() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().canonicalize().unwrap();
+        descendant(&root, &root.join("companions/links.json")).unwrap();
+        for raw in [
+            "companions/./links.json",
+            "companions//links.json",
+            "companions/../links.json",
+            "companions/links.json/",
+        ] {
+            assert!(descendant(&root, &root.join(raw)).is_err(), "{raw}");
+        }
+        assert!(descendant(&root, &root).is_err());
+        let outside = root.parent().unwrap().join("outside-s4.json");
+        assert!(descendant(&root, &outside).is_err());
+    }
+
+    /// Native path projection preserves portable name, URI punctuation and complete UTF-8 byte limits.
+    #[test]
+    fn native_descendant_portable_names_and_byte_bound_remain_closed() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().canonicalize().unwrap();
+        descendant(&root, &root.join("companions/links.json")).unwrap();
+        for raw in [
+            "companions/links.json.",
+            "companions/links.json ",
+            "companions/name:stream",
+            "companions/name?query",
+            "companions/name#fragment",
+            "companions/name\ncontrol",
+        ] {
+            assert!(descendant(&root, &root.join(raw)).is_err(), "{raw}");
+        }
+        let over_bound = "x".repeat(MAX_PATH_BYTES + 1);
+        assert!(descendant(&root, &root.join(over_bound)).is_err());
+        assert!(relative(Path::new(r"companions\links.json")).is_err());
     }
 }

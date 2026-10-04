@@ -1,5 +1,9 @@
 # Local POA&M evidence inspection verification
 
+This document records the original S4 source generation. See the
+[Windows path correction verification](poam-evidence-inspection-windows-path-verification.md)
+for the subsequent source changes and measured results.
+
 This checkpoint binds the local evidence-inspection slice to final source V4,
 lexical/native collector V3, the closed whole-workspace LLVM V2 run and the
 normal enabled hook V1. Earlier source and failed or incomplete checkpoints

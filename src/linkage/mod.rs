@@ -1446,7 +1446,8 @@ pub(crate) fn read_confined_local_file(
     Ok((bytes, (identity.volume, identity.file)))
 }
 
-fn has_normalized_path_spelling(path: &Path) -> bool {
+/// Require raw normalized spelling while preserving both Windows separator forms.
+pub(crate) fn has_normalized_path_spelling(path: &Path) -> bool {
     let normalized: PathBuf = path.components().collect();
     // Components remove internal `.` and redundant separators. Compare the raw
     // spelling too, while preserving both separator spellings accepted on Windows.
