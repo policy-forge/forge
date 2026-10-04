@@ -403,6 +403,37 @@ jobs:
       - name: Check separate stdlib-gate observation controls
         run: python -B scripts/test_observe_workspace_stdlib_gate.py
 
+      - name: Check protected physical dispatcher receipt controls
+        run: python -B scripts/test_run_workspace_stdlib_closure.py
+
+      # This separate synthetic UID0 campaign does not qualify real stdlib,
+      # interpreter bootstrap/loaded bytes or the later IP-denial experiment.
+      - name: Run protected Linux synthetic stdlib closure controls
+        id: protected-stdlib-controls
+        timeout-minutes: 8
+        env:
+          FORGE_TEST_COMMIT: ${{ github.sha }}
+          FORGE_TEST_EVENT: ${{ github.event_name }}
+          FORGE_TEST_CHECKOUT: ${{ github.event_name == 'pull_request' && 'pull-request-merge' || 'head' }}
+          FORGE_TEST_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          FORGE_TEST_BASE: ${{ github.event.pull_request.base.sha || '' }}
+        shell: bash
+        run: |
+          checkout_context_args=(--event "$FORGE_TEST_EVENT" --checkout-kind "$FORGE_TEST_CHECKOUT" --requested-head "$FORGE_TEST_HEAD")
+          if [ -n "$FORGE_TEST_BASE" ]; then checkout_context_args+=(--requested-base "$FORGE_TEST_BASE"); fi
+          python -B scripts/run_workspace_stdlib_closure.py \
+            --output-dir protected-stdlib-controls-evidence \
+            --expected-commit "$FORGE_TEST_COMMIT" "${checkout_context_args[@]}"
+
+      - name: Retain separate redacted synthetic physical control receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-stdlib-closure-physical-controls-${{ github.sha }}
+          path: protected-stdlib-controls-evidence/workspace-stdlib-closure-physical-controls.json
+          if-no-files-found: error
+          retention-days: 14
+
       # Host provisioning remains network-enabled. There is no ip/sudo/package
       # installation or administrative fallback; absence yields an incomplete
       # uncreated experiment. Cargo offline does not establish runtime denial.

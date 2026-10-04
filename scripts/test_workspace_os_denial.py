@@ -130,10 +130,10 @@ def parse_plan(raw, now_ns):
     """Accept only canonical fixed inputs and an existing absolute Linux deadline."""
     plan = decode(raw, MAX_PLAN)
     keys = {"schema", "root", "forge", "output_dir", "ip", "python", "target_uid",
-            "target_gid", "deadline_monotonic_ns", "source_pins", "release_pin"}
+            "target_gid", "deadline_monotonic_ns", "source_pins", "release_pin", "stdlib_proof", "interpreter_pin"}
     if not isinstance(plan, dict) or set(plan) != keys or canonical(plan) != raw:
         raise Failure("source-invalid")
-    if plan["schema"] != "forge.os-denial-private-plan/1":
+    if plan["schema"] != "forge.os-denial-private-plan/2":
         raise Failure("source-invalid")
     for name in ("root", "forge", "output_dir", "ip", "python"):
         value = plan[name]
@@ -147,6 +147,8 @@ def parse_plan(raw, now_ns):
     if (not isinstance(plan["source_pins"], dict) or set(plan["source_pins"]) != set(SOURCES)
             or any(not valid_pin(pin) for pin in plan["source_pins"].values())
             or not valid_pin(plan["release_pin"])):
+        raise Failure("source-invalid")
+    if not leaf_summary_valid(plan["stdlib_proof"]) or not valid_pin(plan["interpreter_pin"]):
         raise Failure("source-invalid")
     return plan
 
@@ -204,49 +206,610 @@ def trusted_path(path, directory=False):
     return path
 
 
-def trusted_stdlib(end):
-    """Revalidate complete isolated stdlib roots with streamed depth/entry/byte bounds."""
-    count, total, directories = 0, 0, set()
-    roots = []
-    for value in sys.path:
-        if not value or not os.path.isabs(value):
-            raise Failure("tool-untrusted")
-        path = Path(value)
-        if path.suffix == ".zip" and not path.exists():
-            continue
-        if not path.is_dir():
-            raise Failure("tool-untrusted")
-        trusted_path(str(path), True)
-        roots.append(path)
-    if not roots or not any((p / "os.py").is_file() for p in roots) or not any(p.name == "lib-dynload" for p in roots):
-        raise Failure("tool-untrusted")
-    todo = [(p, 0) for p in roots]
-    while todo:
-        parent, depth = todo.pop()
-        if parent in directories:
-            continue
-        directories.add(parent)
-        if depth > 32:
-            raise Failure("tool-untrusted")
-        with os.scandir(parent) as entries:
+# Both qualifiers contain this literal proof engine; the engine imports no checkout helper.
+# Its independently computed proof is compared through the closed private plan.
+LEAF_PROOF_FORMAT = "forge.stdlib-leaf-closure/1"
+LEAF_ENTRY_LIMIT = 20000
+LEAF_BYTE_LIMIT = 268435456
+LEAF_DEPTH_LIMIT = 32
+LEAF_PATH_LIMIT = 4096
+LEAF_HOP_LIMIT = 16
+LEAF_WORK_LIMIT = 640000
+LEAF_FD_LIMIT = 64
+LEAF_STATE_LIMIT = 10485760
+LEAF_READ_SIZE = 32768
+
+
+class LeafClosureError(Exception):
+    """Carry only a fixed qualification reason; OS details and private paths stay private."""
+
+    def __init__(self, reason, phase="stdlib-entry"):
+        """Keep the first fixed failure and its existing root/entry diagnostic phase."""
+        self.reason, self.phase = reason, phase
+        super().__init__(reason)
+
+
+def leaf_identity(info):
+    """Pin owner, mode and full observed generation without interpreting symlink permissions."""
+    return [info.st_dev, info.st_ino, info.st_mode, info.st_uid, info.st_gid,
+            info.st_size, info.st_mtime_ns, info.st_ctime_ns]
+
+
+def leaf_canonical(value):
+    """Encode private proof rows deterministically; no private row is a public receipt."""
+    return (json.dumps(value, sort_keys=True, separators=(",", ":"),
+                       ensure_ascii=True, allow_nan=False) + "\n").encode("ascii")
+
+
+def leaf_encoded_size(value):
+    """Measure the bounded private JSON tree before whole-row/proof encoding or list retention."""
+    if type(value) is str:
+        size = 2
+        for character in value:
+            code = ord(character)
+            size += (2 if character in '\\"' or character in '\b\f\n\r\t' else
+                     6 if code < 32 or 126 < code <= 65535 else 12 if code > 65535 else 1)
+        return size
+    if type(value) is int:
+        return len(str(value))
+    if type(value) is list:
+        return 2 + max(0, len(value) - 1) + sum(leaf_encoded_size(item) for item in value)
+    if type(value) is dict:
+        return 2 + max(0, len(value) - 1) + sum(leaf_encoded_size(key) + 1 + leaf_encoded_size(item)
+                                             for key, item in value.items())
+    raise LeafClosureError("entry-observation-unverified")
+
+
+def leaf_summary_valid(value):
+    """Require a closed aggregate proof summary before privileged comparison or dispatch."""
+    if type(value) is not dict or set(value) != {"format", "pin", "entries", "charged_bytes", "link_hops"}:
+        return False
+    pin = value["pin"]
+    return (value["format"] == LEAF_PROOF_FORMAT and type(pin) is dict
+            and set(pin) == {"bytes", "sha256"} and type(pin["bytes"]) is int
+            and 1 <= pin["bytes"] <= LEAF_STATE_LIMIT
+            and type(pin["sha256"]) is str and re.fullmatch(r"[0-9a-f]{64}", pin["sha256"]) is not None
+            and type(value["entries"]) is int and 1 <= value["entries"] <= LEAF_ENTRY_LIMIT
+            and type(value["charged_bytes"]) is int and 0 <= value["charged_bytes"] <= LEAF_BYTE_LIMIT
+            and type(value["link_hops"]) is int and 0 <= value["link_hops"] <= LEAF_ENTRY_LIMIT * LEAF_HOP_LIMIT)
+
+
+class LeafBudget:
+    """Own one nonrenewing deadline and aggregate work, read, proof and descriptor charges."""
+
+    def __init__(self, deadline):
+        """Start one budget for both complete inventories and every logical alias resolution."""
+        self.deadline = deadline
+        self.work = self.entries = self.bytes = self.state = self.hops = 0
+        self.held = set()
+        self.streams = {}
+        self.uncertain_fds = 0
+
+    def check(self):
+        """Fence every blocking primitive cooperatively; this is not syscall preemption."""
+        if time.monotonic() >= self.deadline:
+            raise LeafClosureError("deadline-expired", "qualification-budget")
+
+    def charge(self, field, amount, maximum, reason):
+        """Charge monotonically before growth, opening or reading; no per-root renewal exists."""
+        self.check()
+        value = getattr(self, field) + amount
+        if amount < 0 or value > maximum:
+            raise LeafClosureError(reason)
+        setattr(self, field, value)
+
+    def open(self, path, flags, parent=None):
+        """Reserve a bounded owned handle before open and keep it through every later fault."""
+        self.charge("work", 1, LEAF_WORK_LIMIT, "entry-bound")
+        if len(self.held) + len(self.streams) + self.uncertain_fds >= LEAF_FD_LIMIT:
+            raise LeafClosureError("entry-bound")
+        fd = os.open(path, flags, dir_fd=parent)
+        self.held.add(fd)
+        return fd
+
+    def scandir(self, fd):
+        """Reserve one native directory-stream handle before creation alongside every held descriptor."""
+        self.charge("work", 1, LEAF_WORK_LIMIT, "entry-bound")
+        if len(self.held) + len(self.streams) + self.uncertain_fds >= LEAF_FD_LIMIT:
+            raise LeafClosureError("entry-bound")
+        token = object()
+        self.streams[token] = None
+        try:
+            self.streams[token] = os.scandir(fd)
+        except BaseException:
+            del self.streams[token]
+            raise
+        return LeafDirectoryStream(self, token)
+
+    def close_stream(self, token):
+        """Credit a stream reservation only after its owned iterator successfully closes."""
+        if token in self.streams:
+            try:
+                self.streams[token].close()
+            except BaseException:
+                raise LeafClosureError("entry-observation-unverified") from None
+            del self.streams[token]
+
+    def close(self, fd):
+        """Consume one close attempt; uncertainty stays charged without retrying a possibly reused numeric FD."""
+        if fd in self.held:
+            self.held.remove(fd)
+            try:
+                os.close(fd)
+            except BaseException:
+                self.uncertain_fds += 1
+                raise LeafClosureError("entry-observation-unverified") from None
+
+    def close_all(self):
+        """Attempt every independent owned close even when one fails; unknown cleanup cannot pass."""
+        failed = False
+        for token in tuple(self.streams):
+            try:
+                self.close_stream(token)
+            except BaseException:
+                failed = True
+        for fd in tuple(self.held):
+            try:
+                self.close(fd)
+            except BaseException:
+                failed = True
+        if failed or self.uncertain_fds:
+            raise LeafClosureError("entry-observation-unverified")
+        self.check()
+
+
+class LeafDirectoryStream:
+    """Keep an actual scandir iterator charged until close succeeds, including exceptional traversal."""
+
+    def __init__(self, budget, token):
+        """Bind this context to the single reservation already made before iterator creation."""
+        self.budget = budget
+        self.token = token
+
+    def __enter__(self):
+        """Expose the owned iterator without creating another stream or changing its charge."""
+        return self.budget.streams[self.token]
+
+    def __exit__(self, exc_type, exc, traceback):
+        """Close even on traversal failure; uncertainty remains charged and cannot qualify."""
+        self.budget.close_stream(self.token)
+        return False
+
+
+class LeafClosure:
+    """Build a complete private stdlib proof using held no-follow directories, leaves and link text."""
+
+    def __init__(self, paths, deadline):
+        """Validate fixed root spellings before any open; callers cannot add an alternative root."""
+        if (type(paths) is not list or not 2 <= len(paths) <= 8
+                or any(type(p) is not str for p in paths) or len(paths) != len(set(paths))):
+            raise LeafClosureError("root-shape-invalid", "stdlib-roots")
+        self.paths = []
+        for path in paths:
+            try:
+                raw = path.encode("utf-8", "strict")
+            except UnicodeError:
+                raise LeafClosureError("root-shape-invalid", "stdlib-roots") from None
+            if (not raw.startswith(b"/") or len(raw) > LEAF_PATH_LIMIT
+                    or b"\0" in raw or b"//" in raw or raw.endswith(b"/")
+                    or any(p in (b".", b"..") for p in raw.split(b"/")[1:])):
+                raise LeafClosureError("root-shape-invalid", "stdlib-roots")
+            self.paths.append(raw)
+        if not any(p.rsplit(b"/", 1)[-1] == b"lib-dynload" for p in self.paths):
+            raise LeafClosureError("dynload-missing", "stdlib-roots")
+        self.budget = LeafBudget(deadline)
+        self.slash = None
+        self.slash_generation = None
+        self.roots = []
+        self.scan_entries = 0
+
+    def trusted(self, info, kind):
+        """Require UID0 first, refuse incorrect kinds, and apply 022 only to nonlinks."""
+        if info.st_uid != 0:
+            raise LeafClosureError("not-root-owned")
+        expected = {"directory": stat.S_ISDIR, "file": stat.S_ISREG, "link": stat.S_ISLNK}[kind]
+        if not expected(info.st_mode):
+            raise LeafClosureError("unsupported-link" if stat.S_ISLNK(info.st_mode) else
+                                   "not-directory" if kind == "directory" else "not-regular")
+        if kind != "link" and info.st_mode & 0o022:
+            raise LeafClosureError("worker-writable")
+
+    def verify_slash(self):
+        """Bind held slash to the current no-follow root identity before and after complete qualification."""
+        self.budget.check()
+        if (leaf_identity(os.fstat(self.slash)) != self.slash_generation
+                or leaf_identity(os.stat(b"/", follow_symlinks=False)) != self.slash_generation):
+            raise LeafClosureError("entry-observation-unverified")
+
+    def verify(self, parent, name, fd, first):
+        """Reconcile the held object with its current no-follow parent entry and full generation."""
+        self.budget.check()
+        if (leaf_identity(os.fstat(fd)) != first
+                or leaf_identity(os.stat(name, dir_fd=parent, follow_symlinks=False)) != first):
+            raise LeafClosureError("entry-observation-unverified")
+
+    def directory(self, parent, name):
+        """Open one trusted directory component without following a root/intermediate alias."""
+        self.budget.charge("work", 1, LEAF_WORK_LIMIT, "entry-bound")
+        before = os.stat(name, dir_fd=parent, follow_symlinks=False)
+        self.trusted(before, "directory")
+        fd = self.budget.open(name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC, parent)
+        info = os.fstat(fd)
+        if leaf_identity(info) != leaf_identity(before):
+            raise LeafClosureError("entry-observation-unverified")
+        self.trusted(info, "directory")
+        identity = leaf_identity(info)
+        self.verify(parent, name, fd, identity)
+        return fd, identity
+
+    def absolute_directory(self, raw):
+        """Walk from held slash, recording every qualified ancestor and closing superseded handles."""
+        components = raw.split(b"/")[1:] if raw != b"/" else []
+        if len(components) > LEAF_DEPTH_LIMIT:
+            raise LeafClosureError("depth-bound")
+        fd, identities, partial = self.slash, [[b"/".hex(), leaf_identity(os.fstat(self.slash))]], b""
+        try:
+            for name in components:
+                child, identity = self.directory(fd, name)
+                if fd != self.slash:
+                    self.budget.close(fd)
+                fd = child
+                partial += b"/" + name
+                self.row(identities, [partial.hex(), identity])
+            return fd, identities
+        except BaseException:
+            if fd != self.slash:
+                self.budget.close(fd)
+            raise
+
+    def root_inventory(self):
+        """Hold every present root and pin trusted absence of optional zip roots without following them."""
+        rows = []
+        for raw in self.paths:
+            parent_raw, name = raw.rsplit(b"/", 1)
+            parent, ancestry = self.absolute_directory(parent_raw or b"/")
+            try:
+                try:
+                    info = os.stat(name, dir_fd=parent, follow_symlinks=False)
+                except FileNotFoundError:
+                    if not name.endswith(b".zip"):
+                        raise LeafClosureError("missing-root", "stdlib-roots") from None
+                    self.row(rows, [raw.hex(), "absent", ancestry])
+                    continue
+                self.trusted(info, "directory")
+                fd, identity = self.directory(parent, name)
+                self.roots.append((raw, fd, identity, ancestry))
+                self.row(rows, [raw.hex(), "directory", identity, ancestry])
+            finally:
+                if parent != self.slash:
+                    self.budget.close(parent)
+        if (len(self.roots) < 2 or not any(raw.endswith(b"/lib-dynload") for raw, *_ in self.roots)):
+            raise LeafClosureError("dynload-missing", "stdlib-roots")
+        return rows
+
+    def qualified_roots(self):
+        """Preserve root diagnostic classification while retaining fixed aggregate-bound/observation failures."""
+        try:
+            return self.root_inventory()
+        except LeafClosureError as error:
+            if error.reason in {"missing-root", "not-root-owned", "worker-writable", "unsupported-link",
+                                "not-directory", "not-regular", "dynload-missing"}:
+                raise LeafClosureError(error.reason, "stdlib-roots") from None
+            raise
+
+    def hash_leaf(self, parent, name, expected):
+        """Precharge full size, hash the held regular file to exact EOF, then reconcile its parent entry."""
+        self.budget.charge("bytes", expected[5], LEAF_BYTE_LIMIT, "byte-bound")
+        fd = self.budget.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK, parent)
+        try:
+            info = os.fstat(fd)
+            self.trusted(info, "file")
+            if leaf_identity(info) != expected:
+                raise LeafClosureError("entry-observation-unverified")
+            digest, length = hashlib.sha256(), 0
+            while True:
+                self.budget.check()
+                block = os.read(fd, min(LEAF_READ_SIZE, expected[5] - length + 1))
+                if not block:
+                    break
+                length += len(block)
+                if length > expected[5]:
+                    raise LeafClosureError("entry-observation-unverified")
+                digest.update(block)
+            if length != expected[5]:
+                raise LeafClosureError("entry-observation-unverified")
+            self.verify(parent, name, fd, expected)
+            return {"bytes": length, "sha256": digest.hexdigest()}
+        finally:
+            self.budget.close(fd)
+
+    def read_link(self, parent, name, expected):
+        """Read raw Linux link text through its held O_PATH identity; no automatic target traversal occurs."""
+        if not 1 <= expected[5] <= LEAF_PATH_LIMIT:
+            raise LeafClosureError("unsupported-link")
+        self.budget.charge("state", expected[5], LEAF_STATE_LIMIT, "byte-bound")
+        fd = self.budget.open(name, os.O_PATH | os.O_NOFOLLOW | os.O_CLOEXEC, parent)
+        try:
+            info = os.fstat(fd)
+            self.trusted(info, "link")
+            if not 1 <= info.st_size <= LEAF_PATH_LIMIT:
+                raise LeafClosureError("unsupported-link")
+            if leaf_identity(info) != expected:
+                raise LeafClosureError("entry-observation-unverified")
+            self.budget.charge("work", 1, LEAF_WORK_LIMIT, "entry-bound")
+            raw = os.readlink(b"", dir_fd=fd)
+            if (type(raw) is not bytes or not raw or len(raw) > LEAF_PATH_LIMIT
+                    or b"\0" in raw or b"//" in raw or raw.endswith(b"/")):
+                raise LeafClosureError("unsupported-link")
+            try:
+                raw.decode("utf-8", "strict")
+            except UnicodeError:
+                raise LeafClosureError("unsupported-link") from None
+            if len(raw) != expected[5]:
+                raise LeafClosureError("entry-observation-unverified")
+            self.verify(parent, name, fd, expected)
+            return raw
+        finally:
+            self.budget.close(fd)
+
+    def row(self, rows, value):
+        """Charge canonical row bytes before retaining each bounded private proof record."""
+        self.budget.charge("state", leaf_encoded_size(value) + 1, LEAF_STATE_LIMIT, "byte-bound")
+        rows.append(value)
+
+    def visit(self, index, raw, fd, relative, depth, rows, files, links):
+        """Enumerate complete logical entries in root order, preserving overlapping-root charges and all aliases."""
+        if depth > LEAF_DEPTH_LIMIT:
+            raise LeafClosureError("depth-bound")
+        first = leaf_identity(os.fstat(fd))
+        self.trusted(os.fstat(fd), "directory")
+        with self.budget.scandir(fd) as entries:
             for entry in entries:
-                remaining(end)
-                count += 1
-                if count > MAX_PROC:
-                    raise Failure("tool-untrusted")
-                s = entry.stat(follow_symlinks=False)
-                if s.st_uid != 0 or s.st_mode & 0o022:
-                    raise Failure("tool-untrusted")
-                if stat.S_ISDIR(s.st_mode):
-                    todo.append((Path(entry.path), depth + 1))
-                elif stat.S_ISREG(s.st_mode):
-                    total += s.st_size
-                    if total > 268435456:
-                        raise Failure("tool-untrusted")
-                    file_pin(entry.path, end)
+                self.budget.charge("entries", 1, LEAF_ENTRY_LIMIT * 2, "entry-bound")
+                self.scan_entries += 1
+                if self.scan_entries > LEAF_ENTRY_LIMIT:
+                    raise LeafClosureError("entry-bound")
+                name = os.fsencode(entry.name)
+                full = raw + b"/" + name
+                rel = relative + (b"/" if relative else b"") + name
+                if len(full) > LEAF_PATH_LIMIT or name in (b"", b".", b"..") or b"/" in name:
+                    raise LeafClosureError("entry-bound")
+                info = os.stat(name, dir_fd=fd, follow_symlinks=False)
+                identity = leaf_identity(info)
+                if stat.S_ISDIR(info.st_mode):
+                    child, opened = self.directory(fd, name)
+                    try:
+                        if opened != identity:
+                            raise LeafClosureError("entry-observation-unverified")
+                        self.row(rows, [index, rel.hex(), "directory", identity])
+                        self.visit(index, full, child, rel, depth + 1, rows, files, links)
+                        self.verify(fd, name, child, identity)
+                    finally:
+                        self.budget.close(child)
+                elif stat.S_ISREG(info.st_mode):
+                    self.trusted(info, "file")
+                    pin = self.hash_leaf(fd, name, identity)
+                    if full in files and files[full] != (identity, pin):
+                        raise LeafClosureError("entry-observation-unverified")
+                    self.budget.charge("state", len(full), LEAF_STATE_LIMIT, "byte-bound")
+                    files[full] = (identity, pin)
+                    self.row(rows, [index, rel.hex(), "file", identity, pin])
+                elif stat.S_ISLNK(info.st_mode):
+                    self.trusted(info, "link")
+                    target = self.read_link(fd, name, identity)
+                    if full in links and links[full] != (identity, target):
+                        raise LeafClosureError("entry-observation-unverified")
+                    self.budget.charge("state", len(full) + len(target), LEAF_STATE_LIMIT, "byte-bound")
+                    links[full] = (identity, target)
+                    self.row(rows, [index, rel.hex(), "link", identity,
+                                    hashlib.sha256(target).hexdigest(), len(target)])
                 else:
-                    raise Failure("tool-untrusted")
-    return count
+                    if info.st_uid != 0:
+                        raise LeafClosureError("not-root-owned")
+                    if info.st_mode & 0o022:
+                        raise LeafClosureError("worker-writable")
+                    raise LeafClosureError("unsupported-kind")
+        if leaf_identity(os.fstat(fd)) != first:
+            raise LeafClosureError("entry-observation-unverified")
+
+    def resolve(self, original, files, links):
+        """Resolve only inventoried leaf chains, qualifying every raw dot/dot-dot ancestor operation."""
+        current, seen, chain, steps = original, set(), [], 0
+        for _ in range(LEAF_HOP_LIMIT):
+            if current not in links:
+                raise LeafClosureError("unsupported-link")
+            identity, target = links[current]
+            token = (identity[0], identity[1])
+            if token in seen:
+                raise LeafClosureError("unsupported-link")
+            seen.add(token)
+            self.budget.charge("hops", 1, LEAF_ENTRY_LIMIT * LEAF_HOP_LIMIT, "entry-bound")
+            parent_raw, origin_name = current.rsplit(b"/", 1)
+            origin_parent, origin_ancestry = self.absolute_directory(parent_raw or b"/")
+            origin_link = None
+            try:
+                origin_link = self.budget.open(origin_name, os.O_PATH | os.O_NOFOLLOW | os.O_CLOEXEC, origin_parent)
+                self.trusted(os.fstat(origin_link), "link")
+                self.verify(origin_parent, origin_name, origin_link, identity)
+                if self.read_link(origin_parent, origin_name, identity) != target:
+                    raise LeafClosureError("entry-observation-unverified")
+                parts = ([] if target.startswith(b"/") else current.rsplit(b"/", 1)[0].split(b"/")[1:]) + target.split(b"/")[1 if target.startswith(b"/") else 0:]
+                stack, names, opened_generations, ancestry = [self.slash], [], [], [[b"/".hex(), leaf_identity(os.fstat(self.slash))]]
+                try:
+                    steps += len(parts)
+                    if steps > 512:
+                        raise LeafClosureError("entry-bound")
+                    # Lexical membership is only a pre-I/O refusal; the raw component walk below
+                    # independently qualifies dots, parent traversal and every actual directory.
+                    candidate = []
+                    for component in parts:
+                        if component == b".":
+                            continue
+                        if component == b"..":
+                            if not candidate:
+                                raise LeafClosureError("unsupported-link")
+                            candidate.pop()
+                        else:
+                            candidate.append(component)
+                    if b"/" + b"/".join(candidate) not in files and b"/" + b"/".join(candidate) not in links:
+                        raise LeafClosureError("unsupported-link")
+                    for component in parts[:-1]:
+                        self.budget.charge("work", 1, LEAF_WORK_LIMIT, "entry-bound")
+                        if component == b".":
+                            continue
+                        if component == b"..":
+                            if not names:
+                                raise LeafClosureError("unsupported-link")
+                            self.verify(stack[-2], names[-1], stack[-1], opened_generations[-1])
+                            self.budget.close(stack.pop())
+                            names.pop()
+                            opened_generations.pop()
+                            continue
+                        if not component or len(names) >= LEAF_DEPTH_LIMIT:
+                            raise LeafClosureError("depth-bound")
+                        child, opened = self.directory(stack[-1], component)
+                        stack.append(child)
+                        opened_generations.append(opened)
+                        names.append(component)
+                        self.row(ancestry, [(b"/" + b"/".join(names)).hex(), opened])
+                    leaf = parts[-1]
+                    if leaf in (b"", b".", b".."):
+                        raise LeafClosureError("unsupported-link")
+                    resolved = b"/" + b"/".join([*names, leaf])
+                    if len(resolved) > LEAF_PATH_LIMIT:
+                        raise LeafClosureError("entry-bound")
+                    observed = os.stat(leaf, dir_fd=stack[-1], follow_symlinks=False)
+                    if resolved in files:
+                        expected, pin = files[resolved]
+                        self.trusted(observed, "file")
+                        if leaf_identity(observed) != expected or self.hash_leaf(stack[-1], leaf, expected) != pin:
+                            raise LeafClosureError("entry-observation-unverified")
+                        self.row(chain, [current.hex(), identity, hashlib.sha256(target).hexdigest(),
+                                      origin_ancestry, ancestry, resolved.hex(), expected, pin])
+                        return chain
+                    if resolved not in links:
+                        raise LeafClosureError("unsupported-link")
+                    self.trusted(observed, "link")
+                    expected, text = links[resolved]
+                    if leaf_identity(observed) != expected or self.read_link(stack[-1], leaf, expected) != text:
+                        raise LeafClosureError("entry-observation-unverified")
+                    self.row(chain, [current.hex(), identity, hashlib.sha256(target).hexdigest(),
+                                  origin_ancestry, ancestry, resolved.hex(), expected])
+                    current = resolved
+                finally:
+                    try:
+                        # Reconcile every retained component before releasing the resolved path.
+                        for ordinal in range(1, len(stack)):
+                            self.verify(stack[ordinal - 1], names[ordinal - 1], stack[ordinal],
+                                        opened_generations[ordinal - 1])
+                    finally:
+                        for fd in reversed(stack[1:]):
+                            self.budget.close(fd)
+            finally:
+                try:
+                    if origin_link is not None:
+                        self.verify(origin_parent, origin_name, origin_link, identity)
+                    fresh_parent, fresh_ancestry = self.absolute_directory(parent_raw or b"/")
+                    try:
+                        if (fresh_ancestry != origin_ancestry
+                                or leaf_identity(os.fstat(fresh_parent)) != leaf_identity(os.fstat(origin_parent))):
+                            raise LeafClosureError("entry-observation-unverified")
+                    finally:
+                        if fresh_parent != self.slash:
+                            self.budget.close(fresh_parent)
+                finally:
+                    if origin_link is not None:
+                        self.budget.close(origin_link)
+                    if origin_parent != self.slash:
+                        self.budget.close(origin_parent)
+        raise LeafClosureError("unsupported-link")
+
+    def scan(self, root_rows):
+        """Create one complete canonical proof; link targets must already be independent regular members."""
+        rows, files, links = [], {}, {}
+        count_before = self.budget.entries
+        self.scan_entries = 0
+        for index, (raw, fd, expected, _) in enumerate(self.roots):
+            if leaf_identity(os.fstat(fd)) != expected:
+                raise LeafClosureError("entry-observation-unverified")
+            self.visit(index, raw, fd, b"", 0, rows, files, links)
+        count = self.budget.entries - count_before
+        if (not 1 <= count <= LEAF_ENTRY_LIMIT
+                or not any(raw + b"/os.py" in files or raw + b"/os.py" in links
+                           for raw, *_ in self.roots)):
+            raise LeafClosureError("entry-observation-unverified")
+        # Resolve each logical alias row, even when overlapping roots share its spelling.
+        for row in tuple(rows):
+            if row[2] == "link":
+                original = self.roots[row[0]][0] + b"/" + bytes.fromhex(row[1])
+                self.row(rows, [row[0], row[1], "resolution", self.resolve(original, files, links)])
+        proof = [LEAF_PROOF_FORMAT, root_rows, sorted(rows)]
+        if leaf_encoded_size(proof) + 1 > LEAF_STATE_LIMIT:
+            raise LeafClosureError("byte-bound")
+        raw = leaf_canonical(proof)
+        if len(raw) > LEAF_STATE_LIMIT:
+            raise LeafClosureError("byte-bound")
+        return raw, count, files
+
+    def run(self):
+        """Re-enumerate complete membership and bytes with the same budget, then close every held handle."""
+        try:
+            self.budget.check()
+            if (sys.platform != "linux" or not hasattr(os, "O_PATH")
+                    or os.open not in os.supports_dir_fd or os.stat not in os.supports_dir_fd
+                    or os.readlink not in os.supports_dir_fd or os.scandir not in os.supports_fd
+                    or os.stat not in os.supports_follow_symlinks):
+                raise LeafClosureError("entry-observation-unverified")
+            self.slash = self.budget.open(b"/", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
+            self.trusted(os.fstat(self.slash), "directory")
+            self.slash_generation = leaf_identity(os.fstat(self.slash))
+            self.verify_slash()
+            roots = self.qualified_roots()
+            first, count, files = self.scan(roots)
+            # Every root/absence spelling is independently reopened from held slash.
+            old_roots = self.roots
+            self.roots = []
+            again = self.qualified_roots()
+            if roots != again:
+                raise LeafClosureError("entry-observation-unverified")
+            second, second_count, _ = self.scan(again)
+            if first != second or count != second_count:
+                raise LeafClosureError("entry-observation-unverified")
+            # Reconcile root ancestors/absence after the second full pass; closing an
+            # ancestor during traversal does not make a replaced spelling continuous.
+            middle_roots = self.roots
+            self.roots = []
+            final_roots = self.qualified_roots()
+            if roots != final_roots:
+                raise LeafClosureError("entry-observation-unverified")
+            # Retained original and second-pass roots remain independent owned witnesses.
+            if any(leaf_identity(os.fstat(fd)) != identity
+                   for _, fd, identity, _ in (*old_roots, *middle_roots)):
+                raise LeafClosureError("entry-observation-unverified")
+            self.verify_slash()
+            summary = {"format": LEAF_PROOF_FORMAT,
+                       "pin": {"bytes": len(first), "sha256": hashlib.sha256(first).hexdigest()},
+                       "entries": count, "charged_bytes": self.budget.bytes, "link_hops": self.budget.hops}
+            if not leaf_summary_valid(summary):
+                raise LeafClosureError("entry-observation-unverified")
+            return summary, files
+        finally:
+            self.budget.close_all()
+
+
+def leaf_closure(paths, deadline):
+    """Independently execute the fixed closure algorithm; no selected-root or proof-prefix fallback exists."""
+    return LeafClosure(paths, deadline).run()
+
+
+def trusted_stdlib(end):
+    """Independently derive the complete isolated proof; no supplied roots or preflight-only approval are accepted."""
+    try:
+        return leaf_closure(list(sys.path), end)
+    except LeafClosureError as error:
+        raise Failure("command-timeout" if error.reason == "deadline-expired" else "tool-untrusted") from None
+    except (OSError, UnicodeError, ValueError):
+        raise Failure("tool-untrusted") from None
 
 
 def qualify_libc(lib):
@@ -566,11 +1129,19 @@ class Native:
             raise Failure("tool-untrusted")
         trusted_path(self.plan["python"])
         trusted_path(self.plan["ip"])
-        trusted_stdlib(self.setup_end)
+        if file_pin(self.plan["python"], self.setup_end) != self.plan["interpreter_pin"]:
+            raise Failure("tool-untrusted")
+        proof, files = trusted_stdlib(self.setup_end)
+        if proof != self.plan["stdlib_proof"]:
+            raise Failure("tool-untrusted")
+        self.stdlib_proof = proof
         for module in (os, json, socket, ctypes, subprocess, tempfile, shutil):
             path = getattr(module, "__file__", None)
             if path and not path.startswith("<"):
-                trusted_path(str(Path(path).resolve()))
+                resolved = str(Path(path).resolve(strict=True))
+                trusted_path(resolved)
+                if os.fsencode(resolved) not in files:
+                    raise Failure("tool-untrusted")
         if not shutil.rmtree.avoids_symlink_attacks or not hasattr(os, "pidfd_open"):
             raise Failure("facility-unavailable", True)
         status = process_record(os.getpid())["status"]
@@ -1140,6 +1711,12 @@ class Native:
 
     def stable(self):
         """Recheck protected and supplied identities after all actual client/probe work."""
+        trusted_path(self.plan["python"])
+        if file_pin(self.plan["python"], self.work_end) != self.plan["interpreter_pin"]:
+            raise Failure("source-changed")
+        proof, _files = trusted_stdlib(self.work_end)
+        if proof != self.plan["stdlib_proof"]:
+            raise Failure("source-changed")
         for key in (*SOURCES, "forge"):
             original = Path(self.plan["forge"]) if key == "forge" else Path(self.plan["root"]) / key
             expected = self.plan["release_pin"] if key == "forge" else self.plan["source_pins"][key]

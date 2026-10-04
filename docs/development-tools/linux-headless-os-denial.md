@@ -6,6 +6,93 @@ The fixed-administrative-path successor has passed 106 mocked controls on frozen
 
 [The fixed-path plan](../plans/2026-10-02-f04-linux-headless-fixed-tools.md) and [audit v3](../plans/2026-10-02-f04-os-denial-control-audit-v3.json) retain the new source and complete root mock maps. The preserved [diagnostic plan](../plans/2026-10-02-f04-linux-headless-tool-diagnostics.md), [audit v2](../plans/2026-10-02-f04-os-denial-control-audit-v2.json), original [integration plan](../plans/2026-10-02-f04-linux-headless-os-denial.md) and [audit v1](../plans/2026-10-02-f04-os-denial-control-audit-v1.json) retain earlier evidence and correction history. [Installed Chrome](hosted-chrome.md) evidence remains separately scoped and supplies no OS-denial observations.
 
+## Bounded leaf-link closure — 2026-10-04
+
+The current development candidate admits a finite subset of stdlib symlinks:
+each leaf chain must end at a regular file independently present in the complete
+declared stdlib inventory. Every link and ancestor must be root-owned; regular
+files and directories must also have no group/other write bits. A symlink's usual
+`0777` mode does not establish target write authority. Directory, root,
+intermediate, external, dangling, cyclic and special-file links still refuse.
+This does not establish loaded-byte or interpreter startup attestation.
+
+Both standalone qualifiers contain the same literal algorithm and independently
+compute its proof. They walk raw link components through held no-follow Linux
+handles, hash regular members through exact EOF, and compare complete membership
+and byte proofs from two passes. The final fence reopens root/absence and ancestor
+spellings and checks retained root generations. These sequential observations
+do not establish atomicity or prevent changes between observations.
+
+The closed private plan advances to `forge.os-denial-private-plan/2`, carrying
+the stdlib proof and selected interpreter byte pin. The privileged helper checks
+both before facilities are used and after actual work. Outer `/2`, native `/1`,
+their public diagnostic vocabulary and acceptance boundaries remain unchanged.
+There is no supplied-root fallback, accepted proof prefix or weaker link mode.
+
+| Shared engineering allowance | Bound |
+| --- | ---: |
+| Logical entries per full pass / both passes combined | 20,000 / 40,000 |
+| Total regular bytes read, including both passes, aliases and overlapping roots | 256 MiB |
+| Component/open work / aggregate link hops | 640,000 / 320,000 |
+| Link hops / raw components per individual chain | 16 / 512 |
+| Absolute directory depth / inventory depth | 32 / 32 |
+| Root path or raw link text | 4,096 bytes |
+| Held descriptors, active directory streams and uncertain close charges combined | 64 |
+| Charged proof rows, maps and raw link state | 10 MiB |
+| Each regular read | 32 KiB |
+
+These limits share one nonrenewing cooperative deadline. The 10 MiB allowance
+measures the specified retained state and canonical proof encoding; it is not
+an interpreter heap limit. Conservative handle/work charges can refuse a tree
+before another nominal maximum is reached. A failed raw descriptor close consumes
+its numeric close attempt and stays charged; the qualifier does not retry a
+number that another owner could reuse.
+
+The first applied local run exposed a missing Linux constant in a portable
+mocked control. Its failed log is preserved. The scoped correction supplies
+`O_PATH` only inside that fake-I/O test. A separate coverage collector correction
+excludes Python's `None` and zero pseudo-line entries from source-line counts,
+retaining those omissions explicitly. Neither change relaxes production trust.
+
+Fresh local execution then passed 117 ordinary controls with zero failures and
+errors. It registered 22 physical Linux UID0 cases, whose class was skipped on
+macOS; these cases have no local execution credit. The four-file census has
+385/385 documented functions, including all 131 changed/new functions,
+25/25 classes and 4/4 modules. Actual line events cover 3,316/4,817 compiler
+source lines, with every zero and function-call event retained. Import/header
+events do not establish function-body coverage. Native subprocess, branch,
+MC/DC and IP-denial coverage remain unmeasured by this local run.
+
+The historical mock denominators and hosted failures below remain separate
+evidence. Actual Linux physical-control execution, native IP-denial calibration,
+attempted-egress observation, owner/audit acceptance and the goal-wide final
+documentation review remain required.
+
+### Protected hosted campaign and complete local successor
+
+The current workflow adds a separate protected-copy Linux UID0 campaign and
+uploads `workspace-stdlib-closure-physical-controls.json`. Its exact 22 registered
+cases, actual outcomes, absent fixture checks and protected-copy cleanup must all
+reconcile. Both fixed supervisors use only their still-owned direct child and
+actual wait status; changed wait policy, uncertain ownership or forced settlement
+receives no pass. A one-attempt latch prevents another signal or renewed timeout,
+and an unreaped/uncertain child cannot be reported as cleaned.
+
+The complete local successor passed 143 ordinary controls, with the same 22
+physical cases still skipped on macOS. Six source scripts plus the two separately
+bound embedded programs have 463/463 documented functions, all 209 selected
+functions documented, 31/31 classes and 8/8 modules. Actual line events cover
+3,793/5,828; the protected runner has 0/102 local coverage. Its literal assignment
+does not supply execution credit. The earlier four-file scope above remains a
+preserved dated result. [Verification v1](../plans/2026-10-04-f04-leaf-closure-verification-v1.md) and its
+[complete JSON receipt](../plans/2026-10-04-f04-leaf-closure-verification-v1.json) retain every zero, function-call
+mapping, embedded program, failed predecessor and full source/log binding.
+
+Whole Rust LLVM passed 3,407 tests with three ignored; formatting and strict
+Clippy passed at unchanged Rust/Cargo source bytes. These checks do not establish
+a hosted physical pass, native IP denial, attempted egress or acceptance. The
+goal-wide final documentation review remains open.
+
 ## Fixed administrative selectors and scoped controls
 
 A second authentic hosted attempt at immutable `aa73a72349bce9f61905ceaea02f934c01e3d6b3`, [run 37082441298](https://github.com/policy-forge/forge/actions/runs/37082441298), failed with outer `failed/tool-untrusted` and diagnostic `ip-path/worker-writable/null`. The native producer was not run, tools were null, and experiment cleanup was verified-not-created/nonforced. That diagnostic does not identify the rejected selected path or ancestor, and the cause remains unknown. The fixed-path source change does not establish repair or native execution.
