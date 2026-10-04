@@ -2170,3 +2170,991 @@ fn baseline_cli_empty_previous_explains_complete_additions_without_build_admissi
     assert!(!root.join("refused-empty-prior.json").exists());
     assert_eq!(std::fs::read(root.join("prior.json")).unwrap(), previous);
 }
+// S1/S2 synthetic native controls appended to the exact frozen foundation helpers.
+// Authored here as source only. No Rust execution, representative-plan or consumer acceptance.
+
+/// Explicit synthetic event; actor/rationale are declarations rather than verified authority.
+fn portfolio_native_event(key: &str, at: &str, from: Option<&str>, to: &str, party: &str) -> Value {
+    json!({"key":key,"actor":{"role_id":"owner","party_key":party},"at":at,
+        "from":from,"to":to,"rationale":"SENSITIVE authored\nline\twith tab","closure":null})
+}
+
+/// Persist a real current authoring/native pair prepared from the fixture's actual five sources.
+fn portfolio_native_pair(
+    fixture: &Fixture,
+    value: &Value,
+    authoring: &str,
+    native: &str,
+) -> forge::poam::portfolio::Input {
+    let root = fixture.directory.path();
+    write_json(&root.join(authoring), value);
+    let prepared = prepare_authored(fixture, value, None).unwrap();
+    prepared.verify_inputs().unwrap();
+    std::fs::write(root.join(native), prepared.artifact()).unwrap();
+    forge::poam::portfolio::Input {
+        manifest: root.join(authoring),
+        native_artifact: Some(std::path::PathBuf::from(native)),
+    }
+}
+
+/// Select the exact actual native risk tuple, without interpreting its status as eligibility.
+fn portfolio_native_risk(fixture: &Fixture, value: &Value) -> Value {
+    let declaration = forge::poam::workflow::parse(&serde_json::to_vec(value).unwrap()).unwrap();
+    let captured =
+        source::load(&fixture.directory.path().join("poam.json"), &declaration.source).unwrap();
+    let selected = captured
+        .inventory()
+        .objects
+        .iter()
+        .find(|object| object.kind == manifest::SourceKind::Risk)
+        .unwrap();
+    json!({"kind":selected.kind,"key":selected.key,"uuid":selected.uuid,
+        "result_uuid":selected.result_uuid,"expected_sha256":selected.sha256})
+}
+
+/// Snapshot only caller-named files; no directory scanning or implicit source discovery.
+fn portfolio_native_snapshot(root: &Path, names: &[&str]) -> Vec<(std::path::PathBuf, Vec<u8>)> {
+    names
+        .iter()
+        .map(|name| {
+            let path = root.join(name);
+            let bytes = std::fs::read(&path).unwrap();
+            (path, bytes)
+        })
+        .collect()
+}
+
+/// Require exact literal source/author/native preservation after read-only projection.
+fn portfolio_native_unchanged(snapshot: &[(std::path::PathBuf, Vec<u8>)]) {
+    for (path, bytes) in snapshot {
+        assert_eq!(std::fs::read(path).unwrap(), *bytes, "{}", path.display());
+    }
+}
+
+/// Two actual supplied plans charge shared sources twice and retain null/cancelled/future rows.
+#[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one complete paired-native portfolio checks all repeated denominators and inert traces"
+)]
+fn portfolio_native_complete_counts_temporal_trace_and_escaped_html() {
+    use forge::poam::{html, portfolio};
+    let fixture = fixture();
+    let root = fixture.directory.path();
+    let base = authored_workflow(&fixture);
+    let declaration = forge::poam::workflow::parse(&serde_json::to_vec(&base).unwrap()).unwrap();
+    let captured = source::load(&root.join("poam.json"), &declaration.source).unwrap();
+    let inventory_count = captured.inventory().objects.len();
+    let source_names = [
+        "assessment-results.json",
+        "assessment-plan.json",
+        "ssp.json",
+        "profile.json",
+        "catalog.json",
+    ];
+    let one_plan_source_bytes: usize =
+        source_names.iter().map(|name| std::fs::read(root.join(name)).unwrap().len()).sum();
+    drop(captured);
+    let hostile_key = "<img src=\"https://example.invalid/x\" onerror='run()'>&é";
+    let hostile_party = "remediator<&\"'é>";
+    let mut first = base.clone();
+    first["document"]["key"] = json!("portfolio-a");
+    first["parties"][0]["key"] = json!(hostile_party);
+    first["items"][0]["key"] = json!(hostile_key);
+    first["items"][0]["owners"][0]["party_key"] = json!(hostile_party);
+    first["items"][0]["state"] = json!("cancelled");
+    first["items"][0]["history"] = json!([
+        portfolio_native_event("plan", "2026-01-03T00:00:00Z", None, "planned", hostile_party),
+        portfolio_native_event(
+            "blocked",
+            "2026-01-06T01:00:00+01:00",
+            Some("planned"),
+            "blocked",
+            hostile_party
+        ),
+        portfolio_native_event(
+            "cancel",
+            "2026-01-09T00:00:00Z",
+            Some("blocked"),
+            "cancelled",
+            hostile_party
+        ),
+    ]);
+    first["items"][0]["milestones"][0]["key"] = json!(hostile_key);
+    first["items"][0]["milestones"][0]["owners"][0]["party_key"] = json!(hostile_party);
+    first["items"][0]["milestones"][0]["history"] = json!([portfolio_native_event(
+        "future-plan",
+        "2026-01-08T00:00:00Z",
+        None,
+        "planned",
+        hostile_party
+    ),]);
+    let mut second = base.clone();
+    second["document"]["key"] = json!("portfolio-b");
+    second["items"][0]["source_refs"] = json!([portfolio_native_risk(&fixture, &base)]);
+    second["items"][0]["state"] = json!("cancelled");
+    second["items"][0]["history"] = json!([
+        portfolio_native_event("plan", "2026-01-03T00:00:00Z", None, "planned", "remediator"),
+        portfolio_native_event(
+            "cancel",
+            "2026-01-06T00:00:00Z",
+            Some("planned"),
+            "cancelled",
+            "remediator"
+        ),
+    ]);
+    second["items"][0]["milestones"][0]["state"] = json!("cancelled");
+    second["items"][0]["milestones"][0]["history"] = second["items"][0]["history"].clone();
+    let first_input = portfolio_native_pair(&fixture, &first, "portfolio-a.json", "native-a.json");
+    let second_input =
+        portfolio_native_pair(&fixture, &second, "portfolio-b.json", "native-b.json");
+    let original = portfolio_native_snapshot(
+        root,
+        &[
+            "assessment-results.json",
+            "assessment-plan.json",
+            "ssp.json",
+            "profile.json",
+            "catalog.json",
+            "portfolio-a.json",
+            "native-a.json",
+            "portfolio-b.json",
+            "native-b.json",
+        ],
+    );
+    let inputs = [second_input, first_input];
+    let prepared = portfolio::prepare_native_portfolio(&inputs, "2026-01-07", 7).unwrap();
+    prepared.verify_inputs().unwrap();
+    assert_eq!(prepared.validation_scope(), "supplied-native-artifact-portfolio");
+    assert_eq!(prepared.supplied_native_artifacts(), 2);
+    assert!(prepared.review_required());
+    let report_bytes = prepared.json().to_vec();
+    let report: Value = serde_json::from_slice(&report_bytes).unwrap();
+    assert_eq!(report["schema_version"], json!("forge.poam-portfolio/1"));
+    assert_eq!(report["as_of"], json!("2026-01-07"));
+    assert_eq!(report["due_soon_days"], json!(7));
+    assert_eq!(
+        report["counts"],
+        json!({
+            "plans":2,"supplied_native_artifacts":2,"authoring_only_plans":0,
+            "source_files":10,"source_bytes":2 * one_plan_source_bytes,"source_objects":2 * inventory_count,
+            "items":2,"milestones":2,"records":4,"history_events":8,"source_selections":2,
+            "owner_declarations":4,"dependency_edges":0,"overdue":0,"due_soon":0,"blocked":1,
+            "before_first_assertion":1,"cancelled":2,
+        })
+    );
+    let plans = report["plans"].as_array().unwrap();
+    assert_eq!(plans.len(), 2);
+    assert_eq!(plans[0]["key"], json!("portfolio-a"));
+    assert_eq!(plans[1]["key"], json!("portfolio-b"));
+    let records = plans[0]["records"].as_array().unwrap();
+    let item = records.iter().find(|row| row["milestone_key"].is_null()).unwrap();
+    let milestone = records.iter().find(|row| !row["milestone_key"].is_null()).unwrap();
+    assert_eq!(item["state_at_as_of"], json!("blocked"));
+    assert_eq!(item["declared_state"], json!("cancelled"));
+    assert_eq!(milestone["state_at_as_of"], Value::Null);
+    assert_eq!(milestone["declared_state"], json!("planned"));
+    let timeline = plans[0]["timeline"].as_array().unwrap();
+    assert_eq!(
+        timeline.iter().map(|row| row["at"].as_str().unwrap()).collect::<Vec<_>>(),
+        vec![
+            "2026-01-03T00:00:00Z",
+            "2026-01-06T01:00:00+01:00",
+            "2026-01-08T00:00:00Z",
+            "2026-01-09T00:00:00Z",
+        ]
+    );
+    assert_eq!(timeline.iter().filter(|row| row["after_as_of"] == json!(true)).count(), 2);
+    let page = String::from_utf8(html::render(prepared.report()).unwrap()).unwrap();
+    let escaped_key =
+        "&lt;img src=&quot;https://example.invalid/x&quot; onerror=&#39;run()&#39;&gt;&amp;é";
+    assert!(page.contains(escaped_key));
+    for caption in [
+        "Complete item and milestone schedule",
+        "Complete author assertion timeline, ordered by actual instant",
+        "Complete selected source-to-remediation trace",
+    ] {
+        let marker = format!("{caption}</caption>");
+        let table = page.split(marker.as_str()).nth(1).unwrap().split("</table>").next().unwrap();
+        assert!(table.contains(escaped_key), "missing escaped work identity in {caption}");
+        assert!(!table.contains(hostile_key));
+    }
+    assert!(page.contains("remediator&lt;&amp;&quot;&#39;é&gt;"));
+    assert!(page.contains("before first assertion"));
+    assert!(page.contains("Explicit as-of: <code>2026-01-07</code>"));
+    for active in
+        ["<img", "<a ", "<script", "<iframe", "<svg", "<form", "href=\"", "src=\"", "onerror='"]
+    {
+        assert!(!page.contains(active), "active markup: {active}");
+    }
+    assert!(!page.contains("SENSITIVE"));
+    assert!(!String::from_utf8(report_bytes.clone()).unwrap().contains("SENSITIVE"));
+    for (index, (author, native)) in
+        [(first, "native-a.json"), (second, "native-b.json")].iter().enumerate()
+    {
+        let native_bytes = std::fs::read(root.join(native)).unwrap();
+        let actual_native: Value = serde_json::from_slice(&native_bytes).unwrap();
+        assert_eq!(
+            plans[index]["supplied_native_sha256"],
+            json!(common::sha256_hex(&native_bytes))
+        );
+        assert_eq!(
+            plans[index]["generated_native_sha256"],
+            json!(common::sha256_hex(&native_bytes))
+        );
+        assert_eq!(plans[index]["supplied_native_matched"], json!(true));
+        let rows = plans[index]["sources"].as_array().unwrap();
+        assert_eq!(rows.len(), 5);
+        for receipt in actual_native["plan-of-action-and-milestones"]["back-matter"]["resources"]
+            .as_array()
+            .unwrap()
+        {
+            let row = rows.iter().find(|row| row["kind"] == receipt["title"]).unwrap();
+            assert_eq!(row["native_href"], receipt["rlinks"][0]["href"]);
+            assert_eq!(row["sha256"], receipt["rlinks"][0]["hashes"][0]["value"]);
+            assert!(page.contains(row["native_href"].as_str().unwrap()));
+        }
+        let trace = &plans[index]["trace"][0];
+        let selection = &author["items"][0]["source_refs"][0];
+        assert_eq!(trace["kind"], selection["kind"]);
+        assert_eq!(trace["source_key"], selection["key"]);
+        assert_eq!(trace["source_uuid"], selection["uuid"]);
+        assert_eq!(trace["result_uuid"], selection["result_uuid"]);
+        assert_eq!(trace["canonical_object_sha256"], selection["expected_sha256"]);
+        assert_eq!(
+            trace["assessment_results_file_sha256"],
+            author["source"]["assessment_results"]["expected_sha256"]
+        );
+        assert_eq!(
+            trace["native_href"],
+            actual_native["plan-of-action-and-milestones"]["poam-items"][0]["links"][0]["href"]
+        );
+        assert!(page.contains(trace["native_href"].as_str().unwrap()));
+    }
+    assert_eq!(prepared.json(), report_bytes.as_slice());
+    for (as_of, overdue, due_soon) in [("2026-02-05", 0, 1), ("2026-02-06", 1, 0)] {
+        let dated = portfolio::prepare_native_portfolio(&inputs, as_of, 0).unwrap();
+        let dated_report: Value = serde_json::from_slice(dated.json()).unwrap();
+        assert_eq!(dated_report["as_of"], json!(as_of));
+        assert_eq!(dated_report["counts"]["overdue"], json!(overdue));
+        assert_eq!(dated_report["counts"]["due_soon"], json!(due_soon));
+        assert_eq!(dated_report["counts"]["cancelled"], json!(3));
+        assert_eq!(dated_report["counts"]["blocked"], json!(0));
+        assert_eq!(dated_report["counts"]["before_first_assertion"], json!(0));
+        for denominator in [
+            "plans",
+            "source_files",
+            "source_bytes",
+            "source_objects",
+            "items",
+            "milestones",
+            "records",
+            "history_events",
+            "source_selections",
+            "owner_declarations",
+        ] {
+            assert_eq!(dated_report["counts"][denominator], report["counts"][denominator]);
+        }
+        dated.verify_inputs().unwrap();
+    }
+    prepared.verify_inputs().unwrap();
+    portfolio_native_unchanged(&original);
+}
+
+/// Unknown fields, prose, receipt hashes and source hrefs are refused against a valid whole native pair.
+#[test]
+fn portfolio_native_refuses_full_value_extensions_and_known_field_changes() {
+    use forge::poam::portfolio;
+    let fixture = fixture();
+    let root = fixture.directory.path();
+    let authored = authored_workflow(&fixture);
+    let input = portfolio_native_pair(&fixture, &authored, "paired.json", "native.json");
+    portfolio::prepare_native_portfolio(std::slice::from_ref(&input), "2026-01-07", 7)
+        .unwrap()
+        .verify_inputs()
+        .unwrap();
+    let native_path = root.join("native.json");
+    let original = std::fs::read(&native_path).unwrap();
+    let expected: Value = serde_json::from_slice(&original).unwrap();
+    let mut compact = serde_json::to_vec(&expected).unwrap();
+    compact.push(b'\n');
+    assert_ne!(compact, original);
+    std::fs::write(&native_path, &compact).unwrap();
+    let reformatted =
+        portfolio::prepare_native_portfolio(std::slice::from_ref(&input), "2026-01-07", 7).unwrap();
+    let reformatted_report: Value = serde_json::from_slice(reformatted.json()).unwrap();
+    assert_eq!(
+        reformatted_report["plans"][0]["supplied_native_sha256"],
+        json!(common::sha256_hex(&compact))
+    );
+    assert_eq!(
+        reformatted_report["plans"][0]["generated_native_sha256"],
+        json!(common::sha256_hex(&original))
+    );
+    reformatted.verify_inputs().unwrap();
+    drop(reformatted);
+    std::fs::write(&native_path, &original).unwrap();
+    let unchanged = portfolio_native_snapshot(
+        root,
+        &[
+            "assessment-results.json",
+            "assessment-plan.json",
+            "ssp.json",
+            "profile.json",
+            "catalog.json",
+            "paired.json",
+        ],
+    );
+    for mutation in 0..4 {
+        let mut changed = expected.clone();
+        let native = &mut changed["plan-of-action-and-milestones"];
+        match mutation {
+            0 => native["unrecognized-extension"] = json!({"private":"unexpected"}),
+            1 => native["poam-items"][0]["description"] = json!("Changed authored native prose"),
+            2 => {
+                let property = native["metadata"]["props"]
+                    .as_array_mut()
+                    .unwrap()
+                    .iter_mut()
+                    .find(|property| property["name"] == json!("source-file-sha256"))
+                    .unwrap();
+                property["value"] = json!("0".repeat(64));
+            }
+            3 => {
+                native["poam-items"][0]["links"][0]["href"] =
+                    json!("different.json#11111111-1111-4111-8111-111111111111");
+            }
+            _ => unreachable!(),
+        }
+        assert_ne!(changed, expected);
+        write_json(&native_path, &changed);
+        let reason =
+            portfolio::prepare_native_portfolio(std::slice::from_ref(&input), "2026-01-07", 7)
+                .unwrap_err()
+                .to_string();
+        assert!(
+            reason.contains("differs from its full supported authoring projection"),
+            "{reason}"
+        );
+        portfolio_native_unchanged(&unchanged);
+        std::fs::write(&native_path, &original).unwrap();
+        portfolio::prepare_native_portfolio(std::slice::from_ref(&input), "2026-01-07", 7)
+            .unwrap()
+            .verify_inputs()
+            .unwrap();
+    }
+    assert_eq!(std::fs::read(native_path).unwrap(), original);
+}
+
+/// Rechecks bind literal JSON bytes and live identity of every input, including same-byte replacement.
+#[test]
+fn portfolio_native_rechecks_all_originals_and_same_byte_source_replacement() {
+    use forge::poam::portfolio;
+    let fixture = fixture();
+    let root = fixture.directory.path();
+    let authored = authored_workflow(&fixture);
+    let input = portfolio_native_pair(&fixture, &authored, "paired.json", "native.json");
+    let original = portfolio_native_snapshot(
+        root,
+        &[
+            "assessment-results.json",
+            "assessment-plan.json",
+            "ssp.json",
+            "profile.json",
+            "catalog.json",
+            "paired.json",
+            "native.json",
+        ],
+    );
+    let prepared = portfolio::prepare_native_portfolio(&[input], "2026-01-07", 7).unwrap();
+    prepared.verify_inputs().unwrap();
+    for (path, bytes) in &original {
+        let mut changed = bytes.clone();
+        let suffix = changed.last_mut().unwrap();
+        assert!(
+            suffix.is_ascii_whitespace(),
+            "fixture JSON must end in whitespace: {}",
+            path.display()
+        );
+        *suffix = if *suffix == b' ' { b'\n' } else { b' ' };
+        assert_ne!(changed, *bytes);
+        assert_eq!(
+            serde_json::from_slice::<Value>(&changed).unwrap(),
+            serde_json::from_slice::<Value>(bytes).unwrap()
+        );
+        std::fs::write(path, &changed).unwrap();
+        let reason = prepared.verify_inputs().unwrap_err().to_string();
+        assert!(reason.contains("original portfolio input identity or bytes changed"), "{reason}");
+        std::fs::write(path, bytes).unwrap();
+        prepared.verify_inputs().unwrap();
+    }
+    let catalog = root.join("catalog.json");
+    let replacement = root.join("catalog-replacement.json");
+    let same_bytes = std::fs::read(&catalog).unwrap();
+    // Allocate the replacement while the captured original exists, preventing accidental ID reuse here.
+    std::fs::write(&replacement, &same_bytes).unwrap();
+    std::fs::remove_file(&catalog).unwrap();
+    std::fs::rename(&replacement, &catalog).unwrap();
+    assert_eq!(std::fs::read(&catalog).unwrap(), same_bytes);
+    let reason = prepared.verify_inputs().unwrap_err().to_string();
+    assert!(reason.contains("original portfolio input identity or bytes changed"), "{reason}");
+    portfolio_native_unchanged(&original);
+}
+
+/// Every admitted plan requires its supplied native, and real input/source aliases cannot supply it.
+#[test]
+fn portfolio_native_requires_every_plan_and_rejects_stable_or_file_aliases() {
+    use forge::poam::portfolio;
+    let fixture = fixture();
+    let root = fixture.directory.path();
+    let first = authored_workflow(&fixture);
+    let mut second = first.clone();
+    second["document"]["key"] = json!("other-explicit-plan");
+    let first_input = portfolio_native_pair(&fixture, &first, "first.json", "first-native.json");
+    let second_input =
+        portfolio_native_pair(&fixture, &second, "second.json", "second-native.json");
+    portfolio::prepare_native_portfolio(
+        &[first_input.clone(), second_input.clone()],
+        "2026-01-07",
+        7,
+    )
+    .unwrap()
+    .verify_inputs()
+    .unwrap();
+    let mut missing_native = second_input;
+    missing_native.native_artifact = None;
+    let reason = portfolio::prepare_native_portfolio(
+        &[first_input.clone(), missing_native],
+        "2026-01-07",
+        7,
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(
+        reason.contains("requires an explicit native file for every authoring companion"),
+        "{reason}"
+    );
+    let duplicate_plan =
+        portfolio_native_pair(&fixture, &first, "duplicate-plan.json", "duplicate-native.json");
+    let reason = portfolio::prepare_native_portfolio(
+        &[first_input.clone(), duplicate_plan],
+        "2026-01-07",
+        7,
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(reason.contains("duplicate stable plan identity"), "{reason}");
+    let reason = portfolio::prepare_native_portfolio(
+        &[first_input.clone(), first_input.clone()],
+        "2026-01-07",
+        7,
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(reason.contains("duplicate or aliased explicit authoring/native input"), "{reason}");
+    for (native, expected_reason) in [
+        ("first.json", "duplicate or aliased explicit authoring/native input"),
+        ("catalog.json", "authoring or native input aliases a source input"),
+    ] {
+        let mut alias = first_input.clone();
+        alias.native_artifact = Some(std::path::PathBuf::from(native));
+        let reason =
+            portfolio::prepare_native_portfolio(&[alias], "2026-01-07", 7).unwrap_err().to_string();
+        assert!(reason.contains(expected_reason), "{reason}");
+    }
+    portfolio::prepare_native_portfolio(&[first_input], "2026-01-07", 7)
+        .unwrap()
+        .verify_inputs()
+        .unwrap();
+    assert!(!root.join("portfolio-report.json").exists());
+    assert!(!root.join("portfolio-report.html").exists());
+}
+
+/// Past and future closure assertions hit the public pending guard, after valid positive source/native pairs.
+#[test]
+fn portfolio_native_terminal_refusal_is_not_a_missing_milestone_or_risk_shape_error() {
+    use forge::poam::portfolio;
+    let fixture = fixture();
+    let root = fixture.directory.path();
+    let mut positive = authored_workflow(&fixture);
+    positive["roles"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"id":"reviewer","title":"Declared reviewer"}));
+    positive["parties"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"key":"reviewer-party","type":"person","name":"SENSITIVE REVIEWER NAME"}));
+    let actual_risk = portfolio_native_risk(&fixture, &positive);
+    let source_originals = portfolio_native_snapshot(
+        root,
+        &[
+            "assessment-results.json",
+            "assessment-plan.json",
+            "ssp.json",
+            "profile.json",
+            "catalog.json",
+        ],
+    );
+    for state in ["completed-asserted", "accepted-risk-asserted"] {
+        for at in ["2026-01-06T00:00:00Z", "2026-02-15T00:00:00Z"] {
+            let mut baseline = positive.clone();
+            if state == "accepted-risk-asserted" {
+                baseline["items"][0]["source_refs"]
+                    .as_array_mut()
+                    .unwrap()
+                    .push(actual_risk.clone());
+            }
+            let input = portfolio_native_pair(
+                &fixture,
+                &baseline,
+                "closure-authoring.json",
+                "closure-native.json",
+            );
+            portfolio::prepare_native_portfolio(std::slice::from_ref(&input), "2026-01-07", 7)
+                .unwrap()
+                .verify_inputs()
+                .unwrap();
+            let original_native = std::fs::read(root.join("closure-native.json")).unwrap();
+            let original_author = std::fs::read(&input.manifest).unwrap();
+            let mut refused = baseline;
+            let record = if state == "completed-asserted" {
+                &mut refused["items"][0]["milestones"][0]
+            } else {
+                &mut refused["items"][0]
+            };
+            record["state"] = json!(state);
+            record["history"].as_array_mut().unwrap().push(portfolio_native_event(
+                "start",
+                "2026-01-04T00:00:00Z",
+                Some("planned"),
+                "in-progress",
+                "remediator",
+            ));
+            let mut terminal =
+                portfolio_native_event("terminal", at, Some("in-progress"), state, "remediator");
+            terminal["closure"] = json!({"reviewer":{"role_id":"reviewer","party_key":"reviewer-party"},
+                "reviewed_at":at,"rationale":"Declared review only",
+                "evidence":[{"key":"proof","href":"proof.json","expected_sha256":"c".repeat(64)}]});
+            record["history"].as_array_mut().unwrap().push(terminal);
+            let raw = write_json(&input.manifest, &refused);
+            // parse validates the full current shape before this refusal; its reason is a canary.
+            let shape_reason = forge::poam::workflow::parse(&raw).unwrap_err().to_string();
+            assert!(
+                shape_reason.contains("pending recorded closure disposition"),
+                "{shape_reason}"
+            );
+            let reason =
+                portfolio::prepare_native_portfolio(std::slice::from_ref(&input), "2026-01-07", 7)
+                    .unwrap_err()
+                    .to_string();
+            assert!(reason.contains("pending recorded closure disposition"), "{reason}");
+            assert_eq!(std::fs::read(root.join("closure-native.json")).unwrap(), original_native);
+            portfolio_native_unchanged(&source_originals);
+            std::fs::write(&input.manifest, &original_author).unwrap();
+            portfolio::prepare_native_portfolio(std::slice::from_ref(&input), "2026-01-07", 7)
+                .unwrap()
+                .verify_inputs()
+                .unwrap();
+        }
+    }
+}
+
+/// Invoke only explicitly paired native inputs and an explicit date/output directory.
+fn portfolio_cli_run(root: &Path, pairs: &[(&Path, &str)], date: &str, extra: &[&str]) -> Output {
+    let mut args = vec![
+        "poam".to_string(),
+        "portfolio".to_string(),
+        "--as-of".to_string(),
+        date.to_string(),
+        "--output-root".to_string(),
+        root.to_str().unwrap().to_string(),
+    ];
+    for (manifest, native) in pairs {
+        args.extend([
+            "--manifest".to_string(),
+            manifest.to_str().unwrap().to_string(),
+            "--native".to_string(),
+            (*native).to_string(),
+        ]);
+    }
+    args.extend(extra.iter().map(|value| (*value).to_string()));
+    let borrowed: Vec<&str> = args.iter().map(String::as_str).collect();
+    run(root, &borrowed)
+}
+
+/// Real supplied-native stdout is deterministic, complete, minimized and selects valid action exits.
+#[test]
+fn portfolio_cli_stdout_matches_complete_native_projection_and_schedule_exits() {
+    let fixture = fixture();
+    let value = authored_workflow(&fixture);
+    let input = portfolio_native_pair(&fixture, &value, "authoring.json", "native.json");
+    let root = fixture.directory.path();
+    let snapshot = portfolio_native_snapshot(
+        root,
+        &[
+            "authoring.json",
+            "native.json",
+            "assessment-results.json",
+            "assessment-plan.json",
+            "ssp.json",
+            "profile.json",
+            "catalog.json",
+        ],
+    );
+    let pairs = [(input.manifest.as_path(), "native.json")];
+    let first = portfolio_cli_run(root, &pairs, "2026-01-04", &[]);
+    let second = portfolio_cli_run(root, &pairs, "2026-01-04", &[]);
+    assert_eq!(first.status.code(), Some(0), "{}", String::from_utf8_lossy(&first.stderr));
+    assert_eq!(second.status.code(), Some(0));
+    assert_eq!(first.stderr, [] as [u8; 0]);
+    assert_eq!(first.stdout, second.stdout);
+    let prepared = forge::poam::portfolio::prepare_native_portfolio(
+        std::slice::from_ref(&input),
+        "2026-01-04",
+        0,
+    )
+    .unwrap();
+    assert_eq!(first.stdout, prepared.json());
+    let report: Value = serde_json::from_slice(&first.stdout).unwrap();
+    assert_eq!(report["schema_version"], "forge.poam-portfolio/1");
+    assert_eq!(report["validation_scope"], "supplied-native-artifact-portfolio");
+    for (name, count) in [
+        ("plans", 1),
+        ("supplied_native_artifacts", 1),
+        ("authoring_only_plans", 0),
+        ("source_files", 5),
+        ("source_objects", 3),
+        ("items", 1),
+        ("milestones", 1),
+        ("records", 2),
+        ("history_events", 2),
+    ] {
+        assert_eq!(report["counts"][name], count, "{name}");
+    }
+    assert!(!String::from_utf8(first.stdout).unwrap().contains("SENSITIVE"));
+    let overdue = portfolio_cli_run(root, &pairs, "2026-02-06", &[]);
+    assert_eq!(overdue.status.code(), Some(1));
+    assert_eq!(overdue.stderr, [] as [u8; 0]);
+    let later: Value = serde_json::from_slice(&overdue.stdout).unwrap();
+    assert_eq!(later["counts"]["overdue"], 1);
+    portfolio_native_unchanged(&snapshot);
+}
+
+/// Distinct directories retain explicit positional companions, stable sorting and full per-plan totals.
+#[test]
+fn portfolio_cli_accepts_two_explicit_roots_without_rebasing_native_hrefs() {
+    let first = fixture();
+    let second = fixture();
+    let mut a = authored_workflow(&first);
+    let mut b = authored_workflow(&second);
+    a["document"]["key"] = json!("z-last");
+    b["document"]["key"] = json!("a-first");
+    let pa = portfolio_native_pair(&first, &a, "authoring.json", "native-a.json");
+    let pb = portfolio_native_pair(&second, &b, "authoring.json", "native-b.json");
+    let output_root = tempfile::tempdir().unwrap();
+    let output = portfolio_cli_run(
+        output_root.path(),
+        &[(pa.manifest.as_path(), "native-a.json"), (pb.manifest.as_path(), "native-b.json")],
+        "2026-01-04",
+        &[],
+    );
+    assert_eq!(output.status.code(), Some(0), "{}", String::from_utf8_lossy(&output.stderr));
+    let prepared = forge::poam::portfolio::prepare_native_portfolio(
+        &[pa.clone(), pb.clone()],
+        "2026-01-04",
+        0,
+    )
+    .unwrap();
+    assert_eq!(output.stdout, prepared.json());
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["counts"]["plans"], 2);
+    assert_eq!(report["counts"]["supplied_native_artifacts"], 2);
+    assert_eq!(report["counts"]["source_files"], 10);
+    assert_eq!(report["counts"]["source_objects"], 6);
+    assert_eq!(report["plans"][0]["key"], "a-first");
+    assert_eq!(report["plans"][1]["key"], "z-last");
+    assert_eq!(report["plans"][0]["sources"][0]["native_href"], "assessment-results.json");
+    // Both deliberately mispaired files actually exist and are independently valid native values.
+    let native_a = std::fs::read(first.directory.path().join("native-a.json")).unwrap();
+    let native_b = std::fs::read(second.directory.path().join("native-b.json")).unwrap();
+    std::fs::write(first.directory.path().join("native-b.json"), native_b).unwrap();
+    std::fs::write(second.directory.path().join("native-a.json"), native_a).unwrap();
+    let mispaired = portfolio_cli_run(
+        output_root.path(),
+        &[(pa.manifest.as_path(), "native-b.json"), (pb.manifest.as_path(), "native-a.json")],
+        "2026-01-04",
+        &["--report", "mispaired.json", "--html", "mispaired.html"],
+    );
+    assert_eq!(mispaired.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&mispaired.stderr).contains("full supported authoring projection")
+    );
+    assert!(!output_root.path().join("mispaired.json").exists());
+    assert!(!output_root.path().join("mispaired.html").exists());
+    assert_eq!(std::fs::read_dir(output_root.path()).unwrap().count(), 0);
+}
+
+/// Actual new-file publication emits the exact complete JSON/HTML and preflights every known conflict.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn portfolio_cli_publishes_complete_json_html_and_preserves_existing_outputs() {
+    let fixture = fixture();
+    let mut value = authored_workflow(&fixture);
+    value["document"]["key"] = json!("synthetic-demo-plan");
+    let input = portfolio_native_pair(&fixture, &value, "authoring.json", "native.json");
+    let root = fixture.directory.path();
+    let snapshot = portfolio_native_snapshot(
+        root,
+        &[
+            "authoring.json",
+            "native.json",
+            "assessment-results.json",
+            "assessment-plan.json",
+            "ssp.json",
+            "profile.json",
+            "catalog.json",
+        ],
+    );
+    let output_root = tempfile::tempdir().unwrap();
+    let pairs = [(input.manifest.as_path(), "native.json")];
+    let output = portfolio_cli_run(
+        output_root.path(),
+        &pairs,
+        "2026-02-06",
+        &["--report", "portfolio.json", "--html", "portfolio.html"],
+    );
+    assert_eq!(output.status.code(), Some(1), "{}", String::from_utf8_lossy(&output.stderr));
+    assert_eq!(output.stdout, [] as [u8; 0]);
+    assert_eq!(output.stderr, [] as [u8; 0]);
+    let prepared = forge::poam::portfolio::prepare_native_portfolio(
+        std::slice::from_ref(&input),
+        "2026-02-06",
+        0,
+    )
+    .unwrap();
+    let json_bytes = std::fs::read(output_root.path().join("portfolio.json")).unwrap();
+    let html_bytes = std::fs::read(output_root.path().join("portfolio.html")).unwrap();
+    assert_eq!(json_bytes, prepared.json());
+    assert_eq!(html_bytes, forge::poam::html::render(prepared.report()).unwrap());
+    let text = String::from_utf8(html_bytes.clone()).unwrap();
+    assert!(text.contains("Complete author assertion timeline"));
+    assert!(text.contains("Complete selected source-to-remediation trace"));
+    assert!(!text.contains("SENSITIVE"));
+    for extras in [
+        vec!["--report", "portfolio.json", "--html", "other.html"],
+        vec!["--report", "other.json", "--html", "portfolio.html"],
+    ] {
+        let refused = portfolio_cli_run(output_root.path(), &pairs, "2026-02-06", &extras);
+        assert_eq!(refused.status.code(), Some(2));
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+        assert!(!output_root.path().join("other.json").exists());
+        assert!(!output_root.path().join("other.html").exists());
+    }
+    assert_eq!(std::fs::read(output_root.path().join("portfolio.json")).unwrap(), json_bytes);
+    assert_eq!(std::fs::read(output_root.path().join("portfolio.html")).unwrap(), html_bytes);
+    portfolio_native_unchanged(&snapshot);
+}
+
+/// Every actual declaration/native/source full path is protected even with a case-variant output name.
+#[test]
+fn portfolio_cli_preflights_full_input_paths_and_portable_destinations() {
+    let fixture = fixture();
+    let input = portfolio_native_pair(
+        &fixture,
+        &authored_workflow(&fixture),
+        "authoring.json",
+        "native.json",
+    );
+    let root = fixture.directory.path();
+    let pairs = [(input.manifest.as_path(), "native.json")];
+    let positive = portfolio_cli_run(root, &pairs, "2026-01-04", &[]);
+    assert_eq!(positive.status.code(), Some(0), "{}", String::from_utf8_lossy(&positive.stderr));
+    let snapshot = portfolio_native_snapshot(
+        root,
+        &[
+            "authoring.json",
+            "native.json",
+            "assessment-results.json",
+            "assessment-plan.json",
+            "ssp.json",
+            "profile.json",
+            "catalog.json",
+        ],
+    );
+    for name in [
+        "AUTHORING.json",
+        "NATIVE.json",
+        "ASSESSMENT-RESULTS.json",
+        "ASSESSMENT-PLAN.json",
+        "SSP.json",
+        "PROFILE.json",
+        "CATALOG.json",
+        "../outside.json",
+        "nested/report.json",
+        "NUL.json",
+        "bad:name.json",
+        "unicode-é.json",
+        "wrong.txt",
+    ] {
+        let output = portfolio_cli_run(
+            root,
+            &pairs,
+            "2026-01-04",
+            &["--report", name, "--html", "should-not-exist.html"],
+        );
+        assert_eq!(output.status.code(), Some(2), "{name}");
+        assert_eq!(output.stdout, [] as [u8; 0]);
+        assert!(!root.join("should-not-exist.html").exists(), "{name}");
+    }
+    for name in ["../outside.html", "NUL.html", "wrong.json", "nested/report.html"] {
+        let output = portfolio_cli_run(
+            root,
+            &pairs,
+            "2026-01-04",
+            &["--report", "should-not-exist.json", "--html", name],
+        );
+        assert_eq!(output.status.code(), Some(2), "{name}");
+        assert_eq!(output.stdout, [] as [u8; 0]);
+        assert!(!root.join("should-not-exist.json").exists(), "{name}");
+    }
+    portfolio_native_unchanged(&snapshot);
+}
+
+/// A positive real pair precedes precise tampering, source-drift and duplicate-plan refusals.
+#[test]
+fn portfolio_cli_native_tampering_stale_source_and_duplicate_plans_fail_without_outputs() {
+    let fixture = fixture();
+    let value = authored_workflow(&fixture);
+    let input = portfolio_native_pair(&fixture, &value, "authoring.json", "native.json");
+    let root = fixture.directory.path();
+    let pairs = [(input.manifest.as_path(), "native.json")];
+    assert_eq!(portfolio_cli_run(root, &pairs, "2026-01-04", &[]).status.code(), Some(0));
+    let native_bytes = std::fs::read(root.join("native.json")).unwrap();
+    let mut native: Value = serde_json::from_slice(&native_bytes).unwrap();
+    native["plan-of-action-and-milestones"]["metadata"]["title"] = json!("changed");
+    write_json(&root.join("native.json"), &native);
+    let changed = portfolio_cli_run(
+        root,
+        &pairs,
+        "2026-01-04",
+        &["--report", "refused.json", "--html", "refused.html"],
+    );
+    assert_eq!(changed.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&changed.stderr).contains("native"));
+    assert!(!root.join("refused.json").exists());
+    assert!(!root.join("refused.html").exists());
+    std::fs::write(root.join("native.json"), &native_bytes).unwrap();
+    let duplicate = portfolio_cli_run(root, &[pairs[0], pairs[0]], "2026-01-04", &[]);
+    assert_eq!(duplicate.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&duplicate.stderr)
+            .contains("duplicate or aliased explicit authoring/native input")
+    );
+    let sources = std::fs::read(root.join("catalog.json")).unwrap();
+    std::fs::write(root.join("catalog.json"), b"{}").unwrap();
+    let stale = portfolio_cli_run(root, &pairs, "2026-01-04", &["--report", "refused.json"]);
+    assert_eq!(stale.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&stale.stderr).contains("whole-file pin"));
+    assert!(!root.join("refused.json").exists());
+    std::fs::write(root.join("catalog.json"), sources).unwrap();
+    assert_eq!(portfolio_cli_run(root, &pairs, "2026-01-04", &[]).status.code(), Some(0));
+}
+
+/// Clap and runtime require every pair/date/root; no directory discovery or authoring-preview override exists.
+#[test]
+fn portfolio_cli_requires_complete_explicit_pairs_date_and_output_root() {
+    let fixture = fixture();
+    let input = portfolio_native_pair(
+        &fixture,
+        &authored_workflow(&fixture),
+        "authoring.json",
+        "native.json",
+    );
+    let root = fixture.directory.path();
+    for args in [
+        vec!["poam", "portfolio"],
+        vec![
+            "poam",
+            "portfolio",
+            "--manifest",
+            "authoring.json",
+            "--native",
+            "native.json",
+            "--output-root",
+            ".",
+        ],
+        vec![
+            "poam",
+            "portfolio",
+            "--manifest",
+            "authoring.json",
+            "--native",
+            "native.json",
+            "--as-of",
+            "2026-01-04",
+        ],
+        vec![
+            "poam",
+            "portfolio",
+            "--manifest",
+            "authoring.json",
+            "--as-of",
+            "2026-01-04",
+            "--output-root",
+            ".",
+        ],
+    ] {
+        let output = run(root, &args);
+        assert_eq!(output.status.code(), Some(2));
+        assert_eq!(output.stdout, [] as [u8; 0]);
+    }
+    let pairs = [(input.manifest.as_path(), "native.json")];
+    assert_eq!(portfolio_cli_run(root, &pairs, "2026-01-04", &[]).status.code(), Some(0));
+    let mismatch = portfolio_cli_run(root, &pairs, "2026-01-04", &["--manifest", "authoring.json"]);
+    assert_eq!(mismatch.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&mismatch.stderr).contains("one native filename for each"));
+    for extra in [
+        vec!["--authoring-preview"],
+        vec!["--allow-terminal"],
+        vec!["--discover"],
+        vec!["--format", "text"],
+        vec!["--due-soon-days", "366"],
+        vec!["--native", "../outside.json"],
+    ] {
+        let output = portfolio_cli_run(root, &pairs, "2026-01-04", &extra);
+        assert_eq!(output.status.code(), Some(2));
+        assert_eq!(output.stdout, [] as [u8; 0]);
+    }
+}
+
+/// Canonical date refusal reaches the admitted pair and all dates are explicit without hidden clock use.
+#[test]
+fn portfolio_cli_rejects_noncanonical_dates_without_partial_reports() {
+    let fixture = fixture();
+    let input = portfolio_native_pair(
+        &fixture,
+        &authored_workflow(&fixture),
+        "authoring.json",
+        "native.json",
+    );
+    let root = fixture.directory.path();
+    let pairs = [(input.manifest.as_path(), "native.json")];
+    assert_eq!(portfolio_cli_run(root, &pairs, "2026-01-04", &[]).status.code(), Some(0));
+    for date in ["2026-02-29", "2026-2-06", "2026-02-06T00:00:00Z", "+10000-01-01"] {
+        let output = portfolio_cli_run(
+            root,
+            &pairs,
+            date,
+            &["--report", "invalid-date.json", "--html", "invalid-date.html"],
+        );
+        assert_eq!(output.status.code(), Some(2), "{date}");
+        assert_eq!(output.stdout, [] as [u8; 0]);
+        assert!(!root.join("invalid-date.json").exists());
+        assert!(!root.join("invalid-date.html").exists());
+    }
+    let leap = portfolio_cli_run(root, &pairs, "2028-02-29", &[]);
+    assert_eq!(leap.status.code(), Some(1));
+    let report: Value = serde_json::from_slice(&leap.stdout).unwrap();
+    assert_eq!(report["as_of"], "2028-02-29");
+}

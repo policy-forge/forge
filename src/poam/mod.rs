@@ -23,6 +23,14 @@ pub mod workflow_cli;
 /// Typed native POA&M projection used by the authored workflow producer.
 mod workflow_model;
 
+/// Complete escaped static HTML from the internally prepared portfolio report.
+pub mod html;
+/// Explicit supplied-native portfolio and separately qualified authoring preview.
+pub mod portfolio;
+
+/// Explicit paired-native portfolio CLI and separate new-file report publication.
+pub mod portfolio_cli;
+
 use std::io::Write as _;
 use std::path::{Component, Path, PathBuf};
 

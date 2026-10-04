@@ -249,6 +249,11 @@ acceptance remain open.
 See [POA&M source foundation](docs/poam-foundation.md) for explicit scaffold
 inputs, limits, supported source profile and remaining gates.
 
+`forge poam portfolio` combines 1–32 explicitly paired native POA&M and authoring
+plans into complete JSON and optional static HTML reports. Supply an explicit date
+and existing output directory; source references retain their original bundle base.
+See [portfolio reports](docs/poam-portfolio.md) for pairing, counts and safe outputs.
+
 ### Policy Lifecycle
 
 Bind a policy version's declared review state to exact local source and generated

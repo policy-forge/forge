@@ -808,6 +808,21 @@ the actual current source capture, without reconstructing historical freshness.
 See [baseline comparison](poam-baseline-comparison.md) for complete denominators,
 explicit reopening declarations, privacy and admission limits.
 
+Review explicitly paired native plans together:
+
+```bash
+forge poam portfolio --manifest ./assessment-bundle/authored.json \
+  --native native-poam.json --as-of 2026-02-06 --due-soon-days 7 \
+  --output-root ./portfolio-reports --report portfolio.json --html portfolio.html
+```
+
+The output directory must already exist and both filenames must be unused. Repeat
+`--manifest` and `--native` in matching order for up to 32 plans. Complete JSON
+and HTML retain summed per-plan counts, null/cancelled/future rows and inert source
+hrefs in their original bundle context. Outputs are separate: a later failure does
+not roll back an earlier file. See [portfolio reports](poam-portfolio.md) for the
+supported companion profile, stdout, dates, bounds and exit statuses.
+
 ## 4. Global Options
 
 ```bash

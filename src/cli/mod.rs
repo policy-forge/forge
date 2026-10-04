@@ -402,6 +402,11 @@ pub enum PoamCommand {
         /// Explicit comparison inputs, date and optional new report destination.
         Box<PoamBaselineArgs>,
     ),
+    /// Report every explicitly supplied native/authoring pair with optional static HTML
+    Portfolio(
+        /// Complete positional pairs, explicit date/root and new report destinations.
+        Box<PoamPortfolioArgs>,
+    ),
     /// Check explicitly acknowledged source-only or authored workflow scope
     Check {
         /// Closed forge.poam/1 manifest for the explicitly selected scope
@@ -429,6 +434,33 @@ pub enum PoamCommand {
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
     },
+}
+
+/// Explicit supplied native/authoring companions, date and report publication declarations.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct PoamPortfolioArgs {
+    /// Explicit authoring manifests, paired in order with repeated native filenames
+    #[arg(long, required = true, action = clap::ArgAction::Append)]
+    pub manifest: Vec<PathBuf>,
+    /// Explicit native .json filenames beside each corresponding authoring manifest
+    #[arg(long, required = true, action = clap::ArgAction::Append)]
+    pub native: Vec<PathBuf>,
+    /// Canonical explicit as-of full date; no wall-clock default
+    #[arg(long)]
+    pub as_of: String,
+    /// Inclusive due-soon interval; zero includes rows due on as-of
+    #[arg(long, default_value_t = 0, value_parser = clap::value_parser!(u16).range(0..=365))]
+    pub due_soon_days: u16,
+    /// Explicit existing output directory; JSON/HTML hrefs remain original-bundle display text
+    #[arg(long)]
+    pub output_root: PathBuf,
+    /// Optional new .json report filename in output-root; otherwise complete JSON goes to stdout
+    #[arg(long)]
+    pub report: Option<PathBuf>,
+    /// Optional new .html filename in output-root, rendered from the same complete report
+    #[arg(long)]
+    pub html: Option<PathBuf>,
 }
 
 /// Explicit bounded read-only baseline comparison inputs and optional report output.
@@ -1829,6 +1861,13 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             PoamCommand::Init(args) => crate::poam::execute_init(args),
             PoamCommand::Build(args) => {
                 if crate::poam::workflow_cli::execute_build(args)? {
+                    Err(ForgeError::PoamActionRequired)
+                } else {
+                    Ok(())
+                }
+            }
+            PoamCommand::Portfolio(args) => {
+                if crate::poam::portfolio_cli::execute(args)? {
                     Err(ForgeError::PoamActionRequired)
                 } else {
                     Ok(())
