@@ -1232,13 +1232,32 @@ mod tests {
         let directory = tempfile::tempdir().unwrap();
         let root = directory.path().canonicalize().unwrap();
         descendant(&root, &root.join("companions/links.json")).unwrap();
+        // OsString concatenation preserves raw aliases even beneath a Windows
+        // verbatim canonical root; PathBuf::join would normalize dot segments.
+        let raw_input = |raw: &str| {
+            let mut spelling = root.as_os_str().to_os_string();
+            spelling.push(std::path::MAIN_SEPARATOR_STR);
+            spelling.push(raw);
+            let input = PathBuf::from(spelling);
+            assert!(input.as_os_str().as_encoded_bytes().ends_with(raw.as_bytes()), "{raw}");
+            input
+        };
         for raw in [
             "companions/./links.json",
             "companions//links.json",
             "companions/../links.json",
             "companions/links.json/",
         ] {
-            assert!(descendant(&root, &root.join(raw)).is_err(), "{raw}");
+            assert!(descendant(&root, &raw_input(raw)).is_err(), "{raw}");
+        }
+        #[cfg(windows)]
+        for raw in [
+            r"companions\.\links.json",
+            r"companions\\links.json",
+            r"companions\..\links.json",
+            r"companions\links.json\",
+        ] {
+            assert!(descendant(&root, &raw_input(raw)).is_err(), "{raw}");
         }
         assert!(descendant(&root, &root).is_err());
         let outside = root.parent().unwrap().join("outside-s4.json");
