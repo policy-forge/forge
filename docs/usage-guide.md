@@ -1031,6 +1031,7 @@ remain open.
 
 - [README.md](../README.md) — project overview and quick start
 - [Evidence and Implementation Linking](evidence-linkage.md) — exact subject/evidence metadata linkage, freshness, privacy, and baseline contracts
+- [Evidence overlays](evidence-overlays.md) — new Catalog/Component JSON documents, complete source preservation and generated metadata boundaries
 - [Contributing Guide](../CONTRIBUTING.md) — development setup and PR process
 - [Architecture Guide](architecture.md) — pipeline details and crate structure
 - `example_data/` — 25 sample policies

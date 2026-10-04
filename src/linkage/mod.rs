@@ -2448,3 +2448,8 @@ mod tests {
 
 /// Sealed original capture and bounded current inspection for the POA&M companion.
 pub(crate) mod fresh;
+
+/// Complete native JSON overlays consuming held fresh linkage generations.
+pub(crate) mod overlay;
+/// Confined no-replacement publication of the prepared overlay.
+pub(crate) mod overlay_cli;

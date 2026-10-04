@@ -1,6 +1,6 @@
 # Evidence and Implementation Linking
 
-`forge linkage` creates a local, deterministic `forge.linkage-index/1` that associates exact OSCAL
+The linkage index and maintenance commands create a local, deterministic `forge.linkage-index/1` that associates exact OSCAL
 requirement subjects with exact OSCAL implementation subjects and reviewer-declared evidence
 metadata. It records identities, hashes, sizes, dates, and labels. It does not copy evidence bytes,
 retrieve URIs, run tests, or derive control-outcome or evidence-quality judgments.
@@ -186,5 +186,8 @@ The unavoidable `unverified-uri` finding is informational under the default `req
   changes/reference changes/expiry edits, link additions/removals, and relationship membership
   edits.
 
-OSCAL back-matter overlay generation remains deferred until each supported model has demonstrated
-schema-valid, lossless round-trip behavior.
+The F09 candidate adds `forge linkage overlay` for declared Catalog and Component Definition
+targets. It creates a new same-directory JSON artifact, preserves the entire decoded original,
+and adds the complete project association/freshness metadata set. Original sensitive content
+remains present. See [Evidence overlays](evidence-overlays.md) for the four required flags,
+losslessness limits, platform publication and open model-scope/interoperability gates.

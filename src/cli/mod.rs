@@ -785,6 +785,21 @@ pub enum LinkageCommand {
         #[arg(long)]
         output: Option<PathBuf>,
     },
+    /// Create a complete Catalog or Component evidence overlay in a new JSON file
+    Overlay {
+        /// Versioned linkage manifest whose parent confines every original input
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Exact declared Catalog or Component resource key to annotate
+        #[arg(long)]
+        target_resource: String,
+        /// Explicit canonical date used for all freshness observations (YYYY-MM-DD)
+        #[arg(long)]
+        as_of: String,
+        /// New portable root-relative JSON path in the selected target's existing directory
+        #[arg(long)]
+        output: PathBuf,
+    },
     /// Build a deterministic linkage index and optional maintenance report
     Build {
         /// Versioned `forge.linkage/1` JSON manifest
@@ -2040,6 +2055,10 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                         implementation,
                         output.as_deref(),
                     )?;
+                    false
+                }
+                LinkageCommand::Overlay { manifest, target_resource, as_of, output } => {
+                    crate::linkage::overlay_cli::execute(manifest, target_resource, as_of, output)?;
                     false
                 }
                 LinkageCommand::Build {

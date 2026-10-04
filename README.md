@@ -54,7 +54,7 @@ MCP Native: Designed to feed into the Model Context Protocol (MCP), allowing age
 - **Deterministic IDs** — UUID v5 generation ensures stable identifiers across re-conversions
 - **Citation extraction** — URLs and references extracted into OSCAL back-matter resources
 - **Traceability** — Source-to-OSCAL element mapping embedded as provenance metadata
-- **Evidence linkage** — Deterministic requirement-to-implementation indexes with metadata-only evidence freshness and baseline checks
+- **Evidence linkage** — Deterministic requirement-to-implementation indexes, evidence freshness and baseline checks, plus [Catalog/Component JSON overlays](docs/evidence-overlays.md) preserving original document values
 - **Reusable policy components** — Compose local, hash-pinned Markdown clauses with bounded typed values and span-level provenance
 - **Zero network dependencies** — Reads and writes local files only
 

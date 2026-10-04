@@ -278,7 +278,7 @@ fn model_json_value(
 }
 
 /// Validate the supplied JSON tree using schema and semantic checks.
-fn validate_oscal_json_value(
+pub(crate) fn validate_oscal_json_value(
     json_value: &serde_json::Value,
     model_type: crate::validate::OscalModelType,
 ) -> Result<(), ForgeError> {
@@ -317,7 +317,7 @@ pub fn validate_oscal_model(model: &OscalModel) -> Result<(), ForgeError> {
 /// The caller bounds raw bytes. Postdecode checks cap decoded depth at 100 and
 /// each decoded string/key at the raw input length. YAML presentation/tag and
 /// decoder-allocation preservation are separate from native JSON-tree equality.
-fn export_json_value(
+pub(crate) fn export_json_value(
     content: &str,
     source_format: OutputFormat,
 ) -> Result<(serde_json::Value, crate::validate::OscalModelType), ForgeError> {
