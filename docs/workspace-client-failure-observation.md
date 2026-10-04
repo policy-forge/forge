@@ -38,3 +38,5 @@ python3 -B scripts/test_verify_workspace.py
 These controls include synthetic process observations and real temporary-file operations. They establish their declared failure and publication behaviors. They do not execute a new native Windows client, recover the destroyed private receipt from PR #204, prove the supported browser/platform matrix or provide owner acceptance.
 
 The accompanying source-bound verification record reports measured Python line/call coverage, selected and whole docstrings, preserved original fixtures and the exact unchanged Rust coverage cohort. Unexecuted lines and functions remain explicit. The final integrated roadmap documentation review, dependency/security, accessibility, user/pilot, platform and release gates remain open.
+
+The fixed runner-output line is written with binary mode where available, preserving its ASCII LF bytes on Windows as well as Unix. This is separate from classifying the client's exact LF or CRLF banners.

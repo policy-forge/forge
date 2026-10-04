@@ -1,6 +1,6 @@
 # Client failure observation: source verification
 
-The [failure-observation guide](workspace-client-failure-observation.md) describes the separate diagnostic and its hosted upload condition. This record reports one exact-source development check; it provides no native Windows, full F04 or human acceptance. The [machine-readable record](plans/2026-10-04-f04-client-failure-observation-verification.json) retains the complete measured data, source pins, omissions and previous collector outcomes.
+The [failure-observation guide](workspace-client-failure-observation.md) describes the separate diagnostic and its hosted upload condition. This record reports one exact-source development check; it provides no native Windows, full F04 or human acceptance. The [machine-readable record](plans/2026-10-04-f04-client-failure-observation-binary-output-successor.json) retains the complete measured data, source pins, omissions and previous collector outcomes.
 
 The final full scratch checkout copied all 1,609 tracked files from base `3c06b7fd0d47150d6d01af4918e223033cd446aa`. Only the verifier, its Python fixture suite and the workspace verification workflow changed. The maintained-client producer and library are byte-exact. All 1,609 measured inputs were unchanged before and after the final run.
 
@@ -12,13 +12,13 @@ The selected cohort has **46/46 function docstrings**: 43 new and three changed 
 
 | Source | Unique instruction-associated lines hit/available | Named function frames entered/available |
 | --- | --- | --- |
-| `scripts/verify_workspace.py` | 515/575 | 22/23 |
-| `scripts/test_verify_workspace.py` | 1,042/1,049 | 100/100 |
+| `scripts/verify_workspace.py` | 516/576 | 22/23 |
+| `scripts/test_verify_workspace.py` | 1,049/1,056 | 100/100 |
 | `scripts/test_workspace_client.py` | 128/631 | 4/28 |
 | `scripts/workspace_client.py` | 143/942 | 3/74 |
-| Complete four-file scope | 1,828/3,197 | 129/225 |
+| Complete four-file scope | 1,836/3,205 | 129/225 |
 
-Selected function bodies hit 493/503 code-local line opportunities. The whole four-file scope retains all 96 unentered named functions and all 1,369 unique source-line zeros. All 306 compiled code records, including module/class/lambda/comprehension scopes, remain in the record. No exact headers or actual frame events were unmapped.
+Selected function bodies hit 501/511 code-local line opportunities. The whole four-file scope retains all 96 unentered named functions and all 1,369 unique source-line zeros. All 306 compiled code records, including module/class/lambda/comprehension scopes, remain in the record. No exact headers or actual frame events were unmapped.
 
 The collector fingerprinted exact path, lexical qualifier, first line and compiled code metadata. Executing a `def` declaration in enclosing code never earned a function-call hit. Raw line intervals and interpreter-instruction exclusions are retained. These instruction-associated line opportunities are not statement, branch, path, MC/DC or complete-body coverage. Calls can include generator resumes and are not invocation totals. Only the primary interpreter thread was traced: the verifier's `run_command.drain` worker and child Python/Git/Forge/Cargo processes remain outside the measurement. The client producer/library were imported and partially exercised by synthetic fixtures; this run did not execute live maintained-client conformance.
 
@@ -26,7 +26,9 @@ The collector fingerprinted exact path, lexical qualifier, first line and compil
 
 The first collector refused a pinned, unrelated browser bytecode file already tracked in the source tree, before importing candidate modules. A successor preserved that file and refused only bytecode caches for the four measured modules. The next attempt stopped during compilation-metadata fingerprinting because CPython 3.14 emitted slice constants; deterministic start/stop/step fingerprints resolved the collector limitation. Neither attempt ran candidate tests.
 
-A third attempt passed all 76 tests but exhausted its five-million-event trace bound while repeatedly parsing the API inventory. That trace remains incomplete. The final collector changed only the finite cap to twenty million events and completed with 5,261,201 events. Candidate source stayed identical. Historical attempts are preserved separately and are not added to the final test count or treated as complete coverage.
+A third attempt passed all 76 tests but exhausted its five-million-event trace bound while repeatedly parsing the API inventory. That trace remains incomplete. The fourth collector changed only the finite cap to twenty million events and completed with 5,261,201 events. Candidate source stayed identical across those collector attempts. Its [original complete record](plans/2026-10-04-f04-client-failure-observation-verification.json) is preserved byte-for-byte.
+
+A final source successor adds explicit `O_BINARY` where available to the fixed runner-output writer, as required for binary Windows `os.open`. One existing new test now asserts a nonzero binary flag while writing through a genuine private descriptor. The same collector and 76-case cohort completed with 5,261,215 events; this source successor provides the current counts above. It does not constitute native Windows execution or explain the historical failure. Historical attempts are preserved separately and are not added to the final test count or treated as complete coverage.
 
 ## Unchanged Rust and remaining gates
 

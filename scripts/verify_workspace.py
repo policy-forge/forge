@@ -566,6 +566,7 @@ def emit_client_failure_publication_flag():
             return False
         flags = os.O_WRONLY | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
         flags |= getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_CLOEXEC", 0)
+        flags |= getattr(os, "O_BINARY", 0)
         descriptor = os.open(path, flags)
         held = os.fstat(descriptor)
         identity = (before.st_dev, before.st_ino)

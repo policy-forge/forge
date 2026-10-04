@@ -1237,10 +1237,17 @@ class ClientFailurePublicationTests(unittest.TestCase):
         self.assertEqual(self.runner_output.read_bytes(), b"")
 
     def test_runner_flag_copies_no_arbitrary_environment_or_process_content(self):
-        """Append exactly one fixed ASCII line and preserve existing runner outputs without reflecting secrets."""
+        """Require binary mode and append one fixed ASCII line without reflecting arbitrary environment content."""
         self.runner_output.write_bytes(b"existing=value\n")
-        with mock.patch.dict(verifier.os.environ, {"PRIVATE": "SECRET /private capability"}):
+        descriptor = verifier.os.open(self.runner_output,
+            verifier.os.O_WRONLY | verifier.os.O_APPEND | getattr(verifier.os, "O_BINARY", 0))
+        binary_flag = 1 << 29
+        with mock.patch.dict(verifier.os.environ, {"PRIVATE": "SECRET /private capability"}), \
+             mock.patch.object(verifier.os, "O_BINARY", binary_flag, create=True), \
+             mock.patch.object(verifier.os, "open", return_value=descriptor) as opened:
             self.assertTrue(self.emit())
+        opened.assert_called_once()
+        self.assertEqual(opened.call_args.args[1] & binary_flag, binary_flag)
         self.assertEqual(self.runner_output.read_bytes(), b"existing=value\nclient_failure_observation_published=true\n")
         self.assertNotIn(b"SECRET", self.runner_output.read_bytes())
 
