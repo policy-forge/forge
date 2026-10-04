@@ -129,7 +129,7 @@ def byte_pin(body):
 def fixed_tool(role):
     """Qualify only the existing fixed distro tool and bound its byte pin; absence has no fallback."""
     selected = {"python": "/usr/bin/python3", "sudo": "/usr/bin/sudo"}[role]
-    path = qualifier.administration_tool(role)
+    path = qualifier.administration_tool(selected)
     before = path.lstat()
     if not 0 < before.st_size <= TOOL_LIMIT:
         raise ValueError("tool-bound")

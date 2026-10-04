@@ -194,3 +194,7 @@ remain preserved.
 ## Historical observer fixture correction, 2026-10-04
 
 The initial draft #213 run stopped before the new physical campaign because one test assumed current qualifier bytes matched the diagnostic observer's historical pins. A scoped test fixture successor preserves production observer refusal and measures 174 ordinary controls. See [the full versioned verification successor](../plans/2026-10-04-f04-observer-fixture-verification-v1.md). This does not confer current observer, Linux physical, IP-denial or owner acceptance; final full-roadmap documentation review remains open.
+
+## Fixed administrative tool correction, 2026-10-04
+
+The corrected draft #213 dispatcher still stopped before any privileged campaign. A source-confirmed role/path caller mismatch is corrected without relaxing tool trust. The [versioned verification successor](../plans/2026-10-04-f04-fixed-tool-verification-v1.md) records fresh docstrings, 176 ordinary controls and measured coverage alongside the authentic failed receipt. Physical/runtime/owner acceptance and the final full-roadmap documentation review remain open.

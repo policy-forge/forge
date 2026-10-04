@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Ordinary worker-only controls for dispatcher accounting and redaction; no sudo or physical campaign runs."""
 import copy
+import hashlib
 import json
 from pathlib import Path
 import sys
 import signal
+import tempfile
 import types
 import unittest
 from unittest import mock
@@ -165,13 +167,36 @@ class DispatcherControls(unittest.TestCase):
         with self.assertRaises(ValueError):
             dispatch.copy_payload(bodies)
 
-    def test_fixed_tool_absence_has_no_fallback(self):
-        """Missing distro Python or sudo is a refusal rather than a PATH search, installation or action-interpreter substitute."""
-        for role in ("python", "sudo"):
-            with self.subTest(role=role), mock.patch.object(dispatch.qualifier, "administration_tool", side_effect=FileNotFoundError) as fixed:
-                with self.assertRaises(FileNotFoundError):
+    def test_fixed_tools_pin_actual_descriptor_bytes_at_selected_paths(self):
+        """Both absolute tool selections hash real fixture bytes; only root-trusted admission is mocked."""
+        with tempfile.TemporaryDirectory(prefix="forge-fixed-tool-") as directory:
+            for role, selected in (("python", "/usr/bin/python3"), ("sudo", "/usr/bin/sudo")):
+                with self.subTest(role=role):
+                    path = Path(directory) / role
+                    body = (b"\x00fixed-tool-fixture\xff\n" + role.encode("ascii")) * 1000
+                    path.write_bytes(body)
+                    with mock.patch.object(dispatch.qualifier, "administration_tool", return_value=path) as fixed:
+                        value = dispatch.fixed_tool(role)
+                    fixed.assert_called_once_with(selected)
+                    self.assertEqual(value, {"selected": selected, "resolved": str(path),
+                                             "pin": {"bytes": len(body), "sha256": hashlib.sha256(body).hexdigest()}})
+
+    def test_unknown_tool_role_refuses_before_admission(self):
+        """An undeclared role or a caller-supplied executable path cannot reach trusted-tool admission."""
+        for role in ("ip", "/usr/bin/python3", ""):
+            with self.subTest(role=role), mock.patch.object(dispatch.qualifier, "administration_tool") as fixed:
+                with self.assertRaises(KeyError):
                     dispatch.fixed_tool(role)
-                fixed.assert_called_once_with(role)
+                fixed.assert_not_called()
+
+    def test_fixed_tool_absence_has_no_fallback(self):
+        """Missing selected distro tools refuse after one absolute-path admission attempt without a fallback."""
+        for role, selected in (("python", "/usr/bin/python3"), ("sudo", "/usr/bin/sudo")):
+            missing = dispatch.qualifier.GateError("tool-unavailable", True, tool_reason="missing")
+            with self.subTest(role=role), mock.patch.object(dispatch.qualifier, "administration_tool", side_effect=missing) as fixed:
+                with self.assertRaises(dispatch.qualifier.GateError):
+                    dispatch.fixed_tool(role)
+                fixed.assert_called_once_with(selected)
 
     def test_failed_process_creation_is_unqualified_and_redacted(self):
         """Startup errors produce fixed fields without their raw exception arguments or a fictitious reap."""
