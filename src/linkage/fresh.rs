@@ -42,8 +42,12 @@ pub(crate) struct RootGeneration {
     identity: (u64, u64),
     /// Complete original root component generations in traversal order.
     ancestors: Vec<DirectoryGeneration>,
-    /// Held actual root ancestors; Windows excludes delete sharing.
+    /// Held actual Unix root ancestors, including the descriptor used for descendant traversal.
+    #[cfg(unix)]
     directories: Vec<File>,
+    /// Held non-Unix root ancestors; Windows excludes delete sharing for their lifetime.
+    #[cfg(not(unix))]
+    _directories: Vec<File>,
 }
 
 impl RootGeneration {
@@ -143,7 +147,15 @@ pub(crate) fn qualify_root(root: &Path) -> Result<RootGeneration, ForgeError> {
     }
     let identity =
         ancestors.last().ok_or_else(|| error("qualified root ancestry is missing"))?.identity;
-    Ok(RootGeneration { path: root.to_path_buf(), identity, ancestors, directories })
+    Ok(RootGeneration {
+        path: root.to_path_buf(),
+        identity,
+        ancestors,
+        #[cfg(unix)]
+        directories,
+        #[cfg(not(unix))]
+        _directories: directories,
+    })
 }
 
 /// Compare actual current root ancestry, not canonicalized path labels or caller-supplied identity.
