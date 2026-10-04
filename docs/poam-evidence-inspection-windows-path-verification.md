@@ -1,5 +1,10 @@
 # Evidence inspection Windows path correction verification
 
+This is the earlier source-bound path-correction checkpoint. Subsequent hosted
+Windows exposed a raw-spelling test-fixture normalization issue; production
+predicates remain unchanged. See the [raw-spelling fixture successor](poam-evidence-inspection-windows-raw-fixture-verification.md)
+for its measured correction and pending corrected-head Windows qualification.
+
 The inspector accepts a valid native nested companion path on Windows while
 keeping portable manifest names and raw path spelling checks. It checks the
 original absolute spelling before extracting the descendant, then checks native
