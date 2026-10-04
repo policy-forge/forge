@@ -37,7 +37,7 @@ The authoritative inventory is
 [`schemas/oscal-schema-manifest.json`](../schemas/oscal-schema-manifest.json).
 It pins `usnistgov/OSCAL` tag `v1.2.3`, release commit `e061961`, publication
 date `2026-08-07`, exact release URLs, byte sizes, and SHA-256 digests for all
-eleven assets: seven runtime JSON schemas and four compatibility-test XSDs.
+twelve assets: eight runtime JSON schemas and four compatibility-test XSDs.
 Vendored schema bytes must not be edited locally.
 
 Verify the checked-in baseline from a clean checkout:
@@ -101,6 +101,7 @@ Normal FORGE execution never performs these network operations.
      --pattern 'oscal_assessment-results_schema.json' \
      --pattern 'oscal_assessment-plan_schema.json' \
      --pattern 'oscal_ssp_schema.json' \
+     --pattern 'oscal_poam_schema.json' \
      --pattern 'oscal_catalog_schema.xsd' \
      --pattern 'oscal_component_schema.xsd' \
      --pattern 'oscal_profile_schema.xsd' \

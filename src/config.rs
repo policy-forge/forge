@@ -566,6 +566,7 @@ fn validate_convert(project_root: &Path, raw: RawConvert) -> Result<ConvertSetti
     })
 }
 
+/// Admit only the declared validation schema and report-format configuration values.
 fn validate_validate(project_root: &Path, raw: &RawValidate) -> Result<ValidateSettings, String> {
     let schema_type = parse_enum(
         "validate.schema-type",
@@ -575,6 +576,7 @@ fn validate_validate(project_root: &Path, raw: &RawValidate) -> Result<ValidateS
             ("component-definition", SchemaType::ComponentDefinition),
             ("system-security-plan", SchemaType::SystemSecurityPlan),
             ("mapping", SchemaType::Mapping),
+            ("poam", SchemaType::Poam),
         ],
     )?;
     let format = parse_enum(

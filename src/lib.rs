@@ -76,6 +76,8 @@ pub mod parameter;
 pub mod parse;
 /// End-to-end policy-to-OSCAL conversion pipelines.
 pub mod pipeline;
+/// Confined POA&M scaffolding and explicit source integrity checks.
+pub mod poam;
 /// Deterministic composition of local, hash-pinned Markdown policy components.
 pub mod policy;
 pub mod reuse;

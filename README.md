@@ -224,6 +224,23 @@ before writes. Baselines must contain exactly one result epoch; plural baselines
 are invalid even with `--fail-on never`. See
 [OSCAL Assessment Results](docs/assessment-results.md).
 
+### POA&M source foundation
+
+Create an unselected `forge.poam/1` scaffold from one explicitly identified
+Assessment Results result and its exact local companions. Then check only the
+source integrity boundary:
+
+```bash
+forge poam check --manifest ./assessment-bundle/poam.json \
+  --source-only --format json
+```
+
+The inventory includes every finding and risk in that result, including satisfied
+findings and closed risks. It does not validate remediation ownership, schedule,
+review or closure. Full workflow/build support and owner acceptance remain open.
+See [POA&M source foundation](docs/poam-foundation.md) for explicit scaffold
+inputs, limits, supported source profile and remaining gates.
+
 ### Policy Lifecycle
 
 Bind a policy version's declared review state to exact local source and generated

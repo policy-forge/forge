@@ -113,7 +113,7 @@ fn capture_index(facts: &CaptureFacts<'_>, item: &Item) -> Result<usize> {
     facts.indices.get(item.registration.path.as_str()).copied().ok_or_else(invalid)
 }
 
-/// Extract exactly the five CLI model/root spellings and validate the observed UUID.
+/// Extract the CLI model/root spellings and validate the observed UUID.
 fn observed_identity(bytes: &[u8]) -> Result<(String, String)> {
     let value: Value = serde_json::from_slice(bytes).map_err(|_| invalid())?;
     let model = crate::validate::detect_model_type(&value).map_err(|_| invalid())?;
@@ -123,6 +123,7 @@ fn observed_identity(bytes: &[u8]) -> Result<(String, String)> {
         crate::OscalModelType::Profile => "profile",
         crate::OscalModelType::SystemSecurityPlan => "system-security-plan",
         crate::OscalModelType::Mapping => "mapping-collection",
+        crate::OscalModelType::Poam => "plan-of-action-and-milestones",
     };
     let uuid = value
         .get(root)

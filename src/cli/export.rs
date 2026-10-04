@@ -114,6 +114,9 @@ fn oscal_model_from_value(
                     .to_string(),
             })
         }
+        crate::validate::OscalModelType::Poam => Err(ForgeError::ExportInvalidOscal {
+            detail: "Export of OSCAL POA&M documents is not yet supported".to_string(),
+        }),
         crate::validate::OscalModelType::Mapping => Err(ForgeError::ExportInvalidOscal {
             detail: "Export of OSCAL Control Mapping documents is not yet supported".to_string(),
         }),
@@ -355,6 +358,9 @@ fn export_json_value(
                     .to_string(),
             })
         }
+        crate::validate::OscalModelType::Poam => Err(ForgeError::ExportInvalidOscal {
+            detail: "Export of OSCAL POA&M documents is not yet supported".to_string(),
+        }),
         crate::validate::OscalModelType::Mapping => Err(ForgeError::ExportInvalidOscal {
             detail: "Export of OSCAL Control Mapping documents is not yet supported".to_string(),
         }),
@@ -942,6 +948,48 @@ mod tests {
         ] {
             let content = format!("catalog:\n  nested:\n    - value: {number}\n");
             assert!(super::export_json_value(&content, super::OutputFormat::Yaml).is_err());
+        }
+    }
+
+    /// Both typed and complete-tree JSON/YAML paths refuse POA&M before publication.
+    ///
+    /// The empty recognized root deliberately proves model refusal precedes
+    /// schema validation; it does not claim to be a valid native POA&M fixture.
+    #[test]
+    fn poam_export_is_refused_without_replacing_or_creating_destinations() {
+        let value = serde_json::json!({"plan-of-action-and-milestones": {}});
+        let json = serde_json::to_string(&value).unwrap();
+        let yaml = crate::export::yaml::serialize_to_yaml(&value).unwrap();
+        let directory = tempfile::tempdir().unwrap();
+        for (extension, content, format) in [
+            ("json", json.as_str(), OutputFormat::Json),
+            ("yaml", yaml.as_str(), OutputFormat::Yaml),
+        ] {
+            let typed = deserialize_oscal(content, format).unwrap_err();
+            assert!(matches!(
+                typed,
+                ForgeError::ExportInvalidOscal { detail }
+                    if detail == "Export of OSCAL POA&M documents is not yet supported"
+            ));
+            let input = directory.path().join(format!("poam.{extension}"));
+            std::fs::write(&input, content.as_bytes()).unwrap();
+            for target in [OutputFormat::Json, OutputFormat::Yaml, OutputFormat::Xml] {
+                let existing = directory.path().join("existing-output");
+                let missing = directory.path().join("missing-output");
+                let sentinel = b"original destination\0\xff\n";
+                std::fs::write(&existing, sentinel).unwrap();
+                for destination in [&existing, &missing] {
+                    let error = export_artifact(&input, target, Some(destination)).unwrap_err();
+                    assert!(matches!(
+                        error,
+                        ForgeError::ExportInvalidOscal { detail }
+                            if detail == "Export of OSCAL POA&M documents is not yet supported"
+                    ));
+                    assert_eq!(std::fs::read(&existing).unwrap(), sentinel);
+                    assert!(!missing.exists());
+                    assert_eq!(std::fs::read(&input).unwrap(), content.as_bytes());
+                }
+            }
         }
     }
 }

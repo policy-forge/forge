@@ -754,6 +754,28 @@ effectiveness, certification, or remediation ownership. See
 [OSCAL Assessment Results](assessment-results.md) for the complete contract and
 trust boundaries.
 
+### 3.14 `poam` — Check an Explicit Assessment Source
+
+`forge poam init` emits an unselected `forge.poam/1` scaffold from one exact
+Assessment Results result UUID and stable key plus its local Assessment Plan,
+SSP, Profile and Catalog companions. Document metadata is explicit; no work,
+actors, remediation ownership, deadlines or status assertions are inferred.
+
+```bash
+forge poam check --manifest ./assessment-bundle/poam.json \
+  --source-only --format json
+forge validate native-poam.json --schema-type poam
+```
+
+The first command verifies the captured source identities and emits a complete
+finding/risk inventory. It requires `--source-only`, refuses nonempty items,
+roles and parties, and does not offer `poam build`. The second command performs
+native POA&M structural validation and the system-identity assembly check; it
+does not establish source binding or remediation workflow acceptance. POA&M
+export, source trace and generic diff remain unsupported.
+See [POA&M source foundation](poam-foundation.md) for the exact inputs, bounded
+source profile, publication limits and remaining gates.
+
 ## 4. Global Options
 
 ```bash
