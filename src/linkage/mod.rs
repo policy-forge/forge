@@ -2444,3 +2444,6 @@ mod tests {
         }
     }
 }
+
+/// Sealed original capture and bounded current inspection for the POA&M companion.
+pub(crate) mod fresh;

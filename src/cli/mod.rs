@@ -412,6 +412,11 @@ pub enum PoamCommand {
         /// Explicit authoring/native pair, closed item intents, date/root and new report destination.
         Box<PoamOutboundArgs>,
     ),
+    /// Inspect complete closure references against freshly captured local evidence metadata
+    Evidence(
+        /// Explicit plan, linkage bindings, date and optional new JSON report destination.
+        Box<PoamEvidenceArgs>,
+    ),
     /// Check explicitly acknowledged source-only or authored workflow scope
     Check {
         /// Closed forge.poam/1 manifest for the explicitly selected scope
@@ -439,6 +444,24 @@ pub enum PoamCommand {
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
     },
+}
+
+/// Explicit read-only local evidence inspection inputs and new report declaration.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct PoamEvidenceArgs {
+    /// Current authoring manifest; its directory confines all actual inspection originals
+    #[arg(long)]
+    pub manifest: PathBuf,
+    /// Explicit closed evidence-binding JSON as a descendant of the plan directory
+    #[arg(long)]
+    pub links: PathBuf,
+    /// Canonical explicit calendar date for current evidence freshness; no clock default
+    #[arg(long)]
+    pub as_of: String,
+    /// Optional new portable JSON filename in the plan directory; otherwise complete stdout
+    #[arg(long)]
+    pub report: Option<PathBuf>,
 }
 
 /// Explicit local native handoff inputs, preparation date and new output declarations.
@@ -1899,6 +1922,13 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 }
             }
             PoamCommand::Outbound(args) => crate::poam::workflow_outbound_cli::execute(args),
+            PoamCommand::Evidence(args) => {
+                if crate::poam::workflow_evidence_cli::execute(args)? {
+                    Err(ForgeError::PoamActionRequired)
+                } else {
+                    Ok(())
+                }
+            }
             PoamCommand::Portfolio(args) => {
                 if crate::poam::portfolio_cli::execute(args)? {
                     Err(ForgeError::PoamActionRequired)

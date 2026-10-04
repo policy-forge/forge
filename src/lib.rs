@@ -126,3 +126,6 @@ pub use validate::{
     SchemaError, ValidateError, ValidationResult, check_file_size, detect_model_type, load_schema,
     validate_artifact,
 };
+
+/// Shared confined original generations and before-growth evidence inspection budgets.
+pub(crate) mod evidence_capture;

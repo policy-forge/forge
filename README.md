@@ -260,6 +260,8 @@ original files before output; a valid handoff exits 0 and grants no remote actio
 See [local outbound change sets](docs/poam-outbound.md) for inputs, schema,
 privacy, safe publication and remaining connector gates.
 
+`forge poam evidence` inspects every declared closure-evidence assertion against explicit linkage bindings and current local bytes, while keeping terminal admission and evidence approval separate. See [local evidence inspection](docs/poam-evidence-inspection.md) for path bases, reports and review conditions.
+
 ### Policy Lifecycle
 
 Bind a policy version's declared review state to exact local source and generated

@@ -4021,3 +4021,627 @@ fn outbound_contract_debug_keeps_actual_originals_and_private_paths_opaque() {
     let expected = format!("PreparedOutbound {{ report_bytes: {}, .. }}", prepared.report().len());
     assert!(actual == expected, "admitted capture Debug must remain opaque");
 }
+
+/// Actual synthetic source/native/linkage files; no detached prepared proof is fabricated.
+struct S4ControlFixture {
+    /// Retain the owning existing native five-file fixture directory.
+    _owner: Fixture,
+    /// Canonical actual plan directory, optionally different from the fixture/cwd root.
+    root: std::path::PathBuf,
+    /// Actual complete authored workflow value, with source tuples from the old helper.
+    plan: Value,
+    /// Actual closed companion value, persisted and raw-pinned after every edit.
+    links: Value,
+    /// Actual native linkage declaration, consumed by the real fresh loader.
+    linkage: Value,
+    /// Actual original authoring declaration path.
+    plan_path: std::path::PathBuf,
+    /// Actual nested companion path, resolved from plan root rather than cwd.
+    links_path: std::path::PathBuf,
+    /// Actual flat or nested native linkage manifest.
+    linkage_path: std::path::PathBuf,
+    /// Actual native requirement Catalog path; flat profile shares the five-source Catalog.
+    native_catalog: std::path::PathBuf,
+    /// Actual schema-validated native Component Definition path.
+    component: std::path::PathBuf,
+    /// Actual local evidence payload; its bytes must never appear in reports or Debug.
+    evidence: std::path::PathBuf,
+}
+
+/// Build a real native Component Definition over the actual fixture's exact control and statement IDs.
+fn s4_control_component() -> Value {
+    json!({"component-definition":{"uuid":"22222222-2222-4222-8222-222222222222",
+        "metadata":{"title":"SENSITIVE IMPLEMENTATION TITLE","last-modified":"2026-01-01T00:00:00Z","version":"1.0.0","oscal-version":"1.2.3"},
+        "components":[{"uuid":"33333333-3333-4333-8333-333333333333","type":"software","title":"SENSITIVE COMPONENT","description":"SENSITIVE IMPLEMENTATION PROSE",
+            "control-implementations":[{"uuid":"44444444-4444-4444-8444-444444444444","source":"catalog.json","description":"SENSITIVE IMPLEMENTATION SET",
+                "implemented-requirements":[{"uuid":"55555555-5555-4555-8555-555555555555","control-id":CONTROL,"description":"SENSITIVE REQUIREMENT PROSE",
+                    "statements":[{"statement-id":STATEMENT,"uuid":"66666666-6666-4666-8666-666666666666","description":"SENSITIVE STATEMENT PROSE"}]}]}]}]}})
+}
+
+/// Add coherent item/milestone closure assertions; actual files and distinct reviewer remain explicit.
+fn s4_control_close(plan: &mut Value, href: &str, hash: &str) {
+    plan["roles"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"id":"reviewer","title":"SENSITIVE REVIEWER ROLE"}));
+    plan["parties"].as_array_mut().unwrap().push(
+        json!({"key":"independent-reviewer","type":"person","name":"SENSITIVE REVIEWER NAME"}),
+    );
+    let close = |record: &mut Value| {
+        record["history"].as_array_mut().unwrap().push(json!({"key":"start","actor":{"role_id":"owner","party_key":"remediator"},
+            "at":"2026-01-04T00:00:00Z","from":"planned","to":"in-progress","rationale":"SENSITIVE START RATIONALE","closure":null}));
+        record["history"].as_array_mut().unwrap().push(json!({"key":"complete","actor":{"role_id":"owner","party_key":"remediator"},
+            "at":"2026-01-20T11:00:00Z","from":"in-progress","to":"completed-asserted","rationale":"SENSITIVE COMPLETION RATIONALE",
+            "closure":{"reviewer":{"role_id":"reviewer","party_key":"independent-reviewer"},"reviewed_at":"2026-01-20T12:00:00Z",
+                "rationale":"SENSITIVE CLOSURE REVIEW","evidence":[{"key":"proof","href":href,"expected_sha256":hash}]}}));
+        record["state"] = json!("completed-asserted");
+    };
+    close(&mut plan["items"][0]);
+    close(&mut plan["items"][0]["milestones"][0]);
+    plan["items"][0]["milestones"][0]["history"][2]["at"] = json!("2026-01-20T10:00:00Z");
+    plan["items"][0]["milestones"][0]["history"][2]["closure"]["reviewed_at"] =
+        json!("2026-01-20T10:30:00Z");
+}
+
+/// Persist exact declarations and update only the explicit companion raw linkage-manifest pin.
+fn s4_control_persist(fixture: &mut S4ControlFixture) {
+    let raw = write_json(&fixture.linkage_path, &fixture.linkage);
+    fixture.links["linkage"]["expected_sha256"] = json!(common::sha256_hex(&raw));
+    write_json(&fixture.plan_path, &fixture.plan);
+    write_json(&fixture.links_path, &fixture.links);
+}
+
+/// Create real five-source/native/current-local inputs; nested mode also uses a nondefault plan directory.
+fn s4_control_fixture(terminal: bool, nested: bool) -> S4ControlFixture {
+    let owner = fixture();
+    let mut plan = authored_workflow(&owner);
+    let original_root = owner.directory.path().canonicalize().unwrap();
+    let root = if nested {
+        let path = original_root.join("plan-root");
+        std::fs::create_dir(&path).unwrap();
+        for name in [
+            "assessment-results.json",
+            "assessment-plan.json",
+            "ssp.json",
+            "profile.json",
+            "catalog.json",
+        ] {
+            std::fs::copy(original_root.join(name), path.join(name)).unwrap();
+        }
+        path
+    } else {
+        original_root
+    };
+    let base = if nested { root.join("linked") } else { root.clone() };
+    if nested {
+        std::fs::create_dir(&base).unwrap();
+    }
+    let native_catalog = base.join("catalog.json");
+    if nested {
+        std::fs::copy(root.join("catalog.json"), &native_catalog).unwrap();
+    }
+    let component = base.join("component.json");
+    write_json(&component, &s4_control_component());
+    std::fs::create_dir(base.join("evidence")).unwrap();
+    let evidence = base.join("evidence/proof.bin");
+    std::fs::write(&evidence, b"PRIVATE S4 EVIDENCE CONTENT\n").unwrap();
+    let hash = common::sha256_file(&evidence);
+    let href = if nested { "linked/evidence/proof.bin" } else { "evidence/proof.bin" };
+    if terminal {
+        s4_control_close(&mut plan, href, &hash);
+    }
+    let linkage = json!({"schema_version":"forge.linkage/1",
+        "project":{"key":"s4-project","title":"SENSITIVE PROJECT TITLE","expiring_window_days":30,"max_evidence_bytes":1_048_576,"approved_uri_schemes":["vault+corp"]},
+        "reviewers":[{"key":"reviewer","name":"SENSITIVE LINKAGE REVIEWER"}],
+        "requirement_resources":[{"key":"requirements","type":"catalog","artifact":"catalog.json","href":"catalog.json","expected_sha256":common::sha256_file(&native_catalog)}],
+        "implementation_resource":{"key":"implementation","type":"component-definition","artifact":"component.json","href":"component.json","expected_sha256":common::sha256_file(&component)},
+        "evidence_roots":[{"key":"local","path":"evidence"}],
+        "evidence":[{"key":"record","title":"SENSITIVE EVIDENCE TITLE","evidence_type":"test-record","owner":"SENSITIVE EVIDENCE OWNER",
+            "collected_at":"2026-01-10T00:00:00Z","valid_through":"2026-12-31","sensitivity_label":"restricted","source_label":"SENSITIVE SOURCE LABEL",
+            "location":{"kind":"local","root_key":"local","path":"proof.bin","expected_sha256":hash,"expected_size":std::fs::metadata(&evidence).unwrap().len()}}],
+        "links":[{"key":"access-link","requirements":[{"resource_key":"requirements","type":"control","id_ref":CONTROL},{"resource_key":"requirements","type":"statement","id_ref":STATEMENT}],
+            "implementations":[{"type":"implemented-requirement","id_ref":"55555555-5555-4555-8555-555555555555"},{"type":"statement","id_ref":"66666666-6666-4666-8666-666666666666"}],
+            "evidence_keys":["record"],"evidence_required":true,"responsible_role":"SENSITIVE RESPONSIBLE ROLE","implementation_status":"implemented",
+            "review":{"reviewer_key":"reviewer","reviewed_at":"2026-01-11T00:00:00Z","rationale":"SENSITIVE LINKAGE RATIONALE"},"impact_finding_ids":[],"policy_version_keys":[]}]});
+    let bindings: Vec<_> = if terminal {
+        [None, Some("step")].into_iter().map(|step| {
+        json!({"locator":{"item_key":"work","milestone_key":step,"event_key":"complete","assertion_evidence_key":"proof"},"link_key":"access-link","evidence_key":"record"})
+    }).collect()
+    } else {
+        Vec::new()
+    };
+    let links = json!({"schema_version":"forge.poam-evidence-links/1","plan_key":plan["document"]["key"],
+        "linkage":{"artifact":if nested { "linked/linkage.json" } else { "linkage.json" },"expected_sha256":"0".repeat(64),"project_key":"s4-project"},"bindings":bindings});
+    std::fs::create_dir(root.join("companions")).unwrap();
+    let mut fixture = S4ControlFixture {
+        _owner: owner,
+        plan_path: root.join("poam-s4.json"),
+        links_path: root.join("companions/links.json"),
+        linkage_path: base.join("linkage.json"),
+        root,
+        plan,
+        links,
+        linkage,
+        native_catalog,
+        component,
+        evidence,
+    };
+    s4_control_persist(&mut fixture);
+    fixture
+}
+
+/// Use the public current-source inspector, never a forged proof or supplied native index.
+fn s4_control_prepare(
+    fixture: &S4ControlFixture,
+) -> forge::poam::workflow_evidence::PreparedEvidence {
+    let prepared = forge::poam::workflow_evidence::prepare(
+        &fixture.plan_path,
+        &fixture.links_path,
+        "2026-01-15",
+    )
+    .unwrap();
+    prepared.verify_inputs().unwrap();
+    prepared
+}
+
+/// Read complete JSON, apply the consumed closed schema and reconcile both complete partitions.
+fn s4_control_report(prepared: &forge::poam::workflow_evidence::PreparedEvidence) -> Value {
+    let report: Value = serde_json::from_slice(prepared.report()).unwrap();
+    let schema: Value = serde_json::from_str(include_str!(
+        "../schemas/forge.poam-evidence-inspection-1.schema.json"
+    ))
+    .unwrap();
+    assert!(jsonschema::validator_for(&schema).unwrap().is_valid(&report));
+    let summary = &report["summary"];
+    let rows = report["rows"].as_array().unwrap().len() as u64;
+    let sum =
+        |names: &[&str]| names.iter().map(|name| summary[name].as_u64().unwrap()).sum::<u64>();
+    assert_eq!(sum(&["matched", "unbound", "mismatched", "binding_unavailable"]), rows);
+    assert_eq!(
+        sum(&[
+            "current",
+            "expiring",
+            "expired",
+            "changed",
+            "unavailable",
+            "unverified_uri",
+            "freshness_unmeasured"
+        ]),
+        rows
+    );
+    assert_eq!(summary["closure_assertions"], rows);
+    assert_eq!(summary["assertion_rows"], rows);
+    assert_eq!(report["terminal_admitted"], false);
+    assert_eq!(report["artifact_validated"], false);
+    report
+}
+
+/// Snapshot every held original generation as test evidence; native Catalog reuse is deduplicated by full path.
+fn s4_control_originals(fixture: &S4ControlFixture) -> Vec<(std::path::PathBuf, Vec<u8>)> {
+    let mut paths: std::collections::BTreeSet<_> = [
+        fixture.plan_path.clone(),
+        fixture.links_path.clone(),
+        fixture.linkage_path.clone(),
+        fixture.native_catalog.clone(),
+        fixture.component.clone(),
+        fixture.evidence.clone(),
+    ]
+    .into_iter()
+    .collect();
+    for name in [
+        "assessment-results.json",
+        "assessment-plan.json",
+        "ssp.json",
+        "profile.json",
+        "catalog.json",
+    ] {
+        paths.insert(fixture.root.join(name));
+    }
+    paths
+        .into_iter()
+        .map(|path| {
+            let bytes = std::fs::read(&path).unwrap();
+            (path, bytes)
+        })
+        .collect()
+}
+
+/// Invoke the actual public command from an explicit cwd, using the plan-relative nested companion contract.
+fn s4_control_cli(fixture: &S4ControlFixture, cwd: &Path, report: Option<&str>) -> Output {
+    let mut args = vec![
+        "poam",
+        "evidence",
+        "--manifest",
+        fixture.plan_path.to_str().unwrap(),
+        "--links",
+        "companions/links.json",
+        "--as-of",
+        "2026-01-15",
+    ];
+    if let Some(name) = report {
+        args.extend(["--report", name]);
+    }
+    run(cwd, &args)
+}
+
+/// Require an invalid no-output CLI result with redacted path/content categories, preserving exact stdout emptiness.
+fn s4_control_invalid(output: &Output, fixture: &S4ControlFixture) {
+    assert_eq!(output.status.code(), Some(2));
+    assert_eq!(output.stdout, [] as [u8; 0]);
+    let text = String::from_utf8_lossy(&output.stderr);
+    for private in ["SENSITIVE", "PRIVATE S4", fixture.root.to_str().unwrap()] {
+        assert!(!text.contains(private));
+    }
+}
+
+/// Actual matched terminal references remain review-only; complete future/milestone rows are deterministic and schema-valid.
+#[test]
+fn s4_actual_matched_terminal_rows_keep_complete_counts_and_no_native_authority() {
+    let f = s4_control_fixture(true, false);
+    let originals = s4_control_originals(&f);
+    let one = s4_control_prepare(&f);
+    let two = s4_control_prepare(&f);
+    assert_eq!(one.report(), two.report());
+    assert!(one.review_required());
+    let report = s4_control_report(&one);
+    let summary = &report["summary"];
+    for (field, expected) in [
+        ("items", 1),
+        ("milestones", 1),
+        ("history_events", 6),
+        ("closure_assertions", 2),
+        ("bindings_supplied", 2),
+        ("assertion_rows", 2),
+        ("distinct_referenced_evidence", 1),
+        ("distinct_captured_local_evidence", 1),
+        ("linkage_evidence", 1),
+        ("linkage_links", 1),
+        ("matched", 2),
+        ("current", 2),
+        ("future_assertions", 2),
+        ("captured_original_generations", 10),
+    ] {
+        assert_eq!(summary[field], expected, "{field}");
+    }
+    let rows = report["rows"].as_array().unwrap();
+    assert!(rows[0]["locator"]["milestone_key"].is_null());
+    assert_eq!(rows[1]["locator"]["milestone_key"], "step");
+    assert_ne!(rows[0]["item_uuid"], rows[1]["milestone_uuid"]);
+    for row in rows {
+        assert_eq!(row["match_status"], "matched");
+        assert_eq!(row["local_bytes_revalidated"], true);
+        assert_eq!(row["asserted_after_as_of"], true);
+    }
+    let rendered = String::from_utf8(one.report().to_vec()).unwrap();
+    let debug = format!("{one:?}");
+    for private in [
+        "PRIVATE S4 EVIDENCE CONTENT",
+        "SENSITIVE",
+        "remediator",
+        "independent-reviewer",
+        "evidence/proof.bin",
+        f.root.to_str().unwrap(),
+    ] {
+        assert!(!rendered.contains(private));
+        assert!(!debug.contains(private));
+    }
+    assert!(!debug.contains("finding-unsatisfied"));
+    let refused = forge::poam::workflow::prepare(
+        &f.plan_path,
+        &serde_json::to_vec(&f.plan).unwrap(),
+        "2026-01-15",
+        0,
+        None,
+    )
+    .unwrap_err();
+    assert!(refused.to_string().contains("pending recorded closure disposition"));
+    let cli = s4_control_cli(&f, &f.root, None);
+    assert_eq!(cli.status.code(), Some(1));
+    assert_eq!(cli.stdout, one.report());
+    for (path, bytes) in originals {
+        assert_eq!(std::fs::read(path).unwrap(), bytes);
+    }
+}
+
+/// A real nonterminal no-assertion inspection has zero action, but still captures unused linkage/source originals completely.
+#[test]
+fn s4_actual_nonterminal_no_assertions_is_complete_zero_action_stdout() {
+    let f = s4_control_fixture(false, false);
+    let prepared = s4_control_prepare(&f);
+    assert!(!prepared.review_required());
+    let report = s4_control_report(&prepared);
+    assert_eq!(report["rows"], json!([]));
+    assert_eq!(report["review_required"], false);
+    assert_eq!(report["summary"]["history_events"], 2);
+    assert_eq!(report["summary"]["bindings_supplied"], 0);
+    assert_eq!(report["summary"]["captured_original_generations"], 10);
+    let output = s4_control_cli(&f, &f.root, None);
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(output.stdout, prepared.report());
+    let native = forge::poam::workflow::prepare(
+        &f.plan_path,
+        &serde_json::to_vec(&f.plan).unwrap(),
+        "2026-01-15",
+        0,
+        None,
+    )
+    .unwrap();
+    native.verify_inputs().unwrap();
+}
+
+/// Positive actual joins precede assertion path/hash, membership, unresolved-key and approved/date/observed mismatch vectors.
+#[test]
+fn s4_actual_match_and_freshness_partitions_preserve_independent_observations() {
+    let mut f = s4_control_fixture(true, false);
+    let positive = s4_control_report(&s4_control_prepare(&f));
+    assert_eq!(positive["summary"]["matched"], 2);
+    let original_plan = f.plan.clone();
+    let original_links = f.links.clone();
+    let original_linkage = f.linkage.clone();
+    for (field, value, expected) in [
+        ("expected_sha256", "0".repeat(64), "hash-mismatch"),
+        ("href", "unrelated/proof.bin".to_string(), "href-mismatch"),
+    ] {
+        f.plan = original_plan.clone();
+        f.plan["items"][0]["history"][2]["closure"]["evidence"][0][field] = json!(value);
+        s4_control_persist(&mut f);
+        let report = s4_control_report(&s4_control_prepare(&f));
+        assert_eq!(report["rows"][0]["match_status"], expected);
+        assert_eq!(report["rows"][0]["freshness"], "current");
+        assert_eq!(report["rows"][0]["observed_sha256"], common::sha256_file(&f.evidence));
+        assert_eq!(report["rows"][0]["local_bytes_revalidated"], true);
+        assert_eq!(report["summary"]["mismatched"], 1);
+        assert_eq!(report["summary"]["matched"], 1);
+        assert_eq!(report["summary"]["current"], 2);
+    }
+    f.plan = original_plan.clone();
+    f.linkage["links"][0]["evidence_keys"] = json!([]);
+    f.linkage["links"][0]["evidence_required"] = json!(false);
+    s4_control_persist(&mut f);
+    let report = s4_control_report(&s4_control_prepare(&f));
+    assert_eq!(report["summary"]["mismatched"], 2);
+    assert_eq!(report["rows"][0]["match_status"], "wrong-link-membership");
+    assert_eq!(report["rows"][0]["observed_sha256"], common::sha256_file(&f.evidence));
+    assert_eq!(report["rows"][0]["local_bytes_revalidated"], false);
+    f.linkage = original_linkage.clone();
+    f.links["bindings"][0]["evidence_key"] = json!("unresolved");
+    s4_control_persist(&mut f);
+    let report = s4_control_report(&s4_control_prepare(&f));
+    assert_eq!(report["summary"]["binding_unavailable"], 1);
+    assert_eq!(report["summary"]["freshness_unmeasured"], 1);
+    assert!(report["rows"][0]["freshness"].is_null());
+    f.links = original_links.clone();
+    for (date, expected) in
+        [("2026-01-15", "expired"), ("2026-02-14", "expiring"), ("+12345-01-01", "current")]
+    {
+        f.linkage["evidence"][0]["valid_through"] = json!(date);
+        s4_control_persist(&mut f);
+        let report = s4_control_report(&s4_control_prepare(&f));
+        assert_eq!(report["summary"]["matched"], 2);
+        assert_eq!(report["rows"][0]["freshness"], expected);
+        assert_eq!(report["rows"][0]["recorded_valid_through"], date);
+    }
+    f.linkage = original_linkage.clone();
+    f.linkage["evidence"][0]["location"]["expected_size"] = json!(u64::MAX);
+    s4_control_persist(&mut f);
+    let report = s4_control_report(&s4_control_prepare(&f));
+    assert_eq!(report["rows"][0]["approved_size"], u64::MAX);
+    assert_eq!(report["summary"]["changed"], 2);
+    assert_eq!(report["summary"]["mismatched"], 2);
+    f.linkage = original_linkage;
+    s4_control_persist(&mut f);
+    s4_control_prepare(&f);
+    std::fs::write(&f.evidence, b"CHANGED LOCAL OBSERVATION\n").unwrap();
+    let report = s4_control_report(&s4_control_prepare(&f));
+    assert_eq!(report["summary"]["changed"], 2);
+    assert_eq!(report["summary"]["mismatched"], 2);
+    assert_ne!(report["rows"][0]["approved_sha256"], report["rows"][0]["observed_sha256"]);
+}
+
+/// Every original actual byte generation is rechecked; unavailable paths cannot become present behind the sealed proof.
+#[test]
+fn s4_actual_original_bytes_identities_and_absence_are_rechecked() {
+    let mut f = s4_control_fixture(true, false);
+    let originals = s4_control_originals(&f);
+    for (path, bytes) in &originals {
+        let prepared = s4_control_prepare(&f);
+        let mut changed = bytes.clone();
+        changed.push(b' ');
+        std::fs::write(path, changed).unwrap();
+        let refused = prepared.verify_inputs().unwrap_err();
+        assert!(refused.to_string().contains("original inputs changed or became unsafe"));
+        assert!(!refused.to_string().contains(f.root.to_str().unwrap()));
+        std::fs::write(path, bytes).unwrap();
+    }
+    #[cfg(unix)]
+    for (path, bytes) in &originals {
+        let prepared = s4_control_prepare(&f);
+        let held = path.with_extension("s4-held");
+        std::fs::rename(path, &held).unwrap();
+        std::fs::write(path, bytes).unwrap();
+        assert!(prepared.verify_inputs().is_err());
+        std::fs::remove_file(path).unwrap();
+        std::fs::rename(held, path).unwrap();
+    }
+    let prepared = s4_control_prepare(&f);
+    #[cfg(unix)]
+    {
+        let original_dir = f.evidence.parent().unwrap();
+        let held = original_dir.with_file_name("s4-held-directory");
+        std::fs::rename(original_dir, &held).unwrap();
+        std::fs::create_dir(original_dir).unwrap();
+        std::fs::write(&f.evidence, b"PRIVATE S4 EVIDENCE CONTENT\n").unwrap();
+        assert!(prepared.verify_inputs().is_err());
+        std::fs::remove_file(&f.evidence).unwrap();
+        std::fs::remove_dir(original_dir).unwrap();
+        std::fs::rename(held, original_dir).unwrap();
+    }
+    prepared.verify_inputs().unwrap();
+    f.linkage["evidence"][0]["location"]["path"] = json!("not-present/proof.bin");
+    f.plan["items"][0]["history"][2]["closure"]["evidence"][0]["href"] =
+        json!("evidence/not-present/proof.bin");
+    f.plan["items"][0]["milestones"][0]["history"][2]["closure"]["evidence"][0]["href"] =
+        json!("evidence/not-present/proof.bin");
+    s4_control_persist(&mut f);
+    let absent = s4_control_prepare(&f);
+    let report = s4_control_report(&absent);
+    assert_eq!(report["summary"]["unavailable"], 2);
+    assert_eq!(report["summary"]["binding_unavailable"], 2);
+    assert_eq!(report["summary"]["captured_original_generations"], 9);
+    assert_eq!(report["summary"]["distinct_captured_local_evidence"], 0);
+    std::fs::create_dir(f.root.join("evidence/not-present")).unwrap();
+    std::fs::write(f.root.join("evidence/not-present/proof.bin"), b"PRIVATE S4 EVIDENCE CONTENT\n")
+        .unwrap();
+    assert!(absent.verify_inputs().is_err());
+}
+
+/// Real URI references stay unfetched and mismatched; closed/duplicate/extraneous companions and stale source tuples fail wholly.
+#[test]
+fn s4_actual_uri_and_closed_binding_source_refusals_are_not_closure_authority() {
+    let mut f = s4_control_fixture(true, false);
+    s4_control_prepare(&f);
+    let original_links = f.links.clone();
+    for field in ["link_key", "evidence_key"] {
+        f.links = original_links.clone();
+        f.links["bindings"][0][field] = json!("unresolved");
+        s4_control_persist(&mut f);
+        let report = s4_control_report(&s4_control_prepare(&f));
+        assert_eq!(report["summary"]["binding_unavailable"], 1);
+    }
+    f.links = original_links.clone();
+    f.links["bindings"].as_array_mut().unwrap().remove(0);
+    s4_control_persist(&mut f);
+    let unbound = s4_control_report(&s4_control_prepare(&f));
+    assert_eq!(unbound["summary"]["unbound"], 1);
+    assert_eq!(unbound["summary"]["matched"], 1);
+    assert_eq!(unbound["summary"]["freshness_unmeasured"], 1);
+    f.links = original_links.clone();
+    s4_control_persist(&mut f);
+    s4_control_prepare(&f);
+    let raw = std::fs::read(&f.links_path).unwrap();
+    let mut duplicate_json = br#"{"schema_version":"forge.poam-evidence-links/1","#.to_vec();
+    duplicate_json.extend_from_slice(&raw[1..]);
+    std::fs::write(&f.links_path, duplicate_json).unwrap();
+    assert!(
+        forge::poam::workflow_evidence::prepare(&f.plan_path, &f.links_path, "2026-01-15").is_err()
+    );
+    s4_control_invalid(&s4_control_cli(&f, &f.root, None), &f);
+    for mutation in 0..4 {
+        f.links = original_links.clone();
+        match mutation {
+            0 => {
+                let duplicate = f.links["bindings"][0].clone();
+                f.links["bindings"].as_array_mut().unwrap().push(duplicate);
+            }
+            1 => f.links["bindings"][0]["locator"]["event_key"] = json!("extraneous"),
+            2 => {
+                f.links["bindings"][0]["locator"]["private_unknown"] =
+                    json!("SENSITIVE MALFORMED FIELD");
+            }
+            _ => {
+                f.links["bindings"][0]["locator"].as_object_mut().unwrap().remove("milestone_key");
+            }
+        }
+        s4_control_persist(&mut f);
+        let refused =
+            forge::poam::workflow_evidence::prepare(&f.plan_path, &f.links_path, "2026-01-15")
+                .unwrap_err();
+        assert!(!refused.to_string().contains("SENSITIVE"));
+        s4_control_invalid(&s4_control_cli(&f, &f.root, None), &f);
+    }
+    f.links = original_links;
+    s4_control_persist(&mut f);
+    s4_control_prepare(&f);
+    let original_plan = f.plan.clone();
+    f.plan["items"][0]["source_refs"][0]["expected_sha256"] = json!("0".repeat(64));
+    s4_control_persist(&mut f);
+    let refused =
+        forge::poam::workflow_evidence::prepare(&f.plan_path, &f.links_path, "2026-01-15")
+            .unwrap_err();
+    assert!(refused.to_string().contains("current selected source object tuple differs"));
+    f.plan = original_plan;
+    f.linkage["evidence"][0]["location"] = json!({"kind":"uri","uri":"https://127.0.0.1:1/PRIVATE-S4-NO-FETCH","unverified":true,"expected_sha256":common::sha256_file(&f.evidence)});
+    s4_control_persist(&mut f);
+    let prepared = s4_control_prepare(&f);
+    let report = s4_control_report(&prepared);
+    assert_eq!(report["summary"]["unverified_uri"], 2);
+    assert_eq!(report["summary"]["mismatched"], 2);
+    assert_eq!(report["rows"][0]["match_status"], "reference-kind-mismatch");
+    assert!(
+        report["rows"][0]["approved_sha256"].is_null()
+            && report["rows"][0]["observed_sha256"].is_null()
+    );
+    assert_eq!(report["rows"][0]["local_bytes_revalidated"], false);
+    assert!(!String::from_utf8(prepared.report().to_vec()).unwrap().contains("127.0.0.1"));
+}
+
+/// Nested plan/companion/linkage bases win over cwd/companion-local decoys and keep every captured generation explicit.
+#[test]
+fn s4_actual_nested_plan_companion_linkage_and_cwd_decoys_resolve_exactly() {
+    let f = s4_control_fixture(true, true);
+    let prepared = s4_control_prepare(&f);
+    let report = s4_control_report(&prepared);
+    assert_eq!(report["summary"]["captured_original_generations"], 11);
+    let decoy = tempfile::tempdir().unwrap();
+    std::fs::create_dir(decoy.path().join("companions")).unwrap();
+    std::fs::write(decoy.path().join("companions/links.json"), b"PRIVATE INVALID CWD DECOY")
+        .unwrap();
+    std::fs::write(
+        f.root.join("companions/linkage.json"),
+        b"PRIVATE INVALID COMPANION-LOCAL DECOY",
+    )
+    .unwrap();
+    std::fs::write(f.root.join("linkage.json"), b"PRIVATE INVALID PLAN-LOCAL DECOY").unwrap();
+    let output = s4_control_cli(&f, decoy.path(), None);
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(output.stdout, prepared.report());
+    prepared.verify_inputs().unwrap();
+}
+
+/// All original target attempts preserve bytes; portable-name/existence preemption and platform publication are qualified explicitly.
+#[test]
+fn s4_actual_cli_outputs_preflight_originals_and_preserve_portable_publication() {
+    let f = s4_control_fixture(true, false);
+    let prepared = s4_control_prepare(&f);
+    let originals = s4_control_originals(&f);
+    for (path, bytes) in &originals {
+        let relative = path.strip_prefix(&f.root).unwrap().to_str().unwrap();
+        s4_control_invalid(&s4_control_cli(&f, &f.root, Some(relative)), &f);
+        assert_eq!(std::fs::read(path).unwrap(), *bytes);
+        // Nested paths/suffixes and already-owned destinations may preempt the
+        // held-input alias guard. This proves no overwrite, not all guard arms.
+    }
+    for name in [
+        "CATALOG.json",
+        "ASSESSMENT-RESULTS.json",
+        "POAM-S4.json",
+        "../outside.json",
+        "evidence/not-present.json",
+    ] {
+        s4_control_invalid(&s4_control_cli(&f, &f.root, Some(name)), &f);
+    }
+    let owned = f.root.join("owned-inspection.json");
+    std::fs::write(&owned, b"OWNED INSPECTION SENTINEL").unwrap();
+    s4_control_invalid(&s4_control_cli(&f, &f.root, Some("owned-inspection.json")), &f);
+    assert_eq!(std::fs::read(owned).unwrap(), b"OWNED INSPECTION SENTINEL");
+    // Same basename as the nested companion, a different actual full path.
+    let result = s4_control_cli(&f, &f.root, Some("links.json"));
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        assert_eq!(result.status.code(), Some(1));
+        assert_eq!(result.stdout, [] as [u8; 0]);
+        assert_eq!(std::fs::read(f.root.join("links.json")).unwrap(), prepared.report());
+        s4_control_invalid(&s4_control_cli(&f, &f.root, Some("links.json")), &f);
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        s4_control_invalid(&result, &f);
+        assert!(!f.root.join("links.json").exists());
+    }
+    for (path, bytes) in originals {
+        assert_eq!(std::fs::read(path).unwrap(), bytes);
+    }
+    // Missing native/source or malformed declarations are errors, never action reports.
+    std::fs::write(&f.plan_path, b"PRIVATE INVALID PLAN").unwrap();
+    s4_control_invalid(&s4_control_cli(&f, &f.root, None), &f);
+}

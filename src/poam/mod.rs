@@ -313,3 +313,8 @@ mod tests {
         );
     }
 }
+
+/// Complete read-only closure-reference joins from actual sealed local evidence captures.
+pub mod workflow_evidence;
+/// New-file publication and portable stdout for complete local evidence inspection.
+pub mod workflow_evidence_cli;

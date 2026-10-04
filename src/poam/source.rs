@@ -1320,6 +1320,178 @@ fn error(message: impl Into<String>) -> ForgeError {
     ForgeError::PoamBuild(message.into())
 }
 
+/// Private current source inventory qualified from actual shared captures.
+///
+/// The caller must retain the owning `CaptureSession` and finalized `CaptureProof`.
+/// This type has no public constructor, original-byte clone or artifact renderer.
+pub(super) struct CapturedSource {
+    /// Complete explicitly selected result inventory after the unchanged native checks.
+    inventory: SourceInventory,
+}
+
+impl CapturedSource {
+    /// Borrow the complete selected inventory without transferring current-proof authority.
+    pub(super) fn inventory(&self) -> &SourceInventory {
+        &self.inventory
+    }
+
+    /// Apply the existing exact source-reference predicates to this privately qualified inventory.
+    ///
+    /// This does not infer eligibility or evidence sufficiency. The private caller
+    /// separately retains and rechecks every original through its `CaptureProof`.
+    /// # Errors
+    /// Refuses duplicate, absent or differing result/kind/key/UUID/computed-hash tuples.
+    pub(super) fn validate_selection(
+        &self,
+        references: &[SourceReference],
+    ) -> Result<(), ForgeError> {
+        if references.len() > MAX_SOURCE_OBJECTS {
+            return Err(error("source selection exceeds the 10,000 object bound"));
+        }
+        let inventory = self.inventory();
+        let mut selected = BTreeSet::new();
+        let indexed: BTreeMap<_, _> = inventory
+            .objects
+            .iter()
+            .map(|object| ((object.kind, object.key.as_str()), object))
+            .collect();
+        for reference in references {
+            json_strict::validate_lowercase_sha256(
+                "source reference SHA-256",
+                &reference.expected_sha256,
+            )
+            .map_err(error)?;
+            if !selected.insert((reference.kind, reference.key.as_str())) {
+                return Err(error("source selection duplicates a kind/key reference"));
+            }
+            let object = indexed
+                .get(&(reference.kind, reference.key.as_str()))
+                .ok_or_else(|| error("source selection references an absent kind/key"))?;
+            if reference.result_uuid != inventory.result_uuid
+                || reference.result_uuid != object.result_uuid
+                || reference.uuid != object.uuid
+                || reference.expected_sha256 != object.sha256
+            {
+                return Err(error(
+                    "source selection result/UUID/computed object digest differs from captured source",
+                ));
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Qualify the same five-source native profile using one caller-owned original capture pool.
+///
+/// No original Vec is cloned and no filesystem snapshot is created. The consumed
+/// Root-owned `context::load_captured_refs` port validates borrowed AP/SSP/Profile/
+/// Catalog bytes and exact imports with shared before-growth relationship admission.
+/// The complete caller `CaptureProof`, not this inventory alone, rechecks originals.
+/// Existing public load and `PreparedSource` behavior remains byte-exact and separate.
+/// # Errors
+/// Refuses unsupported declarations, aliases, stale raw pins, native/schema/import
+/// differences, shared budget overflow or incoherent complete source selection.
+pub(super) fn load_with_capture(
+    manifest_path: &Path,
+    source: &SourceManifest,
+    capture: &mut crate::evidence_capture::CaptureSession,
+) -> Result<CapturedSource, ForgeError> {
+    use crate::evidence_capture::CaptureRole;
+
+    super::manifest::validate_source(source)?;
+    if manifest_path.parent() != Some(capture.root()) {
+        return Err(error("shared source root differs from the original plan directory"));
+    }
+    let declarations = [
+        (CaptureRole::AssessmentResults, &source.assessment_results),
+        (CaptureRole::AssessmentPlan, &source.context.assessment_plan),
+        (CaptureRole::SystemSecurityPlan, &source.context.ssp),
+        (CaptureRole::Profile, &source.context.profile),
+        (CaptureRole::Catalog, &source.context.catalog),
+    ];
+    let mut leases = Vec::with_capacity(5);
+    let mut paths = BTreeSet::new();
+    let mut identities = BTreeSet::new();
+    for (role, expected) in declarations {
+        if !paths.insert(&expected.artifact) {
+            return Err(error("source artifacts must have distinct confined paths"));
+        }
+        let lease = capture.required(&expected.artifact, role, crate::io::MAX_FILE_SIZE)?;
+        if !identities.insert(lease.identity()) {
+            return Err(error("source artifacts must have distinct file identities"));
+        }
+        if sha256_hex(lease.bytes()) != expected.expected_sha256 {
+            return Err(error("shared source input differs from its exact raw SHA-256 pin"));
+        }
+        leases.push(lease);
+    }
+    let ar = parse_artifact(leases[0].bytes(), "Assessment Results source")?;
+    validate_ar_schema(&ar)?;
+    let document =
+        ar.get("assessment-results").ok_or_else(|| error("Assessment Results root is required"))?;
+    validate_supported_structure(&ar)?;
+    validate_graph_edge_bound(document)?;
+    charge_shared_source_graph(document, capture)?;
+    let captured: BTreeMap<_, _> = [
+        &source.assessment_results,
+        &source.context.assessment_plan,
+        &source.context.ssp,
+        &source.context.profile,
+        &source.context.catalog,
+    ]
+    .into_iter()
+    .zip(leases.iter())
+    .map(|(expected, lease)| (expected.artifact.clone(), lease.bytes()))
+    .collect();
+    let loaded_context = context::load_captured_refs(&source.context, &captured, capture)?;
+    validate_artifact_identity(document, &source.assessment_results)?;
+    validate_import(source, document)?;
+    validate_context_pins(document, &loaded_context)?;
+    validate_resource_pins(document, source, &loaded_context)?;
+    let inventory = inventory_results(document, source, &loaded_context)?;
+    Ok(CapturedSource { inventory })
+}
+
+/// Charge complete AR object records and the existing native reference edge families before adjacency growth.
+fn charge_shared_source_graph(
+    value: &Value,
+    capture: &mut crate::evidence_capture::CaptureSession,
+) -> Result<(), ForgeError> {
+    match value {
+        Value::Object(map) => {
+            for (key, child) in map {
+                let count = if matches!(
+                    key.as_str(),
+                    "results"
+                        | "observations"
+                        | "findings"
+                        | "risks"
+                        | "related-observations"
+                        | "related-risks"
+                        | "related-tasks"
+                        | "actors"
+                        | "subjects"
+                        | "include-controls"
+                        | "include-objectives"
+                ) {
+                    child.as_array().map_or(0, Vec::len)
+                } else {
+                    usize::from(matches!(key.as_str(), "target" | "implementation-statement-uuid"))
+                };
+                capture.relationships(count)?;
+                charge_shared_source_graph(child, capture)?;
+            }
+        }
+        Value::Array(values) => {
+            for child in values {
+                charge_shared_source_graph(child, capture)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

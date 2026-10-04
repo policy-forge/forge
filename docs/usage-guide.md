@@ -840,6 +840,8 @@ invalid input/output exits 2. Eight actual originals are rechecked before output
 and remote apply authority remains false. See [local outbound change sets](poam-outbound.md)
 for the selection format, complete native matching, minimized fields and bounds.
 
+Inspect local evidence with `forge poam evidence --manifest ./assessment-bundle/authored.json --links review/evidence-links.json --as-of 2026-10-04`. Add `--report inspection.json` to publish a new report beside the plan on Linux or macOS. See [local evidence inspection](poam-evidence-inspection.md) for explicit assertion bindings, complete counts and unchanged closure gates.
+
 ## 4. Global Options
 
 ```bash

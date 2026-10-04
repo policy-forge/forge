@@ -1117,6 +1117,26 @@ fn error(message: impl Into<String>) -> ForgeError {
     ForgeError::AssessmentResultsBuild(message.into())
 }
 
+/// Borrowed context loading from the actual sealed S4 capture session.
+#[path = "context_captured.rs"]
+mod captured_context;
+
+/// Validate exact native companions without spooling, reopening or copying their raw bytes.
+///
+/// # Errors
+///
+/// Returns an error for detached/missing originals, unsupported native context,
+/// stale declared identities, inconsistent imports, scope defects or complete
+/// shared relationship/conservative local metadata bounds. The caller must retain
+/// and recheck the whole capture proof after analysis and before publication.
+pub(crate) fn load_captured_refs(
+    context: &ContextManifest,
+    captured: &BTreeMap<PathBuf, &[u8]>,
+    capture: &mut crate::evidence_capture::CaptureSession,
+) -> Result<LoadedContext, ForgeError> {
+    captured_context::load(context, captured, capture)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
