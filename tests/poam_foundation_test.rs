@@ -1851,20 +1851,36 @@ fn baseline_cli_unchanged_report_is_complete_deterministic_and_nonmutating() {
     assert_eq!(report["previous_manifest_sha256"], report["current_manifest_sha256"]);
     assert_eq!(report["previous_validation"], "bounded-structural-history-only");
     assert!(!String::from_utf8(first.stdout.clone()).unwrap().contains("SENSITIVE"));
-    let published = baseline_cli(&fixture, &["--report", "baseline-report.json"]);
-    assert_eq!(published.status.code(), Some(0));
-    assert_eq!(published.stdout, [] as [u8; 0]);
-    assert_eq!(
-        std::fs::read(fixture.directory.path().join("baseline-report.json")).unwrap(),
-        first.stdout
-    );
-    let refused = baseline_cli(&fixture, &["--report", "baseline-report.json"]);
-    assert_eq!(refused.status.code(), Some(2));
-    assert_eq!(refused.stdout, [] as [u8; 0]);
-    assert_eq!(
-        std::fs::read(fixture.directory.path().join("baseline-report.json")).unwrap(),
-        first.stdout
-    );
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        let published = baseline_cli(&fixture, &["--report", "baseline-report.json"]);
+        assert_eq!(published.status.code(), Some(0));
+        assert_eq!(published.stdout, [] as [u8; 0]);
+        assert_eq!(
+            std::fs::read(fixture.directory.path().join("baseline-report.json")).unwrap(),
+            first.stdout
+        );
+        let refused = baseline_cli(&fixture, &["--report", "baseline-report.json"]);
+        assert_eq!(refused.status.code(), Some(2));
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+        assert_eq!(
+            std::fs::read(fixture.directory.path().join("baseline-report.json")).unwrap(),
+            first.stdout
+        );
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        let root = fixture.directory.path();
+        let entries_before = std::fs::read_dir(root).unwrap().count();
+        let refused = baseline_cli(&fixture, &["--report", "baseline-report.json"]);
+        assert_eq!(refused.status.code(), Some(2), "{}", String::from_utf8_lossy(&refused.stderr));
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+        assert!(
+            String::from_utf8_lossy(&refused.stderr).contains("cannot publish new workflow output")
+        );
+        assert!(!root.join("baseline-report.json").exists());
+        assert_eq!(std::fs::read_dir(root).unwrap().count(), entries_before);
+    }
     assert_authored_cli_inputs(&fixture, &inputs);
 }
 

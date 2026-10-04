@@ -1,10 +1,11 @@
 # POA&M baseline integration verification
 
-This records the read-only baseline slice against exact final source. It does not
-close full F08 or the goal-wide final docs review. The
+This records the read-only baseline slice for the frozen original PR #204 cohort
+at `62dbea7a6ccb54bc13da9672a4a4a031bec7e0c1`. It does not close full F08 or the
+goal-wide final docs review. The
 [machine-readable receipt](plans/2026-10-03-f08-baseline-integration-verification.json)
 retains source pins, every lexical row and omission, complete native aliases,
-historical failures and current documentation differences.
+historical failures and recorded documentation differences.
 
 | Lexical dimension | Selected new/changed | Whole six owned Rust files |
 |---|---:|---:|
@@ -34,13 +35,18 @@ code. Branch and MC/DC denominators are unavailable. The full export retains
 18,106 raw function records, including 5,920 count-zero records; that raw record
 count is separate from aggregate functions and lexical declarations.
 
-All six current Rust files match the full run byte-for-byte. After that run, only
-the command guide gained an explicit as-of clarification: comparison uses final
-supplied states and complete histories, without reconstructing historical state.
-Both guide versions and their source-bound semantic review remain recorded.
-Formatting passed on integrated source. Strict all-target/all-feature Clippy passed
-on the byte-identical final Rust source in the isolated prototype. The mandatory
-commit hook and hosted checks are separate evidence recorded when executed.
+All six Rust files in that frozen original cohort match the full run byte-for-byte.
+After that run, the command guide gained an explicit as-of clarification: comparison
+uses final supplied states and complete histories, without reconstructing historical
+state. Both guide versions and their source-bound semantic review remain recorded.
+Formatting passed on that integrated cohort. Strict all-target/all-feature Clippy
+passed on its byte-identical Rust source in the isolated prototype.
+
+The subsequent Windows cfg test correction changes only
+`tests/poam_foundation_test.rs`; the five production Rust files remain unchanged.
+That correction is not measured by the original LLVM export or lexical census
+above. Fresh checks, the current mandatory commit hook and later hosted checks
+are separate evidence recorded when executed.
 
 ## Authentic controls and corrections
 
