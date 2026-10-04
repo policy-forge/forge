@@ -190,3 +190,7 @@ stage. This checkpoint establishes no native denial/calibration, attempted-egres
 absence, packaged-runtime acceptance or full CI result. Existing trust gates,
 historical failed receipts and final human/audit/owner/release/documentation gates
 remain preserved.
+
+## Historical observer fixture correction, 2026-10-04
+
+The initial draft #213 run stopped before the new physical campaign because one test assumed current qualifier bytes matched the diagnostic observer's historical pins. A scoped test fixture successor preserves production observer refusal and measures 174 ordinary controls. See [the full versioned verification successor](../plans/2026-10-04-f04-observer-fixture-verification-v1.md). This does not confer current observer, Linux physical, IP-denial or owner acceptance; final full-roadmap documentation review remains open.
