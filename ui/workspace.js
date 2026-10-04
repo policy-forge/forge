@@ -1130,10 +1130,11 @@ async function preview(proposed, exportOperation, isCurrent = () => !stopped, re
   dialog.addEventListener("cancel", invalidatePreview);
   dialog.addEventListener("close", invalidatePreview);
   dialog.querySelector("[role=alert]")?.remove();
-  content.replaceChildren(Object.assign(node("h2", "Review proposed write"),{id:"preview-title"}),node("p", `${current.target.status}: ${current.target.path}`),node("p", current.semantic_summary),
+  content.replaceChildren(Object.assign(node("h2", "Review proposed write"),{id:"preview-title"}),node("p", `${current.target.status}: ${current.target.path}`),node("p", exportOperation?.family === "staged-source-bundle" ? "Save the complete project index and exact registered source bytes to the selected file. Source content, labels, keys, paths and hashes may be sensitive and are included without redaction. Review the changes below, then confirm to save and enable the download. The limit is 10 MiB; available session capacity may be lower." : current.semantic_summary),
     node("p", `Validation: ${current.validation.state}. Target version: ${current.target_version}`),node("p", `Current hash: ${current.base_sha256 || "new file"}`),node("p", `Proposed hash: ${current.exact_bytes_sha256}`),node("p", `Receipt expires: ${current.receipt.expires_at}`),
     table("Bound input hashes",[["Resource","resource_id"],["SHA-256","sha256"]],current.input_hashes),Object.assign(node("pre",current.diff_text),{tabIndex:0}));
   if(current.diff_truncated) content.append(node("p","The text diff reached its display bound. The hash binds the complete proposed bytes."));
+  if (exportOperation?.family === "staged-source-bundle") content.append(node("h3", "Server details"), node("p", current.semantic_summary.replace("whole100", "whole 100").replace("a10MiB", "a 10 MiB")));
   if (reviewContext) appendBundleReplacement(content, reviewContext.replacement);
   const key = crypto.randomUUID();
   /** Download only the prepared family; JSON metadata/source artifacts bind media, cap, hash and view ownership. */
@@ -2232,9 +2233,9 @@ function stopSourceRestoreRows() {
 /** Render every captured generation using declared text fields, never hidden receipt tokens or source objects. */
 function appendSourceReplacement(content, context) {
   const {preview,replacement}=context;
-  content.append(node("p",preview.semantic_summary),node("p",`Snapshot: ${preview.snapshot_version}. Observed batch: ${preview.observed_batch_version}. Exact manifest: ${preview.exact_manifest_sha256}.`),
+  content.append(node("p","Replace the complete project index, including its label and registrations, and restore the exact bytes to every listed target. This may create folders or overwrite files. Source content and metadata may be sensitive. Files not listed as targets stay on disk. Nothing is written until you confirm this restore."),node("p",`Snapshot: ${preview.snapshot_version}. Observed batch: ${preview.observed_batch_version}. Exact manifest: ${preview.exact_manifest_sha256}.`),
     node("p",`Outcome lookup ID: ${preview.operation_id}. Receipt expires: ${preview.receipt.expires_at}.`),
-    node("p",`Complete planned files: ${replacement.consumed_file_count} of100; index included even if absent. Removed registration keys: ${replacement.removed_resource_keys.join(", ") || "none"}. Files removed from membership are retained on disk.`));
+    node("p",`Complete planned files: ${replacement.consumed_file_count} of 100; index included even if absent. Removed registration keys: ${replacement.removed_resource_keys.join(", ") || "none"}. Files removed from membership are retained on disk.`));
   content.append(node("h3","Every target in publication order; index last"));
   for(const target of preview.targets) {
     const section=node("section");section.append(node("h4",`${target.status}: ${target.path}`),node("p",`${target.kind}. Registration key: ${target.key ?? "none"}. Role: ${target.role ?? "none"}.`),
@@ -2251,7 +2252,8 @@ function appendSourceReplacement(content, context) {
   for(const [label,index] of [["Previous index",replacement.previous_index],["Proposed index",replacement.proposed_index]]) {
     content.append(node("h4",label));if(index===null)content.append(node("p","No index was present."));else content.append(node("p",`${index.schema_version}: ${index.label}; ${index.resources.length} registrations.`),table(`${label} complete source restore membership`,[["Key","key"],["Role","role"],["Path","path"]],index.resources));
   }
-  content.append(node("p","Confirmation may create directories and replace every listed file. Workspace reads are fenced during publication/recovery; external CLI or editor readers may observe mixed whole-file generations. This receipt is not domain approval."));
+  content.append(node("p","During restore or recovery, other local tools may read a mix of old and new files. Review every file, input binding, folder and index change before confirming. Confirming these changes does not approve the data."),
+    node("h3","Server details"),node("p",preview.semantic_summary));
 }
 
 /** Own one complete batch dialog; dismissal/new views invalidate the receipt UI, never the persistent lookup. */
@@ -2389,8 +2391,8 @@ function sourceBundleEffectsPanel() {
   const lookupButton=node("button","Look up source restore outcome");lookupButton.type="button";lookupButton.addEventListener("click",lookupOutcome);
   for(const control of [target,lookup,...(stageId?[stageId]:[])])control.addEventListener("input",changed);
   for(const control of [exportAck,file,schema,indexAck,sourceAck,filesAck,...(profile?[profile]:[])])control.addEventListener("change",changed);
-  section.append(profileFields,exportFields,exportButton,importFields,importButton,node("p",readOnly ? "Read-only session: source preparation/confirmation and cancellation are unavailable; known outcome lookup remains available." : "Exact source bundle bytes must fit1048429 bytes plus the147-byte acknowledged wrapper. Inline restore allows at most99 incoming resources with the index in the complete100-file union. Distinct export target plus present index allows at most98 registered resources."),lookupFields,lookupButton,node("p","After a lost reply or restart, launch a fresh same-project API2 2.3.0 or 2.4.0 session and explicitly look up the known ID. Not-found is not proof of no write and never authorizes a blind resend."),status,error);
-  if(stageId)section.append(node("p","Staged transport declares up to 10 MiB in exact 32 KiB parts. The shared session and native preparation peak can refuse smaller artifacts. A lost reply requires an explicit same-upload retry; preview still requires complete review and one confirmation."),retryStageButton,stageFields,stageStatusButton,stageDiscardButton);
+  section.append(profileFields,exportFields,exportButton,importFields,importButton,node("p",readOnly ? "Read-only session: source preparation/confirmation and cancellation are unavailable; known outcome lookup remains available." : "Inline bundle limit: 1,048,429 bytes. Each transfer is limited to 100 distinct planned file paths, including the index and any export destination."),lookupFields,lookupButton,node("p","After a lost reply or restart, launch a fresh same-project API2 2.3.0 or 2.4.0 session and explicitly look up the known ID. Not-found is not proof of no write and never authorizes a blind resend."),status,error);
+  if(stageId)section.append(node("p","Staged bundle limit: 10 MiB, sent in 32 KiB parts. Available capacity may require a smaller bundle. If a reply is lost, retry the same upload explicitly. Restore still requires a complete review and one confirmation."),retryStageButton,stageFields,stageStatusButton,stageDiscardButton);
   bundlePanels.set(section,invalidate);actions();return section;
 }
 
