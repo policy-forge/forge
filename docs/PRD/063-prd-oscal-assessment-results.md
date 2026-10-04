@@ -201,11 +201,26 @@ Assessment Plan task references, optional evidence identity, explicit graph
 edges, all three conclusion object types, deterministic bytes, privacy, stale
 context, and independent validation against the official schema.
 
-This is engineering completion, not release approval. Compliance/Legal
+The current S-3 engineering slice adds `forge assessment results export-poam`.
+An empty maintained POA&M scaffold and a closed `forge.poam-risk-authoring/1`
+request bind explicit caller-reviewed risk tuples to complete caller-authored
+work. Owners, dates, milestones and initial planned histories are supplied, not
+inferred. The producer checks the five actual native originals, current workflow
+rules and native POA&M schema before emitting the complete `forge.poam/1`
+declaration. The source includes controls in `tests/risk_authoring_cli_test.rs`
+that consume exported declarations through maintained `poam check --workflow`,
+`poam build` and native validation; this status paragraph records their source
+scope, not a measured test result. Slice measurements and preserved historical
+receipts remain separate. See [reviewed-risk authoring](../assessment-results-reviewed-risks.md).
+
+This is engineering implementation, not release approval. Compliance/Legal
 terminology approval, Engineering product approval of the subset, three
 sanitized assessor workflows, independent downstream interoperability, the
-success-metric pilots, and human release approval remain open. S-3 stays with
-PRD 064 and S-4 remains deferred until multi-epoch workflows are validated.
+success-metric pilots, and human release approval remain open. S-3 remains
+unchecked pending the applicable reviewed-risk and PRD 064 acceptance gates;
+terminal approval remains refused pending D064. S-4 remains separate ongoing work,
+with schema and multi-epoch user-workflow validation still open. The full goal-wide
+documentation review remains a final gate.
 
 ## Risks and Mitigations :yellow_circle: `@human-review`
 

@@ -627,6 +627,21 @@ pub enum AssessmentCommand {
 /// Human-authored OSCAL Assessment Results commands.
 #[derive(Subcommand)]
 pub enum AssessmentResultsCommand {
+    /// Export explicitly reviewed risks into a complete caller-authored POA&M workflow
+    ExportPoam {
+        /// Actual existing empty POA&M scaffold defining the fixed source root
+        #[arg(long)]
+        scaffold: PathBuf,
+        /// Closed reviewed-risk authoring JSON relative to the scaffold root
+        #[arg(long)]
+        authoring: PathBuf,
+        /// Explicit Gregorian date in canonical YYYY-MM-DD form
+        #[arg(long)]
+        as_of: String,
+        /// Optional new single JSON filename in the scaffold's parent directory
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
     /// Scaffold a context-bound manifest without observations, findings, or risks
     Init {
         /// Local OSCAL Assessment Plan JSON
@@ -2008,6 +2023,14 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         },
         Commands::Assessment { command } => match command {
             AssessmentCommand::Results { command } => match command {
+                AssessmentResultsCommand::ExportPoam { scaffold, authoring, as_of, output } => {
+                    crate::poam::risk_authoring_cli::execute(
+                        scaffold,
+                        authoring,
+                        as_of,
+                        output.as_deref(),
+                    )
+                }
                 AssessmentResultsCommand::Init {
                     assessment_plan,
                     ssp,

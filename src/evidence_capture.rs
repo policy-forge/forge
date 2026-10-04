@@ -28,6 +28,10 @@ pub(crate) const MAX_PROJECTION_BYTES: usize = 10 * 1024 * 1024;
 pub(crate) enum CaptureRole {
     /// POA&M authoring declaration; it never grants native terminal admission.
     WorkflowDeclaration,
+    /// Actual empty foundation declaration for explicit reviewed-risk authoring.
+    RiskScaffoldDeclaration,
+    /// Complete caller-authored reviewed-risk request; it authenticates no reviewer.
+    RiskAuthoringRequest,
     /// Explicit read-only assertion-to-link companion declaration.
     EvidenceBindings,
     /// Explicit linkage manifest pinned by the companion declaration.

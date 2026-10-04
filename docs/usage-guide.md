@@ -754,6 +754,28 @@ effectiveness, certification, or remediation ownership. See
 [OSCAL Assessment Results](assessment-results.md) for the complete contract and
 trust boundaries.
 
+#### Export explicitly reviewed risks to authored work
+
+Start with an empty scaffold from `forge poam init`. Supply a closed
+`forge.poam-risk-authoring/1` request containing the complete authored workflow
+and exact reviewed risk references:
+
+```bash
+forge assessment results export-poam \
+  --scaffold /absolute/bundle/empty-plan.json \
+  --authoring requests/reviewed-risks.json \
+  --as-of 2026-10-04 --output plan-workflow.json
+```
+
+`--authoring` is relative to the scaffold's parent. `--output` is a new single
+`.json` filename in that same directory; omit it for stdout. You supply every
+owner, date, milestone and planned initial history event. Export exits `0` for
+complete admitted output and `2` for invalid input or output failure; subsequent
+POA&M check/build retain their separate `0`/`1`/`2` meanings. See
+[reviewed-risk authoring](assessment-results-reviewed-risks.md) for source
+inventory selection, platform publication limits, consumption and remaining
+acceptance gates.
+
 ### 3.14 `poam` — Check Sources and Authored Remediation Work
 
 `forge poam init` emits an unselected `forge.poam/1` scaffold from one exact
@@ -772,7 +794,8 @@ finding/risk inventory. It requires `--source-only`, refuses nonempty items,
 roles and parties. The second command performs
 native POA&M structural validation and the system-identity assembly check; it
 does not establish source binding or remediation workflow acceptance. POA&M
-export, source trace and generic diff remain unsupported.
+format conversion through `forge export`, source trace and generic diff remain
+unsupported.
 See [POA&M source foundation](poam-foundation.md) for the exact inputs, bounded
 source profile, publication limits and remaining gates.
 

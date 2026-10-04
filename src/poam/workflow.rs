@@ -825,6 +825,14 @@ fn schedule_row(
     })
 }
 
+/// Reuse the current canonical date rule for explicit first-plan risk authoring.
+///
+/// # Errors
+/// Refuses any noncanonical or nonexistent Gregorian full date.
+pub(super) fn validate_authoring_date(value: &str) -> Result<(), ForgeError> {
+    full_date(value).map(|_| ())
+}
+
 /// Require a canonical Gregorian full date, including valid leap days and four-digit years.
 fn full_date(value: &str) -> Result<NaiveDate, ForgeError> {
     if value.len() != 10 {

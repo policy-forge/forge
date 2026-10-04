@@ -12,6 +12,10 @@ pub mod identity;
 pub mod manifest;
 /// Bounded, content-minimizing source-only inventories.
 pub mod report;
+/// Explicit first-plan reviewed-risk authoring over one complete original capture.
+pub(crate) mod risk_authoring;
+/// Complete stdout or confined new-file reviewed-risk authoring publication.
+pub(crate) mod risk_authoring_cli;
 /// Confined capture, exact companion binding and explicit source selection.
 pub mod source;
 /// Bounded author-supplied item, milestone and nonterminal assertion workflow.

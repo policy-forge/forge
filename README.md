@@ -224,6 +224,14 @@ before writes. Baselines must contain exactly one result epoch; plural baselines
 are invalid even with `--fail-on never`. See
 [OSCAL Assessment Results](docs/assessment-results.md).
 
+`forge assessment results export-poam` turns explicitly selected, caller-reviewed
+risks and a complete caller-authored first-plan workflow into `forge.poam/1`.
+Supply every owner, date, milestone and initial history event; then use the
+maintained POA&M check/build commands. The caller's review assertion establishes
+no reviewer authority or terminal approval. See
+[reviewed-risk authoring](docs/assessment-results-reviewed-risks.md) for the exact
+request, source checks and remaining acceptance gates.
+
 ### POA&M source foundation
 
 Create an unselected `forge.poam/1` scaffold from one explicitly identified
