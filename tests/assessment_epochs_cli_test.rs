@@ -420,6 +420,8 @@ fn assert_originals(fixture: &Fixture, before: &BTreeMap<String, Vec<u8>>) {
 fn unsupported_publication_never_emits_an_epoch_pair() {
     let fixture = fixture();
     let before = originals(&fixture);
+    let saved_request: Value = serde_json::from_slice(&before["append.json"]).unwrap();
+    assert_eq!(saved_request, fixture.request);
     let output = append(
         &fixture.root,
         "append.json",

@@ -167,5 +167,8 @@ interoperability and recorded owner acceptance remain separate completion gates.
 Measured engineering checks and their coverage limits are recorded in the
 [verification receipt](plans/2026-10-04-f10-epochs-integration-verification.md) and
 [complete metadata projection](plans/2026-10-04-f10-epochs-integration-verification.json).
+The later Windows fixture correction has its own [fresh measured successor](plans/2026-10-04-f10-epochs-windows-fixture-verification-v1.md)
+and [complete successor projection](plans/2026-10-04-f10-epochs-windows-fixture-verification-v1.json);
+the initial receipts remain unchanged.
 Append validates native output against the vendored OSCAL 1.2.3 Assessment Results
 schema; generic public `forge validate` does not currently accept this model.

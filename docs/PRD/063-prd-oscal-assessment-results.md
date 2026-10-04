@@ -233,6 +233,9 @@ the new raw native generation. The original one-result baseline interface remain
 separate. See [sealed assessment epochs](../assessment-results-epochs.md) and the
 [measured engineering verification](../plans/2026-10-04-f10-epochs-integration-verification.md)
 with its [machine receipt](../plans/2026-10-04-f10-epochs-integration-verification.json).
+The later Windows fixture correction is recorded separately in the [fresh measurement](../plans/2026-10-04-f10-epochs-windows-fixture-verification-v1.md)
+and [successor machine receipt](../plans/2026-10-04-f10-epochs-windows-fixture-verification-v1.json);
+the initial measurements and open acceptance gates remain preserved.
 
 S-4 remains unchecked: broader context generations, native-only continuity
 interoperability, representative assessor workflows and recorded owner acceptance
