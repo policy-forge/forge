@@ -60,6 +60,11 @@ pub struct PreparedSource {
 }
 
 impl PreparedSource {
+    /// Borrow complete paths of the actual held five-source originals for sibling output preflight.
+    pub(super) fn input_paths(&self) -> impl Iterator<Item = PathBuf> + '_ {
+        self.inputs.iter().map(|input| self.root.join(&input.relative))
+    }
+
     /// The complete finding/risk inventory of the explicitly selected result.
     ///
     /// Includes satisfied findings and closed risks without eligibility filtering.
@@ -69,6 +74,18 @@ impl PreparedSource {
     #[must_use]
     pub fn inventory(&self) -> &SourceInventory {
         &self.inventory
+    }
+
+    /// Reject auxiliary originals that alias any held actual source identity.
+    ///
+    /// This read-only identity gate exposes no bytes or detached capture constructor.
+    /// # Errors
+    /// Refuses any authoring/native identity equal to a held source generation.
+    pub(super) fn reject_input_aliases(&self, identities: &[(u64, u64)]) -> Result<(), ForgeError> {
+        if self.inputs.iter().any(|input| identities.contains(&input.identity)) {
+            return Err(error("auxiliary original aliases a held source input"));
+        }
+        Ok(())
     }
 
     /// Reopen confined inputs and require both the original identity and bytes.

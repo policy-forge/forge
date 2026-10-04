@@ -348,8 +348,11 @@ fn relative_uri(path: &std::path::Path) -> Result<String, ForgeError> {
     Ok(output)
 }
 
-/// Validate only generated bounded native JSON against the existing offline pinned schema.
-fn validate_native(bytes: &[u8]) -> Result<(), ForgeError> {
+/// Validate complete native JSON against the existing offline pinned schema.
+///
+/// Sibling callers must first strict-parse and compare their actual original bytes
+/// to the complete supported current projection; this validator grants no source authority.
+pub(super) fn validate_native(bytes: &[u8]) -> Result<(), ForgeError> {
     let validator = VALIDATOR
         .get_or_init(|| {
             let value: serde_json::Value =

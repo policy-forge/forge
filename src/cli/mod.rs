@@ -407,6 +407,11 @@ pub enum PoamCommand {
         /// Complete positional pairs, explicit date/root and new report destinations.
         Box<PoamPortfolioArgs>,
     ),
+    /// Prepare an explicit minimized local change set from an actual native workflow original
+    Outbound(
+        /// Explicit authoring/native pair, closed item intents, date/root and new report destination.
+        Box<PoamOutboundArgs>,
+    ),
     /// Check explicitly acknowledged source-only or authored workflow scope
     Check {
         /// Closed forge.poam/1 manifest for the explicitly selected scope
@@ -434,6 +439,33 @@ pub enum PoamCommand {
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
     },
+}
+
+/// Explicit local native handoff inputs, preparation date and new output declarations.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct PoamOutboundArgs {
+    /// Explicit current authoring manifest; its directory confines native and selection originals
+    #[arg(long)]
+    pub manifest: PathBuf,
+    /// One supplied native .json filename beside the authoring manifest
+    #[arg(long)]
+    pub native: PathBuf,
+    /// One explicit closed item-intent selection .json filename beside the manifest
+    #[arg(long)]
+    pub selection: PathBuf,
+    /// Canonical explicit preparation date; no wall-clock default or state reconstruction
+    #[arg(long)]
+    pub as_of: String,
+    /// Inclusive schedule interval used by actual native preparation; omitted interval is zero
+    #[arg(long, default_value_t = 0, value_parser = clap::value_parser!(u16).range(0..=365))]
+    pub due_soon_days: u16,
+    /// Explicit existing output directory; input native hrefs are never rebased
+    #[arg(long)]
+    pub output_root: PathBuf,
+    /// Optional new .json report filename under output-root; otherwise complete JSON goes to stdout
+    #[arg(long)]
+    pub report: Option<PathBuf>,
 }
 
 /// Explicit supplied native/authoring companions, date and report publication declarations.
@@ -1866,6 +1898,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                     Ok(())
                 }
             }
+            PoamCommand::Outbound(args) => crate::poam::workflow_outbound_cli::execute(args),
             PoamCommand::Portfolio(args) => {
                 if crate::poam::portfolio_cli::execute(args)? {
                     Err(ForgeError::PoamActionRequired)

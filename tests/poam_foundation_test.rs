@@ -3158,3 +3158,866 @@ fn portfolio_cli_rejects_noncanonical_dates_without_partial_reports() {
     let report: Value = serde_json::from_slice(&leap.stdout).unwrap();
     assert_eq!(report["as_of"], "2028-02-29");
 }
+
+// Proposed synthetic S3 controls: append only after Root composes the actual module/CLI ports.
+// Source only; no Rust run, representative plan, consumer approval or remote authority is claimed.
+
+/// Encode the complete closed caller selection without inventing a remote target or intent.
+fn outbound_control_selection(operations: Value) -> Vec<u8> {
+    let value = Value::Object(serde_json::Map::from_iter([
+        ("schema_version".into(), json!("forge.poam-outbound-selection/1")),
+        ("operations".into(), operations),
+    ]));
+    serde_json::to_vec(&value).unwrap()
+}
+
+/// Persist actual authoring and native originals prepared from this fixture's five captured sources.
+fn outbound_control_pair(fixture: &Fixture, value: &Value) -> std::path::PathBuf {
+    let root = fixture.directory.path();
+    let path = root.join("outbound-authoring-current.json");
+    let raw = serde_json::to_vec(value).unwrap();
+    std::fs::write(&path, &raw).unwrap();
+    let prepared = forge::poam::workflow::prepare(&path, &raw, "2026-02-06", 0, None).unwrap();
+    prepared.verify_inputs().unwrap();
+    std::fs::write(root.join("outbound-native-current.json"), prepared.artifact()).unwrap();
+    path
+}
+
+/// Retain caller-named literal originals; this helper never discovers additional inputs.
+fn outbound_control_originals(fixture: &Fixture) -> Vec<(std::path::PathBuf, Vec<u8>)> {
+    [
+        "outbound-authoring-current.json",
+        "outbound-native-current.json",
+        "outbound-selection-current.json",
+        "assessment-results.json",
+        "assessment-plan.json",
+        "ssp.json",
+        "profile.json",
+        "catalog.json",
+    ]
+    .iter()
+    .map(|name| {
+        let path = fixture.directory.path().join(name);
+        let raw = std::fs::read(&path).unwrap();
+        (path, raw)
+    })
+    .collect()
+}
+
+/// Invoke the adopted single-pair black-box contract with explicit date, root and nondefault basenames.
+fn outbound_control_cli(
+    fixture: &Fixture,
+    native: &str,
+    selection: &str,
+    date: &str,
+    extra: &[&str],
+) -> Output {
+    let root = fixture.directory.path();
+    let path = root.join("outbound-authoring-current.json");
+    let mut args = vec![
+        "poam",
+        "outbound",
+        "--manifest",
+        path.to_str().unwrap(),
+        "--native",
+        native,
+        "--selection",
+        selection,
+        "--as-of",
+        date,
+        "--output-root",
+        root.to_str().unwrap(),
+    ];
+    args.extend_from_slice(extra);
+    run(root, &args)
+}
+
+/// Every explicit intent admits a real 64-owner pair, separates generations from stable keys and rejects 65 owners.
+#[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one actual 64-owner pair checks bounded intent and generation semantics"
+)]
+fn outbound_contract_actual_pair_minimizes_all_intents_and_enforces_owner_boundary() {
+    let f = fixture();
+    let root = f.directory.path();
+    let mut value = authored_workflow(&f);
+    let parties: Vec<_> = (0..64)
+        .map(|index| {
+            json!({"key":format!("owner-{index:02}"),
+        "type":"person","name":"SENSITIVE synthetic owner name"})
+        })
+        .collect();
+    let owners: Vec<_> = (0..64)
+        .map(|index| {
+            json!({"role_id":"owner",
+        "party_key":format!("owner-{index:02}"),"rationale":"SENSITIVE synthetic owner rationale"})
+        })
+        .collect();
+    value["parties"] = json!(parties);
+    value["items"][0]["owners"] = json!(owners);
+    value["items"][0]["milestones"][0]["owners"] = json!([owners[0].clone()]);
+    value["items"][0]["history"][0]["actor"]["party_key"] = json!("owner-00");
+    value["items"][0]["milestones"][0]["history"][0]["actor"]["party_key"] = json!("owner-00");
+    let path = outbound_control_pair(&f, &value);
+    let native = std::fs::read(root.join("outbound-native-current.json")).unwrap();
+    let mut keys = std::collections::BTreeSet::new();
+    let mut create_report = Value::Null;
+    for intent in ["create", "update", "close-request"] {
+        let selection = outbound_control_selection(json!([{"item_key":"work","intent":intent}]));
+        let prepared = forge::poam::workflow_outbound::prepare(
+            &path,
+            Path::new("outbound-native-current.json"),
+            &selection,
+            "2026-02-06",
+            0,
+        )
+        .unwrap();
+        prepared.verify_inputs().unwrap();
+        let report: Value = serde_json::from_slice(prepared.report()).unwrap();
+        assert_eq!(report["schema_version"], "forge.integration-change-set/1");
+        assert_eq!(report["operation_count"], 1);
+        assert_eq!(report["source"]["raw_sha256"], common::sha256_hex(&native));
+        assert_eq!(report["source"]["raw_bytes"], native.len());
+        assert_eq!(report["selection_sha256"], common::sha256_hex(&selection));
+        assert_eq!(report["preparation_due_soon_days"], 0);
+        assert_eq!(report["operations"][0]["fields"]["owners"].as_array().unwrap().len(), 64);
+        assert_eq!(report["operations"][0]["desired_operation"], intent);
+        assert_eq!(report["operations"][0]["fields"]["declared_state"], "planned");
+        assert!(report["operations"][0]["remote_preconditions"].is_null());
+        assert_eq!(report["remote_apply_authorized"], false);
+        assert!(!std::str::from_utf8(prepared.report()).unwrap().contains("SENSITIVE"));
+        assert!(
+            keys.insert(report["operations"][0]["operation_key"].as_str().unwrap().to_string())
+        );
+        if intent == "create" {
+            create_report = report;
+        }
+    }
+    assert_eq!(keys.len(), 3);
+    let selection = outbound_control_selection(json!([{"item_key":"work","intent":"create"}]));
+    let native_value: Value = serde_json::from_slice(&native).unwrap();
+    let compact = serde_json::to_vec(&native_value).unwrap();
+    assert_ne!(compact, native);
+    std::fs::write(root.join("outbound-native-current.json"), &compact).unwrap();
+    let reformatted = forge::poam::workflow_outbound::prepare(
+        &path,
+        Path::new("outbound-native-current.json"),
+        &selection,
+        "2026-02-06",
+        0,
+    )
+    .unwrap();
+    let reformatted: Value = serde_json::from_slice(reformatted.report()).unwrap();
+    assert_eq!(reformatted["operations"], create_report["operations"]);
+    assert_ne!(reformatted["source"]["raw_sha256"], create_report["source"]["raw_sha256"]);
+    assert_eq!(
+        reformatted["authoring_manifest_sha256"],
+        create_report["authoring_manifest_sha256"]
+    );
+    let mut changed = value.clone();
+    changed["items"][0]["target_date"] = json!("2026-03-01");
+    changed["items"][0]["description"] = json!("SENSITIVE changed private prose");
+    outbound_control_pair(&f, &changed);
+    let changed_prepared = forge::poam::workflow_outbound::prepare(
+        &path,
+        Path::new("outbound-native-current.json"),
+        &selection,
+        "2026-02-06",
+        0,
+    )
+    .unwrap();
+    let changed_report: Value = serde_json::from_slice(changed_prepared.report()).unwrap();
+    assert_eq!(
+        changed_report["operations"][0]["operation_key"],
+        create_report["operations"][0]["operation_key"]
+    );
+    assert_ne!(
+        changed_report["operations"][0]["payload_sha256"],
+        create_report["operations"][0]["payload_sha256"]
+    );
+    assert_ne!(
+        changed_report["authoring_manifest_sha256"],
+        create_report["authoring_manifest_sha256"]
+    );
+    changed_prepared.verify_inputs().unwrap();
+    let mut too_many = changed.clone();
+    too_many["parties"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"key":"owner-64","type":"person","name":"SENSITIVE"}));
+    too_many["items"][0]["owners"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"role_id":"owner","party_key":"owner-64","rationale":"SENSITIVE"}));
+    write_json(&path, &too_many);
+    let refused = forge::poam::workflow_outbound::prepare(
+        &path,
+        Path::new("outbound-native-current.json"),
+        &selection,
+        "2026-02-06",
+        0,
+    )
+    .unwrap_err();
+    assert!(refused.to_string().contains("authoring workflow is unsupported or invalid"));
+    outbound_control_pair(&f, &value);
+    forge::poam::workflow_outbound::prepare(
+        &path,
+        Path::new("outbound-native-current.json"),
+        &selection,
+        "2026-02-06",
+        0,
+    )
+    .unwrap()
+    .verify_inputs()
+    .unwrap();
+    assert!(!root.join("change-set.json").exists());
+}
+
+/// Exact selected stable keys consume actual distinct finding/risk items; malformed selections fail before capture.
+#[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one actual two-item source pair distinguishes selection errors from capture errors"
+)]
+fn outbound_contract_actual_selection_is_complete_explicit_and_closed() {
+    let f = fixture();
+    let root = f.directory.path();
+    let mut value = authored_workflow(&f);
+    let declaration = forge::poam::workflow::parse(&serde_json::to_vec(&value).unwrap()).unwrap();
+    let inventory = source::load(&root.join("poam.json"), &declaration.source).unwrap();
+    let risk = inventory
+        .inventory()
+        .objects
+        .iter()
+        .find(|r| r.kind == manifest::SourceKind::Risk)
+        .unwrap();
+    let mut second = value["items"][0].clone();
+    second["key"] = json!("risk-work");
+    second["source_refs"] = json!([{"kind":risk.kind,"key":risk.key,"uuid":risk.uuid,
+        "result_uuid":risk.result_uuid,"expected_sha256":risk.sha256}]);
+    value["items"].as_array_mut().unwrap().push(second);
+    let path = outbound_control_pair(&f, &value);
+    let selection = outbound_control_selection(json!([{"item_key":"work","intent":"create"},
+        {"item_key":"risk-work","intent":"update"}]));
+    let complete = forge::poam::workflow_outbound::prepare(
+        &path,
+        Path::new("outbound-native-current.json"),
+        &selection,
+        "2026-02-06",
+        0,
+    )
+    .unwrap();
+    let report: Value = serde_json::from_slice(complete.report()).unwrap();
+    assert_eq!(report["operation_count"], 2);
+    assert_eq!(report["operations"][0]["item_key"], "risk-work");
+    assert_eq!(report["operations"][1]["item_key"], "work");
+    let subset = outbound_control_selection(json!([{"item_key":"work","intent":"close-request"}]));
+    let subset = forge::poam::workflow_outbound::prepare(
+        &path,
+        Path::new("outbound-native-current.json"),
+        &subset,
+        "2026-02-06",
+        0,
+    )
+    .unwrap();
+    let subset: Value = serde_json::from_slice(subset.report()).unwrap();
+    assert_eq!(subset["operation_count"], 1);
+    assert_eq!(subset["operations"][0]["item_key"], "work");
+    assert_eq!(subset["operations"][0]["fields"]["declared_state"], "planned");
+    assert_eq!(subset["remote_apply_authorized"], false);
+    let unknown = outbound_control_selection(json!([{"item_key":"absent","intent":"create"}]));
+    let refused = forge::poam::workflow_outbound::prepare(
+        &path,
+        Path::new("outbound-native-current.json"),
+        &unknown,
+        "2026-02-06",
+        0,
+    )
+    .unwrap_err();
+    assert!(refused.to_string().contains("selected item identity is absent"));
+    let raw = std::fs::read(root.join("outbound-native-current.json")).unwrap();
+    std::fs::write(root.join("outbound-native-current.json"), b"not-native-json").unwrap();
+    let duplicate = br#"{"schema_version":"forge.poam-outbound-selection/1","schema_version":"forge.poam-outbound-selection/1","operations":[{"item_key":"work","intent":"create"}]}"#;
+    let refused = forge::poam::workflow_outbound::prepare(
+        &path,
+        Path::new("outbound-native-current.json"),
+        duplicate,
+        "2026-02-06",
+        0,
+    )
+    .unwrap_err();
+    assert!(refused.to_string().contains("selection JSON is malformed, duplicate or unbounded"));
+    std::fs::write(root.join("outbound-native-current.json"), raw).unwrap();
+    complete.verify_inputs().unwrap();
+}
+
+/// All seven held original generations reject byte drift; supported-platform replacement retains the old inode.
+#[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "all seven originals and native mutation vectors share one bounded genuine source pair"
+)]
+fn outbound_contract_all_actual_originals_and_complete_native_values_are_rechecked() {
+    let f = fixture();
+    let root = f.directory.path();
+    let path = outbound_control_pair(&f, &authored_workflow(&f));
+    let selection = outbound_control_selection(json!([{"item_key":"work","intent":"update"}]));
+    for name in [
+        "outbound-authoring-current.json",
+        "outbound-native-current.json",
+        "assessment-results.json",
+        "assessment-plan.json",
+        "ssp.json",
+        "profile.json",
+        "catalog.json",
+    ] {
+        let held = forge::poam::workflow_outbound::prepare(
+            &path,
+            Path::new("outbound-native-current.json"),
+            &selection,
+            "2026-02-06",
+            0,
+        )
+        .unwrap();
+        held.verify_inputs().unwrap();
+        let current = root.join(name);
+        let original = std::fs::read(&current).unwrap();
+        let mut changed = original.clone();
+        changed.extend_from_slice(b" ");
+        std::fs::write(&current, changed).unwrap();
+        let refused = held.verify_inputs().unwrap_err().to_string();
+        assert!(
+            refused.contains(if name.starts_with("outbound-") {
+                "actual outbound original generation changed"
+            } else {
+                "current captured source generation changed"
+            }),
+            "{name}: {refused}"
+        );
+        std::fs::write(&current, original).unwrap();
+        forge::poam::workflow_outbound::prepare(
+            &path,
+            Path::new("outbound-native-current.json"),
+            &selection,
+            "2026-02-06",
+            0,
+        )
+        .unwrap()
+        .verify_inputs()
+        .unwrap();
+    }
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        let held = forge::poam::workflow_outbound::prepare(
+            &path,
+            Path::new("outbound-native-current.json"),
+            &selection,
+            "2026-02-06",
+            0,
+        )
+        .unwrap();
+        let native_path = root.join("outbound-native-current.json");
+        let original = std::fs::read(&native_path).unwrap();
+        std::fs::rename(&native_path, root.join("retained-old-native.json")).unwrap();
+        std::fs::write(&native_path, original).unwrap();
+        assert!(
+            held.verify_inputs()
+                .unwrap_err()
+                .to_string()
+                .contains("actual outbound original generation changed")
+        );
+        forge::poam::workflow_outbound::prepare(
+            &path,
+            Path::new("outbound-native-current.json"),
+            &selection,
+            "2026-02-06",
+            0,
+        )
+        .unwrap()
+        .verify_inputs()
+        .unwrap();
+    }
+    let original = std::fs::read(root.join("outbound-native-current.json")).unwrap();
+    let native: Value = serde_json::from_slice(&original).unwrap();
+    for mutation in ["unknown", "prose", "hash"] {
+        let mut changed = native.clone();
+        match mutation {
+            "unknown" => {
+                changed["plan-of-action-and-milestones"]["private-extra"] = json!("SENSITIVE");
+            }
+            "prose" => {
+                changed["plan-of-action-and-milestones"]["metadata"]["title"] =
+                    json!("SENSITIVE altered title");
+            }
+            _ => {
+                let property = changed["plan-of-action-and-milestones"]["metadata"]["props"]
+                    .as_array_mut()
+                    .unwrap()
+                    .iter_mut()
+                    .find(|p| p["name"] == "source-file-sha256")
+                    .unwrap();
+                property["value"] = json!("0".repeat(64));
+            }
+        }
+        assert_ne!(changed, native, "{mutation}");
+        write_json(&root.join("outbound-native-current.json"), &changed);
+        let refused = forge::poam::workflow_outbound::prepare(
+            &path,
+            Path::new("outbound-native-current.json"),
+            &selection,
+            "2026-02-06",
+            0,
+        )
+        .unwrap_err();
+        assert!(
+            refused
+                .to_string()
+                .contains("native original differs from the complete supported current projection"),
+            "{mutation}"
+        );
+        std::fs::write(root.join("outbound-native-current.json"), &original).unwrap();
+        forge::poam::workflow_outbound::prepare(
+            &path,
+            Path::new("outbound-native-current.json"),
+            &selection,
+            "2026-02-06",
+            0,
+        )
+        .unwrap()
+        .verify_inputs()
+        .unwrap();
+    }
+    assert!(!root.join("change-set.json").exists());
+}
+
+/// All-platform CLI stdout is complete deterministic local intent, including overdue work and close requests.
+#[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one complete source pair checks deterministic minimized CLI output across dates"
+)]
+fn outbound_contract_cli_stdout_uses_closed_nondefault_companions_and_never_exit1() {
+    let f = fixture();
+    let root = f.directory.path();
+    let path = outbound_control_pair(&f, &authored_workflow(&f));
+    let selection =
+        outbound_control_selection(json!([{"item_key":"work","intent":"close-request"}]));
+    std::fs::write(root.join("outbound-selection-current.json"), &selection).unwrap();
+    let originals = outbound_control_originals(&f);
+    let first = outbound_control_cli(
+        &f,
+        "outbound-native-current.json",
+        "outbound-selection-current.json",
+        "2026-02-06",
+        &[],
+    );
+    let second = outbound_control_cli(
+        &f,
+        "outbound-native-current.json",
+        "outbound-selection-current.json",
+        "2026-02-06",
+        &["--due-soon-days", "0"],
+    );
+    assert_eq!(first.status.code(), Some(0), "{}", String::from_utf8_lossy(&first.stderr));
+    assert_eq!(second.status.code(), Some(0));
+    assert_eq!(first.stderr, [] as [u8; 0]);
+    assert_eq!(first.stdout, second.stdout);
+    assert!(first.stdout.ends_with(b"\n"));
+    let prepared = forge::poam::workflow_outbound::prepare(
+        &path,
+        Path::new("outbound-native-current.json"),
+        &selection,
+        "2026-02-06",
+        0,
+    )
+    .unwrap();
+    assert_eq!(first.stdout, prepared.report());
+    let report: Value = serde_json::from_slice(&first.stdout).unwrap();
+    assert_eq!(report["operation_count"], 1);
+    assert_eq!(report["selection_sha256"], common::sha256_hex(&selection));
+    assert_eq!(report["preparation_due_soon_days"], 0);
+    assert_eq!(report["operations"][0]["desired_operation"], "close-request");
+    assert_eq!(report["remote_apply_authorized"], false);
+    assert!(report["operations"][0]["remote_preconditions"].is_null());
+    assert!(!String::from_utf8(first.stdout).unwrap().contains("SENSITIVE"));
+    let overdue = outbound_control_cli(
+        &f,
+        "outbound-native-current.json",
+        "outbound-selection-current.json",
+        "2028-02-29",
+        &[],
+    );
+    assert_eq!(overdue.status.code(), Some(0));
+    let overdue: Value = serde_json::from_slice(&overdue.stdout).unwrap();
+    assert_eq!(overdue["preparation_as_of"], "2028-02-29");
+    assert_eq!(overdue["operations"][0]["fields"]["declared_state"], "planned");
+    for (path, raw) in originals {
+        assert_eq!(std::fs::read(path).unwrap(), raw);
+    }
+    assert!(!root.join("change-set.json").exists());
+}
+
+/// Full-path input conflicts are refused everywhere; file success and unsupported refusal have separate branches.
+#[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "eight input collisions and the platform publication split are one bounded CLI contract"
+)]
+fn outbound_contract_cli_preflights_all_eight_originals_and_qualifies_file_publication() {
+    let f = fixture();
+    let root = f.directory.path();
+    outbound_control_pair(&f, &authored_workflow(&f));
+    let selection = outbound_control_selection(json!([{"item_key":"work","intent":"create"}]));
+    std::fs::write(root.join("outbound-selection-current.json"), selection).unwrap();
+    let originals = outbound_control_originals(&f);
+    let positive = outbound_control_cli(
+        &f,
+        "outbound-native-current.json",
+        "outbound-selection-current.json",
+        "2026-02-06",
+        &[],
+    );
+    assert_eq!(positive.status.code(), Some(0), "{}", String::from_utf8_lossy(&positive.stderr));
+    let entries_before = std::fs::read_dir(root).unwrap().count();
+    for (path, _) in &originals {
+        // Keep the portable suffix valid so it cannot preempt the full input-path check.
+        // An existing destination can still preempt that check on case-insensitive volumes.
+        let stem = path.file_stem().unwrap().to_str().unwrap().to_ascii_uppercase();
+        let name = format!("{stem}.json");
+        let refused = outbound_control_cli(
+            &f,
+            "outbound-native-current.json",
+            "outbound-selection-current.json",
+            "2026-02-06",
+            &["--report", &name],
+        );
+        assert_eq!(refused.status.code(), Some(2), "{name}");
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+        assert_eq!(std::fs::read_dir(root).unwrap().count(), entries_before);
+    }
+    for name in [
+        "../outside.json",
+        "nested/report.json",
+        "NUL.json",
+        "bad:name.json",
+        "unicode-é.json",
+        "wrong.html",
+    ] {
+        let refused = outbound_control_cli(
+            &f,
+            "outbound-native-current.json",
+            "outbound-selection-current.json",
+            "2026-02-06",
+            &["--report", name],
+        );
+        assert_eq!(refused.status.code(), Some(2), "{name}");
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+        assert_eq!(std::fs::read_dir(root).unwrap().count(), entries_before);
+    }
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        let published = outbound_control_cli(
+            &f,
+            "outbound-native-current.json",
+            "outbound-selection-current.json",
+            "2026-02-06",
+            &["--report", "change-set.json"],
+        );
+        assert_eq!(
+            published.status.code(),
+            Some(0),
+            "{}",
+            String::from_utf8_lossy(&published.stderr)
+        );
+        assert_eq!(published.stdout, [] as [u8; 0]);
+        assert_eq!(std::fs::read(root.join("change-set.json")).unwrap(), positive.stdout);
+        let refused = outbound_control_cli(
+            &f,
+            "outbound-native-current.json",
+            "outbound-selection-current.json",
+            "2026-02-06",
+            &["--report", "change-set.json"],
+        );
+        assert_eq!(refused.status.code(), Some(2));
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+        assert_eq!(std::fs::read(root.join("change-set.json")).unwrap(), positive.stdout);
+        // Equal basenames in genuinely different explicit roots are not input aliases.
+        let other_root = tempfile::tempdir().unwrap();
+        let manifest_path = root.join("outbound-authoring-current.json");
+        let other = run(
+            other_root.path(),
+            &[
+                "poam",
+                "outbound",
+                "--manifest",
+                manifest_path.to_str().unwrap(),
+                "--native",
+                "outbound-native-current.json",
+                "--selection",
+                "outbound-selection-current.json",
+                "--as-of",
+                "2026-02-06",
+                "--output-root",
+                other_root.path().to_str().unwrap(),
+                "--report",
+                "outbound-native-current.json",
+            ],
+        );
+        assert_eq!(other.status.code(), Some(0), "{}", String::from_utf8_lossy(&other.stderr));
+        assert_eq!(other.stdout, [] as [u8; 0]);
+        assert_eq!(
+            std::fs::read(other_root.path().join("outbound-native-current.json")).unwrap(),
+            positive.stdout
+        );
+        assert_eq!(std::fs::read_dir(other_root.path()).unwrap().count(), 1);
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    {
+        let refused = outbound_control_cli(
+            &f,
+            "outbound-native-current.json",
+            "outbound-selection-current.json",
+            "2026-02-06",
+            &["--report", "change-set.json"],
+        );
+        assert_eq!(refused.status.code(), Some(2));
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+        assert!(!root.join("change-set.json").exists());
+        assert_eq!(std::fs::read_dir(root).unwrap().count(), entries_before);
+    }
+    for (path, raw) in originals {
+        assert_eq!(std::fs::read(path).unwrap(), raw);
+    }
+}
+
+/// Positive real CLI preparation precedes exact native/source/selection failures and closed argument refusal.
+#[test]
+#[allow(
+    clippy::too_many_lines,
+    reason = "one real paired source control checks refusal precedence without fabricated authority"
+)]
+fn outbound_contract_cli_rejects_tampering_stale_sources_and_malformed_requests_without_output() {
+    let f = fixture();
+    let root = f.directory.path();
+    outbound_control_pair(&f, &authored_workflow(&f));
+    let selection = outbound_control_selection(json!([{"item_key":"work","intent":"update"}]));
+    std::fs::write(root.join("outbound-selection-current.json"), &selection).unwrap();
+    let original_native = std::fs::read(root.join("outbound-native-current.json")).unwrap();
+    let positive = outbound_control_cli(
+        &f,
+        "outbound-native-current.json",
+        "outbound-selection-current.json",
+        "2026-02-06",
+        &[],
+    );
+    assert_eq!(positive.status.code(), Some(0), "{}", String::from_utf8_lossy(&positive.stderr));
+    let mut changed: Value = serde_json::from_slice(&original_native).unwrap();
+    changed["plan-of-action-and-milestones"]["private-extra"] = json!("SENSITIVE unknown field");
+    write_json(&root.join("outbound-native-current.json"), &changed);
+    let refused = outbound_control_cli(
+        &f,
+        "outbound-native-current.json",
+        "outbound-selection-current.json",
+        "2026-02-06",
+        &["--report", "refused.json"],
+    );
+    assert_eq!(refused.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&refused.stderr).contains("complete supported current projection")
+    );
+    assert_eq!(refused.stdout, [] as [u8; 0]);
+    assert!(!root.join("refused.json").exists());
+    std::fs::write(root.join("outbound-native-current.json"), &original_native).unwrap();
+    for name in [
+        "assessment-results.json",
+        "assessment-plan.json",
+        "ssp.json",
+        "profile.json",
+        "catalog.json",
+    ] {
+        assert_eq!(
+            outbound_control_cli(
+                &f,
+                "outbound-native-current.json",
+                "outbound-selection-current.json",
+                "2026-02-06",
+                &[]
+            )
+            .status
+            .code(),
+            Some(0)
+        );
+        let path = root.join(name);
+        let raw = std::fs::read(&path).unwrap();
+        let mut changed = raw.clone();
+        changed.extend_from_slice(b" ");
+        std::fs::write(&path, changed).unwrap();
+        let refused = outbound_control_cli(
+            &f,
+            "outbound-native-current.json",
+            "outbound-selection-current.json",
+            "2026-02-06",
+            &["--report", "refused.json"],
+        );
+        assert_eq!(refused.status.code(), Some(2), "{name}");
+        assert!(
+            String::from_utf8_lossy(&refused.stderr)
+                .contains("actual current source or workflow preparation is invalid"),
+            "{name}"
+        );
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+        assert!(!root.join("refused.json").exists());
+        std::fs::write(&path, raw).unwrap();
+    }
+    std::fs::write(root.join("outbound-native-current.json"), b"not-native-json").unwrap();
+    std::fs::write(root.join("outbound-selection-current.json"), br#"{"schema_version":"forge.poam-outbound-selection/1","schema_version":"forge.poam-outbound-selection/1","operations":[{"item_key":"work","intent":"update"}]}"#).unwrap();
+    let refused = outbound_control_cli(
+        &f,
+        "outbound-native-current.json",
+        "outbound-selection-current.json",
+        "2026-02-06",
+        &["--report", "refused.json"],
+    );
+    assert_eq!(refused.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&refused.stderr)
+            .contains("selection JSON is malformed, duplicate or unbounded")
+    );
+    assert_eq!(refused.stdout, [] as [u8; 0]);
+    assert!(!root.join("refused.json").exists());
+    std::fs::write(root.join("outbound-native-current.json"), &original_native).unwrap();
+    let mut extended_selection: Value = serde_json::from_slice(&selection).unwrap();
+    extended_selection["remote_target"] = json!("https://example.invalid/private");
+    write_json(&root.join("outbound-selection-current.json"), &extended_selection);
+    let refused = outbound_control_cli(
+        &f,
+        "outbound-native-current.json",
+        "outbound-selection-current.json",
+        "2026-02-06",
+        &["--report", "refused.json"],
+    );
+    assert_eq!(refused.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&refused.stderr)
+            .contains("selection is not the closed item-intent contract")
+    );
+    assert_eq!(refused.stdout, [] as [u8; 0]);
+    assert!(!root.join("refused.json").exists());
+    std::fs::write(root.join("outbound-selection-current.json"), &selection).unwrap();
+    let unknown = outbound_control_selection(json!([{"item_key":"absent","intent":"create"}]));
+    std::fs::write(root.join("outbound-selection-current.json"), unknown).unwrap();
+    let refused = outbound_control_cli(
+        &f,
+        "outbound-native-current.json",
+        "outbound-selection-current.json",
+        "2026-02-06",
+        &["--report", "refused.json"],
+    );
+    assert_eq!(refused.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&refused.stderr).contains("selected item identity is absent"));
+    assert!(!root.join("refused.json").exists());
+    std::fs::write(root.join("outbound-selection-current.json"), &selection).unwrap();
+    let manifest_path = root.join("outbound-authoring-current.json");
+    for missing in ["--manifest", "--native", "--selection", "--as-of", "--output-root"] {
+        let mut args = vec!["poam", "outbound"];
+        for (flag, value) in [
+            ("--manifest", manifest_path.to_str().unwrap()),
+            ("--native", "outbound-native-current.json"),
+            ("--selection", "outbound-selection-current.json"),
+            ("--as-of", "2026-02-06"),
+            ("--output-root", root.to_str().unwrap()),
+        ] {
+            if flag != missing {
+                args.extend([flag, value]);
+            }
+        }
+        let refused = run(root, &args);
+        assert_eq!(refused.status.code(), Some(2), "{missing}");
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+    }
+    for date in ["2026-02-29", "2026-2-06", "2026-02-06T00:00:00Z", "+10000-01-01"] {
+        let refused = outbound_control_cli(
+            &f,
+            "outbound-native-current.json",
+            "outbound-selection-current.json",
+            date,
+            &["--report", "refused.json"],
+        );
+        assert_eq!(refused.status.code(), Some(2), "{date}");
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+        assert!(!root.join("refused.json").exists());
+    }
+    for extra in [
+        vec!["--due-soon-days", "366"],
+        vec!["--apply"],
+        vec!["--allow-terminal"],
+        vec!["--target-url", "https://example.invalid"],
+        vec!["--connector", "tracker"],
+        vec!["--excerpt", "secret"],
+    ] {
+        let refused = outbound_control_cli(
+            &f,
+            "outbound-native-current.json",
+            "outbound-selection-current.json",
+            "2026-02-06",
+            &extra,
+        );
+        assert_eq!(refused.status.code(), Some(2));
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+    }
+    for native in ["../outside.json", "nested/native.json", "outbound-native-current.JSON"] {
+        let refused =
+            outbound_control_cli(&f, native, "outbound-selection-current.json", "2026-02-06", &[]);
+        assert_eq!(refused.status.code(), Some(2));
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+    }
+    for selection_name in
+        ["../outside.json", "nested/selection.json", "outbound-selection-current.JSON"]
+    {
+        let refused = outbound_control_cli(
+            &f,
+            "outbound-native-current.json",
+            selection_name,
+            "2026-02-06",
+            &[],
+        );
+        assert_eq!(refused.status.code(), Some(2));
+        assert_eq!(refused.stdout, [] as [u8; 0]);
+    }
+    assert_eq!(
+        outbound_control_cli(
+            &f,
+            "outbound-native-current.json",
+            "outbound-selection-current.json",
+            "2026-02-06",
+            &[]
+        )
+        .status
+        .code(),
+        Some(0)
+    );
+    assert_eq!(std::fs::read(root.join("outbound-native-current.json")).unwrap(), original_native);
+    assert_eq!(std::fs::read(root.join("outbound-selection-current.json")).unwrap(), selection);
+}
+
+/// Debug formatting of an admitted real capture reveals only the complete report byte count.
+#[test]
+fn outbound_contract_debug_keeps_actual_originals_and_private_paths_opaque() {
+    let f = fixture();
+    let value = authored_workflow(&f);
+    let path = outbound_control_pair(&f, &value);
+    let selection = outbound_control_selection(json!([{"item_key":"work","intent":"create"}]));
+    let prepared = forge::poam::workflow_outbound::prepare(
+        &path,
+        Path::new("outbound-native-current.json"),
+        &selection,
+        "2026-02-06",
+        0,
+    )
+    .unwrap();
+    prepared.verify_inputs().unwrap();
+    let actual = format!("{prepared:?}");
+    let expected = format!("PreparedOutbound {{ report_bytes: {}, .. }}", prepared.report().len());
+    assert!(actual == expected, "admitted capture Debug must remain opaque");
+}

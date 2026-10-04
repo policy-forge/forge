@@ -25,6 +25,12 @@ mod workflow_model;
 
 /// Complete escaped static HTML from the internally prepared portfolio report.
 pub mod html;
+/// Read-only connector-neutral local outbound intent from an actual native workflow original.
+pub mod workflow_outbound;
+
+/// Confined local outbound CLI with held selection and complete original generation rechecks.
+pub mod workflow_outbound_cli;
+
 /// Explicit supplied-native portfolio and separately qualified authoring preview.
 pub mod portfolio;
 

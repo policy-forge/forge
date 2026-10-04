@@ -823,6 +823,23 @@ hrefs in their original bundle context. Outputs are separate: a later failure do
 not roll back an earlier file. See [portfolio reports](poam-portfolio.md) for the
 supported companion profile, stdout, dates, bounds and exit statuses.
 
+Prepare explicitly selected local outbound intent from one current native plan:
+
+```bash
+forge poam outbound --manifest ./assessment-bundle/authored.json \
+  --native native-poam.json --selection outbound-selection.json \
+  --as-of 2026-02-06 --due-soon-days 7 --output-root ./outbound-reports \
+  --report change-set.json
+```
+
+The closed selection chooses each item and `create`, `update`, or `close-request`
+intent explicitly. Native and selection inputs are single JSON filenames beside
+the manifest. The output directory must exist and the report filename must be new.
+Omit `--report` for stdout. Valid local handoff exits 0 regardless of schedule;
+invalid input/output exits 2. Eight actual originals are rechecked before output,
+and remote apply authority remains false. See [local outbound change sets](poam-outbound.md)
+for the selection format, complete native matching, minimized fields and bounds.
+
 ## 4. Global Options
 
 ```bash

@@ -254,6 +254,12 @@ plans into complete JSON and optional static HTML reports. Supply an explicit da
 and existing output directory; source references retain their original bundle base.
 See [portfolio reports](docs/poam-portfolio.md) for pairing, counts and safe outputs.
 
+`forge poam outbound` prepares a minimized local change set from one explicit
+current native/authoring pair and item-intent selection. It rechecks the eight
+original files before output; a valid handoff exits 0 and grants no remote action.
+See [local outbound change sets](docs/poam-outbound.md) for inputs, schema,
+privacy, safe publication and remaining connector gates.
+
 ### Policy Lifecycle
 
 Bind a policy version's declared review state to exact local source and generated

@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:integration-change-set:1",
+  "title": "Proposed local POA&M outbound intent only",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source",
+    "authoring_manifest_sha256",
+    "selection_sha256",
+    "preparation_as_of",
+    "preparation_due_soon_days",
+    "operation_count",
+    "operations",
+    "remote_apply_authorized",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.integration-change-set/1"
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "authoring_manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "selection_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "preparation_as_of": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "preparation_due_soon_days": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 365
+    },
+    "operation_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/operation"
+      }
+    },
+    "remote_apply_authorized": {
+      "const": false
+    },
+    "boundary": {
+      "const": "Local outbound intent only. IDs and metadata can be sensitive. Declared state is not state-at-as-of. Source consistency is not actor, evidence, remediation or closure approval. No remote target, dry-run, apply, credentials or mutation is authorized."
+    }
+  },
+  "$defs": {
+    "owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role_id",
+        "party_key"
+      ],
+      "properties": {
+        "role_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+        },
+        "party_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+        }
+      }
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "reason_codes",
+        "owners",
+        "target_date",
+        "declared_state"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "pattern": "^FORGE remediation item [0-9a-f-]{36}$"
+        },
+        "reason_codes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "enum": [
+              "explicit-create-request",
+              "explicit-update-request",
+              "explicit-close-request"
+            ]
+          }
+        },
+        "owners": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/owner"
+          }
+        },
+        "target_date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "declared_state": {
+          "enum": [
+            "planned",
+            "in-progress",
+            "blocked",
+            "cancelled"
+          ]
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation_key",
+        "source_item_uuid",
+        "item_key",
+        "desired_operation",
+        "allowed_fields",
+        "fields",
+        "payload_sha256",
+        "remote_preconditions"
+      ],
+      "properties": {
+        "operation_key": {
+          "type": "string",
+          "pattern": "^poam:[0-9a-f-]{36}:[0-9a-f-]{36}:(create|update|close-request)$"
+        },
+        "source_item_uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "item_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+        },
+        "desired_operation": {
+          "enum": [
+            "create",
+            "update",
+            "close-request"
+          ]
+        },
+        "allowed_fields": {
+          "const": [
+            "title",
+            "reason_codes",
+            "owners",
+            "target_date",
+            "declared_state"
+          ]
+        },
+        "fields": {
+          "$ref": "#/$defs/fields"
+        },
+        "payload_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "remote_preconditions": {
+          "type": "null"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_type",
+        "root_uuid",
+        "raw_sha256",
+        "raw_bytes",
+        "oscal_version",
+        "schema_file",
+        "schema_sha256"
+      ],
+      "properties": {
+        "artifact_type": {
+          "const": "plan-of-action-and-milestones"
+        },
+        "root_uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "raw_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "raw_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "oscal_version": {
+          "const": "1.2.3"
+        },
+        "schema_file": {
+          "const": "oscal_poam_schema.json"
+        },
+        "schema_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}

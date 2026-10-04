@@ -255,6 +255,11 @@ pub struct PreparedWorkflow {
 }
 
 impl PreparedWorkflow {
+    /// Borrow complete paths of the actual retained five-source capture for sibling output preflight.
+    pub(super) fn input_paths(&self) -> impl Iterator<Item = std::path::PathBuf> + '_ {
+        self.source.input_paths()
+    }
+
     /// Borrow complete bounded artifact bytes without granting publication authority.
     #[must_use]
     pub fn artifact(&self) -> &[u8] {
@@ -271,6 +276,15 @@ impl PreparedWorkflow {
     #[must_use]
     pub fn review_required(&self) -> bool {
         self.review_required
+    }
+
+    /// Refuse aliasing authoring/native originals against this actual five-file capture.
+    ///
+    /// No source bytes, source handles or detached constructor leave the sealed source.
+    /// # Errors
+    /// Returns the fixed local alias refusal from the held actual input identities.
+    pub(super) fn reject_input_aliases(&self, identities: &[(u64, u64)]) -> Result<(), ForgeError> {
+        self.source.reject_input_aliases(identities)
     }
 
     /// Require the original five captured source identities and bytes before output.
