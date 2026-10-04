@@ -198,3 +198,7 @@ The initial draft #213 run stopped before the new physical campaign because one 
 ## Fixed administrative tool correction, 2026-10-04
 
 The corrected draft #213 dispatcher still stopped before any privileged campaign. A source-confirmed role/path caller mismatch is corrected without relaxing tool trust. The [versioned verification successor](../plans/2026-10-04-f04-fixed-tool-verification-v1.md) records fresh docstrings, 176 ordinary controls and measured coverage alongside the authentic failed receipt. Physical/runtime/owner acceptance and the final full-roadmap documentation review remain open.
+
+## Inspected hosted physical campaign successor
+
+Linux run 37238681717 at head `2659faf` passed all 22 protected synthetic root filesystem controls, including cleanup and unchanged source/tool checks. The release build passed, but actual runtime preflight remains `tool-untrusted` at `stdlib-entry/unsupported-link`; the IP-denial producer did not run and attempted egress is unmeasured. See [the complete inspection](../plans/2026-10-04-f04-hosted-physical-qualification-v1.md). Prior measurements and the historical observer remain unchanged.
