@@ -18,6 +18,15 @@ for verifying the current baseline and evaluating a future patch release.
 - Runtime validation, export, and non-oscal-cli compatibility tests are fully
   offline. JSON Schema and XSD references must resolve from vendored files.
 
+For supported Catalog and Component Definition artifacts, JSON/YAML input to
+JSON/YAML output validates and preserves the complete decoded JSON-compatible
+tree admitted by the export numeric guard. Only exact i64/u64 integer numeric
+representations are supported; every f64 representation is refused, including
+`1.0` and `1e0`. XML and direct typed helper APIs remain a partial projection.
+Original bytes, JSON object ordering and YAML presentation/tag semantics are
+separate. The [prerequisite scope](plans/2026-10-03-f09-lossless-prerequisite-rebase.md)
+retains these limits and the broader F09 acceptance gates.
+
 Validation output reports `declared_oscal_version` separately from
 `schema_version_used`. A v1.2.0 declaration can therefore pass the v1.2.3
 compatibility schema without being represented as having declared v1.2.3.

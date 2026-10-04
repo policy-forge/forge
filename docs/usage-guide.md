@@ -177,7 +177,7 @@ forge export component.json --format xml
 
 File extensions recognized: `.json`, `.xml`, `.yaml`, `.yml`.
 
-The Catalog or Component Definition model is detected from the document root. Current export deserializes into a typed model, validates that projection against the pinned OSCAL schemas and serializes it to the target format. Retain the original: native fields outside that typed model can be omitted, so this does not guarantee arbitrary native-tree preservation or fidelity across all three formats.
+The Catalog or Component Definition model is detected from the document root. For JSON/YAML inputs and JSON/YAML targets, export validates the complete decoded JSON-compatible tree against the pinned OSCAL schema and semantic checks before publication. Supported native fields and array order remain in that tree; invalid unknown schema fields are rejected rather than silently discarded. Only numeric values represented exactly as i64/u64 integers are admitted: every f64 representation is refused, including `1.0`, `1e0` and oversized JSON integers decoded as floating point. JSON object order, whitespace, original bytes and YAML tags/comments/anchors are outside this decoded-tree contract. XML input/output and direct typed helper APIs still use a partial model projection, so retain the original for those paths. See the [prerequisite scope and verification obligations](plans/2026-10-03-f09-lossless-prerequisite-rebase.md).
 
 ### 3.3 `validate` — Schema and Semantic Validation
 

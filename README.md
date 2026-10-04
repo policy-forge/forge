@@ -47,7 +47,7 @@ MCP Native: Designed to feed into the Model Context Protocol (MCP), allowing age
 ## ✨ Features
 
 - **Markdown to OSCAL** — Convert policy documents into OSCAL Catalogs or Component Definitions
-- **Multi-format output** — JSON, XML and YAML for Catalog and Component Definition models; current typed export does not guarantee preservation of arbitrary native fields
+- **Multi-format output** — JSON, XML and YAML for Catalog and Component Definition models; JSON/YAML export preserves the complete decoded JSON-compatible tree, while XML and typed helpers retain a model projection
 - **Schema validation** — Validate supported OSCAL v1.2.0–v1.2.3 declarations against the pinned v1.2.3 JSON schemas with semantic checks
 - **Format conversion** — Export supported Catalog and Component Definition artifacts between JSON, XML and YAML
 - **Requirement atomization** — Automatically split compound policy statements into individual controls
@@ -105,7 +105,7 @@ forge convert large-policy.md --strategy catalog --format json --max-size 20
 ```
 ### Export
 
-Convert a supported Catalog or Component Definition between JSON, XML and YAML. The input format is detected from its extension. Current export validates and serializes a typed model projection; retain the original because fields outside that model can be omitted. Other OSCAL models are not supported by `export`.
+Convert a supported Catalog or Component Definition between JSON, XML and YAML. The input format is detected from its extension. JSON/YAML inputs exported to JSON/YAML are validated and emitted as the complete decoded JSON-compatible tree, preserving supported native fields and array order. XML input/output and direct typed helper APIs retain a partial model projection. Retain the original for XML work, original bytes and YAML presentation. Other OSCAL models are not supported by `export`. See the [bounded prerequisite scope](docs/plans/2026-10-03-f09-lossless-prerequisite-rebase.md), including the exact i64/u64 numeric range and refusal of all floating representations such as `1.0`/`1e0`, plus YAML limits.
 
 ```bash
 # JSON to XML

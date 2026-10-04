@@ -1,0 +1,720 @@
+{
+  "component-definition": {
+    "uuid": "00000002-abcd-4abc-8abc-000000000001",
+    "metadata": {
+      "title": "Synthetic rich lossless Component Definition",
+      "published": "2026-10-01T09:00:00Z",
+      "last-modified": "2026-10-02T10:00:00Z",
+      "version": "1.0.0-synthetic",
+      "oscal-version": "1.2.3",
+      "revisions": [
+        {
+          "title": "Earlier synthetic revision",
+          "published": "2026-09-30T09:00:00Z",
+          "last-modified": "2026-10-01T09:00:00Z",
+          "version": "0.9.0",
+          "oscal-version": "1.2.2",
+          "remarks": "Historical revision remains ordered."
+        }
+      ],
+      "document-ids": [
+        {
+          "scheme": "https://example.invalid/identifiers",
+          "identifier": "SYNTHETIC-EXPORT-01"
+        },
+        {
+          "identifier": "01"
+        }
+      ],
+      "props": [
+        {
+          "name": "truth-state",
+          "uuid": "00000014-abcd-4abc-8abc-000000000001",
+          "ns": "https://example.invalid/ns/export",
+          "value": "synthetic-development",
+          "class": "synthetic",
+          "group": "preservation",
+          "remarks": "Retain property remarks exactly."
+        },
+        {
+          "name": "string-like-boolean",
+          "uuid": "00000015-abcd-4abc-8abc-000000000001",
+          "ns": "https://example.invalid/ns/export",
+          "value": "false",
+          "class": "synthetic",
+          "group": "preservation",
+          "remarks": "Retain property remarks exactly."
+        },
+        {
+          "name": "string-like-number",
+          "uuid": "00000016-abcd-4abc-8abc-000000000001",
+          "ns": "https://example.invalid/ns/export",
+          "value": "1e3",
+          "class": "synthetic",
+          "group": "preservation",
+          "remarks": "Retain property remarks exactly."
+        }
+      ],
+      "links": [
+        {
+          "href": "#0000005a-abcd-4abc-8abc-000000000001",
+          "rel": "reference",
+          "media-type": "text/plain",
+          "resource-fragment": "section%202",
+          "text": "Bound fixture reference"
+        }
+      ],
+      "roles": [
+        {
+          "id": "export-owner",
+          "title": "Synthetic owner",
+          "short-name": "Owner",
+          "description": "A fixture role, not a real approval.",
+          "props": [
+            {
+              "name": "role-marker",
+              "uuid": "00000017-abcd-4abc-8abc-000000000001",
+              "ns": "https://example.invalid/ns/export",
+              "value": "01",
+              "class": "synthetic",
+              "group": "preservation",
+              "remarks": "Retain property remarks exactly."
+            }
+          ],
+          "remarks": "Preserve role remarks."
+        },
+        {
+          "id": "export-reviewer",
+          "title": "Synthetic reviewer"
+        }
+      ],
+      "parties": [
+        {
+          "uuid": "0000001e-abcd-4abc-8abc-000000000001",
+          "type": "organization",
+          "name": "Synthetic Export Organization",
+          "short-name": "SEO",
+          "props": [
+            {
+              "name": "party-marker",
+              "uuid": "00000018-abcd-4abc-8abc-000000000001",
+              "ns": "https://example.invalid/ns/export",
+              "value": "null",
+              "class": "synthetic",
+              "group": "preservation",
+              "remarks": "Retain property remarks exactly."
+            }
+          ],
+          "remarks": "No authentic participant or approval."
+        },
+        {
+          "uuid": "0000001f-abcd-4abc-8abc-000000000001",
+          "type": "person",
+          "name": "Synthetic Fixture Reviewer",
+          "email-addresses": [
+            "reviewer@example.invalid"
+          ],
+          "member-of-organizations": [
+            "0000001e-abcd-4abc-8abc-000000000001"
+          ],
+          "remarks": "Synthetic contact data for preservation only."
+        }
+      ],
+      "responsible-parties": [
+        {
+          "role-id": "export-owner",
+          "party-uuids": [
+            "0000001e-abcd-4abc-8abc-000000000001"
+          ],
+          "props": [
+            {
+              "name": "responsibility",
+              "uuid": "00000019-abcd-4abc-8abc-000000000001",
+              "ns": "https://example.invalid/ns/export",
+              "value": "declared",
+              "class": "synthetic",
+              "group": "preservation",
+              "remarks": "Retain property remarks exactly."
+            }
+          ],
+          "remarks": "Recorded fixture responsibility."
+        }
+      ],
+      "remarks": "Synthetic development fixture. Preserve Unicode café, Ω and emoji 🧭.\nSecond metadata line."
+    },
+    "import-component-definitions": [
+      {
+        "href": "imports/synthetic-component.json",
+        "remarks": "An inert declared import, never fetched by export."
+      }
+    ],
+    "components": [
+      {
+        "uuid": "00000028-abcd-4abc-8abc-000000000001",
+        "type": "software",
+        "title": "Synthetic software component",
+        "description": "Native component description.",
+        "purpose": "Purpose is preserved.",
+        "props": [
+          {
+            "name": "component-marker",
+            "uuid": "000000c8-abcd-4abc-8abc-000000000001",
+            "ns": "https://example.invalid/ns/export",
+            "value": "false",
+            "class": "synthetic",
+            "group": "preservation",
+            "remarks": "Retain property remarks exactly."
+          }
+        ],
+        "links": [
+          {
+            "href": "#0000005a-abcd-4abc-8abc-000000000001",
+            "rel": "reference",
+            "media-type": "text/plain",
+            "resource-fragment": "section%202",
+            "text": "Component reference"
+          }
+        ],
+        "responsible-roles": [
+          {
+            "role-id": "export-owner",
+            "party-uuids": [
+              "0000001e-abcd-4abc-8abc-000000000001"
+            ],
+            "props": [
+              {
+                "name": "responsible-marker",
+                "uuid": "000000c9-abcd-4abc-8abc-000000000001",
+                "ns": "https://example.invalid/ns/export",
+                "value": "false",
+                "class": "synthetic",
+                "group": "preservation",
+                "remarks": "Retain property remarks exactly."
+              }
+            ],
+            "links": [
+              {
+                "href": "#0000005a-abcd-4abc-8abc-000000000001",
+                "rel": "reference",
+                "media-type": "text/plain",
+                "resource-fragment": "section%202",
+                "text": "Responsible role reference"
+              }
+            ],
+            "remarks": "Responsibility is a synthetic assertion."
+          }
+        ],
+        "protocols": [
+          {
+            "uuid": "000000ca-abcd-4abc-8abc-000000000001",
+            "name": "https",
+            "title": "Synthetic HTTPS protocol",
+            "port-ranges": [
+              {
+                "start": 443,
+                "end": 443,
+                "transport": "TCP",
+                "remarks": "A numeric native field."
+              },
+              {
+                "start": 8443,
+                "end": 8444,
+                "transport": "TCP"
+              }
+            ]
+          }
+        ],
+        "control-implementations": [
+          {
+            "uuid": "000000d2-abcd-4abc-8abc-000000000001",
+            "source": "lossless-catalog.json",
+            "description": "A native implementation with preserved identity.",
+            "props": [
+              {
+                "name": "implementation-marker",
+                "uuid": "000000d3-abcd-4abc-8abc-000000000001",
+                "ns": "https://example.invalid/ns/export",
+                "value": "01",
+                "class": "synthetic",
+                "group": "preservation",
+                "remarks": "Retain property remarks exactly."
+              }
+            ],
+            "links": [
+              {
+                "href": "#0000005a-abcd-4abc-8abc-000000000001",
+                "rel": "reference",
+                "media-type": "text/plain",
+                "resource-fragment": "section%202",
+                "text": "Implementation reference"
+              }
+            ],
+            "set-parameters": [
+              {
+                "param-id": "EX-1_prm",
+                "values": [
+                  "01",
+                  "true",
+                  "01"
+                ],
+                "remarks": "Ordered assigned values."
+              }
+            ],
+            "implemented-requirements": [
+              {
+                "uuid": "000000d4-abcd-4abc-8abc-000000000001",
+                "control-id": "EX-1",
+                "description": "Native implemented requirement description.",
+                "props": [
+                  {
+                    "name": "requirement-marker",
+                    "uuid": "000000d5-abcd-4abc-8abc-000000000001",
+                    "ns": "https://example.invalid/ns/export",
+                    "value": "false",
+                    "class": "synthetic",
+                    "group": "preservation",
+                    "remarks": "Retain property remarks exactly."
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "#0000005a-abcd-4abc-8abc-000000000001",
+                    "rel": "reference",
+                    "media-type": "text/plain",
+                    "resource-fragment": "section%202",
+                    "text": "Requirement reference"
+                  }
+                ],
+                "set-parameters": [
+                  {
+                    "param-id": "EX-1_prm",
+                    "values": [
+                      "null",
+                      "01"
+                    ]
+                  }
+                ],
+                "responsible-roles": [
+                  {
+                    "role-id": "export-owner",
+                    "party-uuids": [
+                      "0000001e-abcd-4abc-8abc-000000000001"
+                    ],
+                    "props": [
+                      {
+                        "name": "responsible-marker",
+                        "uuid": "000000d6-abcd-4abc-8abc-000000000001",
+                        "ns": "https://example.invalid/ns/export",
+                        "value": "false",
+                        "class": "synthetic",
+                        "group": "preservation",
+                        "remarks": "Retain property remarks exactly."
+                      }
+                    ],
+                    "links": [
+                      {
+                        "href": "#0000005a-abcd-4abc-8abc-000000000001",
+                        "rel": "reference",
+                        "media-type": "text/plain",
+                        "resource-fragment": "section%202",
+                        "text": "Responsible role reference"
+                      }
+                    ],
+                    "remarks": "Responsibility is a synthetic assertion."
+                  }
+                ],
+                "statements": [
+                  {
+                    "statement-id": "EX-1_smt",
+                    "uuid": "000000d7-abcd-4abc-8abc-000000000001",
+                    "description": "First native statement UUID must survive.",
+                    "props": [
+                      {
+                        "name": "statement-marker",
+                        "uuid": "000000d8-abcd-4abc-8abc-000000000001",
+                        "ns": "https://example.invalid/ns/export",
+                        "value": "1e3",
+                        "class": "synthetic",
+                        "group": "preservation",
+                        "remarks": "Retain property remarks exactly."
+                      }
+                    ],
+                    "links": [
+                      {
+                        "href": "#0000005a-abcd-4abc-8abc-000000000001",
+                        "rel": "reference",
+                        "media-type": "text/plain",
+                        "resource-fragment": "section%202",
+                        "text": "Native statement reference"
+                      }
+                    ],
+                    "responsible-roles": [
+                      {
+                        "role-id": "export-owner",
+                        "party-uuids": [
+                          "0000001e-abcd-4abc-8abc-000000000001"
+                        ],
+                        "props": [
+                          {
+                            "name": "responsible-marker",
+                            "uuid": "000000d9-abcd-4abc-8abc-000000000001",
+                            "ns": "https://example.invalid/ns/export",
+                            "value": "false",
+                            "class": "synthetic",
+                            "group": "preservation",
+                            "remarks": "Retain property remarks exactly."
+                          }
+                        ],
+                        "links": [
+                          {
+                            "href": "#0000005a-abcd-4abc-8abc-000000000001",
+                            "rel": "reference",
+                            "media-type": "text/plain",
+                            "resource-fragment": "section%202",
+                            "text": "Responsible role reference"
+                          }
+                        ],
+                        "remarks": "Responsibility is a synthetic assertion."
+                      }
+                    ],
+                    "remarks": "First statement remarks."
+                  },
+                  {
+                    "statement-id": "EX-1_item-a",
+                    "uuid": "000000da-abcd-4abc-8abc-000000000001",
+                    "description": "Second statement preserves ordered array identity.",
+                    "remarks": "Second statement remarks."
+                  }
+                ],
+                "remarks": "Implemented requirement remarks."
+              }
+            ]
+          }
+        ],
+        "remarks": "Component remarks."
+      },
+      {
+        "uuid": "00000029-abcd-4abc-8abc-000000000001",
+        "type": "policy",
+        "title": "Second ordered component",
+        "description": "Preserve array ordering and distinct component identity.",
+        "props": [
+          {
+            "name": "component-order",
+            "uuid": "000000e6-abcd-4abc-8abc-000000000001",
+            "ns": "https://example.invalid/ns/export",
+            "value": "second",
+            "class": "synthetic",
+            "group": "preservation",
+            "remarks": "Retain property remarks exactly."
+          }
+        ],
+        "remarks": "Second component remarks."
+      }
+    ],
+    "capabilities": [
+      {
+        "uuid": "00000032-abcd-4abc-8abc-000000000001",
+        "name": "synthetic-review",
+        "description": "Capability content must survive independently of components.",
+        "props": [
+          {
+            "name": "capability-marker",
+            "uuid": "000000f0-abcd-4abc-8abc-000000000001",
+            "ns": "https://example.invalid/ns/export",
+            "value": "01",
+            "class": "synthetic",
+            "group": "preservation",
+            "remarks": "Retain property remarks exactly."
+          }
+        ],
+        "links": [
+          {
+            "href": "#0000005a-abcd-4abc-8abc-000000000001",
+            "rel": "reference",
+            "media-type": "text/plain",
+            "resource-fragment": "section%202",
+            "text": "Capability reference"
+          }
+        ],
+        "incorporates-components": [
+          {
+            "component-uuid": "00000029-abcd-4abc-8abc-000000000001",
+            "description": "Second component is first in this ordered reference list."
+          },
+          {
+            "component-uuid": "00000028-abcd-4abc-8abc-000000000001",
+            "description": "First component is second here."
+          }
+        ],
+        "control-implementations": [
+          {
+            "uuid": "000000fa-abcd-4abc-8abc-000000000001",
+            "source": "lossless-catalog.json",
+            "description": "A native implementation with preserved identity.",
+            "props": [
+              {
+                "name": "implementation-marker",
+                "uuid": "000000fb-abcd-4abc-8abc-000000000001",
+                "ns": "https://example.invalid/ns/export",
+                "value": "01",
+                "class": "synthetic",
+                "group": "preservation",
+                "remarks": "Retain property remarks exactly."
+              }
+            ],
+            "links": [
+              {
+                "href": "#0000005a-abcd-4abc-8abc-000000000001",
+                "rel": "reference",
+                "media-type": "text/plain",
+                "resource-fragment": "section%202",
+                "text": "Implementation reference"
+              }
+            ],
+            "set-parameters": [
+              {
+                "param-id": "EX-2_prm",
+                "values": [
+                  "01",
+                  "true",
+                  "01"
+                ],
+                "remarks": "Ordered assigned values."
+              }
+            ],
+            "implemented-requirements": [
+              {
+                "uuid": "000000fc-abcd-4abc-8abc-000000000001",
+                "control-id": "EX-2",
+                "description": "Native implemented requirement description.",
+                "props": [
+                  {
+                    "name": "requirement-marker",
+                    "uuid": "000000fd-abcd-4abc-8abc-000000000001",
+                    "ns": "https://example.invalid/ns/export",
+                    "value": "false",
+                    "class": "synthetic",
+                    "group": "preservation",
+                    "remarks": "Retain property remarks exactly."
+                  }
+                ],
+                "links": [
+                  {
+                    "href": "#0000005a-abcd-4abc-8abc-000000000001",
+                    "rel": "reference",
+                    "media-type": "text/plain",
+                    "resource-fragment": "section%202",
+                    "text": "Requirement reference"
+                  }
+                ],
+                "set-parameters": [
+                  {
+                    "param-id": "EX-2_prm",
+                    "values": [
+                      "null",
+                      "01"
+                    ]
+                  }
+                ],
+                "responsible-roles": [
+                  {
+                    "role-id": "export-owner",
+                    "party-uuids": [
+                      "0000001e-abcd-4abc-8abc-000000000001"
+                    ],
+                    "props": [
+                      {
+                        "name": "responsible-marker",
+                        "uuid": "000000fe-abcd-4abc-8abc-000000000001",
+                        "ns": "https://example.invalid/ns/export",
+                        "value": "false",
+                        "class": "synthetic",
+                        "group": "preservation",
+                        "remarks": "Retain property remarks exactly."
+                      }
+                    ],
+                    "links": [
+                      {
+                        "href": "#0000005a-abcd-4abc-8abc-000000000001",
+                        "rel": "reference",
+                        "media-type": "text/plain",
+                        "resource-fragment": "section%202",
+                        "text": "Responsible role reference"
+                      }
+                    ],
+                    "remarks": "Responsibility is a synthetic assertion."
+                  }
+                ],
+                "statements": [
+                  {
+                    "statement-id": "EX-2_smt",
+                    "uuid": "000000ff-abcd-4abc-8abc-000000000001",
+                    "description": "First native statement UUID must survive.",
+                    "props": [
+                      {
+                        "name": "statement-marker",
+                        "uuid": "00000100-abcd-4abc-8abc-000000000001",
+                        "ns": "https://example.invalid/ns/export",
+                        "value": "1e3",
+                        "class": "synthetic",
+                        "group": "preservation",
+                        "remarks": "Retain property remarks exactly."
+                      }
+                    ],
+                    "links": [
+                      {
+                        "href": "#0000005a-abcd-4abc-8abc-000000000001",
+                        "rel": "reference",
+                        "media-type": "text/plain",
+                        "resource-fragment": "section%202",
+                        "text": "Native statement reference"
+                      }
+                    ],
+                    "responsible-roles": [
+                      {
+                        "role-id": "export-owner",
+                        "party-uuids": [
+                          "0000001e-abcd-4abc-8abc-000000000001"
+                        ],
+                        "props": [
+                          {
+                            "name": "responsible-marker",
+                            "uuid": "00000101-abcd-4abc-8abc-000000000001",
+                            "ns": "https://example.invalid/ns/export",
+                            "value": "false",
+                            "class": "synthetic",
+                            "group": "preservation",
+                            "remarks": "Retain property remarks exactly."
+                          }
+                        ],
+                        "links": [
+                          {
+                            "href": "#0000005a-abcd-4abc-8abc-000000000001",
+                            "rel": "reference",
+                            "media-type": "text/plain",
+                            "resource-fragment": "section%202",
+                            "text": "Responsible role reference"
+                          }
+                        ],
+                        "remarks": "Responsibility is a synthetic assertion."
+                      }
+                    ],
+                    "remarks": "First statement remarks."
+                  },
+                  {
+                    "statement-id": "EX-2_item-a",
+                    "uuid": "00000102-abcd-4abc-8abc-000000000001",
+                    "description": "Second statement preserves ordered array identity.",
+                    "remarks": "Second statement remarks."
+                  }
+                ],
+                "remarks": "Implemented requirement remarks."
+              }
+            ]
+          }
+        ],
+        "remarks": "Capability remarks."
+      }
+    ],
+    "back-matter": {
+      "resources": [
+        {
+          "uuid": "0000005a-abcd-4abc-8abc-000000000001",
+          "title": "Embedded synthetic receipt",
+          "description": "Structure-only export evidence, not an accepted receipt.",
+          "props": [
+            {
+              "name": "resource-marker",
+              "uuid": "0000005b-abcd-4abc-8abc-000000000001",
+              "ns": "https://example.invalid/ns/export",
+              "value": "001",
+              "class": "synthetic",
+              "group": "preservation",
+              "remarks": "Retain property remarks exactly."
+            }
+          ],
+          "document-ids": [
+            {
+              "identifier": "RECEIPT-01"
+            }
+          ],
+          "citation": {
+            "text": "Synthetic citation, §2.",
+            "props": [
+              {
+                "name": "citation-marker",
+                "uuid": "0000005c-abcd-4abc-8abc-000000000001",
+                "ns": "https://example.invalid/ns/export",
+                "value": "false",
+                "class": "synthetic",
+                "group": "preservation",
+                "remarks": "Retain property remarks exactly."
+              }
+            ],
+            "links": [
+              {
+                "href": "https://example.invalid/citations/receipt",
+                "rel": "reference",
+                "text": "Synthetic citation source"
+              }
+            ]
+          },
+          "rlinks": [
+            {
+              "href": "attachments/synthetic-receipt.txt",
+              "media-type": "text/plain",
+              "hashes": [
+                {
+                  "algorithm": "SHA-256",
+                  "value": "d6f0ac4184b3beb5d59529692a40258e2310aff4e456be04a884a71365ba6b3c"
+                },
+                {
+                  "algorithm": "SHA-512",
+                  "value": "f573a08aba33cc65a1ddbe7c0d325fced05e5edbdebeac8be467add3733b363be05851ffe007e735e642b008ca4e35eaed21a5c395029df7bd73bdde3ca338f4"
+                }
+              ]
+            }
+          ],
+          "base64": {
+            "filename": "synthetic-receipt.txt",
+            "media-type": "text/plain",
+            "value": "U3ludGhldGljIHJlY2VpcHQ6IGNhZsOpCg=="
+          },
+          "remarks": "Embedded bytes and their two declared hashes must survive."
+        },
+        {
+          "uuid": "0000005d-abcd-4abc-8abc-000000000001",
+          "title": "Second resource retains array position",
+          "citation": {
+            "text": "Second synthetic citation.",
+            "props": [
+              {
+                "name": "citation-order",
+                "uuid": "0000005e-abcd-4abc-8abc-000000000001",
+                "ns": "https://example.invalid/ns/export",
+                "value": "second",
+                "class": "synthetic",
+                "group": "preservation",
+                "remarks": "Retain property remarks exactly."
+              }
+            ]
+          },
+          "rlinks": [
+            {
+              "href": "https://example.invalid/reference.txt",
+              "media-type": "text/plain",
+              "hashes": [
+                {
+                  "algorithm": "SHA-256",
+                  "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                }
+              ]
+            }
+          ],
+          "remarks": "External reference is inert; export performs no retrieval."
+        }
+      ]
+    }
+  }
+}
