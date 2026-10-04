@@ -1,0 +1,764 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "validation_scope",
+    "status",
+    "review_required",
+    "assessment_authority",
+    "continuity_authority",
+    "prior_native",
+    "native",
+    "context",
+    "counts",
+    "epochs",
+    "objects",
+    "families",
+    "continuity_edges",
+    "reciprocal_rows",
+    "changes",
+    "trust_boundary"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.assessment-epoch-report/1"
+    },
+    "validation_scope": {
+      "const": "same-context-sealed-epoch-append"
+    },
+    "status": {
+      "enum": [
+        "complete",
+        "review-required"
+      ]
+    },
+    "review_required": {
+      "type": "boolean"
+    },
+    "assessment_authority": {
+      "const": false
+    },
+    "continuity_authority": {
+      "const": "caller-asserted"
+    },
+    "prior_native": {
+      "$ref": "#/$defs/PriorNative"
+    },
+    "native": {
+      "$ref": "#/$defs/Native"
+    },
+    "context": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/ContextRow"
+      }
+    },
+    "counts": {
+      "$ref": "#/$defs/Counts"
+    },
+    "epochs": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 1000,
+      "items": {
+        "$ref": "#/$defs/EpochRow"
+      }
+    },
+    "objects": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/ObjectRow"
+      }
+    },
+    "families": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/FamilyRow"
+      }
+    },
+    "continuity_edges": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/ContinuityEdge"
+      }
+    },
+    "reciprocal_rows": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 20000,
+      "items": {
+        "$ref": "#/$defs/ReciprocalRow"
+      }
+    },
+    "changes": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/ChangeRow"
+      }
+    },
+    "trust_boundary": {
+      "const": "Caller-authored assessment and continuity assertions; identity and structure checks do not authenticate actors, evaluate evidence, or authorize remediation."
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:assessment-epoch-report:1",
+  "$defs": {
+    "SourceKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536,
+      "x-runtime-utf8-byte-limit": 65536
+    },
+    "CanonicalUuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Timestamp": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536,
+      "description": "Existing chrono RFC3339 parsing is authoritative; no default timestamp. This schema intentionally does not invent a stricter JSON-Schema format admission."
+    },
+    "FamilyKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "x-runtime-utf8-byte-limit": 256,
+      "description": "Exact nonempty UTF8 family key; no normalization or automatic suffix."
+    },
+    "PortableJsonFilename": {
+      "type": "string",
+      "minLength": 6,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._-]+\\.json$",
+      "description": "Single ASCII JSON leaf. Actual existing publisher admission additionally rejects reserved or ambiguous names; no filesystem authority follows from this schema."
+    },
+    "RiskSourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "key",
+        "uuid",
+        "result_uuid",
+        "expected_sha256"
+      ],
+      "properties": {
+        "kind": {
+          "const": "risk"
+        },
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "result_uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "PriorNative": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "uuid",
+        "raw_sha256"
+      ],
+      "properties": {
+        "uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "Native": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact",
+        "uuid",
+        "document_version",
+        "oscal_version",
+        "raw_sha256"
+      ],
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/PortableJsonFilename"
+        },
+        "uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "document_version": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "oscal_version": {
+          "const": "1.2.3"
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "ContextRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "sha256",
+        "root_uuid",
+        "document_version",
+        "oscal_version"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "assessment-plan",
+            "system-security-plan",
+            "profile",
+            "catalog"
+          ]
+        },
+        "sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "root_uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "document_version": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "oscal_version": {
+          "enum": [
+            "1.2.0",
+            "1.2.1",
+            "1.2.2",
+            "1.2.3"
+          ]
+        }
+      }
+    },
+    "Counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "before_epochs",
+        "after_epochs",
+        "preserved_epochs",
+        "appended_epochs",
+        "before_observations",
+        "after_observations",
+        "before_findings",
+        "after_findings",
+        "before_risks",
+        "after_risks",
+        "before_objects",
+        "after_objects",
+        "preserved_objects",
+        "added_objects",
+        "native_graph_occurrences_before",
+        "native_graph_occurrences_after",
+        "families",
+        "continuity_edges",
+        "reciprocal_rows",
+        "classified_next_risks",
+        "uncontinued_families",
+        "captured_original_generations",
+        "review_actions"
+      ],
+      "properties": {
+        "before_epochs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "after_epochs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "preserved_epochs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "appended_epochs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "before_observations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "after_observations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "before_findings": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "after_findings": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "before_risks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "after_risks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "before_objects": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "after_objects": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "preserved_objects": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "added_objects": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "native_graph_occurrences_before": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "native_graph_occurrences_after": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "families": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "continuity_edges": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "reciprocal_rows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20000
+        },
+        "classified_next_risks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "uncontinued_families": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "captured_original_generations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 7
+        },
+        "review_actions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      }
+    },
+    "EpochRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "position",
+        "key",
+        "uuid",
+        "canonical_sha256",
+        "start",
+        "end",
+        "observations",
+        "findings",
+        "risks",
+        "classification"
+      ],
+      "properties": {
+        "position": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 999
+        },
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "canonical_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "start": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "end": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "observations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "findings": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "risks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "classification": {
+          "enum": [
+            "preserved",
+            "appended"
+          ]
+        }
+      }
+    },
+    "ObjectLocator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "result_key",
+        "result_uuid",
+        "kind",
+        "key",
+        "uuid"
+      ],
+      "properties": {
+        "result_key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "result_uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "kind": {
+          "enum": [
+            "observation",
+            "finding",
+            "risk"
+          ]
+        },
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        }
+      }
+    },
+    "ObjectRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "result_key",
+        "result_uuid",
+        "kind",
+        "key",
+        "uuid",
+        "computed_sha256",
+        "declared_content_sha256",
+        "declared_rationale_sha256",
+        "status",
+        "classification"
+      ],
+      "properties": {
+        "result_key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "result_uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "kind": {
+          "enum": [
+            "observation",
+            "finding",
+            "risk"
+          ]
+        },
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "computed_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "declared_content_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "declared_rationale_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/Scalar"
+            }
+          ]
+        },
+        "classification": {
+          "enum": [
+            "preserved",
+            "added"
+          ]
+        }
+      }
+    },
+    "FamilyRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family_key",
+        "first",
+        "current",
+        "continued_in_append"
+      ],
+      "properties": {
+        "family_key": {
+          "$ref": "#/$defs/FamilyKey"
+        },
+        "first": {
+          "$ref": "#/$defs/RiskSourceReference"
+        },
+        "current": {
+          "$ref": "#/$defs/RiskSourceReference"
+        },
+        "continued_in_append": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ReportProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assessor_key",
+        "role_id",
+        "start",
+        "end",
+        "method",
+        "rationale_sha256"
+      ],
+      "properties": {
+        "assessor_key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "role_id": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "start": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/Timestamp"
+            }
+          ]
+        },
+        "method": {
+          "enum": [
+            "EXAMINE",
+            "INTERVIEW",
+            "TEST",
+            "UNKNOWN"
+          ]
+        },
+        "rationale_sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "ContinuityEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family_key",
+        "predecessor",
+        "successor",
+        "provenance",
+        "caller_asserted_continuity",
+        "edge_sha256"
+      ],
+      "properties": {
+        "family_key": {
+          "$ref": "#/$defs/FamilyKey"
+        },
+        "predecessor": {
+          "$ref": "#/$defs/RiskSourceReference"
+        },
+        "successor": {
+          "$ref": "#/$defs/RiskSourceReference"
+        },
+        "provenance": {
+          "$ref": "#/$defs/ReportProvenance"
+        },
+        "caller_asserted_continuity": {
+          "const": true
+        },
+        "edge_sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "ReciprocalRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family_key",
+        "edge_sha256",
+        "direction",
+        "from",
+        "to"
+      ],
+      "properties": {
+        "family_key": {
+          "$ref": "#/$defs/FamilyKey"
+        },
+        "edge_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "direction": {
+          "enum": [
+            "predecessor",
+            "successor"
+          ]
+        },
+        "from": {
+          "$ref": "#/$defs/RiskSourceReference"
+        },
+        "to": {
+          "$ref": "#/$defs/RiskSourceReference"
+        }
+      }
+    },
+    "ChangeRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "locator",
+        "family_key",
+        "old",
+        "new"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "epoch-added",
+            "object-added",
+            "document-version-changed",
+            "document-modified-time-changed",
+            "risk-family-created",
+            "risk-continuity-recorded",
+            "recurrence-content-changed",
+            "recurrence-rationale-changed",
+            "recurrence-status-changed"
+          ]
+        },
+        "locator": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/ObjectLocator"
+            }
+          ]
+        },
+        "family_key": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/FamilyKey"
+            }
+          ]
+        },
+        "old": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/Scalar"
+            }
+          ]
+        },
+        "new": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/Scalar"
+            }
+          ]
+        }
+      }
+    },
+    "Scalar": {
+      "type": "string",
+      "maxLength": 65536,
+      "x-runtime-utf8-byte-limit": 65536
+    }
+  },
+  "$comment": "Complete closed JSON continuity companion. All fields, including nullable fields, are required. Syntax alone does not establish history equality, reciprocal relations, count agreement, original freshness, signature or assessment authority. UTF8 bytes and complete before-growth accounting remain runtime admission."
+}

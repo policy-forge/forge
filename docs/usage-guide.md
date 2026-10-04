@@ -754,6 +754,24 @@ effectiveness, certification, or remediation ownership. See
 [OSCAL Assessment Results](assessment-results.md) for the complete contract and
 trust boundaries.
 
+#### Append a sealed assessment epoch
+
+```bash
+forge assessment results append-epoch \
+  --request epoch-request.json \
+  --output next-assessment-results.json \
+  --report next-epoch-report.json
+```
+
+Both output names must be new portable JSON filenames on the request's parent.
+The saved report is always JSON. Optional `--view-format json|text|html` selects a
+complete stdout view after both files are published; omitted view leaves stdout
+empty. A valid append returns `1` for descriptive review actions, or `0` with
+`--fail-on never`; errors return `2` and a late error can leave complete files.
+This first profile requires unchanged context/actors and sealed ordered windows.
+See [sealed assessment epochs](assessment-results-epochs.md) for complete risk
+classification, continuity, bounds, source rebinding and remaining S-4 gates.
+
 #### Export explicitly reviewed risks to authored work
 
 Start with an empty scaffold from `forge poam init`. Supply a closed

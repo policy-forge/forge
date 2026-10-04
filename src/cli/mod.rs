@@ -627,6 +627,24 @@ pub enum AssessmentCommand {
 /// Human-authored OSCAL Assessment Results commands.
 #[derive(Subcommand)]
 pub enum AssessmentResultsCommand {
+    /// Append one sealed assessment epoch with explicit caller-asserted risk continuity
+    AppendEpoch {
+        /// Closed request JSON; its actual parent confines all captured inputs and outputs
+        #[arg(long)]
+        request: PathBuf,
+        /// Required new single JSON filename for native Assessment Results
+        #[arg(long)]
+        output: PathBuf,
+        /// Required new single JSON filename for the complete continuity companion
+        #[arg(long)]
+        report: PathBuf,
+        /// Optional complete report view on stdout after both files are published
+        #[arg(long, value_enum)]
+        view_format: Option<AssessmentResultsReportFormat>,
+        /// Whether a valid append with review actions produces exit status 1
+        #[arg(long, value_enum, default_value = "any")]
+        fail_on: AssessmentResultsFailOn,
+    },
     /// Export explicitly reviewed risks into a complete caller-authored POA&M workflow
     ExportPoam {
         /// Actual existing empty POA&M scaffold defining the fixed source root
@@ -696,7 +714,7 @@ pub enum AssessmentResultsReportFormat {
     Html,
 }
 
-/// Baseline review gate for Assessment Results revisions.
+/// Exit gate for descriptive Assessment Results review actions.
 #[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
 pub enum AssessmentResultsFailOn {
     Any,
@@ -2023,6 +2041,25 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         },
         Commands::Assessment { command } => match command {
             AssessmentCommand::Results { command } => match command {
+                AssessmentResultsCommand::AppendEpoch {
+                    request,
+                    output,
+                    report,
+                    view_format,
+                    fail_on,
+                } => {
+                    if crate::poam::assessment_epochs_cli::execute(
+                        request,
+                        output,
+                        report,
+                        view_format.as_ref(),
+                        fail_on,
+                    )? {
+                        Err(ForgeError::AssessmentResultsReviewRequired)
+                    } else {
+                        Ok(())
+                    }
+                }
                 AssessmentResultsCommand::ExportPoam { scaffold, authoring, as_of, output } => {
                     crate::poam::risk_authoring_cli::execute(
                         scaffold,

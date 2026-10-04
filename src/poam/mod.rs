@@ -6,9 +6,13 @@
 
 #![deny(missing_docs)]
 
+/// Closed and bounded unselected foundation manifest.
+/// Captured same-context epoch append preparation and preservation checks.
+pub(crate) mod assessment_epochs;
+/// Two-file epoch publication and optional complete report stdout.
+pub(crate) mod assessment_epochs_cli;
 /// Stable UUID v5 identities from immutable plan, item and milestone keys.
 pub mod identity;
-/// Closed and bounded unselected foundation manifest.
 pub mod manifest;
 /// Bounded, content-minimizing source-only inventories.
 pub mod report;

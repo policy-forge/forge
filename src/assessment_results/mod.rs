@@ -2,6 +2,8 @@
 
 pub mod baseline;
 pub mod context;
+/// Closed all-epoch identity report and complete escaped views.
+pub(crate) mod epoch_report;
 pub mod manifest;
 pub mod model;
 pub mod report;

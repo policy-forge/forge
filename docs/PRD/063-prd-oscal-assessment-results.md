@@ -218,9 +218,25 @@ terminology approval, Engineering product approval of the subset, three
 sanitized assessor workflows, independent downstream interoperability, the
 success-metric pilots, and human release approval remain open. S-3 remains
 unchecked pending the applicable reviewed-risk and PRD 064 acceptance gates;
-terminal approval remains refused pending D064. S-4 remains separate ongoing work,
-with schema and multi-epoch user-workflow validation still open. The full goal-wide
-documentation review remains a final gate.
+terminal approval remains refused pending D064.
+
+The first S-4 engineering profile adds `forge assessment results append-epoch`.
+It appends one sealed result with unchanged context/actors/receipts, preserves
+the complete old native result Values, and requires explicit risk-family
+classification and latest-member continuity. A required closed JSON companion
+retains all epoch/object/family/edge/reciprocal rows and complete counts. Later
+appends consume its actual pinned bytes and reconcile reconstructable history
+against the current captured native document. Historical previous-before raw
+hashes and old metadata leaves remain stored assertions. Existing old/nonlatest
+and new result selectors are retained; source declarations must explicitly bind
+the new raw native generation. The original one-result baseline interface remains
+separate. See [sealed assessment epochs](../assessment-results-epochs.md) and the
+[measured engineering verification](../plans/2026-10-04-f10-epochs-integration-verification.md)
+with its [machine receipt](../plans/2026-10-04-f10-epochs-integration-verification.json).
+
+S-4 remains unchecked: broader context generations, native-only continuity
+interoperability, representative assessor workflows and recorded owner acceptance
+remain open. The full goal-wide documentation review remains a final gate.
 
 ## Risks and Mitigations :yellow_circle: `@human-review`
 

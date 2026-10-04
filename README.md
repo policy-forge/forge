@@ -232,6 +232,12 @@ no reviewer authority or terminal approval. See
 [reviewed-risk authoring](docs/assessment-results-reviewed-risks.md) for the exact
 request, source checks and remaining acceptance gates.
 
+`forge assessment results append-epoch` appends one sealed result with explicit
+caller-declared risk continuity. It preserves prior results, saves a complete JSON
+companion, and can display the same report as JSON, text or static HTML. See
+[sealed assessment epochs](docs/assessment-results-epochs.md) for the same-context
+profile, explicit source rebinding and independent publication semantics.
+
 ### POA&M source foundation
 
 Create an unselected `forge.poam/1` scaffold from one explicitly identified

@@ -32,6 +32,10 @@ pub(crate) enum CaptureRole {
     RiskScaffoldDeclaration,
     /// Complete caller-authored reviewed-risk request; it authenticates no reviewer.
     RiskAuthoringRequest,
+    /// Closed append request; it authenticates no assessor or continuity authority.
+    AssessmentEpochRequest,
+    /// Raw pinned prior continuity companion; its stored assertions confer no freshness.
+    AssessmentEpochPriorReport,
     /// Explicit read-only assertion-to-link companion declaration.
     EvidenceBindings,
     /// Explicit linkage manifest pinned by the companion declaration.
@@ -208,8 +212,8 @@ pub(crate) struct CaptureSession {
     inputs: BTreeMap<PathBuf, (CaptureRole, LocalObservation)>,
     /// Every actual declared evidence root, including unused roots, bounded by the existing 64.
     directories: BTreeMap<PathBuf, Rc<RootGeneration>>,
-    /// Non-observation output namespace guard reserved before any file or declared-directory capture.
-    reserved_output: Option<PathBuf>,
+    /// Complete bounded output namespaces reserved before any file or declared-directory capture.
+    reserved_outputs: Vec<PathBuf>,
     /// Shared complete budget; not separately reset by source and linkage consumers.
     budget: ReadBudget,
 }
@@ -221,7 +225,7 @@ impl CaptureSession {
             root: Rc::new(fresh::qualify_root(root)?),
             inputs: BTreeMap::new(),
             directories: BTreeMap::new(),
-            reserved_output: None,
+            reserved_outputs: Vec::new(),
             budget: ReadBudget::new(),
         })
     }
@@ -242,18 +246,21 @@ impl CaptureSession {
         }
     }
 
-    /// Reserve one normalized report target without IO before any original or declared-directory observation.
+    /// Reserve one normalized target with the existing singleton admission and idempotence.
     pub(crate) fn reserve_output(&mut self, relative: &Path) -> Result<(), ForgeError> {
-        fresh::validate_relative(relative)?;
+        self.reserve_outputs(&[relative])
+    }
+
+    /// Freeze one or two complete output namespaces before observations; no IO or absence authority is added.
+    pub(crate) fn reserve_outputs(&mut self, relative: &[&Path]) -> Result<(), ForgeError> {
+        validate_output_namespaces(relative)?;
         if !self.inputs.is_empty() || !self.directories.is_empty() {
             return Err(error("output namespace must be reserved before input capture"));
         }
-        if let Some(previous) = &self.reserved_output {
-            if previous != relative {
-                return Err(error("output namespace was already reserved"));
-            }
-        } else {
-            self.reserved_output = Some(relative.to_path_buf());
+        if self.reserved_outputs.is_empty() {
+            self.reserved_outputs = relative.iter().map(|path| path.to_path_buf()).collect();
+        } else if !self.reserved_outputs.iter().map(PathBuf::as_path).eq(relative.iter().copied()) {
+            return Err(error("output namespace was already reserved"));
         }
         Ok(())
     }
@@ -290,7 +297,7 @@ impl CaptureSession {
     /// Retain an actual declared directory generation, including unused roots, before exposing freshness metadata.
     pub(crate) fn directory(&mut self, relative: &Path) -> Result<(), ForgeError> {
         fresh::validate_relative(relative)?;
-        check_output_namespace(self.reserved_output.as_deref(), relative, true)?;
+        check_output_namespace(&self.reserved_outputs, relative, true)?;
         if let Some(original) = self.directories.get(relative) {
             return fresh::verify_root(original);
         }
@@ -317,7 +324,7 @@ impl CaptureSession {
         allow_missing: bool,
     ) -> Result<LocalObservation, ForgeError> {
         fresh::validate_relative(relative)?;
-        check_output_namespace(self.reserved_output.as_deref(), relative, false)?;
+        check_output_namespace(&self.reserved_outputs, relative, false)?;
         if let Some((previous_role, observation)) = self.inputs.get(relative) {
             if *previous_role != role {
                 return Err(error("evidence inspection input has incompatible roles"));
@@ -373,7 +380,7 @@ impl CaptureSession {
             root: self.root,
             inputs: self.inputs,
             directories: self.directories,
-            reserved_output: self.reserved_output,
+            reserved_outputs: self.reserved_outputs,
         }
     }
 }
@@ -386,8 +393,8 @@ pub(crate) struct CaptureProof {
     inputs: BTreeMap<PathBuf, (CaptureRole, LocalObservation)>,
     /// Actual complete declared evidence roots, including roots with no referenced local files.
     directories: BTreeMap<PathBuf, Rc<RootGeneration>>,
-    /// Same immutable output namespace guard; it grants neither original nor output authority.
-    reserved_output: Option<PathBuf>,
+    /// Same immutable one-or-two namespace list; it grants neither original nor output authority.
+    reserved_outputs: Vec<PathBuf>,
 }
 
 impl CaptureProof {
@@ -402,10 +409,10 @@ impl CaptureProof {
     /// Reconcile actual roots, all present original bytes and exact absent components before publication.
     pub(crate) fn verify_inputs(&self) -> Result<(), ForgeError> {
         for relative in self.inputs.keys() {
-            check_output_namespace(self.reserved_output.as_deref(), relative, false)?;
+            check_output_namespace(&self.reserved_outputs, relative, false)?;
         }
         for relative in self.directories.keys() {
-            check_output_namespace(self.reserved_output.as_deref(), relative, true)?;
+            check_output_namespace(&self.reserved_outputs, relative, true)?;
         }
         fresh::verify_root(&self.root)?;
         for directory in self.directories.values() {
@@ -447,13 +454,29 @@ fn folded_prefix(prefix: &Path, full: &Path) -> bool {
     true
 }
 
-/// Refuse output aliases/ancestors before IO; declared directories permit unrelated descendant reports.
+/// Validate the complete bounded pair and folded overlaps before retaining any output namespace.
+fn validate_output_namespaces(outputs: &[&Path]) -> Result<(), ForgeError> {
+    if !(1..=2).contains(&outputs.len()) {
+        return Err(error("output namespace must contain one or two targets"));
+    }
+    for output in outputs {
+        fresh::validate_relative(output)?;
+    }
+    if outputs.len() == 2
+        && (folded_prefix(outputs[0], outputs[1]) || folded_prefix(outputs[1], outputs[0]))
+    {
+        return Err(error("output namespaces alias or overlap"));
+    }
+    Ok(())
+}
+
+/// Refuse every output alias/ancestor before IO; directories permit unrelated descendant reports.
 fn check_output_namespace(
-    output: Option<&Path>,
+    outputs: &[PathBuf],
     input: &Path,
     directory: bool,
 ) -> Result<(), ForgeError> {
-    if let Some(output) = output {
+    for output in outputs {
         if folded_prefix(output, input) || (!directory && folded_prefix(input, output)) {
             return Err(error("report output aliases or overlaps a held input namespace"));
         }
@@ -672,7 +695,7 @@ mod tests {
         let mut capture = CaptureSession::new(&root).unwrap();
         capture.required(Path::new("original.bin"), CaptureRole::Catalog, 100).unwrap();
         assert!(capture.reserve_output(Path::new("report.json")).is_err());
-        assert!(capture.reserved_output.is_none());
+        assert_eq!(capture.reserved_outputs, [] as [PathBuf; 0]);
     }
 
     /// Complete original charge is retained until both proof and every shared actual lease drop.
@@ -835,5 +858,221 @@ mod tests {
         assert_eq!(ProjectionBudget::encode(&["safe"]).unwrap(), b"[\n  \"safe\"\n]\n");
         let oversized = "x".repeat(MAX_PROJECTION_BYTES);
         assert!(ProjectionBudget::encode(&oversized).is_err());
+    }
+
+    /// Confirm namespace-only reservations have not charged any captured original, absence or relationship.
+    fn assert_no_namespace_observations(capture: &CaptureSession) {
+        assert!(capture.inputs.is_empty());
+        assert!(capture.directories.is_empty());
+        assert_eq!(capture.budget.ledger.input_slots.get(), 0);
+        assert_eq!(capture.budget.ledger.original_bytes.get(), 0);
+        assert_eq!(capture.budget.ledger.relationships.get(), 0);
+    }
+
+    /// Empty, over-cap, case aliases and bilateral prefix pairs refuse as complete namespaces.
+    #[test]
+    fn complete_output_pair_validation_rejects_ambiguous_or_overbound_namespaces() {
+        assert!(validate_output_namespaces(&[]).is_err());
+        assert!(
+            validate_output_namespaces(&[
+                Path::new("a.json"),
+                Path::new("b.json"),
+                Path::new("c.json")
+            ])
+            .is_err()
+        );
+        for (first, second) in [
+            ("same.json", "same.json"),
+            ("native.json", "NATIVE.JSON"),
+            ("parent", "PARENT/report.json"),
+            ("parent/native.json", "PARENT"),
+        ] {
+            assert!(validate_output_namespaces(&[Path::new(first), Path::new(second)]).is_err());
+        }
+        validate_output_namespaces(&[Path::new("out/native.json"), Path::new("out/report.json")])
+            .unwrap();
+        validate_output_namespaces(&[Path::new("out/a.json"), Path::new("out/ab.json")]).unwrap();
+        validate_output_namespaces(&[Path::new("unicode/ä.json"), Path::new("unicode/Ä.json")])
+            .unwrap();
+    }
+
+    /// A malformed second target or collided complete pair leaves every reservation and counter untouched.
+    #[test]
+    fn invalid_second_output_never_partially_installs_a_namespace() {
+        let (_directory, root) = fixture();
+        let mut capture = CaptureSession::new(&root).unwrap();
+        for second in ["", "../report.json", "report.json/", "native.json"] {
+            assert!(
+                capture.reserve_outputs(&[Path::new("native.json"), Path::new(second)]).is_err()
+            );
+            assert_eq!(capture.reserved_outputs, [] as [PathBuf; 0]);
+            assert_no_namespace_observations(&capture);
+        }
+        capture.reserve_outputs(&[Path::new("native.json"), Path::new("report.json")]).unwrap();
+        let previous = capture.reserved_outputs.clone();
+        assert!(capture.reserve_outputs(&[Path::new("other.json"), Path::new("../bad")]).is_err());
+        assert_eq!(capture.reserved_outputs, previous);
+        assert_no_namespace_observations(&capture);
+    }
+
+    /// Exact ordered pair retries are idempotent and neither singleton calls nor reordering erase a guard.
+    #[test]
+    fn complete_output_reservations_are_immutable_across_single_and_pair_calls() {
+        let (_directory, root) = fixture();
+        let mut single = CaptureSession::new(&root).unwrap();
+        single.reserve_output(Path::new("native.json")).unwrap();
+        single.reserve_output(Path::new("native.json")).unwrap();
+        assert!(single.reserve_output(Path::new("NATIVE.json")).is_err());
+        assert!(
+            single.reserve_outputs(&[Path::new("native.json"), Path::new("report.json")]).is_err()
+        );
+        assert_eq!(single.reserved_outputs, vec![PathBuf::from("native.json")]);
+        let mut pair = CaptureSession::new(&root).unwrap();
+        pair.reserve_outputs(&[Path::new("native.json"), Path::new("report.json")]).unwrap();
+        pair.reserve_outputs(&[Path::new("native.json"), Path::new("report.json")]).unwrap();
+        assert!(pair.reserve_output(Path::new("native.json")).is_err());
+        assert!(
+            pair.reserve_outputs(&[Path::new("report.json"), Path::new("native.json")]).is_err()
+        );
+        assert_eq!(
+            pair.reserved_outputs,
+            vec![PathBuf::from("native.json"), PathBuf::from("report.json")]
+        );
+        assert_no_namespace_observations(&single);
+        assert_no_namespace_observations(&pair);
+    }
+
+    /// Each target blocks an actual present-file alias before any slot, raw byte or generation admission.
+    #[test]
+    fn both_output_guards_refuse_present_input_aliases_before_capture() {
+        let (_directory, root) = fixture();
+        for outputs in [
+            [Path::new("ORIGINAL.bin"), Path::new("report.json")],
+            [Path::new("native.json"), Path::new("ORIGINAL.bin")],
+        ] {
+            let mut capture = CaptureSession::new(&root).unwrap();
+            capture.reserve_outputs(&outputs).unwrap();
+            assert!(
+                capture.required(Path::new("original.bin"), CaptureRole::Catalog, 100).is_err()
+            );
+            assert_no_namespace_observations(&capture);
+        }
+    }
+
+    /// The second target cannot create a first-missing ancestor or descend beneath an absent-file dependency.
+    #[test]
+    fn second_output_guard_refuses_absent_dependency_prefixes_before_observation() {
+        let (_directory, root) = fixture();
+        for (output, input) in
+            [("MISSING", "missing/file.bin"), ("missing/file.bin/report.json", "MISSING/file.bin")]
+        {
+            let mut capture = CaptureSession::new(&root).unwrap();
+            capture.reserve_outputs(&[Path::new("native.json"), Path::new(output)]).unwrap();
+            assert!(capture.optional_local(Path::new(input), 100).is_err());
+            assert_no_namespace_observations(&capture);
+        }
+    }
+
+    /// The second directory guard refuses alias/ancestor targets while both unrelated descendants remain valid.
+    #[test]
+    fn both_directory_guards_preserve_the_existing_descendant_output_policy() {
+        let (_directory, root) = fixture();
+        std::fs::create_dir(root.join("evidence")).unwrap();
+        let mut allowed = CaptureSession::new(&root).unwrap();
+        allowed
+            .reserve_outputs(&[
+                Path::new("evidence/native.json"),
+                Path::new("evidence/report.json"),
+            ])
+            .unwrap();
+        allowed.directory(Path::new("evidence")).unwrap();
+        assert_eq!(allowed.budget.ledger.input_slots.get(), 0);
+        assert_eq!(allowed.budget.ledger.original_bytes.get(), 0);
+        assert_eq!(allowed.budget.ledger.relationships.get(), 1);
+        for input in ["evidence", "evidence/unused"] {
+            let mut refused = CaptureSession::new(&root).unwrap();
+            refused.reserve_outputs(&[Path::new("native.json"), Path::new("EVIDENCE")]).unwrap();
+            assert!(refused.directory(Path::new(input)).is_err());
+            assert_no_namespace_observations(&refused);
+        }
+    }
+
+    /// Pair reservation retains legacy normalization-first and pre-observation refusal without replacing state.
+    #[test]
+    fn complete_reservation_preserves_error_priority_and_late_call_refusal() {
+        let (_directory, root) = fixture();
+        let mut present = CaptureSession::new(&root).unwrap();
+        present.required(Path::new("original.bin"), CaptureRole::Catalog, 100).unwrap();
+        let invalid = present.reserve_output(Path::new("../report.json")).unwrap_err();
+        assert_eq!(
+            invalid.to_string(),
+            error("evidence inspection input is not a normalized descendant").to_string()
+        );
+        let late = present
+            .reserve_outputs(&[Path::new("native.json"), Path::new("report.json")])
+            .unwrap_err();
+        assert_eq!(
+            late.to_string(),
+            error("output namespace must be reserved before input capture").to_string()
+        );
+        assert_eq!(present.reserved_outputs, [] as [PathBuf; 0]);
+        std::fs::create_dir(root.join("evidence")).unwrap();
+        let mut directory = CaptureSession::new(&root).unwrap();
+        directory.directory(Path::new("evidence")).unwrap();
+        assert!(
+            directory
+                .reserve_outputs(&[Path::new("native.json"), Path::new("report.json")])
+                .is_err()
+        );
+        assert_eq!(directory.reserved_outputs, [] as [PathBuf; 0]);
+    }
+
+    /// Both guards survive finish without claiming destination absence or invalidating later output publication.
+    #[test]
+    fn pair_proof_retains_guards_and_checks_only_actual_input_generations() {
+        let (_directory, root) = fixture();
+        std::fs::create_dir(root.join("evidence")).unwrap();
+        std::fs::write(root.join("evidence/native.json"), b"pre-existing").unwrap();
+        let mut capture = CaptureSession::new(&root).unwrap();
+        capture
+            .reserve_outputs(&[
+                Path::new("evidence/native.json"),
+                Path::new("evidence/report.json"),
+            ])
+            .unwrap();
+        capture.required(Path::new("original.bin"), CaptureRole::Catalog, 100).unwrap();
+        capture.directory(Path::new("evidence")).unwrap();
+        assert_eq!(capture.budget.ledger.input_slots.get(), 1);
+        assert_eq!(capture.budget.ledger.original_bytes.get(), 8);
+        assert_eq!(capture.budget.ledger.relationships.get(), 1);
+        let proof = capture.finish();
+        assert_eq!(
+            proof.reserved_outputs,
+            vec![PathBuf::from("evidence/native.json"), PathBuf::from("evidence/report.json")]
+        );
+        assert_eq!(proof.captured_original_generations(), 1);
+        proof.verify_inputs().unwrap();
+        std::fs::write(root.join("evidence/report.json"), b"complete report").unwrap();
+        proof.verify_inputs().unwrap();
+        assert_eq!(std::fs::read(root.join("evidence/native.json")).unwrap(), b"pre-existing");
+    }
+
+    /// Proof verification rechecks the second guard against both retained file and directory registries.
+    #[test]
+    fn proof_rechecks_second_output_guard_against_each_dependency_kind() {
+        let (_directory, root) = fixture();
+        let mut file = CaptureSession::new(&root).unwrap();
+        file.reserve_outputs(&[Path::new("native.json"), Path::new("report.json")]).unwrap();
+        file.required(Path::new("original.bin"), CaptureRole::Catalog, 100).unwrap();
+        let mut file_proof = file.finish();
+        file_proof.reserved_outputs[1] = PathBuf::from("ORIGINAL.bin");
+        assert!(file_proof.verify_inputs().is_err());
+        std::fs::create_dir(root.join("evidence")).unwrap();
+        let mut directory = CaptureSession::new(&root).unwrap();
+        directory.reserve_outputs(&[Path::new("native.json"), Path::new("report.json")]).unwrap();
+        directory.directory(Path::new("evidence")).unwrap();
+        let mut directory_proof = directory.finish();
+        directory_proof.reserved_outputs[1] = PathBuf::from("EVIDENCE");
+        assert!(directory_proof.verify_inputs().is_err());
     }
 }

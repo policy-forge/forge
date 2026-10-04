@@ -1381,21 +1381,69 @@ impl CapturedSource {
     }
 }
 
-/// Qualify the same five-source native profile using one caller-owned original capture pool.
+/// Qualify the same five-source profile once, retaining only its selected inventory for existing callers.
 ///
-/// No original Vec is cloned and no filesystem snapshot is created. The consumed
-/// Root-owned `context::load_captured_refs` port validates borrowed AP/SSP/Profile/
-/// Catalog bytes and exact imports with shared before-growth relationship admission.
-/// The complete caller `CaptureProof`, not this inventory alone, rechecks originals.
-/// Existing public load and `PreparedSource` behavior remains byte-exact and separate.
+/// The shared private epoch loader consumes the original validation sequence.
+/// Decoded native/context values are dropped here; the owning capture proof,
+/// rather than this inventory, retains and rechecks original generations.
+/// Existing public `load` and `PreparedSource` remain a separate unchanged path.
 /// # Errors
-/// Refuses unsupported declarations, aliases, stale raw pins, native/schema/import
-/// differences, shared budget overflow or incoherent complete source selection.
+/// Refuses the unchanged declaration, alias, pin, native, context, graph and budget predicates.
 pub(super) fn load_with_capture(
     manifest_path: &Path,
     source: &SourceManifest,
     capture: &mut crate::evidence_capture::CaptureSession,
 ) -> Result<CapturedSource, ForgeError> {
+    let prepared = load_epoch_source_with_capture(manifest_path, source, capture)?;
+    Ok(CapturedSource { inventory: prepared.inventory })
+}
+
+/// Actual decoded native tree and context qualified together in the caller's single capture pool.
+///
+/// Fields and construction are private. This holder borrows the exact declaration
+/// used by capture; it exposes no original bytes, detached proof or Debug prose.
+/// The caller's complete `CaptureProof` remains the only original freshness check.
+pub(super) struct CapturedEpochSource<'a> {
+    /// Complete original decoded native envelope, including every unselected result.
+    original: Value,
+    /// Actual once-loaded AP/SSP/Profile/Catalog context from held original leases.
+    context: LoadedContext,
+    /// Complete explicitly selected inventory after all-result source qualification.
+    inventory: SourceInventory,
+    /// Borrowed exact five-source declaration used by this construction.
+    declaration: &'a SourceManifest,
+}
+
+impl CapturedEpochSource<'_> {
+    /// Borrow the complete original decoded envelope without generation or output authority.
+    pub(super) fn original(&self) -> &Value {
+        &self.original
+    }
+
+    /// Borrow the actual captured context for the maintained typed next-result constructor.
+    pub(super) fn context(&self) -> &LoadedContext {
+        &self.context
+    }
+
+    /// Borrow the selected inventory; all other epochs were qualified by the same loader.
+    pub(super) fn inventory(&self) -> &SourceInventory {
+        &self.inventory
+    }
+}
+
+/// Retain the actual native/context products of the existing shared five-source validation sequence.
+///
+/// No raw original is cloned, reopened or recaptured. The declaration reference
+/// is borrowed rather than copied, and every former loader predicate retains its
+/// order. The caller owns the session/proof and charges derived growth separately.
+/// # Errors
+/// Refuses unsafe declarations, aliases, stale raw pins, schema/profile/context
+/// mismatches, shared budget overflow and incoherent complete graph or selection.
+pub(super) fn load_epoch_source_with_capture<'a>(
+    manifest_path: &Path,
+    source: &'a SourceManifest,
+    capture: &mut crate::evidence_capture::CaptureSession,
+) -> Result<CapturedEpochSource<'a>, ForgeError> {
     use crate::evidence_capture::CaptureRole;
 
     super::manifest::validate_source(source)?;
@@ -1449,7 +1497,50 @@ pub(super) fn load_with_capture(
     validate_context_pins(document, &loaded_context)?;
     validate_resource_pins(document, source, &loaded_context)?;
     let inventory = inventory_results(document, source, &loaded_context)?;
-    Ok(CapturedSource { inventory })
+    Ok(CapturedEpochSource {
+        original: ar,
+        context: loaded_context,
+        inventory,
+        declaration: source,
+    })
+}
+
+/// Qualify a generated complete epoch graph against the actual held context and declaration.
+///
+/// This is derived schema/profile/reference validation, never raw-generation
+/// admission. It does not feed an invented Value through capture lease checks.
+/// The private producer must separately admit growth, preserve the old tree and
+/// metadata, and retain/recheck the complete original `CaptureProof` before writes.
+/// # Errors
+/// Refuses root-identity, native/schema/profile/graph/import/context/receipt or
+/// all-result selection mismatches and shared before-adjacency budget overflow.
+pub(super) fn validate_derived_epoch_graph(
+    source: &CapturedEpochSource<'_>,
+    derived: &Value,
+    capture: &mut crate::evidence_capture::CaptureSession,
+) -> Result<(), ForgeError> {
+    validate_ar_schema(derived)?;
+    let document = derived
+        .get("assessment-results")
+        .ok_or_else(|| error("Assessment Results root is required"))?;
+    if document.get("uuid") != source.original.pointer("/assessment-results/uuid") {
+        return Err(error("derived epoch graph changes the captured native root identity"));
+    }
+    validate_supported_structure(derived)?;
+    validate_graph_edge_bound(document)?;
+    charge_shared_source_graph(document, capture)?;
+    validate_import(source.declaration, document)?;
+    validate_context_pins(document, &source.context)?;
+    validate_resource_pins(document, source.declaration, &source.context)?;
+    inventory_results(document, source.declaration, &source.context)?;
+    Ok(())
+}
+
+/// Forward the maintained canonical whole-object digest without creating source freshness authority.
+/// # Errors
+/// Refuses the same unsupported canonical JSON representation as the existing source writer.
+pub(super) fn canonical_epoch_object_sha256(value: &Value) -> Result<String, ForgeError> {
+    canonical_object_sha256(value)
 }
 
 /// Charge complete AR object records and the existing native reference edge families before adjacency growth.
