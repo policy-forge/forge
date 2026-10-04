@@ -879,9 +879,407 @@ class CheckoutBindingTests(unittest.TestCase):
              mock.patch.object(sys, "stdout", new_callable=io.StringIO):
             self.assertEqual(verifier.main(), 0)
         self.assertEqual(verified.call_args.kwargs, {"event": "pull_request", "checkout_kind": "pull-request-merge",
-                                                   "requested_head": "b" * 40, "requested_base": "a" * 40})
+                                                   "requested_head": "b" * 40, "requested_base": "a" * 40,
+                                                   "client_failure_published": verifier.emit_client_failure_publication_flag})
         self.assertEqual(verified.call_args.args[5:7], ("c" * 40, "success"))
 
+
+class ClientFailureObservationTests(unittest.TestCase):
+    """Exercise separate diagnostic facts without changing failed producer or /2 authority rules."""
+
+    def setUp(self):
+        """Allocate private files and fixed synthetic source identities for these proposed controls."""
+        self.temporary = tempfile.TemporaryDirectory(prefix="forge-client-observation-test-")
+        self.addCleanup(self.temporary.cleanup)
+        self.directory = Path(self.temporary.name)
+        self.path = self.directory / "client.json"
+        self.identity = {"source_commit": "a" * 40, "ordered_parents": [], "tracked_source_clean": True,
+                         "inputs": {name: {"sha256": "b" * 64, "bytes": 10} for name in verifier.INPUTS},
+                         "provided_release_binary": {"sha256": "c" * 64, "bytes": 20}}
+
+    def failed_receipt(self):
+        """Return the exact existing closed minimal failed producer object, with no private fields."""
+        return {"schema_version": "forge.workspace-client-verification/2", "status": "failed",
+                "checks": [], "check_count": 0, "failure": "client-conformance-failed"}
+
+    def completed(self, output=b"Maintained headless client conformance failed.\n", code=1, failure=None):
+        """Build a synthetic subprocess observation while preserving its actual typed exit and capture failure."""
+        return {"exit_code": code, "failure": failure, "output": output}
+
+    def write(self, value):
+        """Write canonical private synthetic receipt bytes without running a producer."""
+        self.path.write_bytes(verifier.canonical_bytes(value))
+
+    def observe(self, completed=None):
+        """Call the actual new diagnostic constructor on this private fixture, not a rewritten result."""
+        return verifier.client_failure_observation(completed or self.completed(), self.path, self.identity)
+
+    def verify_fixture(self, *, publication_error=False, changed=False, passed=False, selected=verifier.SUITES,
+                       published_callback=None, existing_sidecar=None, postlink_error=False):
+        """Run the real verifier with mocked suite execution and real private diagnostic file IO."""
+        after = copy.deepcopy(self.identity)
+        if changed:
+            after["inputs"]["scripts/test_workspace_client.py"]["sha256"] = "d" * 64
+        tools = {"python": "3.11.9", "os": "Windows", "os_release": "10", "machine": "AMD64",
+                 "cargo": {"version": "1.99.0"}, "rustc": {"version": "1.99.0"},
+                 "rust_host": "x86_64-pc-windows-msvc"}
+        declared = [name for _, _, name in verifier.contract_routes(ROOT)]
+        private_paths = []
+        commands = []
+        def command(arguments, root, timeout):
+            """Write the genuine private receipt shape while replacing all Cargo/Forge process calls."""
+            commands.append(arguments)
+            if "--receipt" in arguments:
+                path = Path(arguments[arguments.index("--receipt") + 1])
+                private_paths.append(path)
+                if existing_sidecar is not None:
+                    (self.directory / "evidence" / "workspace-client-failure-observation.json").write_bytes(existing_sidecar)
+                path.write_bytes(verifier.canonical_bytes(client_receipt(declared) if passed else self.failed_receipt()))
+                return {"exit_code": 0, "failure": None, "output": b""} if passed else self.completed()
+            return {"exit_code": 0, "failure": None, "output": SUMMARY}
+        original_publish = verifier.atomic_receipt
+        def publish(path, value):
+            """Inject only a secondary sidecar failure; retain actual outer receipt publication unchanged."""
+            if publication_error and path.name == "workspace-client-failure-observation.json":
+                raise OSError("SECRET PRIVATE PATH /private")
+            result = original_publish(path, value)
+            if postlink_error and path.name == "workspace-client-failure-observation.json":
+                raise OSError("PRIVATE POSTLINK CLEANUP FAULT")
+            return result
+        output = self.directory / "evidence"
+        with mock.patch.object(verifier, "capture_identity", side_effect=[self.identity, after]) as capture, \
+             mock.patch.object(verifier, "tool_versions", return_value=tools), \
+             mock.patch.object(verifier, "run_command", side_effect=command), \
+             mock.patch.object(verifier, "atomic_receipt", side_effect=publish):
+            receipt = verifier.verify(ROOT, self.directory / "not-a-real-binary", output,
+                                      selected, build_outcome="success", client_failure_published=published_callback)
+        self.assertEqual(capture.call_count, 2)
+        self.assertEqual(len(commands), 3)
+        self.last_commands = commands
+        return receipt, output, private_paths
+
+    def test_actual_failed_inner_fact_survives_private_cleanup_without_counts(self):
+        """Retain the failed inner shape before its private directory disappears; never invent counts."""
+        receipt, output, private_paths = self.verify_fixture()
+        self.assertEqual(receipt["status"], "failed")
+        self.assertEqual(receipt["suites"]["maintained-client"]["exit_code"], 1)
+        self.assertEqual(receipt["suites"]["maintained-client"]["failure"], "suite-failed")
+        self.assertIsNone(receipt["suites"]["maintained-client"]["counts"])
+        self.assertNotIn("coverage", receipt["suites"]["maintained-client"])
+        self.assertTrue(private_paths)
+        self.assertTrue(all(not path.exists() for path in private_paths))
+        observation = json.loads((output / "workspace-client-failure-observation.json").read_bytes())
+        self.assertEqual(observation["inner_receipt_fact"], "closed-client-conformance-failed")
+        self.assertEqual(observation["banner_outcome"], "conformance-failed")
+        self.assertEqual(json.loads((output / "workspace-verification.json").read_bytes()), receipt)
+
+    def test_nonzero_passed_looking_file_never_invokes_passed_reader(self):
+        """A publication-failure file is a non-authorizing shape fact, not passed verification or operation counts."""
+        self.write(client_receipt(["synthetic-operation"]))
+        with mock.patch.object(verifier, "read_client_receipt", side_effect=AssertionError("must not read authority")) as reader:
+            value = self.observe(self.completed(b"Maintained headless client receipt publication failed.\n"))
+        reader.assert_not_called()
+        self.assertEqual(value["producer_exit_code"], 1)
+        self.assertEqual(value["inner_receipt_fact"], "nonfailed-not-authority")
+        self.assertEqual(value["banner_outcome"], "publication-failed")
+        self.assertNotIn("counts", value)
+        self.assertNotIn("operation_outcomes", value)
+
+    def test_exact_lf_crlf_banners_and_mixed_private_output(self):
+        """Recognize complete fixed banners only; mixed, prefixed or trailing output stays unknown and redacted."""
+        self.write(self.failed_receipt())
+        for newline in (b"\n", b"\r\n"):
+            for banner, outcome in ((b"Maintained headless client conformance failed.", "conformance-failed"),
+                                    (b"Maintained headless client receipt publication failed.", "publication-failed")):
+                with self.subTest(outcome=outcome, newline=newline):
+                    self.assertEqual(self.observe(self.completed(banner + newline))["banner_outcome"], outcome)
+        for output in (b"SECRET\nMaintained headless client conformance failed.\n", b"Maintained headless client conformance failed.",
+                       b"Maintained headless client conformance failed.\n/private CAPABILITY", b""):
+            value = self.observe(self.completed(output))
+            self.assertEqual(value["banner_outcome"], "unknown")
+            encoded = verifier.canonical_bytes(value)
+            self.assertNotIn(b"SECRET", encoded)
+            self.assertNotIn(b"CAPABILITY", encoded)
+            self.assertNotIn(b"/private", encoded)
+
+    def test_failed_shape_duplicate_keys_nonfinite_types_and_private_fields_refused(self):
+        """Classify only the existing closed failed object; reject malformed or secret-bearing private JSON."""
+        examples = [b'{"status":"failed","status":"passed"}', b'{"x":NaN}', b"[]", b"\xff"]
+        for change in ({"check_count": False}, {"checks": ["PRIVATE"]}, {"private": "SECRET"},
+                       {"failure": "PRIVATE"}, {"schema_version": "other/1"}, {"status": "passed"}):
+            examples.append(verifier.canonical_bytes({**self.failed_receipt(), **change}))
+        for raw in examples:
+            with self.subTest(length=len(raw)):
+                self.path.write_bytes(raw)
+                value = self.observe()
+                self.assertEqual(value["inner_receipt_fact"], "invalid-or-unreadable")
+                self.assertNotIn(b"PRIVATE", verifier.canonical_bytes(value))
+                self.assertNotIn(b"SECRET", verifier.canonical_bytes(value))
+
+    def test_missing_link_and_nonregular_paths_never_block_open(self):
+        """Return fixed absence or invalid-kind facts before attempting to open links or named pipes."""
+        self.assertEqual(self.observe()["inner_receipt_fact"], "not-found")
+        for kind in (verifier.stat.S_IFLNK, verifier.stat.S_IFIFO, verifier.stat.S_IFDIR):
+            fake = mock.Mock(st_mode=kind | 0o600, st_size=10)
+            with self.subTest(kind=kind), mock.patch.object(Path, "lstat", return_value=fake), \
+                 mock.patch.object(verifier.os, "open") as opened:
+                self.assertEqual(self.observe()["inner_receipt_fact"], "invalid-or-unreadable")
+                opened.assert_not_called()
+
+    def test_private_input_bound_and_changed_generation_refuse_shape(self):
+        """Reject oversized input before opening and a changed held generation before parsing."""
+        self.write(self.failed_receipt())
+        with mock.patch.object(verifier, "MAX_CAPTURE", 8), mock.patch.object(verifier.os, "open") as opened:
+            self.assertEqual(self.observe(self.completed(b""))["inner_receipt_fact"], "invalid-or-unreadable")
+            opened.assert_not_called()
+        before = self.path.stat()
+        altered = mock.Mock(**{key: getattr(before, key) for key in
+                              ("st_dev", "st_ino", "st_mode", "st_size", "st_mtime_ns", "st_ctime_ns")})
+        altered.st_mtime_ns += 1
+        with mock.patch.object(verifier.os, "fstat", side_effect=[before, altered]):
+            self.assertEqual(self.observe()["inner_receipt_fact"], "invalid-or-unreadable")
+
+    def test_descriptor_is_closed_after_private_parse_failure(self):
+        """Attempt the held descriptor close after invalid JSON without publishing raw errors."""
+        self.path.write_bytes(b"SECRET is not JSON")
+        real_close = verifier.os.close
+        with mock.patch.object(verifier.os, "close", wraps=real_close) as closed:
+            value = self.observe()
+        self.assertEqual(closed.call_count, 1)
+        self.assertEqual(value["inner_receipt_fact"], "invalid-or-unreadable")
+        self.assertNotIn(b"SECRET", verifier.canonical_bytes(value))
+
+    def test_capture_failures_preserve_exact_code_discard_output_and_no_execution_null(self):
+        """Observe fixed capture failures with unavailable banners and exact exit values; never copy discarded output."""
+        for failure in verifier.CLIENT_CAPTURE_FAILURES:
+            for code in (None, -9, 1, 3221225477):
+                with self.subTest(failure=failure, code=code):
+                    value = self.observe(self.completed(b"SECRET /private CAPABILITY", code=code, failure=failure))
+                    self.assertEqual(value["producer_exit_code"], code)
+                    self.assertEqual(value["subprocess_failure"], failure)
+                    self.assertEqual(value["banner_outcome"], "unavailable")
+                    self.assertNotIn(b"SECRET", verifier.canonical_bytes(value))
+
+    def test_invalid_exit_capture_or_source_identity_never_publishes(self):
+        """Refuse untyped diagnostic facts and invalid source pins without altering any suite outcome."""
+        self.write(self.failed_receipt())
+        for completed in (self.completed(code=True), self.completed(code=2 ** 32),
+                          self.completed(failure="SECRET"), self.completed(output="SECRET")):
+            with self.subTest(completed=completed):
+                self.assertFalse(verifier.retain_client_failure_observation(self.directory, completed, self.path, self.identity))
+        for change in ({"source_commit": "PRIVATE"}, {"inputs": {}},
+                       {"inputs": {name: {"sha256": "x" * 64, "bytes": True} for name in verifier.INPUTS}}):
+            self.assertFalse(verifier.retain_client_failure_observation(self.directory, self.completed(), self.path,
+                                                                        {**self.identity, **change}))
+        self.assertFalse((self.directory / "workspace-client-failure-observation.json").exists())
+
+    def test_sidecar_closed_shape_bounded_bytes_and_no_replacement(self):
+        """Publish exactly the diagnostic fields within 2 KiB and preserve the first sidecar unchanged."""
+        self.write(self.failed_receipt())
+        self.assertTrue(verifier.retain_client_failure_observation(self.directory, self.completed(), self.path, self.identity))
+        path = self.directory / "workspace-client-failure-observation.json"
+        raw = path.read_bytes()
+        value = json.loads(raw)
+        self.assertLessEqual(len(raw), 2048)
+        self.assertEqual(set(value), {"schema_version", "producer_exit_code", "subprocess_failure",
+                                     "banner_outcome", "inner_receipt_fact", "identity"})
+        self.assertEqual(set(value["identity"]), {"tested_commit", "before_inputs"})
+        self.assertEqual(set(value["identity"]["before_inputs"]), set(verifier.CLIENT_FAILURE_SOURCES))
+        self.assertFalse(verifier.retain_client_failure_observation(self.directory, self.completed(code=9), self.path, self.identity))
+        self.assertEqual(path.read_bytes(), raw)
+        with mock.patch.object(verifier, "MAX_CLIENT_FAILURE_OBSERVATION", 1):
+            self.assertFalse(verifier.retain_client_failure_observation(self.directory, self.completed(), self.path, self.identity))
+
+    def test_sidecar_write_fault_retains_primary_failure_remaining_suites_and_rechecks(self):
+        """A secondary publication fault cannot suppress the primary exit, remaining suites or input drift."""
+        receipt, output, _ = self.verify_fixture(publication_error=True, changed=True)
+        self.assertEqual(receipt["status"], "failed")
+        self.assertEqual(receipt["input_stability"], "changed")
+        self.assertEqual(receipt["suites"]["maintained-client"]["failure"], "suite-failed")
+        self.assertEqual(receipt["suites"]["maintained-client"]["exit_code"], 1)
+        self.assertIsNone(receipt["suites"]["maintained-client"]["counts"])
+        self.assertEqual(receipt["suites"]["api-contract"]["status"], "passed")
+        self.assertEqual(receipt["suites"]["api-workflow"]["status"], "passed")
+        self.assertFalse((output / "workspace-client-failure-observation.json").exists())
+        self.assertNotIn(b"SECRET", (output / "workspace-verification.json").read_bytes())
+
+    def test_passing_original_suites_do_not_emit_failure_observation(self):
+        """Keep success admission and the original single outer receipt when all declared synthetic suites pass."""
+        receipt, output, _ = self.verify_fixture(passed=True)
+        self.assertEqual(receipt["status"], "passed")
+        self.assertEqual(receipt["suites"]["maintained-client"]["counts"]["explicit_checks"], 16)
+        self.assertEqual(sorted(path.name for path in output.iterdir()), ["workspace-verification.json"])
+
+
+    def test_failed_client_first_sidecar_fault_does_not_skip_later_suites(self):
+        """Execute both later synthetic Rust suites after failed client observation and retain input-change refusal."""
+        selected = ("maintained-client", "api-contract", "api-workflow")
+        receipt, output, _ = self.verify_fixture(publication_error=True, changed=True, selected=selected)
+        self.assertIn("--receipt", self.last_commands[0])
+        self.assertEqual([command[command.index("--test") + 1] for command in self.last_commands[1:]],
+                         ["api_contract_validation", "workspace_cli_test"])
+        self.assertEqual(receipt["suites"]["api-contract"]["status"], "passed")
+        self.assertEqual(receipt["suites"]["api-workflow"]["status"], "passed")
+        self.assertEqual(receipt["suites"]["maintained-client"]["failure"], "suite-failed")
+        self.assertEqual(receipt["suites"]["maintained-client"]["exit_code"], 1)
+        self.assertIsNone(receipt["suites"]["maintained-client"]["counts"])
+        self.assertEqual(receipt["input_stability"], "changed")
+        self.assertEqual(receipt["status"], "failed")
+        self.assertFalse((output / "workspace-client-failure-observation.json").exists())
+
+
+class ClientFailurePublicationTests(unittest.TestCase):
+    """Prove new publication, not a fixed filename's existence, controls the secondary upload flag."""
+
+    def setUp(self):
+        """Compose the existing private verifier fixture without inheriting or repeating its test cases."""
+        self.fixture = ClientFailureObservationTests()
+        self.fixture.setUp()
+        self.addCleanup(self.fixture.doCleanups)
+        self.runner_output = self.fixture.directory / "runner-output"
+        self.runner_output.write_bytes(b"")
+
+    def emit(self):
+        """Use only this private runner-file fixture for the actual fixed flag emitter."""
+        with mock.patch.dict(verifier.os.environ, {"GITHUB_OUTPUT": str(self.runner_output)}):
+            return verifier.emit_client_failure_publication_flag()
+
+    def test_fresh_bounded_publication_emits_fixed_flag_once(self):
+        """Authorize only a successfully published new closed sidecar while preserving the failed primary receipt."""
+        callback = mock.Mock(side_effect=self.emit)
+        receipt, output, _ = self.fixture.verify_fixture(published_callback=callback)
+        callback.assert_called_once_with()
+        self.assertEqual(self.runner_output.read_bytes(), b"client_failure_observation_published=true\n")
+        raw = (output / "workspace-client-failure-observation.json").read_bytes()
+        self.assertLessEqual(len(raw), 2048)
+        self.assertEqual(json.loads(raw)["inner_receipt_fact"], "closed-client-conformance-failed")
+        self.assertEqual(receipt["status"], "failed")
+
+    def test_existing_sentinel_is_preserved_without_fresh_upload_flag(self):
+        """Refuse a pre-existing arbitrary sentinel even though the fixed artifact path exists."""
+        sentinel = b"SECRET STALE SENTINEL"
+        callback = mock.Mock(side_effect=self.emit)
+        receipt, output, _ = self.fixture.verify_fixture(existing_sidecar=sentinel, published_callback=callback)
+        callback.assert_not_called()
+        self.assertEqual((output / "workspace-client-failure-observation.json").read_bytes(), sentinel)
+        self.assertEqual(self.runner_output.read_bytes(), b"")
+        self.assertEqual(receipt["status"], "failed")
+
+    def test_oversized_existing_sidecar_never_authorizes_upload(self):
+        """Preserve an existing file exceeding the diagnostic cap without signaling fresh publication."""
+        sentinel = b"PRIVATE" * 1000
+        callback = mock.Mock(side_effect=self.emit)
+        _, output, _ = self.fixture.verify_fixture(existing_sidecar=sentinel, published_callback=callback)
+        callback.assert_not_called()
+        self.assertEqual((output / "workspace-client-failure-observation.json").read_bytes(), sentinel)
+        self.assertGreater(len(sentinel), 2048)
+        self.assertEqual(self.runner_output.read_bytes(), b"")
+
+    def test_publication_fault_keeps_flag_absent_and_later_suites_running(self):
+        """A refused publication never emits a flag and does not hide primary failure, drift or later results."""
+        callback = mock.Mock(side_effect=self.emit)
+        receipt, output, _ = self.fixture.verify_fixture(publication_error=True, changed=True,
+            selected=("maintained-client", "api-contract", "api-workflow"), published_callback=callback)
+        callback.assert_not_called()
+        self.assertEqual(self.runner_output.read_bytes(), b"")
+        self.assertFalse((output / "workspace-client-failure-observation.json").exists())
+        self.assertEqual(receipt["status"], "failed")
+        self.assertEqual(receipt["input_stability"], "changed")
+        self.assertEqual(receipt["suites"]["api-contract"]["status"], "passed")
+        self.assertEqual(receipt["suites"]["api-workflow"]["status"], "passed")
+
+    def test_postlink_publisher_fault_leaves_file_without_upload_authority(self):
+        """A passed-looking file left by a publisher cleanup fault is insufficient to invoke the callback."""
+        callback = mock.Mock(side_effect=self.emit)
+        receipt, output, _ = self.fixture.verify_fixture(postlink_error=True, published_callback=callback)
+        self.assertTrue((output / "workspace-client-failure-observation.json").is_file())
+        callback.assert_not_called()
+        self.assertEqual(self.runner_output.read_bytes(), b"")
+        self.assertEqual(receipt["status"], "failed")
+
+    def test_callback_failure_is_secondary_after_actual_new_publication(self):
+        """An emitter exception cannot suppress the original failed receipt or successful later suites."""
+        callback = mock.Mock(side_effect=OSError("SECRET OUTPUT TARGET"))
+        receipt, output, _ = self.fixture.verify_fixture(published_callback=callback, changed=True,
+            selected=("maintained-client", "api-contract", "api-workflow"))
+        callback.assert_called_once_with()
+        self.assertTrue((output / "workspace-client-failure-observation.json").is_file())
+        self.assertEqual(receipt["suites"]["maintained-client"]["exit_code"], 1)
+        self.assertEqual(receipt["suites"]["api-contract"]["status"], "passed")
+        self.assertEqual(receipt["suites"]["api-workflow"]["status"], "passed")
+        self.assertEqual(receipt["input_stability"], "changed")
+        self.assertEqual(receipt["status"], "failed")
+        self.assertIn("--receipt", self.fixture.last_commands[0])
+        self.assertEqual([command[command.index("--test") + 1] for command in self.fixture.last_commands[1:]],
+                         ["api_contract_validation", "workspace_cli_test"])
+        self.assertNotIn(b"SECRET", (output / "workspace-verification.json").read_bytes())
+
+    def test_passing_client_never_emits_failure_flag(self):
+        """No upload authorization is produced when the original client reader and all suites pass."""
+        callback = mock.Mock(side_effect=self.emit)
+        receipt, _, _ = self.fixture.verify_fixture(passed=True, published_callback=callback)
+        callback.assert_not_called()
+        self.assertEqual(receipt["status"], "passed")
+        self.assertEqual(self.runner_output.read_bytes(), b"")
+
+    def test_absent_or_nonregular_runner_file_is_refused_before_write(self):
+        """Missing environment files and unsupported kinds cannot create an authorization target."""
+        with mock.patch.dict(verifier.os.environ, {}, clear=True):
+            self.assertFalse(verifier.emit_client_failure_publication_flag())
+        with mock.patch.dict(verifier.os.environ, {"GITHUB_OUTPUT": str(self.fixture.directory / "missing")}):
+            self.assertFalse(verifier.emit_client_failure_publication_flag())
+        for mode in (verifier.stat.S_IFLNK, verifier.stat.S_IFDIR, verifier.stat.S_IFIFO):
+            fake = mock.Mock(st_mode=mode | 0o600, st_nlink=1, st_size=0)
+            with self.subTest(mode=mode), mock.patch.object(Path, "lstat", return_value=fake), \
+                 mock.patch.object(verifier.os, "open") as opened:
+                self.assertFalse(self.emit())
+                opened.assert_not_called()
+        self.assertEqual(self.runner_output.read_bytes(), b"")
+
+    def test_runner_flag_copies_no_arbitrary_environment_or_process_content(self):
+        """Append exactly one fixed ASCII line and preserve existing runner outputs without reflecting secrets."""
+        self.runner_output.write_bytes(b"existing=value\n")
+        with mock.patch.dict(verifier.os.environ, {"PRIVATE": "SECRET /private capability"}):
+            self.assertTrue(self.emit())
+        self.assertEqual(self.runner_output.read_bytes(), b"existing=value\nclient_failure_observation_published=true\n")
+        self.assertNotIn(b"SECRET", self.runner_output.read_bytes())
+
+    def test_short_write_does_not_report_complete_flag(self):
+        """A partial fixed-line write is not reported as success and is never retried with another append."""
+        real_write = verifier.os.write
+        def short_write(descriptor, raw):
+            """Write one incomplete fixed line through the actual descriptor to exercise short-write accounting."""
+            return real_write(descriptor, raw[:-5])
+        with mock.patch.object(verifier.os, "write", side_effect=short_write) as written:
+            self.assertFalse(self.emit())
+        self.assertEqual(written.call_count, 1)
+        self.assertNotEqual(self.runner_output.read_bytes(), b"client_failure_observation_published=true\n")
+
+    def test_postwrite_close_fault_cannot_retract_already_written_flag(self):
+        """Retain the honest post-write limitation: failure return does not undo a complete appended fixed line."""
+        real_close = verifier.os.close
+        def faulty_close(descriptor):
+            """Close the actual private descriptor before raising a synthetic secondary cleanup fault."""
+            real_close(descriptor)
+            raise OSError("PRIVATE CLOSE FAULT")
+        with mock.patch.object(verifier.os, "close", side_effect=faulty_close):
+            self.assertFalse(self.emit())
+        self.assertEqual(self.runner_output.read_bytes(), b"client_failure_observation_published=true\n")
+
+    def test_nonempty_receipt_directory_refuses_before_publication_or_commands(self):
+        """Preserve original fresh-directory admission with no stale-file deletion or authorization attempt."""
+        output = self.fixture.directory / "nonempty"
+        output.mkdir()
+        sentinel = output / "workspace-client-failure-observation.json"
+        sentinel.write_bytes(b"STILL OWNED")
+        callback = mock.Mock(side_effect=self.emit)
+        with mock.patch.object(verifier, "run_command") as command, self.assertRaises(ValueError):
+            verifier.verify(ROOT, self.fixture.directory / "absent-binary", output, verifier.SUITES,
+                            client_failure_published=callback)
+        command.assert_not_called()
+        callback.assert_not_called()
+        self.assertEqual(sentinel.read_bytes(), b"STILL OWNED")
+        self.assertEqual(self.runner_output.read_bytes(), b"")
 
 if __name__ == "__main__":
     if not __debug__:
