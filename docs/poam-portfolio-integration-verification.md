@@ -62,7 +62,7 @@ assignment semicolon. Precise successors retain every failed receipt and preserv
 unrelated bodies. The final full run executes the corrected integrated source.
 
 Controls use actual five-source captures and freshly generated native artifacts.
-They check complete counts, null and cancelled dates, final-state versus as-of
+They check complete counts, null as-of states and cancelled rows, final-state versus as-of
 semantics, explicit multi-root pairs with different native basenames, full decoded
 native equality, original-byte hashes, same-byte identity replacement, every held
 original, stale/extra native data, duplicate plans, complete escaping and output
