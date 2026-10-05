@@ -13,16 +13,13 @@ const WINDOWS_CLI_STACK_BYTES: usize = 8 * 1024 * 1024;
 /// Start CLI parsing and execution on a bounded Windows worker before building the command tree.
 #[cfg(windows)]
 fn main() -> ExitCode {
-    let worker = match std::thread::Builder::new()
+    let Ok(worker) = std::thread::Builder::new()
         .name("forge-cli".to_string())
         .stack_size(WINDOWS_CLI_STACK_BYTES)
         .spawn(run_cli)
-    {
-        Ok(worker) => worker,
-        Err(_) => {
-            eprintln!("Error: CLI startup failed");
-            return ExitCode::FAILURE;
-        }
+    else {
+        eprintln!("Error: CLI startup failed");
+        return ExitCode::FAILURE;
     };
     match worker.join() {
         Ok(code) => code,
