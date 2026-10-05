@@ -8,7 +8,12 @@ phases; S-1 is implemented in the closeout PR.
 Owners recorded the dispositions below on **2026-09-11**. They are asserted human
 decisions, attributed to their owner — the same standard the authoring contracts
 apply to reviewer metadata. FORGE does not authenticate the decision-maker, prove
-independence, or grant rights. Nothing here emits compliant, certified,
+independence, or grant rights. The later
+[Lifecycle review exchange candidate](lifecycle-review-exchange.md) and
+[MCP `/2` development checkpoint](mcp.md#f20-2-development-checkpoint) retain their
+own implementation and acceptance gates; these authoring dispositions do not
+supply their reviewer authority, project-owner disclosure records or acceptance.
+Nothing here emits compliant, certified,
 implemented, effective or approved language (M-14), and no approval or lifecycle
 evidence is created.
 

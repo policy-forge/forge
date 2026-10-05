@@ -44,6 +44,8 @@ pub(crate) enum CaptureRole {
     MappingCollection,
     /// Complete intrinsically validated lifecycle record original.
     LifecycleRecord,
+    /// Mode-private Lifecycle source/generated original bytes, without schema authority.
+    LifecycleArtifactOriginal,
     /// Exact maintained native Impact manifest, admitted only by the S4 review profile.
     ImpactManifest,
     /// Exact complete current/prior native Impact report; use purposes remain separate.

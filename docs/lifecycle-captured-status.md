@@ -42,6 +42,12 @@ Rustdoc link checks passed separately for the library and binary. Exact source, 
 executable coverage denominators, zero-count records, and limitations are recorded in the
 [root validation audit](plans/2026-10-02-f19-lifecycle-captured-status-checks-v2.json).
 
+The later [portable Lifecycle review exchange candidate](lifecycle-review-exchange.md)
+consumes a separate native closure and registers four review commands in the
+implementation candidate. After integration, these remain separate from the
+status `/1` report and its qualification; review quorum grants no native
+Lifecycle transition or reviewer authority.
+
 See the [projector source](../src/lifecycle/status.rs),
 [CLI regression tests](../tests/lifecycle_cli_test.rs), and
 [delivery plan](plans/2026-10-02-f19-lifecycle-captured-status.md).

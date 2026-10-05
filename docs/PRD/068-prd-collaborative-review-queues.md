@@ -21,7 +21,7 @@ FORGE will package mapping, applicability, change-impact, authoring, assessment,
 
 ### Background :red_circle: `@human-required`
 
-FORGE's evidence-first features deliberately require human review, but each currently assumes one manifest author and has no common mechanism for assigning work, collecting independent decisions, resolving disagreement, or proving that the reviewed subject bytes match the current project. Building live collaboration first would introduce accounts, authorization, tenancy, and databases before the review semantics are stable.
+At the 2026-08-24 planning checkpoint, FORGE's evidence-first workflows required human review but lacked a common mechanism for assignments, independent responses and exact-subject binding. The later portable implementation is described below. Building live collaboration first would introduce accounts, authorization, tenancy and databases before the review semantics are stable.
 
 ### Evidence and Product Hypotheses :yellow_circle: `@human-review`
 
@@ -31,7 +31,7 @@ FORGE's evidence-first features deliberately require human review, but each curr
 | Product boundary | Local manifests preserve declared parties but do not authenticate identity. | Response files must state this limitation and must not be called digital signatures. |
 | Product hypothesis | Portable asynchronous queues solve most initial collaboration pain without a hosted platform. | Measure completed review cycles and conflict resolution before building live service mode. |
 
-No team workflow research, identity design, merge corpus, or hosted-service business case was supplied. Queue adoption targets are hypotheses.
+At that initial planning checkpoint, no team workflow research, identity design, merge corpus or hosted-service business case was supplied. Later engineering work uses asserted identity and quorum; authentic team/adoption and reviewer-authority acceptance remain open.
 
 ### Scope Boundaries :yellow_circle: `@human-review`
 
@@ -206,6 +206,19 @@ quorum, domain approval or an authenticated identity. Loaded currentness labels
 remain inert; private rationale, source paths and native document-version/href
 fields are omitted from the minimized companion. Identifiers and hashes may
 still disclose sensitive metadata.
+
+F13 adds a separate [Lifecycle review exchange candidate](../lifecycle-review-exchange.md)
+with closed Queue/Response/Disposition `/2` documents and an already
+Approved/current native Lifecycle prerequisite. Its implementation candidate
+registers `forge review lifecycle init/respond/merge/status`; use those commands
+after candidate integration. One authentic coupled run passed 63 controls across
+receiver/binding/finalizer/current/response/export/init, including the in-process
+CLI workflow. Later exact formatted candidate checks passed normal regressions,
+strict lint and fresh library-only LLVM instrumentation, plus a separate macOS
+child workflow; see the linked guide for denominators. Other platform and
+acceptance gates remain open. A recorded `Current` result does
+not authenticate reviewers or perform a Lifecycle transition. This slice does
+not complete the other adapters, proposed edits or interactive client requirements.
 
 See the [portable review queue guide](../review-queues.md) for all seven commands,
 private formats, publication limits and exact authority boundaries. This is an

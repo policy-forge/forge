@@ -29,7 +29,9 @@ configuration, drift, traceability, and lifecycle workflows. Use
 
 For local agent queries, see [the MCP guide](mcp.md). `forge mcp serve` exposes
 seven read-only tools over stdio, with an explicit project and reviewed disclosure
-scope. Static discovery does not authorize project data.
+scope. Static discovery does not authorize project data. The guide also records
+the separate [F20 `/2` development checkpoint](mcp.md#f20-2-development-checkpoint);
+those candidate inputs do not activate additional shipped MCP features.
 
 ## 2. Writing a Policy Document
 
@@ -85,9 +87,9 @@ All users must authenticate before accessing systems.
 FORGE detects and processes:
 - **Requirement atomization** — splits "must X and must Y" into separate controls
 - **Modality detection** — classifies statements as mandatory (MUST/SHALL) or advisory (SHOULD/MAY)
-- **Parameter extraction** — turns prose thresholds (e.g., "12 characters", "30 minutes") into machine-enforceable parameters
+- **Parameter extraction** — turns prose thresholds (e.g., "12 characters", "30 minutes") into structured OSCAL parameters; enforcement depends on separately configured consumers
 - **Citation extraction** — URLs and references become OSCAL back-matter resources
-- **Stable identifiers** — UUID v5 generation ensures every control has a persistent identity across re-conversions
+- **Content-derived identifiers** — UUID v5 tags repeat for the same normalized requirement text; substantive text or duplicate-occurrence changes can change them. These tags are not integrity or approval anchors.
 
 25 sample policies are included in `example_data/` covering topics from acceptable use to incident response.
 
@@ -911,6 +913,12 @@ under an absolute project root; output files must be new. Publication uses the
 Linux/macOS no-replace publisher and refuses on Windows. Identifiers and hashes
 can still contain sensitive project metadata.
 
+Lifecycle re-review uses a separate [closed `/2` exchange candidate](lifecycle-review-exchange.md).
+Its implementation candidate registers `forge review lifecycle
+init/respond/merge/status`; the linked guide gives exact flags for use after
+candidate integration. This section's seven commands retain their existing
+Mapping/applicability scope; no review disposition changes native Lifecycle state.
+
 ## 4. Global Options
 
 ```bash
@@ -1042,14 +1050,18 @@ forge convert example_data/POL-0[1-3]*.md --strategy catalog --format json --out
 
 ## 7. Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| 0    | Success |
-| 1    | Validation failure or diff found changes |
-| 2    | File not found |
-| 3    | Invalid argument |
-| 4    | oscal-cli not found (resolve/round-trip) |
-| 5    | oscal-cli execution failure |
+| Code | Maintained error family or completed action |
+|------|---------------------------------------------|
+| 0 | Success under the selected command/gate |
+| 1 | Input/I/O, serialization or external execution failure; also completed diff, drift or review-action states |
+| 2 | Parse/structure, required-argument or domain build/analysis failure |
+| 3 | Schema validation or configuration failure |
+| 4 | External dependency unavailable or nonfunctional |
+
+CLI argument parsing also exits `2` for rejected usage. Use each command's
+documented gate/action semantics before treating a nonzero code as a failed
+analysis. The [maintained error mapping](../src/error.rs) defines these families;
+there is no generic exit `5`.
 
 ## 8. Quality Gates
 
@@ -1087,10 +1099,11 @@ See [Workspace index bundles](workspace-index-bundles.md) for the Python example
 normalized index hash versus original resource hashes and safe errors.
 Negotiated API2.2, 2.3 or 2.4 sessions offer [confirmed metadata receipts and index
 replacement](workspace-bundle-receipts.md); API2.3 and 2.4 admit [opt-in exact-source
-export and complete source restore](workspace-source-bundles.md). The separately
-captured API2.4 working-tree [staged proposal](workspace-staged-source-bundles.md)
-adds bounded part transfer; this compatibility description supplies no runtime,
-merged or hosted result. These writes require
+export and complete source restore](workspace-source-bundles.md). The current captured API2.4 source adds
+[bounded staged part transfer](workspace-staged-source-bundles.md). Exact-tree
+hosted API and Chrome staged-source development workflows have scoped successful
+receipts; separate headless and dependency-audit jobs failed. This does not
+establish full S-6, network-denial, platform or human acceptance. These writes require
 preparation and a separate confirmation, with distinct known-ID recovery for
 source restore. Full S-6 capacity, larger transfer and platform/crash/batch
 qualification, human acceptance and the final integrated documentation review
@@ -1100,6 +1113,7 @@ remain open.
 
 - [README.md](../README.md) — project overview and quick start
 - [Portable review queues](review-queues.md) — asserted review policy, immutable responses, recorded exports and explicit queue supersession
+- [Lifecycle review exchange candidate](lifecycle-review-exchange.md) — separate `/2` formats, candidate CLI commands and qualification limits
 - [Evidence and Implementation Linking](evidence-linkage.md) — exact subject/evidence metadata linkage, freshness, privacy, and baseline contracts
 - [Evidence overlays](evidence-overlays.md) — new Catalog/Component JSON documents, complete source preservation and generated metadata boundaries
 - [Contributing Guide](../CONTRIBUTING.md) — development setup and PR process

@@ -21,6 +21,10 @@ use super::decode::{ContractError, ContractLedger};
 #[path = "supersession_capture.rs"]
 pub(super) mod supersession;
 
+/// Closed mode-private Lifecycle purposes; ordinary Source role admission is unchanged.
+#[path = "lifecycle_mode.rs"]
+pub(super) mod lifecycle;
+
 /// Complete actual file attempts across the separate bounded pools.
 const MAX_ATTEMPTS: usize = 10_105;
 
@@ -135,6 +139,8 @@ pub(crate) struct ReviewCapture {
     queue_original: Option<usize>,
     /// Actual S4 purpose registrations; ordinary captures leave this absent.
     supersession: Option<supersession::SupersessionRegistrations>,
+    /// Successful actual Lifecycle purposes, absent in ordinary /1 operations.
+    lifecycle: Option<lifecycle::LifecycleRegistrations>,
 }
 
 impl ReviewCapture {
@@ -230,6 +236,7 @@ impl ReviewCapture {
                 response_originals: Vec::new(),
                 queue_original: None,
                 supersession: None,
+                lifecycle: None,
             })
         })
     }
@@ -245,6 +252,9 @@ impl ReviewCapture {
         ledger: &mut ContractLedger,
         control: &mut dyn WorkControl,
     ) -> Result<usize, ContractError> {
+        if self.lifecycle.is_some() && pool == Pool::Source {
+            return self.reject_lifecycle_source(path, per_file, ledger, control);
+        }
         if self.supersession.is_some() {
             return self.required_supersession_native(path, role, pool, per_file, ledger, control);
         }
@@ -473,6 +483,7 @@ impl ReviewCapture {
             response_originals: self.response_originals,
             queue_original: self.queue_original,
             supersession: self.supersession,
+            lifecycle: self.lifecycle,
         }
     }
 }
@@ -489,6 +500,8 @@ pub(crate) struct HeldReviewInputs {
     queue_original: Option<usize>,
     /// Actual S4 purpose registrations; ordinary captures leave this absent.
     supersession: Option<supersession::SupersessionRegistrations>,
+    /// Successful actual Lifecycle purposes, absent in ordinary /1 operations.
+    lifecycle: Option<lifecycle::LifecycleRegistrations>,
 }
 
 impl HeldReviewInputs {

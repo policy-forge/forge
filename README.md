@@ -14,9 +14,9 @@ FORGE is a high-performance Rust CLI designed for the Agent-Native software era.
 
 ## 🚀 Why FORGE?
 
-In the world of Agentic AI, natural language documentation is a liability. Agents suffer from "semantic ambiguity," leading to hallucinations and inconsistent security enforcement. FORGE "forges" abstract policy into deterministic, schema-validated artifacts that provide AI agents with a Shared Truth Layer.
+Natural-language policy can be ambiguous to automation. FORGE converts explicit source documents into schema-validated OSCAL artifacts for later review and tooling.
 
-By providing a high-fidelity, machine-navigable roadmap of a system's rules, FORGE allows agents to not just write code, but to understand the guardrails they must operate within.
+Whether these artifacts reduce agent mistakes or improve enforcement requires separate measured evaluation; conversion alone does not establish those outcomes.
 
 ## 🛠️ Key Architectural Pillars
 
@@ -24,23 +24,23 @@ By providing a high-fidelity, machine-navigable roadmap of a system's rules, FOR
 
 FORGE ingest human-centric Markdown and produces structured OSCAL Catalogs and Component Definitions.
 
-Zero-Shot Success: Reduces token waste by providing agents with deterministic schemas rather than ambiguous prose.
+Machine-Readable Contracts: Explicit schemas give agents a bounded structure to consume. Agent accuracy and token-size benefits remain evaluation hypotheses.
 
 Requirement Atomization: Automatically splits compound "Must X and Must Y" statements into individual, addressable controls.
 
 2. Deterministic Agentic Guardrails
 
-In agentic coding, an agent often has the power to modify its environment. FORGE creates the Guardrail Layer:
+FORGE supplies structured policy data for separately configured agent workflows:
 
-Stable Identifiers: UUID v5 generation ensures that every security control has a persistent identity, allowing agents to track compliance state across sessions.
+Content-Derived Identifiers: UUID v5 tags repeat for the same normalized requirement text. Substantive text or duplicate-occurrence changes can change them; these tags establish no compliance state or approval.
 
 Traceability: Source-to-OSCAL mapping ensures every machine rule is linked back to the original policy intent.
 
-3. Agentic Interoperability & Enforcement
+3. Machine-Readable Interoperability
 
 FORGE acts as a translation layer for the modern security stack. It enables the transition from "Policy-as-Prose" to Policy-as-Code:
 
-Tooling Integration: Compatible with Open Policy Agent (OPA), GitHub Advanced Security, and standard CI/CD scanners.
+Downstream Tooling: Machine-readable outputs can be consumed by separately configured tooling. Compatibility with a particular OPA, GitHub Advanced Security or scanner workflow requires its own adapter and qualification.
 
 MCP local queries: [Seven read-only MCP tools](docs/mcp.md) retrieve recorded governance data through an explicitly selected, reviewed disclosure scope.
 
@@ -51,7 +51,7 @@ MCP local queries: [Seven read-only MCP tools](docs/mcp.md) retrieve recorded go
 - **Schema validation** — Validate supported OSCAL v1.2.0–v1.2.3 declarations against the pinned v1.2.3 JSON schemas with semantic checks
 - **Format conversion** — Export supported Catalog and Component Definition artifacts between JSON, XML and YAML
 - **Requirement atomization** — Automatically split compound policy statements into individual controls
-- **Deterministic IDs** — UUID v5 generation ensures stable identifiers across re-conversions
+- **Deterministic IDs** — UUID v5 tags repeat for the same normalized requirement text; substantive changes can change them
 - **Citation extraction** — URLs and references extracted into OSCAL back-matter resources
 - **Traceability** — Source-to-OSCAL element mapping embedded as provenance metadata
 - **Evidence linkage** — Deterministic requirement-to-implementation indexes, evidence freshness and baseline checks, plus [Catalog/Component JSON overlays](docs/evidence-overlays.md) preserving original document values
@@ -71,14 +71,14 @@ cd forge
 cargo build --release
 
 # Convert a policy to an OSCAL Catalog (JSON)
-./target/release/forge convert tests/fixtures/sample_policy.md --strategy catalog --format json
+./target/release/forge convert tests/fixtures/sample_policy.md --strategy catalog --format json --output catalog.json
 
-# Convert to an OSCAL Component Definition
-./target/release/forge convert tests/fixtures/sample_policy.md --strategy component --format json --source-profile profile.json
-
-# Validate a generated OSCAL artifact
+# Validate the generated artifact
 ./target/release/forge validate catalog.json
 ```
+
+For Component Definition output, first supply an actual OSCAL Profile using
+`--source-profile`; see [the Component workflow](docs/usage-guide.md#component-definition-strategy).
 
 ## Usage
 
@@ -216,6 +216,13 @@ approval. See the
 [portable review queue guide](docs/review-queues.md) for the private inputs,
 immutable responses, dissent, disclosure limits and remaining acceptance gates.
 
+The separate [Lifecycle review exchange candidate](docs/lifecycle-review-exchange.md)
+registers `forge review lifecycle init/respond/merge/status` with closed `/2`
+documents in the implementation candidate. These instructions apply after that
+code and documentation are integrated; published v1.1.0 does not include the
+exchange. Recorded review results grant no native Lifecycle transition or
+reviewer authority.
+
 ### Assessment Results
 
 Package explicit assessor-authored observations, findings, and risks into
@@ -297,6 +304,9 @@ privacy, safe publication and remaining connector gates.
 Bind a policy version's declared review state to exact local source and generated
 OSCAL bytes. Lifecycle history is append-only and deterministic; FORGE preserves
 declared actors and roles but does not authenticate identity or authority.
+
+These native Lifecycle commands remain separate from the candidate
+[portable Lifecycle re-review exchange](docs/lifecycle-review-exchange.md).
 
 ```bash
 # Create a draft record with a date-only review schedule
@@ -564,7 +574,7 @@ The [release workflow](.github/workflows/release.yml) is configured to publish S
 FORGE processes governance through a rigorous nine-stage pipeline:
 Ingest → Parse → Extract → Assemble → Atomize → Assign IDs → Map to OSCAL → Serialize → Validate
 
-This ensures that the output is not just "valid JSON," but a semantically accurate representation of your security intent.
+These checks validate supported OSCAL structure and references. Review the generated requirements against the source policy; validity alone does not establish security intent, implementation or effectiveness.
 
 ## 🗺️ Roadmap
 
@@ -617,11 +627,12 @@ and it is not part of a release. See the
 review, preview/commit, recovery, API contracts, bounds, and remaining release gates.
 
 
-Current development snapshots and draft deliveries are tracked in the
-[integrated documentation successor](docs/plans/2026-10-03-integrated-documentation-staged-successor.md).
-The captured committed checkpoint declares API1 1.2.0/39 and API2 2.3.0/57.
-The separately captured working tree declares API2 2.4.0/65 for staged source
-transfer under integration; it supplies no merged, hosted or release result.
+The [2026-10-03 documentation snapshot](docs/plans/2026-10-03-integrated-documentation-staged-successor.md)
+retains its historical committed/working-tree distinction. The current captured
+F12 `c2fa4cd` source declares API1 1.2.0/39 and API2 2.4.0/65 operations. Exact-tree
+hosted API, Chrome and staged-source development workflows have successful scoped
+receipts; the same hosted run retains dependency-audit and headless failures.
+These results do not complete F04, platform/network-denial, human or release gates.
 These API versions are not product releases. Separate drafts, local checks and hosted
 checkpoints do not establish full Must/Should, platform, human or release
 acceptance.

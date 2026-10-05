@@ -18,6 +18,30 @@ separately records current captured source, draft separation and all 327
 Must/Should acceptance gates. Technical work, draft PRs and tests do not update
 these historical statuses or supply human, audit or release acceptance.
 
+### F13/F20 engineering checkpoint: 2026-10-05
+
+The [Lifecycle review exchange candidate](lifecycle-review-exchange.md) registers
+all four `forge review lifecycle` commands in its implementation candidate. One
+authentic coupled run passed 63 controls: receiver 11, binding 7, finalizer 9,
+current commands 7, responses 8, queue export 12 and init/CLI 9. It includes a
+real in-process clap-to-execute workflow. Later exact formatted candidate checks
+passed normal regressions, strict lint and fresh library-only LLVM instrumentation,
+plus a separate macOS child workflow; [the guide](lifecycle-review-exchange.md#qualification-checkpoint-and-remaining-work)
+records their distinct denominators. Other platform and human gates remain open.
+The instructions apply after candidate integration, not to published v1.1.0.
+
+The latest [MCP `/2` App run](mcp.md#f20-2-development-checkpoint) still has 25
+passing selected native/controller controls and two failing native controls.
+Same-owner reuse improves the selected complete factory path, but standalone
+report preparation and the distinct-manifest case still hit Capacity. The App
+gate is unaccepted and managed F11/server coupling remains open. Evidence
+metadata, static report links, the optional index builder and client/corpus/owner
+gates remain open.
+
+This dated checkpoint changes none of the historical tables below. The final
+integrated documentation review and exact-source docstring/test coverage checks
+remain required before the next draft PR.
+
 ## Historical reconciliation summary: 2026-09-11
 
 This document is the canonical reconciled roadmap for FORGE. Earlier roadmap

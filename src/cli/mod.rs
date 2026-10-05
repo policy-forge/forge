@@ -408,6 +408,13 @@ const REVIEW_IDENTITY_HELP: &str = "Reviewer keys, roles, authors and times are 
 #[deny(missing_docs)]
 #[command(after_help = REVIEW_IDENTITY_HELP)]
 pub enum ReviewCommand {
+    /// Review one recorded Lifecycle policy/version with a separate closed /2 exchange
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Lifecycle {
+        /// Explicit native-derived init, ordinary respond or current merge/status operation.
+        #[command(subcommand)]
+        command: LifecycleReviewCommand,
+    },
     /// Create a queue for selected Mapping assertions or explicit applicability decisions in a recorded Approved/current closure
     #[command(after_help = REVIEW_IDENTITY_HELP)]
     Init(
@@ -450,6 +457,61 @@ pub enum ReviewCommand {
         /// Exact recorded input and new local HTML destination.
         Box<ReviewHtmlArgs>,
     ),
+}
+
+/// Explicit Lifecycle review operations; /2 files remain separate from Mapping/applicability.
+#[derive(Subcommand)]
+#[deny(missing_docs)]
+#[command(after_help = REVIEW_IDENTITY_HELP)]
+pub enum LifecycleReviewCommand {
+    /// Create a new queue from a complete recorded Approved/current Lifecycle source closure
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Init(
+        /// Complete native locator, asserted review policy and new queue destination.
+        Box<LifecycleReviewInitArgs>,
+    ),
+    /// Write one immutable private assertion to an exact Lifecycle /2 queue original
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Respond(
+        /// Explicit asserted reviewer, disposition, time, rationale and new destination.
+        Box<ReviewRespondArgs>,
+    ),
+    /// Merge all response occurrences against the complete current Lifecycle closure
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Merge(
+        /// Complete current inputs, explicit evaluation time and new disposition destination.
+        Box<ReviewMergeArgs>,
+    ),
+    /// Write a complete current Lifecycle disposition record to stdout
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Status(
+        /// Complete current native, queue and response originals and explicit evaluation time.
+        Box<ReviewCurrentArgs>,
+    ),
+}
+
+/// Explicit private Lifecycle init inputs; identities, seats and times remain assertions.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct LifecycleReviewInitArgs {
+    /// Actual normalized root containing every original and the new destination
+    #[arg(long)]
+    pub project_root: PathBuf,
+    /// Closed forge.review-lifecycle-inputs/1 locator for the record, source and all generated originals
+    #[arg(long)]
+    pub sources: PathBuf,
+    /// Private forge.review-lifecycle-init/1 declaration of roles, reviewers, one policy and one item
+    #[arg(long)]
+    pub policy: PathBuf,
+    /// Explicit canonical queue revision UUID
+    #[arg(long)]
+    pub queue_id: String,
+    /// Asserted creation time in canonical UTC seconds
+    #[arg(long)]
+    pub created_at: String,
+    /// Confined new queue file; existing destinations are refused
+    #[arg(long)]
+    pub output: PathBuf,
 }
 
 /// Explicit domain queue inputs; every file path is a private root descendant.
@@ -664,6 +726,7 @@ fn run_review(command: &ReviewCommand) -> Result<(), ForgeError> {
     use crate::review::commands;
     let mut control = crate::workspace::preparation::NoopControl;
     let result = match command {
+        ReviewCommand::Lifecycle { command } => return run_lifecycle_review(command),
         ReviewCommand::Init(args) => commands::init(
             &commands::InitOptions {
                 project_root: &args.project_root,
@@ -746,6 +809,71 @@ fn run_review(command: &ReviewCommand) -> Result<(), ForgeError> {
                 dispositions: &args.dispositions,
                 output: &args.output,
             },
+            &mut control,
+        ),
+    };
+    result.map_err(review_error)
+}
+
+/// Dispatch the separate Lifecycle /2 exchange through its complete actual operation owners.
+fn run_lifecycle_review(command: &LifecycleReviewCommand) -> Result<(), ForgeError> {
+    use crate::review::{commands, lifecycle_commands};
+    let mut control = crate::workspace::preparation::NoopControl;
+    let result = match command {
+        LifecycleReviewCommand::Init(args) => lifecycle_commands::init(
+            &commands::InitOptions {
+                project_root: &args.project_root,
+                sources: &args.sources,
+                policy: &args.policy,
+                queue_id: &args.queue_id,
+                created_at: &args.created_at,
+                output: &args.output,
+            },
+            &mut control,
+        ),
+        LifecycleReviewCommand::Respond(args) => {
+            let disposition = match args.disposition {
+                ReviewDisposition::Approve => crate::review::wire::Disposition::Approve,
+                ReviewDisposition::Reject => crate::review::wire::Disposition::Reject,
+                ReviewDisposition::RequestChanges => {
+                    crate::review::wire::Disposition::RequestChanges
+                }
+                ReviewDisposition::Abstain => crate::review::wire::Disposition::Abstain,
+                ReviewDisposition::Superseded => crate::review::wire::Disposition::Superseded,
+            };
+            let supersedes = match (&args.supersedes_id, &args.supersedes_sha256) {
+                (None, None) => None,
+                (Some(response_id), Some(raw_sha256)) => {
+                    Some(commands::Supersedes { response_id, raw_sha256 })
+                }
+                _ => return Err(ForgeError::Validation("invalid review response chain".into())),
+            };
+            lifecycle_commands::respond(
+                &commands::RespondOptions {
+                    project_root: &args.project_root,
+                    queue: &args.queue,
+                    rationale_file: &args.rationale_file,
+                    item_key: &args.item_key,
+                    reviewer_key: &args.reviewer_key,
+                    reviewer_role: &args.reviewer_role,
+                    disposition,
+                    responded_at: &args.responded_at,
+                    response_id: &args.response_id,
+                    abstention_reason: args.abstention_reason.as_deref(),
+                    supersedes,
+                    output: &args.output,
+                },
+                &mut control,
+            )
+        }
+        LifecycleReviewCommand::Merge(args) => lifecycle_commands::merge(
+            &review_current_options(&args.current),
+            &args.output,
+            &mut control,
+        ),
+        LifecycleReviewCommand::Status(args) => lifecycle_commands::status(
+            &review_current_options(args),
+            &mut std::io::stdout().lock(),
             &mut control,
         ),
     };

@@ -164,6 +164,13 @@ impl ContractLedger {
         self.remember(result)
     }
 
+    /// Register a separately closed response family on the original shared counters.
+    /// This forwards the unchanged raw-response bounds and first-stop behavior;
+    /// it creates no independent allowance, parser, capture or response authority.
+    pub(crate) fn response_registration(&mut self, bytes: usize) -> Result<(), ContractError> {
+        self.response(bytes)
+    }
+
     /// Reserve complete proposed graph sizes; this never performs matching.
     pub(crate) fn graph(
         &mut self,

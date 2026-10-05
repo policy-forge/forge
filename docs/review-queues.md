@@ -10,6 +10,16 @@ authenticated or signed identities. `quorum-met` means that the declared review
 policy is satisfied; it does not approve or modify a Mapping, applicability
 decision, lifecycle record or other domain artifact.
 
+## Lifecycle review exchange candidate
+
+[Lifecycle re-review](lifecycle-review-exchange.md) uses a separately closed `/2`
+family. Its implementation candidate registers `forge review lifecycle
+init/respond/merge/status`; use the linked instructions after candidate code and
+docs integration. It does not extend the `/1` Mapping/applicability inputs or the
+seven commands documented below. Currentness depends on the complete actual
+native source closure; asserted review quorum grants no Lifecycle transition or
+reviewer authority.
+
 ## Prepare the private inputs
 
 Use an explicit absolute project root. Every input and output file path is a
