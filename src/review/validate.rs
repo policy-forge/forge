@@ -44,7 +44,7 @@ pub(crate) fn time(value: &str) -> Result<(), ContractError> {
 }
 
 /// Exact bounded ASCII identity token; no key normalization is performed.
-fn token(value: &str, maximum: usize) -> Result<(), ContractError> {
+pub(super) fn token(value: &str, maximum: usize) -> Result<(), ContractError> {
     if value.is_empty()
         || value.len() > maximum
         || !value.as_bytes()[0].is_ascii_alphanumeric()

@@ -408,7 +408,7 @@ const REVIEW_IDENTITY_HELP: &str = "Reviewer keys, roles, authors and times are 
 #[deny(missing_docs)]
 #[command(after_help = REVIEW_IDENTITY_HELP)]
 pub enum ReviewCommand {
-    /// Create a queue for selected assertions in an Approved/current Mapping closure
+    /// Create a queue for selected Mapping assertions or explicit applicability decisions in a recorded Approved/current closure
     #[command(after_help = REVIEW_IDENTITY_HELP)]
     Init(
         /// Complete explicit source locator, private review policy and new queue destination.
@@ -440,14 +440,14 @@ pub enum ReviewCommand {
     ),
 }
 
-/// Explicit Mapping queue inputs; every file path is a private root descendant.
+/// Explicit domain queue inputs; every file path is a private root descendant.
 #[derive(clap::Args)]
 #[deny(missing_docs)]
 pub struct ReviewInitArgs {
     /// Actual normalized project root; no implicit project discovery
     #[arg(long)]
     pub project_root: PathBuf,
-    /// Closed forge.review-source-locator/1 original with the complete native source set
+    /// Closed Mapping or applicability source locator with the complete native source set
     #[arg(long)]
     pub sources: PathBuf,
     /// Closed forge.review-init/1 declaration of subjects, reviewers and quorum policy

@@ -4,17 +4,18 @@
 //! Asserted keys/times and review quorum never promote native domain approval.
 //! Publication/stdout failures are fixed diagnostics; no input prose/path escapes.
 
-use super::adapters::mapping::{self, MappingFact, PreparedMappingReview};
+use super::adapters::{applicability, mapping};
 use super::capture::{HeldReviewInputs, Pool, ReviewCapture, ReviewControl};
 use super::chain::{compare, reserved, visit};
 use super::decode::{self, ContractError, ContractLedger, Decoded};
+use super::finalize::NativeReview;
 use super::merge as policy_merge;
 use super::wire::{
     Assignment, ContextSnapshot, Disposition, Domain, IDENTITY_DISCLAIMER, QueueDocument,
     RequestedAction, ResponseDocument, ReviewItem, ReviewPolicy, Reviewer, RoleDefinition,
     Sensitivity, SourcePin, SupersessionReference,
 };
-use super::{encode, finalize, html, mapping_capture, validate};
+use super::{applicability_capture, encode, finalize, html, mapping_capture, validate};
 use crate::evidence_capture::CaptureRole;
 use crate::workspace::preparation::WorkControl;
 use serde::Deserialize;
@@ -43,7 +44,7 @@ pub(crate) enum CommandError {
 pub(crate) struct InitOptions<'a> {
     /// Actual project root; no workspace discovery or implicit current directory.
     pub(crate) project_root: &'a Path,
-    /// Closed native Mapping source locator captured as one Auxiliary original.
+    /// Closed domain source locator captured as one Auxiliary original.
     pub(crate) sources: &'a Path,
     /// Closed private forge.review-init/1 declaration, not source or approval proof.
     pub(crate) policy: &'a Path,
@@ -91,7 +92,7 @@ pub(crate) struct RespondOptions<'a> {
     pub(crate) output: &'a Path,
 }
 
-/// Complete explicit current Mapping review inputs shared by merge and status.
+/// Complete explicit current review inputs shared by merge and status.
 pub(crate) struct CurrentOptions<'a> {
     /// Actual root for every source/queue/response and optional reserved output.
     pub(crate) project_root: &'a Path,
@@ -137,7 +138,7 @@ struct InitRequest {
 struct InitItem {
     /// Sorted queue-local key, distinct from actual selected native subject UUID.
     key: String,
-    /// Exact actual native map UUID selected from the complete captured closure.
+    /// Exact native map UUID or applicability control token selected from the complete closure.
     subject_id: String,
     /// Existing declared policy key.
     policy_key: String,
@@ -149,6 +150,130 @@ struct InitItem {
     due_at: Option<String>,
 }
 
+/// Pending native results can seal only against their genuine common capture owner.
+enum PendingNative {
+    /// Actual maintained Mapping product and current recorded lifecycle tuple.
+    Mapping(mapping_capture::PendingMappingClosure),
+    /// Actual full applicability report and current recorded lifecycle tuple.
+    Applicability(Box<applicability_capture::PendingApplicabilityClosure>),
+}
+
+/// Closed owned domain capture variants; no detached input or success constructor exists.
+enum NativeClosure {
+    /// Genuine once-captured Mapping source closure.
+    Mapping(mapping_capture::ApprovedMappingClosure),
+    /// Genuine once-captured full applicability report-source closure.
+    Applicability(Box<applicability_capture::ApprovedApplicabilityClosure>),
+}
+
+impl PendingNative {
+    /// Transfer the exact pending original leases into one complete held proof owner.
+    fn seal(
+        self,
+        held: Rc<HeldReviewInputs>,
+        ledger: &mut ContractLedger,
+        control: &mut dyn WorkControl,
+    ) -> Result<NativeClosure, ContractError> {
+        match self {
+            Self::Mapping(value) => value.seal(held, ledger, control).map(NativeClosure::Mapping),
+            Self::Applicability(value) => {
+                let closure = (*value).seal(held, ledger, control)?;
+                boxed(closure, ledger, control).map(NativeClosure::Applicability)
+            }
+        }
+    }
+}
+
+/// Selected domain facts borrow the actual owned sealed source closure.
+enum PreparedNative<'a> {
+    /// Selected native map assertions from the same complete actual source set.
+    Mapping(mapping::PreparedMappingReview<'a>),
+    /// Selected explicit control decisions; omitted decisions remain denominators.
+    Applicability(applicability::PreparedApplicabilityReview<'a>),
+}
+
+impl NativeClosure {
+    /// Read the internally selected domain from the genuine successful variant.
+    fn domain(&self) -> Domain {
+        match self {
+            Self::Mapping(_) => Domain::MappingAssertion,
+            Self::Applicability(_) => Domain::ApplicabilityDecision,
+        }
+    }
+
+    /// Prepare selected facts through the matching genuine captured domain adapter.
+    fn prepare<'a>(
+        &'a self,
+        selected: &[&str],
+        ledger: &mut ContractLedger,
+        control: &mut dyn WorkControl,
+    ) -> Result<PreparedNative<'a>, ContractError> {
+        match self {
+            Self::Mapping(value) => {
+                mapping::prepare(value, selected, ledger, control).map(PreparedNative::Mapping)
+            }
+            Self::Applicability(value) => applicability::prepare(value, selected, ledger, control)
+                .map(PreparedNative::Applicability),
+        }
+    }
+}
+
+impl PreparedNative<'_> {
+    /// Borrow the actual sealed adapter for the common owner/cohort finalizer.
+    fn view(&self) -> NativeReview<'_, '_> {
+        match self {
+            Self::Mapping(value) => NativeReview::Mapping(value),
+            Self::Applicability(value) => NativeReview::Applicability(value),
+        }
+    }
+}
+
+/// Read only the exact closed marker from the actual admitted private locator original.
+fn source_domain(
+    raw: &[u8],
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<Domain, ContractError> {
+    let value = mapping_capture::strict_value(raw, 1_048_576, ledger, control)?;
+    match value.get("schema_version").and_then(Value::as_str) {
+        Some("forge.review-source-locator/1") => Ok(Domain::MappingAssertion),
+        Some("forge.review-applicability-locator/1") => Ok(Domain::ApplicabilityDecision),
+        _ => Err(ContractError::Invalid),
+    }
+}
+
+/// Consume one exact marker and the complete selected factory, without fallback domains.
+fn prepare_native(
+    capture: &mut ReviewCapture,
+    locator: usize,
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<PendingNative, ContractError> {
+    match source_domain(capture.bytes(locator)?, ledger, control)? {
+        Domain::MappingAssertion => {
+            mapping_capture::prepare(capture, locator, ledger, control).map(PendingNative::Mapping)
+        }
+        Domain::ApplicabilityDecision => {
+            let pending = applicability_capture::prepare(capture, locator, ledger, control)?;
+            boxed(pending, ledger, control).map(PendingNative::Applicability)
+        }
+    }
+}
+
+/// Admit the complete fixed wrapper payload before applicability enum indirection grows.
+/// Original leases/owners move intact; logical credit is monotonic and never released.
+fn boxed<T>(
+    value: T,
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<Box<T>, ContractError> {
+    ledger.checkpoint(control)?;
+    let payload = std::mem::size_of::<T>();
+    ledger.bytes(payload)?;
+    ledger.derived(payload.checked_add(32).ok_or(ContractError::Capacity)?)?;
+    Ok(Box::new(value))
+}
+
 /// Current result sink; the caller supplies only a local new file or an actual writer.
 enum CurrentDestination<'a> {
     /// Confined reserved no-replace output.
@@ -157,7 +282,7 @@ enum CurrentDestination<'a> {
     Writer(&'a mut dyn Write),
 }
 
-/// Initialize a complete queue from actual Approved/current Mapping source facts.
+/// Initialize a complete queue from actual recorded Approved/current domain source facts.
 /// No caller policy request can provide a source pin, fingerprint or success proof.
 pub(crate) fn init(
     options: &InitOptions<'_>,
@@ -190,29 +315,31 @@ fn init_inner(
     let mut capture = ReviewCapture::new(options.project_root, &[options.output], ledger, control)?;
     let sources = auxiliary(&mut capture, options.sources, 1_048_576, ledger, control)?;
     let policy = auxiliary(&mut capture, options.policy, 1_048_576, ledger, control)?;
-    let pending = mapping_capture::prepare(&mut capture, sources, ledger, control)?;
+    let pending = prepare_native(&mut capture, sources, ledger, control)?;
     let held = owned(capture, ledger, control)?;
     let closure = pending.seal(Rc::clone(&held), ledger, control)?;
-    let request = init_request(held.bytes(policy)?, ledger, control)?;
+    let domain = closure.domain();
+    let request = init_request_domain(held.bytes(policy)?, domain, ledger, control)?;
     let mut selected = reserved(request.items.len(), ledger)?;
     for item in &request.items {
         visit(ledger, control)?;
         selected.push(item.subject_id.as_str());
     }
-    sort_subjects(&mut selected, ledger, control)?;
-    let mapping = mapping::prepare(&closure, &selected, ledger, control)?;
+    sort_subjects_domain(&mut selected, domain, ledger, control)?;
+    let prepared = closure.prepare(&selected, ledger, control)?;
+    let native = prepared.view();
     ledger.visits(1)?;
-    if mapping.complete_maps() < selected.len() {
+    if native.selected_count() != selected.len() {
         return Err(ContractError::Binding.into());
     }
     drop(selected);
-    let queue = build_queue(request, options, &mapping, ledger, control)?;
+    let queue = build_queue(request, options, native, ledger, control)?;
     let output = encode::queue(&queue, ledger, control)?;
     let closed = decode::decode_queue(&output, ledger, control)?;
-    mapping.bind_queue(&closed, ledger, control)?;
-    mapping.verify_inputs(ledger, control)?;
+    native.bind_queue(&closed, ledger, control)?;
+    native.verify_inputs(ledger, control)?;
     publish(options.project_root, options.output, &output, ledger, control, |ledger, control| {
-        mapping.verify_inputs(ledger, control)
+        native.verify_inputs(ledger, control)
     })
 }
 
@@ -279,7 +406,7 @@ struct CurrentCapture {
     /// Same actual shared owner passed to native sealing and eventual finalization.
     held: Rc<HeldReviewInputs>,
     /// Genuine opaque native closure, never a caller-provided hash or Boolean.
-    closure: mapping_capture::ApprovedMappingClosure,
+    closure: NativeClosure,
     /// Actual successful Queue-pool registration.
     queue_index: usize,
     /// Complete successful response occurrence cohort in caller order, including repeats.
@@ -326,7 +453,7 @@ fn capture_current(
         control,
     )?;
     let response_indices = capture_responses(&mut capture, options.responses, ledger, control)?;
-    let pending = mapping_capture::prepare(&mut capture, sources, ledger, control)?;
+    let pending = prepare_native(&mut capture, sources, ledger, control)?;
     let held = owned(capture, ledger, control)?;
     let closure = pending.seal(Rc::clone(&held), ledger, control)?;
     ledger.derived(std::mem::size_of::<CurrentCapture>())?;
@@ -343,19 +470,31 @@ fn emit_current(
     control: &mut dyn WorkControl,
 ) -> Result<(), CommandError> {
     let queue = decode::decode_queue(captured.held.bytes(captured.queue_index)?, ledger, control)?;
-    let selected = queue_subjects(queue.document(), ledger, control)?;
-    let mapping = mapping::prepare(&captured.closure, &selected, ledger, control)?;
+    let selected = queue_subjects(queue.document(), captured.closure.domain(), ledger, control)?;
+    let prepared = captured.closure.prepare(&selected, ledger, control)?;
+    let native = prepared.view();
     let responses = decode_responses(&captured.held, &captured.response_indices, ledger, control)?;
     let pending = policy_merge::prepare_policy(&queue, &responses, options.as_of, ledger, control)?;
-    let result = finalize::finalize(
-        &captured.held,
-        captured.queue_index,
-        &captured.response_indices,
-        &pending,
-        &mapping,
-        ledger,
-        control,
-    )?;
+    let result = match native {
+        NativeReview::Mapping(mapping) => finalize::finalize(
+            &captured.held,
+            captured.queue_index,
+            &captured.response_indices,
+            &pending,
+            mapping,
+            ledger,
+            control,
+        ),
+        NativeReview::Applicability(_) => finalize::finalize_native(
+            &captured.held,
+            captured.queue_index,
+            &captured.response_indices,
+            &pending,
+            native,
+            ledger,
+            control,
+        ),
+    }?;
     let bytes = encode::dispositions(result.document(), ledger, control)?;
     // Validate the actual bounded encoded publication form against its original
     // queue declarations under the unchanged ledger; this grants no native proof.
@@ -507,8 +646,19 @@ fn publish(
 }
 
 /// Admit private raw declarations before moving any tree into typed containers.
+#[cfg(test)]
 fn init_request(
     raw: &[u8],
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<InitRequest, ContractError> {
+    init_request_domain(raw, Domain::MappingAssertion, ledger, control)
+}
+
+/// Decode declarations for the exact domain selected by the genuine source locator.
+fn init_request_domain(
+    raw: &[u8],
+    domain: Domain,
     ledger: &mut ContractLedger,
     control: &mut dyn WorkControl,
 ) -> Result<InitRequest, ContractError> {
@@ -530,7 +680,7 @@ fn init_request(
         )
         .map_err(|_| ContractError::Invalid)?;
         reserve_request(&value, ledger, control)?;
-        request_shape(&value, ledger, control)?;
+        request_shape(&value, domain, ledger, control)?;
         ledger.bytes(raw.len())?;
         let request: InitRequest =
             serde_json::from_value(value).map_err(|_| ContractError::Invalid)?;
@@ -545,6 +695,7 @@ fn init_request(
 /// Require exact fields/cardinalities before typed vectors can grow; null `due_at` is explicit.
 fn request_shape(
     value: &Value,
+    domain: Domain,
     ledger: &mut ContractLedger,
     control: &mut dyn WorkControl,
 ) -> Result<(), ContractError> {
@@ -565,7 +716,7 @@ fn request_shape(
         policy_shape(policy, ledger, control)?;
     }
     for item in array(value, "items", 1, 10_000)? {
-        item_request_shape(item, ledger, control)?;
+        item_request_shape(item, domain, ledger, control)?;
     }
     ledger.checkpoint(control)
 }
@@ -573,6 +724,7 @@ fn request_shape(
 /// Bound one complete selected declaration before typed item/assignment growth.
 fn item_request_shape(
     item: &Value,
+    domain: Domain,
     ledger: &mut ContractLedger,
     control: &mut dyn WorkControl,
 ) -> Result<(), ContractError> {
@@ -583,7 +735,14 @@ fn item_request_shape(
         control,
     )?;
     text_field(item, "key", 128)?;
-    text_field(item, "subject_id", 36)?;
+    text_field(
+        item,
+        "subject_id",
+        match domain {
+            Domain::MappingAssertion => 36,
+            Domain::ApplicabilityDecision => 256,
+        },
+    )?;
     text_field(item, "policy_key", 128)?;
     token_array(item, "author_keys", 1, 100, 128)?;
     for assignment in array(item, "assignments", 0, 3200)? {
@@ -813,7 +972,7 @@ fn pins(
 fn build_queue(
     request: InitRequest,
     options: &InitOptions<'_>,
-    mapping: &PreparedMappingReview<'_>,
+    native: NativeReview<'_, '_>,
     ledger: &mut ContractLedger,
     control: &mut dyn WorkControl,
 ) -> Result<QueueDocument, ContractError> {
@@ -826,25 +985,19 @@ fn build_queue(
         sensitivity: Sensitivity::IdsAndHashes,
         queue_id: copied(options.queue_id, 36, ledger)?,
         created_at: copied(options.created_at, 20, ledger)?,
-        source_pins: pins(mapping.source_pins(), ledger, control)?,
+        source_pins: pins(native.source_pins(), ledger, control)?,
         roles,
         reviewers,
         policies,
         items: reserved(items.len(), ledger)?,
     };
     strict_policy_keys(&queue.policies, ledger, control)?;
-    let mut facts = reserved(items.len(), ledger)?;
-    for fact in mapping.facts() {
-        visit(ledger, control)?;
-        facts.push(fact);
-    }
-    if facts.len() != items.len() {
-        return Err(ContractError::Binding);
-    }
+    let facts = fact_views(native, items.len(), ledger, control)?;
     for declaration in items {
         visit(ledger, control)?;
         let fact = fact_for(&facts, &declaration.subject_id, ledger, control)?;
-        let mut item = native_item(declaration, fact, mapping.source_pins(), ledger, control)?;
+        let mut item =
+            native_item(declaration, fact, native.domain(), native.source_pins(), ledger, control)?;
         ledger.checkpoint(control)?;
         item.context_sha256 = validate::context_hash(&queue, &item, ledger)?;
         let policy = policy_for(&queue.policies, &item.policy_key, ledger, control)?;
@@ -861,7 +1014,8 @@ fn build_queue(
 /// Bind one declared item to exact native subject/context and complete source keys.
 fn native_item(
     declaration: InitItem,
-    fact: &MappingFact<'_>,
+    fact: &FactView<'_>,
+    domain: Domain,
     source_pins: &[SourcePin],
     ledger: &mut ContractLedger,
     control: &mut dyn WorkControl,
@@ -872,8 +1026,8 @@ fn native_item(
         source_keys.push(copied(&pin.artifact_key, 128, ledger)?);
     }
     let context = ContextSnapshot {
-        reason_codes: strings(&fact.context().reason_codes, ledger, control)?,
-        related_subject_ids: strings(&fact.context().related_subject_ids, ledger, control)?,
+        reason_codes: strings(&fact.context.reason_codes, ledger, control)?,
+        related_subject_ids: strings(&fact.context.related_subject_ids, ledger, control)?,
     };
     let mut allowed_dispositions = reserved(5, ledger)?;
     allowed_dispositions.extend([
@@ -886,12 +1040,19 @@ fn native_item(
     Ok(ReviewItem {
         key: declaration.key,
         item_id: String::new(),
-        domain: Domain::MappingAssertion,
-        adapter_version: copied("forge.mapping-review/1", 128, ledger)?,
+        domain,
+        adapter_version: copied(
+            match domain {
+                Domain::MappingAssertion => "forge.mapping-review/1",
+                Domain::ApplicabilityDecision => "forge.applicability-review/1",
+            },
+            128,
+            ledger,
+        )?,
         subject_id: declaration.subject_id,
         requested_action: RequestedAction::ReReview,
         source_keys,
-        subject_sha256: copied(fact.subject_sha256(), 64, ledger)?,
+        subject_sha256: copied(fact.subject_sha256, 64, ledger)?,
         context,
         context_sha256: String::new(),
         policy_key: declaration.policy_key,
@@ -939,22 +1100,73 @@ fn policy_for<'a>(
     Err(ContractError::Binding)
 }
 
+/// Borrowed minimized fields from actual selected adapter facts; no source or proof is copied.
+struct FactView<'a> {
+    /// Exact actual native subject identity under its selected domain.
+    subject_id: &'a str,
+    /// Complete private subject digest, already derived by the actual adapter.
+    subject_sha256: &'a str,
+    /// Actual minimized context, borrowed until admitted queue copying.
+    context: &'a ContextSnapshot,
+}
+
+/// Admit the complete selected fact vector before borrowing either adapter's rows.
+fn fact_views<'a>(
+    native: NativeReview<'a, '_>,
+    expected: usize,
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<Vec<FactView<'a>>, ContractError> {
+    visit(ledger, control)?;
+    if native.selected_count() != expected {
+        return Err(ContractError::Binding);
+    }
+    let mut facts = reserved(expected, ledger)?;
+    macro_rules! borrow_facts {
+        ($value:expr) => {
+            for fact in $value.facts() {
+                visit(ledger, control)?;
+                if facts.len() == expected {
+                    return Err(ContractError::Binding);
+                }
+                facts.push(FactView {
+                    subject_id: fact.subject_id(),
+                    subject_sha256: fact.subject_sha256(),
+                    context: fact.context(),
+                });
+            }
+        };
+    }
+    match native {
+        NativeReview::Mapping(value) => {
+            borrow_facts!(value);
+        }
+        NativeReview::Applicability(value) => {
+            borrow_facts!(value);
+        }
+    }
+    if facts.len() != expected {
+        return Err(ContractError::Binding);
+    }
+    Ok(facts)
+}
+
 /// Find an actual sorted native fact; no fallback to a caller-provided hash/context exists.
-fn fact_for<'a, 'native>(
-    facts: &'a [&'a MappingFact<'native>],
+fn fact_for<'a>(
+    facts: &'a [FactView<'a>],
     id: &str,
     ledger: &mut ContractLedger,
     control: &mut dyn WorkControl,
-) -> Result<&'a MappingFact<'native>, ContractError> {
+) -> Result<&'a FactView<'a>, ContractError> {
     let mut low = 0;
     let mut high = facts.len();
     while low < high {
         visit(ledger, control)?;
         let middle = low + (high - low) / 2;
-        match compare(facts[middle].subject_id(), id, ledger)? {
+        match compare(facts[middle].subject_id, id, ledger)? {
             Ordering::Less => low = middle + 1,
             Ordering::Greater => high = middle,
-            Ordering::Equal => return Ok(facts[middle]),
+            Ordering::Equal => return Ok(&facts[middle]),
         }
     }
     Err(ContractError::Binding)
@@ -963,21 +1175,36 @@ fn fact_for<'a, 'native>(
 /// Preserve queue item order while selecting one sorted unique native-ID cohort.
 fn queue_subjects<'a>(
     queue: &'a QueueDocument,
+    domain: Domain,
     ledger: &mut ContractLedger,
     control: &mut dyn WorkControl,
 ) -> Result<Vec<&'a str>, ContractError> {
     let mut selected = reserved(queue.items.len(), ledger)?;
     for item in &queue.items {
         visit(ledger, control)?;
+        if item.domain != domain {
+            return Err(ContractError::Binding);
+        }
         selected.push(item.subject_id.as_str());
     }
-    sort_subjects(&mut selected, ledger, control)?;
+    sort_subjects_domain(&mut selected, domain, ledger, control)?;
     Ok(selected)
 }
 
 /// In-place finite heapsort of borrowed IDs with admitted comparisons, then exact uniqueness.
+#[cfg(test)]
 fn sort_subjects(
     values: &mut [&str],
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<(), ContractError> {
+    sort_subjects_domain(values, Domain::MappingAssertion, ledger, control)
+}
+
+/// Sort the complete selected cohort using the unchanged domain-specific identity grammar.
+fn sort_subjects_domain(
+    values: &mut [&str],
+    domain: Domain,
     ledger: &mut ContractLedger,
     control: &mut dyn WorkControl,
 ) -> Result<(), ContractError> {
@@ -987,10 +1214,15 @@ fn sort_subjects(
     for value in values.iter() {
         visit(ledger, control)?;
         ledger.bytes(value.len())?;
-        if value.len() != 36 {
-            return Err(ContractError::Invalid);
+        match domain {
+            Domain::MappingAssertion => {
+                if value.len() != 36 {
+                    return Err(ContractError::Invalid);
+                }
+                validate::uuid(value)?;
+            }
+            Domain::ApplicabilityDecision => validate::token(value, 256)?,
         }
-        validate::uuid(value)?;
     }
     for root in (0..values.len() / 2).rev() {
         sift_subjects(values, root, values.len(), ledger, control)?;
@@ -1108,3 +1340,8 @@ fn build_response(
 #[path = "commands_tests.rs"]
 /// Pure private-request/selection refusals only; genuine five-flow controls remain Root-owned.
 mod tests;
+
+#[cfg(all(test, unix))]
+#[path = "commands_applicability_tests.rs"]
+/// Actual synthetic applicability command/native proof controls; no human or platform acceptance.
+mod applicability_command_tests;

@@ -79,17 +79,17 @@ struct OriginalBinding {
 }
 
 /// Parsed original native identity, owned under the precharged tree profile.
-struct NativeOriginal {
+pub(super) struct NativeOriginal {
     /// Exact complete strict decoded native Value, never a generated stand-in.
-    value: Value,
+    pub(super) value: Value,
     /// Actual detected and offline-schema-validated native model.
-    model: OscalModelType,
+    pub(super) model: OscalModelType,
     /// Original native UUID spelling used for lifecycle identity comparison.
-    root_uuid: String,
+    pub(super) root_uuid: String,
     /// Canonical same UUID used in the closed path-free source pin.
-    canonical_uuid: String,
+    pub(super) canonical_uuid: String,
     /// Actual bounded ASCII supported OSCAL schema version.
-    oscal_version: String,
+    pub(super) oscal_version: String,
 }
 
 /// Private pending native/report result; it is not a successful closure proof.
@@ -564,7 +564,7 @@ fn decode_locator(
 
 /// Admit a conservative decoded-form allowance before the bounded parser grows.
 /// The multiplier is a logical first-profile refusal, not a proven heap ceiling.
-fn admit_decode(
+pub(super) fn admit_decode(
     raw: &[u8],
     limit: usize,
     ledger: &mut ContractLedger,
@@ -584,7 +584,7 @@ fn admit_decode(
 }
 
 /// Parse complete duplicate-key-safe native JSON with raw/depth/string/tree bounds.
-fn strict_value(
+pub(super) fn strict_value(
     raw: &[u8],
     limit: usize,
     ledger: &mut ContractLedger,
@@ -647,7 +647,7 @@ fn tree(
 }
 
 /// Select only actually supported native families; no generated authority is inferred.
-fn native_model(model: SourceModel) -> Option<OscalModelType> {
+pub(super) fn native_model(model: SourceModel) -> Option<OscalModelType> {
     match model {
         SourceModel::Mapping => Some(OscalModelType::Mapping),
         SourceModel::Catalog | SourceModel::ResolvedCatalog => Some(OscalModelType::Catalog),
@@ -671,7 +671,7 @@ fn role(model: SourceModel) -> Option<CaptureRole> {
 }
 
 /// Admit original spelling before any parent/join/native capture operation.
-fn portable(path: &Path, ledger: &mut ContractLedger) -> Result<(), ContractError> {
+pub(super) fn portable(path: &Path, ledger: &mut ContractLedger) -> Result<(), ContractError> {
     ledger.bytes(path.as_os_str().as_encoded_bytes().len())?;
     if path.as_os_str().as_encoded_bytes().len() > 4096 || path.components().count() > 64 {
         return Err(ContractError::Invalid);
@@ -680,7 +680,7 @@ fn portable(path: &Path, ledger: &mut ContractLedger) -> Result<(), ContractErro
 }
 
 /// Match bounded ASCII source tokens exactly without trimming or inferred keys.
-fn token(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
+pub(super) fn token(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
     ledger.bytes(value.len())?;
     if value.is_empty()
         || value.len() > 128
@@ -693,7 +693,7 @@ fn token(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> 
 }
 
 /// Meter complete actual operands before private key/UUID/schema comparisons.
-fn compare(
+pub(super) fn compare(
     left: &str,
     right: &str,
     ledger: &mut ContractLedger,
@@ -704,7 +704,7 @@ fn compare(
 }
 
 /// Compare two original private descendants before any joining or disclosure.
-fn same_path(
+pub(super) fn same_path(
     left: &Path,
     right: &Path,
     ledger: &mut ContractLedger,
@@ -723,7 +723,7 @@ fn same_path(
 }
 
 /// Refuse portable folded aliases among independently declared source paths.
-fn folded_path(
+pub(super) fn folded_path(
     left: &Path,
     right: &Path,
     ledger: &mut ContractLedger,
@@ -781,7 +781,7 @@ fn path_slot(
 }
 
 /// Join only admitted original descendant spelling under its actual captured base.
-fn join_relative(
+pub(super) fn join_relative(
     base_file: &Path,
     relative: &Path,
     ledger: &mut ContractLedger,
@@ -903,7 +903,7 @@ fn check_schema(
 }
 
 /// Strict native original plus complete schema and per-artifact UUID definitions.
-fn parse_native(
+pub(super) fn parse_native(
     raw: &[u8],
     expected: OscalModelType,
     ledger: &mut ContractLedger,
@@ -1261,7 +1261,7 @@ fn fingerprint_slot(
 }
 
 /// Bind actual native model/root identity, preserving source identity absence rules.
-fn check_fingerprint_identity(
+pub(super) fn check_fingerprint_identity(
     fingerprint: &ArtifactFingerprint,
     native: Option<&NativeOriginal>,
     ledger: &mut ContractLedger,

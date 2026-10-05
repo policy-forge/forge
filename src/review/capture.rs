@@ -75,7 +75,9 @@ impl Pool {
             Self::Auxiliary => role == CaptureRole::ReviewPrivateConfig,
             Self::Source => matches!(
                 role,
-                CaptureRole::MappingManifest
+                CaptureRole::ApplicabilityManifest
+                    | CaptureRole::ApplicabilityReport
+                    | CaptureRole::MappingManifest
                     | CaptureRole::MappingCollection
                     | CaptureRole::LifecycleRecord
                     | CaptureRole::Catalog

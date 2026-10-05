@@ -1,4 +1,4 @@
-//! Genuine-current Mapping review finalization, not a native domain promotion.
+//! Current-source review finalization from sealed Mapping or applicability inputs.
 //! The sole successful port requires the sealed captured adapter and exact held
 //! queue/response cohort. Wire claims/hashes/byte-equal detached decoders cannot
 //! construct its opaque owner. Root still owns bounded serialization/publication.
@@ -9,16 +9,16 @@ use std::rc::Rc;
 use serde::{Serialize, Serializer, ser::SerializeSeq};
 use sha2::{Digest, Sha256};
 
-use super::adapters::mapping::PreparedMappingReview;
+use super::adapters::{applicability::PreparedApplicabilityReview, mapping::PreparedMappingReview};
 use super::capture::HeldReviewInputs;
 use super::chain::{compare, reserved, visit};
 use super::decode::{ContractError, ContractLedger, Decoded};
 use super::merge::{ItemPolicyFacts, PendingPolicyEvaluation, TentativeState};
 use super::validate;
 use super::wire::{
-    DispositionCounts, DispositionsDocument, IDENTITY_DISCLAIMER, ItemDisposition, ItemState,
-    MetSeat, RecordedCurrentness, RecordedResponse, ResponseDocument, SourcePin, StateCounts,
-    UnmetSeat,
+    DispositionCounts, DispositionsDocument, Domain, IDENTITY_DISCLAIMER, ItemDisposition,
+    ItemState, MetSeat, RecordedCurrentness, RecordedResponse, ResponseDocument, SourcePin,
+    StateCounts, UnmetSeat,
 };
 use crate::workspace::preparation::WorkControl;
 
@@ -27,18 +27,138 @@ const GENERATION_PREFIX: &[u8] = b"forge.review-current-closure/1\0";
 /// Complete nonretaining generation encoding cap, sharing existing work limits.
 const GENERATION_LIMIT: usize = 33_554_432;
 
+/// Closed native input variants; both require their genuine sealed capture adapter.
+/// Copying these borrows copies no source owner, captured proof or wire authority.
+#[derive(Clone, Copy)]
+pub(crate) enum NativeReview<'a, 'native> {
+    /// Complete current Mapping source closure and selected assertion facts.
+    Mapping(&'a PreparedMappingReview<'native>),
+    /// Complete current applicability report-source closure and selected decisions.
+    Applicability(&'a PreparedApplicabilityReview<'native>),
+}
+
+impl<'a> NativeReview<'a, '_> {
+    /// Borrow the complete actual source roster from the sealed domain owner.
+    pub(crate) fn source_pins(self) -> &'a [SourcePin] {
+        match self {
+            Self::Mapping(value) => value.source_pins(),
+            Self::Applicability(value) => value.source_pins(),
+        }
+    }
+
+    /// Return the exact selected cardinality without scanning or constructing facts.
+    pub(crate) fn selected_count(self) -> usize {
+        match self {
+            Self::Mapping(value) => value.selected_count(),
+            Self::Applicability(value) => value.selected_count(),
+        }
+    }
+
+    /// Return the domain of the actual sealed variant, without a wire declaration.
+    pub(crate) fn domain(self) -> Domain {
+        match self {
+            Self::Mapping(_) => Domain::MappingAssertion,
+            Self::Applicability(_) => Domain::ApplicabilityDecision,
+        }
+    }
+
+    /// Borrow the actual shared capture owner without constructing a replacement.
+    fn held_inputs(self) -> &'a Rc<HeldReviewInputs> {
+        match self {
+            Self::Mapping(value) => value.closure().held_inputs(),
+            Self::Applicability(value) => value.closure().held_inputs(),
+        }
+    }
+
+    /// Consume the selected domain's complete queue binding under the same ledger.
+    pub(crate) fn bind_queue(
+        self,
+        queue: &Decoded<'_, super::wire::QueueDocument>,
+        ledger: &mut ContractLedger,
+        control: &mut dyn WorkControl,
+    ) -> Result<(), ContractError> {
+        ledger.bound(|ledger| {
+            self.validate_selection(ledger, control)?;
+            match self {
+                Self::Mapping(value) => value.bind_queue(queue, ledger, control),
+                Self::Applicability(value) => value.bind_queue(queue, ledger, control),
+            }
+        })
+    }
+
+    /// Consume the complete native denominators before selected queue binding.
+    /// These private counts do not promote recorded domain or reviewer approval.
+    fn validate_selection(
+        self,
+        ledger: &mut ContractLedger,
+        control: &mut dyn WorkControl,
+    ) -> Result<(), ContractError> {
+        ledger.checkpoint(control)?;
+        ledger.visits(14)?;
+        ledger.bytes(14 * std::mem::size_of::<usize>())?;
+        match self {
+            Self::Mapping(value) => {
+                if value.selected_count() > value.complete_maps() {
+                    return Err(ContractError::Binding);
+                }
+            }
+            Self::Applicability(value) => {
+                let counts = value.complete_counts();
+                let complete = value.complete_controls();
+                let total = [
+                    counts.applicable_mapped,
+                    counts.applicable_reviewed_no_relationship,
+                    counts.applicable_unmapped,
+                    counts.not_applicable,
+                    counts.deferred,
+                    counts.under_review,
+                ]
+                .into_iter()
+                .try_fold(0_usize, |sum, n| sum.checked_add(n).ok_or(ContractError::Capacity))?;
+                let decisions = value
+                    .explicit_decisions()
+                    .checked_add(value.omitted_decisions())
+                    .ok_or(ContractError::Capacity)?;
+                if complete != counts.total
+                    || complete != total
+                    || complete != decisions
+                    || value.selected_count() > value.explicit_decisions()
+                    || complete > 10_000
+                    || value.complete_maps() > 10_000
+                    || value.complete_pair_inspections() > 100_000
+                {
+                    return Err(ContractError::Binding);
+                }
+            }
+        }
+        ledger.checkpoint(control)
+    }
+
+    /// Recheck every original through the selected domain's actual held proof.
+    pub(crate) fn verify_inputs(
+        self,
+        ledger: &mut ContractLedger,
+        control: &mut dyn WorkControl,
+    ) -> Result<(), ContractError> {
+        match self {
+            Self::Mapping(value) => value.verify_inputs(ledger, control),
+            Self::Applicability(value) => value.verify_inputs(ledger, control),
+        }
+    }
+}
+
 /// Currentness-qualified redacted record retaining the real native/shared proof borrows.
 /// No Deserialize, Serialize, Clone, Debug or detached success constructor is offered.
-pub(crate) struct CurrentMappingDispositions<'a, 'native> {
+pub(crate) struct CurrentDispositions<'a, 'native> {
     /// Complete real root/source/queue/response/auxiliary/output proof owner.
     held: &'a Rc<HeldReviewInputs>,
     /// Selected actual native facts, with the opaque Approved/current closure alive.
-    mapping: &'a PreparedMappingReview<'native>,
+    native: NativeReview<'a, 'native>,
     /// Owned redacted record; its wire currentness is recorded, not a reusable proof.
     document: DispositionsDocument,
 }
 
-impl CurrentMappingDispositions<'_, '_> {
+impl CurrentDispositions<'_, '_> {
     /// Borrow the complete record for Root's separately bounded serializer.
     /// Its labels cannot be reused as the input to this successful owner constructor.
     pub(crate) fn document(&self) -> &DispositionsDocument {
@@ -52,7 +172,7 @@ impl CurrentMappingDispositions<'_, '_> {
         ledger: &mut ContractLedger,
         control: &mut dyn WorkControl,
     ) -> Result<(), ContractError> {
-        ledger.bound(|ledger| native_fence(self.held, self.mapping, ledger, control))
+        ledger.bound(|ledger| native_fence(self.held, self.native, ledger, control))
     }
 }
 
@@ -67,32 +187,54 @@ pub(crate) fn finalize<'a, 'native>(
     mapping: &'a PreparedMappingReview<'native>,
     ledger: &mut ContractLedger,
     control: &mut dyn WorkControl,
-) -> Result<CurrentMappingDispositions<'a, 'native>, ContractError> {
+) -> Result<CurrentDispositions<'a, 'native>, ContractError> {
+    finalize_native(
+        held,
+        queue_index,
+        response_indices,
+        pending,
+        NativeReview::Mapping(mapping),
+        ledger,
+        control,
+    )
+}
+
+/// Finalize either closed genuine native domain, preserving exact original cohort admission.
+pub(crate) fn finalize_native<'a, 'native>(
+    held: &'a Rc<HeldReviewInputs>,
+    queue_index: usize,
+    response_indices: &[usize],
+    pending: &PendingPolicyEvaluation<'_>,
+    native: NativeReview<'a, 'native>,
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<CurrentDispositions<'a, 'native>, ContractError> {
     ledger.bound(|ledger| {
         ledger.checkpoint(control)?;
-        same_owner(held, mapping, ledger)?;
+        same_owner(held, native, ledger)?;
         held.bind_review_originals(queue_index, response_indices, ledger, control)?;
         bind_originals(held, queue_index, response_indices, pending, ledger, control)?;
-        mapping.bind_queue(pending.queue(), ledger, control)?;
-        let generation = generation(pending, mapping.source_pins(), ledger, control)?;
-        let document = document(pending, mapping.source_pins(), generation, ledger, control)?;
+        native.bind_queue(pending.queue(), ledger, control)?;
+        let generation =
+            generation(pending, native.source_pins(), native.domain(), ledger, control)?;
+        let document = document(pending, native.source_pins(), generation, ledger, control)?;
         validate::dispositions(&document, ledger, control)?;
         // The adapter's real closure owns THIS same complete held proof. Its fence
         // rechecks every source AND queue/response/auxiliary/output generation.
-        native_fence(held, mapping, ledger, control)?;
-        Ok(CurrentMappingDispositions { held, mapping, document })
+        native_fence(held, native, ledger, control)?;
+        Ok(CurrentDispositions { held, native, document })
     })
 }
 
 /// Require the actual shared owner identity; a caller hash/bool cannot substitute it.
 fn same_owner(
     held: &Rc<HeldReviewInputs>,
-    mapping: &PreparedMappingReview<'_>,
+    native: NativeReview<'_, '_>,
     ledger: &mut ContractLedger,
 ) -> Result<(), ContractError> {
     ledger.visits(1)?;
     ledger.bytes(2 * std::mem::size_of::<Rc<HeldReviewInputs>>())?;
-    if !Rc::ptr_eq(held, mapping.closure().held_inputs()) {
+    if !Rc::ptr_eq(held, native.held_inputs()) {
         return Err(ContractError::Binding);
     }
     Ok(())
@@ -142,13 +284,13 @@ fn bind_storage(
 /// source-only prefix. It does not claim atomic external state or syscall preemption.
 fn native_fence(
     held: &Rc<HeldReviewInputs>,
-    mapping: &PreparedMappingReview<'_>,
+    native: NativeReview<'_, '_>,
     ledger: &mut ContractLedger,
     control: &mut dyn WorkControl,
 ) -> Result<(), ContractError> {
     ledger.checkpoint(control)?;
-    same_owner(held, mapping, ledger)?;
-    mapping.verify_inputs(ledger, control)?;
+    same_owner(held, native, ledger)?;
+    native.verify_inputs(ledger, control)?;
     ledger.checkpoint(control)
 }
 
@@ -461,7 +603,7 @@ impl Serialize for ResponseOriginals<'_> {
 /// Exact typed complete-current record binding; a digest alone is never authority.
 #[derive(Serialize)]
 struct ClosureEncoding<'a> {
-    /// Fixed first native Mapping re-review profile.
+    /// Actual selected sealed adapter; Mapping retains its original encoding profile.
     adapter_version: &'static str,
     /// Actual bound immutable queue original, not reconstructed field equality.
     queue_original: RawOriginal<'a>,
@@ -529,6 +671,7 @@ impl Write for GenerationSink<'_> {
 fn generation(
     pending: &PendingPolicyEvaluation<'_>,
     pins: &[SourcePin],
+    domain: Domain,
     ledger: &mut ContractLedger,
     control: &mut dyn WorkControl,
 ) -> Result<String, ContractError> {
@@ -537,7 +680,10 @@ fn generation(
     let mut hash = Sha256::new();
     hash.update(GENERATION_PREFIX);
     let encoding = ClosureEncoding {
-        adapter_version: "forge.mapping-review/1",
+        adapter_version: match domain {
+            Domain::MappingAssertion => "forge.mapping-review/1",
+            Domain::ApplicabilityDecision => "forge.applicability-review/1",
+        },
         queue_original: RawOriginal {
             raw_sha256: pending.queue().raw_sha256(),
             byte_length: pending.queue().raw().len(),

@@ -66,6 +66,10 @@ impl PreparedMappingReview<'_> {
     pub(crate) fn facts(&self) -> impl Iterator<Item = &MappingFact<'_>> {
         self.facts.iter().filter_map(Option::as_ref)
     }
+    /// Return the actual selected cardinality before caller fact-vector admission.
+    pub(crate) fn selected_count(&self) -> usize {
+        self.facts.len()
+    }
     /// Return complete native maps, distinct from explicit selected item count.
     pub(crate) fn complete_maps(&self) -> usize {
         self.complete_maps

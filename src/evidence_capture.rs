@@ -34,6 +34,10 @@ pub(crate) enum CaptureRole {
     ReviewDispositions,
     /// Exact immutable private reviewer-response original.
     ReviewResponse,
+    /// Complete applicability decision manifest; its bytes grant no lifecycle approval.
+    ApplicabilityManifest,
+    /// Complete unfiltered applicability report used as its actual lifecycle source.
+    ApplicabilityReport,
     /// Complete native Mapping producer manifest.
     MappingManifest,
     /// Complete OSCAL Mapping Collection original.

@@ -31,10 +31,13 @@ pub(crate) mod html;
 
 /// Domain-specific source-bound item facts; no detached success constructor.
 pub(crate) mod adapters;
-/// Currentness-qualified Mapping dispositions retaining the complete actual original owner.
+/// Currentness-qualified dispositions retaining the selected domain and complete original owner.
 pub(crate) mod finalize;
 /// Complete native Mapping originals and neutral recorded approval/current tuple.
 pub(crate) mod mapping_capture;
+
+/// Genuine full applicability report-source capture and recorded-current lifecycle gate.
+pub(crate) mod applicability_capture;
 
 /// Five explicit-path review flows using one actual capture/ledger/control owner.
 pub(crate) mod commands;

@@ -726,3 +726,402 @@ fn profile_source_companion_tuple_and_current_fingerprint_cannot_be_forged() {
         .is_err()
     );
 }
+
+/// Borrow the exact typed failure and copy only its fixed review contract classification.
+fn admitted_error(
+    error: &super::admitted::ApplicabilityAdmissionError<crate::review::decode::ContractError>,
+) -> crate::review::decode::ContractError {
+    use super::admitted::ApplicabilityAdmissionError;
+    use crate::review::decode::ContractError;
+    match error {
+        ApplicabilityAdmissionError::Domain => ContractError::Invalid,
+        ApplicabilityAdmissionError::Admission(error) => *error,
+        ApplicabilityAdmissionError::Work(WorkError::Interrupted(reason)) => {
+            ContractError::Interrupted(*reason)
+        }
+        ApplicabilityAdmissionError::Work(WorkError::Failed(_)) => ContractError::ControlFailed,
+    }
+}
+
+/// Consume every admitted-helper charge with the same actual monotonic review ledger.
+fn admitted_charge(
+    charge: super::admitted::ApplicabilityCharge,
+    ledger: &mut crate::review::decode::ContractLedger,
+) -> Result<(), crate::review::decode::ContractError> {
+    use super::admitted::ApplicabilityCharge;
+    ledger.bound(|ledger| match charge {
+        ApplicabilityCharge::Checkpoint => ledger.visits(0),
+        ApplicabilityCharge::Work { visits, byte_work, matching_steps } => {
+            ledger.visits(visits)?;
+            ledger.bytes(byte_work)?;
+            ledger.matching(matching_steps)
+        }
+        ApplicabilityCharge::Reserve { logical_bytes } => ledger.derived(logical_bytes),
+        ApplicabilityCharge::Capacity => Err(ledger.capacity()),
+    })
+}
+
+/// Prepare real saved fixture originals through the new admitted wrapper.
+fn admitted_fixture<'a>(
+    fixture: &'a Fixture,
+    ledger: &mut crate::review::decode::ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<super::admitted::AdmittedApplicability<'a>, crate::review::decode::ContractError> {
+    ledger.bound(|ledger| {
+        super::admitted::prepare_admitted(
+            &fixture.manifest,
+            "framework",
+            &fixture.natives(),
+            &[MappingInput { key: "captured-map", bytes: &fixture.mapping }],
+            &mut |charge| admitted_charge(charge, ledger),
+            control,
+        )
+        .map_err(|error| admitted_error(&error))
+    })
+}
+
+/// The admitted path retains complete genuine native classification/report semantics.
+#[test]
+fn admitted_genuine_catalog_preserves_full_counts_and_real_report() {
+    let fixture = Fixture::new(false, false);
+    let mut ledger = crate::review::decode::ContractLedger::default();
+    let admitted = admitted_fixture(&fixture, &mut ledger, &mut NoopControl)
+        .expect("actual saved domain originals");
+    let core = admitted.core();
+    assert_eq!(core.counts().total, 3);
+    assert_eq!(core.counts().applicable_mapped, 1);
+    assert_eq!(core.counts().deferred, 1);
+    assert_eq!(core.counts().under_review, 1);
+    assert_eq!(core.native_participation("c1"), (1, 0));
+    assert_eq!(core.complete_maps(), 1);
+    assert_eq!(core.complete_pair_inspections(), 4);
+    assert_eq!(core.relations("c1").count(), 2);
+    assert_eq!(core.manifest_sha256(), sha256_hex(&fixture.manifest));
+    admitted
+        .validate_report_admitted(
+            &fixture.report,
+            &mut |charge| admitted_charge(charge, &mut ledger),
+            &mut NoopControl,
+        )
+        .expect("complete genuine maintained report");
+}
+
+/// Every explicit decision keeps its original array position; omitted controls stay omitted.
+#[test]
+fn admitted_exact_decision_positions_and_native_fingerprints_are_borrowed() {
+    let fixture = Fixture::new(false, false);
+    let admitted = admitted_fixture(
+        &fixture,
+        &mut crate::review::decode::ContractLedger::default(),
+        &mut NoopControl,
+    )
+    .expect("actual source/native facts");
+    let source = value(&fixture.manifest);
+    for row in admitted.core().control_rows() {
+        assert_eq!(admitted.core().control_fingerprint(row.control_id()).unwrap().len(), 64);
+        if let Some(index) = admitted.core().explicit_decision_index(row.control_id()) {
+            assert_eq!(source["decisions"][index]["control_id"], row.control_id());
+            assert_eq!(
+                admitted.core().explicit_decision(index).unwrap().control_id,
+                row.control_id()
+            );
+        } else {
+            assert_eq!(row.control_id(), "c3");
+            assert_eq!(row.decision_state(), None);
+            assert_eq!(row.classification(), GapClassification::UnderReview);
+        }
+    }
+    assert!(admitted.core().explicit_decision(2).is_none());
+    assert!(admitted.core().control_fingerprint("absent-control").is_none());
+    assert_eq!(
+        admitted.core().framework_evidence().unwrap().raw_sha256,
+        sha256_hex(&fixture.framework)
+    );
+}
+
+/// Actual Profile companion bytes are consumed and a changed same-kind original refuses.
+#[test]
+fn admitted_profile_companion_requires_exact_actual_original() {
+    let fixture = Fixture::new(true, false);
+    let mut ledger = crate::review::decode::ContractLedger::default();
+    let prepared = admitted_fixture(&fixture, &mut ledger, &mut NoopControl)
+        .expect("actual Profile originals");
+    prepared
+        .validate_report_admitted(
+            &fixture.report,
+            &mut |charge| admitted_charge(charge, &mut ledger),
+            &mut NoopControl,
+        )
+        .expect("actual complete Profile report");
+    assert_eq!(
+        prepared.core().framework_evidence().unwrap().resolved_catalog_sha256.as_deref(),
+        Some(sha256_hex(fixture.companion.as_deref().unwrap()).as_str())
+    );
+    let mut altered = value(fixture.companion.as_deref().unwrap());
+    altered["catalog"]["metadata"]["title"] = json!("Changed actual companion");
+    let altered = bytes(&altered);
+    let mut inputs = fixture.natives();
+    inputs[0].resolved_catalog = Some(ResolvedInput { key: "resolved", bytes: &altered });
+    let mut negative_ledger = crate::review::decode::ContractLedger::default();
+    assert!(
+        super::admitted::prepare_admitted(
+            &fixture.manifest,
+            "framework",
+            &inputs,
+            &[MappingInput { key: "captured-map", bytes: &fixture.mapping }],
+            &mut |charge| admitted_charge(charge, &mut negative_ledger),
+            &mut NoopControl,
+        )
+        .is_err()
+    );
+}
+
+/// Missing declared Mapping bytes cannot produce an apparently complete report universe.
+#[test]
+fn admitted_missing_declared_mapping_is_not_a_zero_findings_success() {
+    let fixture = Fixture::new(false, false);
+    admitted_fixture(
+        &fixture,
+        &mut crate::review::decode::ContractLedger::default(),
+        &mut NoopControl,
+    )
+    .expect("actual positive complete closure");
+    let mut negative_ledger = crate::review::decode::ContractLedger::default();
+    assert!(
+        super::admitted::prepare_admitted(
+            &fixture.manifest,
+            "framework",
+            &fixture.natives(),
+            &[],
+            &mut |charge| admitted_charge(charge, &mut negative_ledger),
+            &mut NoopControl,
+        )
+        .is_err()
+    );
+}
+
+/// All five filters and changed full counts refuse after an actual unfiltered canary.
+#[test]
+fn admitted_stored_report_never_accepts_filtered_or_shrunken_denominators() {
+    let fixture = Fixture::new(false, false);
+    let prepared = admitted_fixture(
+        &fixture,
+        &mut crate::review::decode::ContractLedger::default(),
+        &mut NoopControl,
+    )
+    .expect("actual complete original report basis");
+    prepared
+        .validate_report_admitted(
+            &fixture.report,
+            &mut |_| Ok::<(), &'static str>(()),
+            &mut NoopControl,
+        )
+        .expect("unfiltered positive");
+    for (key, replacement) in [
+        ("group", json!("g")),
+        ("control_prefix", json!("c")),
+        ("state", json!("applicable-mapped")),
+        ("reviewer", json!("scope-reviewer")),
+        ("policy_source", json!("policy.json")),
+    ] {
+        let mut changed = value(&fixture.report);
+        changed["filters"][key] = replacement;
+        assert!(
+            prepared
+                .validate_report_admitted(
+                    &bytes(&changed),
+                    &mut |_| Ok::<(), &'static str>(()),
+                    &mut NoopControl
+                )
+                .is_err()
+        );
+    }
+    let mut changed = value(&fixture.report);
+    changed["counts"]["total"] = json!(2);
+    assert!(
+        prepared
+            .validate_report_admitted(
+                &bytes(&changed),
+                &mut |_| Ok::<(), &'static str>(()),
+                &mut NoopControl
+            )
+            .is_err()
+    );
+}
+
+/// A caller stop at the old complete-pair charge remains Admission, not Domain.
+#[test]
+fn admitted_legacy_visit_failure_preserves_the_original_typed_error() {
+    use super::admitted::{ApplicabilityAdmissionError, ApplicabilityCharge};
+    let fixture = Fixture::new(false, false);
+    let mut reached = false;
+    let result = super::admitted::prepare_admitted(
+        &fixture.manifest,
+        "framework",
+        &fixture.natives(),
+        &[MappingInput { key: "captured-map", bytes: &fixture.mapping }],
+        &mut |charge| {
+            if matches!(
+                charge,
+                ApplicabilityCharge::Work { visits: 4, byte_work: 0, matching_steps: 0 }
+            ) {
+                reached = true;
+                Err("complete-pair-stop")
+            } else {
+                Ok(())
+            }
+        },
+        &mut NoopControl,
+    );
+    assert!(reached);
+    assert!(matches!(result, Err(ApplicabilityAdmissionError::Admission("complete-pair-stop"))));
+}
+
+/// Actual monotonic Capacity survives every later preparation on the same ledger.
+#[test]
+fn admitted_capacity_is_sticky_and_never_becomes_empty_success() {
+    use crate::review::decode::{ContractError, ContractLedger};
+    let fixture = Fixture::new(false, false);
+    let mut ledger = ContractLedger::default();
+    ledger.derived(33_554_432).expect("exact cap charge");
+    assert!(matches!(
+        admitted_fixture(&fixture, &mut ledger, &mut NoopControl),
+        Err(ContractError::Capacity)
+    ));
+    assert!(matches!(
+        admitted_fixture(&fixture, &mut ledger, &mut NoopControl),
+        Err(ContractError::Capacity)
+    ));
+}
+
+/// An exact conservative reservation boundary admits; one byte below refuses whole input.
+#[test]
+fn admitted_complete_reservation_boundary_has_no_prefix_admission() {
+    use super::admitted::{ApplicabilityAdmissionError, ApplicabilityCharge};
+    let fixture = Fixture::new(false, false);
+    let mut required = 0usize;
+    super::admitted::prepare_admitted(
+        &fixture.manifest,
+        "framework",
+        &fixture.natives(),
+        &[MappingInput { key: "captured-map", bytes: &fixture.mapping }],
+        &mut |charge| {
+            if let ApplicabilityCharge::Reserve { logical_bytes } = charge {
+                required = required.checked_add(logical_bytes).expect("small complete fixture");
+            }
+            Ok::<(), &'static str>(())
+        },
+        &mut NoopControl,
+    )
+    .expect("count actual reservation requests");
+    assert!(required > 0);
+    for (cap, positive) in [(required, true), (required - 1, false)] {
+        let mut retained = 0usize;
+        let result = super::admitted::prepare_admitted(
+            &fixture.manifest,
+            "framework",
+            &fixture.natives(),
+            &[MappingInput { key: "captured-map", bytes: &fixture.mapping }],
+            &mut |charge| {
+                if let ApplicabilityCharge::Reserve { logical_bytes } = charge {
+                    retained = retained.checked_add(logical_bytes).expect("small complete fixture");
+                    if retained > cap {
+                        return Err("complete-logical-cap");
+                    }
+                }
+                Ok(())
+            },
+            &mut NoopControl,
+        );
+        if positive {
+            assert!(result.is_ok());
+        } else {
+            assert!(matches!(
+                result,
+                Err(ApplicabilityAdmissionError::Admission("complete-logical-cap"))
+            ));
+        }
+    }
+}
+
+/// Only a supplied real control can originate a cancellation interruption.
+#[test]
+fn admitted_actual_control_cancellation_is_not_domain_invalidity() {
+    let fixture = Fixture::new(false, false);
+    let mut control = Recorder::at(Stage::PrepareDomain, 1);
+    let result = super::admitted::prepare_admitted(
+        &fixture.manifest,
+        "framework",
+        &fixture.natives(),
+        &[MappingInput { key: "captured-map", bytes: &fixture.mapping }],
+        &mut |_| Ok::<(), &'static str>(()),
+        &mut control,
+    );
+    assert!(matches!(
+        result,
+        Err(super::admitted::ApplicabilityAdmissionError::Work(WorkError::Interrupted(
+            Interruption::CancelRequested
+        )))
+    ));
+    assert_eq!(control.interruption(), Some(Interruption::CancelRequested));
+}
+
+/// Real ordinary control failure is preserved even when the legacy engine uses safe errors.
+#[test]
+fn admitted_actual_ordinary_control_failure_is_not_a_domain_refusal() {
+    /// Count actual checkpoints and optionally fail one with a fixed typed canary.
+    struct ActualFailure {
+        /// Actual observed checkpoint count, not wall-clock input.
+        calls: usize,
+        /// Exact requested failure checkpoint or no failure.
+        fail_at: Option<usize>,
+    }
+    impl WorkControl for ActualFailure {
+        /// Observe every actual producer checkpoint without changing its stage/progress.
+        fn checkpoint(
+            &mut self,
+            _stage: Stage,
+            _progress: crate::workspace::preparation::ProgressUpdate,
+        ) -> WorkResult<()> {
+            self.calls += 1;
+            if self.fail_at == Some(self.calls) {
+                return Err(WorkError::Failed(Error::new(
+                    "actual-control-canary",
+                    "Fixed synthetic control failure.",
+                    false,
+                )));
+            }
+            Ok(())
+        }
+        /// This ordinary-failure fixture never invents an interruption.
+        fn interruption(&self) -> Option<Interruption> {
+            None
+        }
+    }
+    let fixture = Fixture::new(false, false);
+    let mut canary = ActualFailure { calls: 0, fail_at: None };
+    super::admitted::prepare_admitted(
+        &fixture.manifest,
+        "framework",
+        &fixture.natives(),
+        &[MappingInput { key: "captured-map", bytes: &fixture.mapping }],
+        &mut |_| Ok::<(), &'static str>(()),
+        &mut canary,
+    )
+    .expect("actual complete canary producer");
+    let mut failed = ActualFailure { calls: 0, fail_at: Some(canary.calls) };
+    let result = super::admitted::prepare_admitted(
+        &fixture.manifest,
+        "framework",
+        &fixture.natives(),
+        &[MappingInput { key: "captured-map", bytes: &fixture.mapping }],
+        &mut |_| Ok::<(), &'static str>(()),
+        &mut failed,
+    );
+    match result {
+        Err(super::admitted::ApplicabilityAdmissionError::Work(WorkError::Failed(error))) => {
+            assert_eq!(error.code, "actual-control-canary");
+        }
+        _ => panic!("actual final legacy control failure must retain its exact typed cause"),
+    }
+}

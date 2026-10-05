@@ -1,9 +1,9 @@
 # Portable review queues
 
 This guide describes the F12 implementation candidate. Its current CLI supports
-re-review of selected assertions in a recorded Approved/current OSCAL Mapping
-closure. The applicability adapter is being implemented. Team evaluation,
-reviewer authority, interoperability and final acceptance remain open.
+re-review of selected OSCAL Mapping assertions and explicit applicability
+decisions in recorded Approved/current closures. Team evaluation, reviewer
+authority, interoperability and final acceptance remain open.
 
 Reviewer keys, roles, author keys and times are explicit assertions. They are not
 authenticated or signed identities. `quorum-met` means that the declared review
@@ -18,7 +18,9 @@ Outputs are new files; an existing destination is refused. The current publisher
 supports Linux and macOS and refuses publication on Windows.
 
 The source locator is a private routing file, separate from the portable queue.
-It lists the complete physical source set, including the Mapping manifest,
+Its closed format selects either Mapping or applicability; a mixed-domain queue
+is rejected. For Mapping, it lists the complete physical source set, including
+the Mapping manifest,
 lifecycle record, generated Mapping, source/target resources, resolved Catalog
 companions for Profiles, and every additional lifecycle-generated artifact.
 The factory validates that exact union and rebuilds the native Mapping through
@@ -45,10 +47,54 @@ and keep `sources` sorted by key. It does not supply an approval record:
 }
 ```
 
+For applicability, use `forge.review-applicability-locator/1`. The example below
+shows a Catalog framework and one Mapping; replace it with the complete actual
+project roster. `mapping_keys` must follow the applicability manifest's Mapping
+path order. Keep `sources` sorted by key, and include all native resources,
+resolved Catalog companions and additional lifecycle-generated artifacts.
+Every source row requires `resolved_catalog_key`: the key of a source row with
+model `resolved-catalog` for a Profile, and explicit `null` for every other model.
+
+```json
+{
+  "schema_version": "forge.review-applicability-locator/1",
+  "applicability_manifest_key": "manifest",
+  "applicability_report_key": "report",
+  "lifecycle_record_key": "lifecycle",
+  "framework_key": "framework",
+  "mapping_keys": ["mapping"],
+  "sources": [
+    {"key": "framework", "path": "framework.json", "model": "catalog", "resolved_catalog_key": null},
+    {"key": "lifecycle", "path": "lifecycle.json", "model": "lifecycle-record", "resolved_catalog_key": null},
+    {"key": "manifest", "path": "applicability.json", "model": "applicability-manifest", "resolved_catalog_key": null},
+    {"key": "mapping", "path": "mapping.json", "model": "mapping", "resolved_catalog_key": null},
+    {"key": "report", "path": "applicability-report.json", "model": "applicability-report", "resolved_catalog_key": null},
+    {"key": "source", "path": "source.json", "model": "catalog", "resolved_catalog_key": null}
+  ]
+}
+```
+
+The applicability lifecycle source must be the exact full, unfiltered
+`forge.applicability-report/1` original, recorded as a non-native source without
+an OSCAL UUID. The factory checks the current Approved tuple and reconstructs
+the complete report through the maintained applicability engine. Filtered,
+copied or stale reports cannot substitute for that closure.
+
+Applicability items select exact control IDs with explicit manifest decisions.
+Omitted decisions cannot be selected; they remain in the complete framework
+denominator as under-review controls. All six category counts, the full native
+Mapping count and Cartesian pair count remain complete. Native positive and
+no-relationship edge-target counts are distinct from Cartesian pair counts.
+Selected subject hashes bind the entire original decision and current framework
+tuple; private rationale and paths are not copied into default queue context.
+
 The private policy file contains declarations only. Replace the example
-`subject_id` with an exact map UUID from the captured native Mapping. Every item
-requires an explicit nullable `due_at`; omission is rejected. Keep declared
-roles, reviewers, policies, items and nested key lists sorted and unique.
+`subject_id` with an exact canonical map UUID from the captured native Mapping,
+or an exact control ID for an explicit captured applicability decision. Mapping
+IDs are canonical 36-character UUIDs; applicability IDs are bounded tokens up
+to 256 bytes. Every item requires an explicit nullable `due_at`; omission is
+rejected. Keep declared roles, reviewers, policies, items and nested key lists
+sorted and unique.
 
 ```json
 {
@@ -154,7 +200,9 @@ information; review the actual artifacts before sharing them.
 HTML is a static rendering of a captured recorded bundle. It does not perform a
 fresh source check or authenticate its recorded labels. The current CLI performs
 no remote upload, notification or automatic domain edit. Non-null proposed edits
-are rejected. Signed envelopes and remaining F13 workflows are pending.
+are rejected. Supported proposed edits and remaining native adapters are
+pending. The interactive client, signed response design/envelope, notification
+export and links between superseded queues also remain open requirements.
 
 The command shares one cooperative 30-second deadline and one monotonic ledger.
 Its logical derived allowance is 32 MiB, with separately bounded work and raw
