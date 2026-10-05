@@ -223,9 +223,10 @@ LEAF_READ_SIZE = 32768
 class LeafClosureError(Exception):
     """Carry only a fixed qualification reason; OS details and private paths stay private."""
 
-    def __init__(self, reason, phase="stdlib-entry"):
-        """Keep the first fixed failure and its existing root/entry diagnostic phase."""
+    def __init__(self, reason, phase="stdlib-entry", *, membership=None):
+        """Keep the first fixed failure and optional private sanitized facts; no path or target bytes are retained."""
         self.reason, self.phase = reason, phase
+        self.membership = membership
         super().__init__(reason)
 
 
@@ -612,8 +613,71 @@ class LeafClosure:
         if leaf_identity(os.fstat(fd)) != first:
             raise LeafClosureError("entry-observation-unverified")
 
-    def resolve(self, original, files, links):
-        """Resolve only inventoried leaf chains, qualifying every raw dot/dot-dot ancestor operation."""
+    def membership_detail(self, candidate, target, rows):
+        """Observe only already-inventoried coarse facts at a refusal; no target IO or admission is added.
+
+        The complete comparison work and 5*PATH scratch plus one 512-byte carrier
+        are reserved inside the existing monotonic ledgers before diagnostic growth.
+        Optional exhaustion, expiry or malformed private facts abstain and preserve
+        the original unsupported-link raise. Existing cleanup/deadline fences remain
+        authoritative. Charges bound byte payloads, not Python object overhead or
+        atomic timing. Inventory absence is not file absence.
+        """
+        try:
+            if (type(candidate) is not list or len(candidate) > 512
+                    or type(target) is not bytes or not target
+                    or type(rows) is not list or len(rows) > 2 * LEAF_ENTRY_LIMIT
+                    or type(self.roots) is not list or not 2 <= len(self.roots) <= 8):
+                return None
+            length = 1
+            for component in candidate:
+                if type(component) is not bytes or not component or component in (b".", b".."):
+                    return None
+                length += len(component) + 1
+            if max(1, length - 1) > LEAF_PATH_LIMIT:
+                return None
+            self.budget.charge("work", 1 + len(candidate) + len(rows) + len(self.roots),
+                               LEAF_WORK_LIMIT, "entry-bound")
+            self.budget.charge("state", 5 * LEAF_PATH_LIMIT + 512, LEAF_STATE_LIMIT, "byte-bound")
+            path = b"/" + b"/".join(candidate)
+            path_hex = path.hex()
+            scope = "outside-present-roots"
+            directory = False
+            for root in self.roots:
+                self.budget.check()
+                raw = root[0]
+                if type(raw) is not bytes or not raw or len(raw) > LEAF_PATH_LIMIT:
+                    return None
+                if path == raw:
+                    scope, directory = "present-root-exact", True
+                elif (scope != "present-root-exact" and path.startswith(raw)
+                      and path[len(raw):len(raw) + 1] == b"/"):
+                    scope = "beneath-present-root"
+            for row in rows:
+                self.budget.check()
+                if type(row) is not list or len(row) < 3:
+                    return None
+                if row[2] != "directory":
+                    continue
+                if (len(row) != 4 or type(row[0]) is not int or not 0 <= row[0] < len(self.roots)
+                        or type(row[1]) is not str or len(row[1]) > 2 * LEAF_PATH_LIMIT):
+                    return None
+                # Drop the previous scratch value before allocating the next bounded hex string.
+                root_hex = None
+                root_hex = self.roots[row[0]][0].hex()
+                start = len(root_hex) + 2
+                if (len(path_hex) == start + len(row[1]) and path_hex.startswith(root_hex)
+                        and path_hex[len(root_hex):start] == "2f" and path_hex.startswith(row[1], start)):
+                    directory = True
+            self.budget.check()
+            return ("absolute" if target.startswith(b"/") else "relative", scope,
+                    "inventoried-directory" if directory else "no-file-link-or-directory-row")
+        except Exception:
+            # This optional observation never replaces the engine's original failure.
+            return None
+
+    def resolve(self, original, files, links, rows=None):
+        """Qualify raw dot/dot-dot walks; borrowed inventory rows add optional facts only at the unchanged refusal."""
         current, seen, chain, steps = original, set(), [], 0
         for _ in range(LEAF_HOP_LIMIT):
             if current not in links:
@@ -652,7 +716,7 @@ class LeafClosure:
                         else:
                             candidate.append(component)
                     if b"/" + b"/".join(candidate) not in files and b"/" + b"/".join(candidate) not in links:
-                        raise LeafClosureError("unsupported-link")
+                        raise LeafClosureError("unsupported-link", membership=self.membership_detail(candidate, target, rows))
                     for component in parts[:-1]:
                         self.budget.charge("work", 1, LEAF_WORK_LIMIT, "entry-bound")
                         if component == b".":
@@ -742,7 +806,7 @@ class LeafClosure:
         for row in tuple(rows):
             if row[2] == "link":
                 original = self.roots[row[0]][0] + b"/" + bytes.fromhex(row[1])
-                self.row(rows, [row[0], row[1], "resolution", self.resolve(original, files, links)])
+                self.row(rows, [row[0], row[1], "resolution", self.resolve(original, files, links, rows)])
         proof = [LEAF_PROOF_FORMAT, root_rows, sorted(rows)]
         if leaf_encoded_size(proof) + 1 > LEAF_STATE_LIMIT:
             raise LeafClosureError("byte-bound")

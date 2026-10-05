@@ -202,3 +202,11 @@ The corrected draft #213 dispatcher still stopped before any privileged campaign
 ## Inspected hosted physical campaign successor
 
 Linux run 37238681717 at head `2659faf` passed all 22 protected synthetic root filesystem controls, including cleanup and unchanged source/tool checks. The release build passed, but actual runtime preflight remains `tool-untrusted` at `stdlib-entry/unsupported-link`; the IP-denial producer did not run and attempted egress is unmeasured. See [the complete inspection](../plans/2026-10-04-f04-hosted-physical-qualification-v1.md). Prior measurements and the historical observer remain unchanged.
+
+## Separate fixed rejection-site diagnostic
+
+A bounded secondary diagnostic now records only the fixed raise-site category after an unchanged incomplete primary qualification receipt. [The exact-source verification successor](../plans/2026-10-04-f04-rejection-detail-verification-v1.md) records 190 ordinary controls, docstrings and measured coverage. Fresh hosted diagnostic/upload qualification is pending; the prior failure, trust policy, native engine and historical observer remain unchanged.
+
+## Versioned inventory-only rejection metadata
+
+The current optional diagnostic uses a separate `/2` file and artifact. It reports only existing inventory-relative facts and explicitly records that target stat was not observed. [The current verification record](../plans/2026-10-04-f04-target-membership-verification-v1.md) retains 205 ordinary control passes, exact documentation/coverage and all zeros. Original trust/admission/proof rules and historical observer evidence remain intact. Fresh hosted `/2` and full runtime acceptance remain required.

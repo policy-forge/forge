@@ -34,7 +34,7 @@ _ADMINISTRATIVE_PATHS = MappingProxyType({
 SOURCE_KEYS = ("scripts/test_workspace_client.py", "scripts/workspace_client.py",
                "scripts/verify_workspace.py", "docs/api/forge-workspace-v1.openapi.yaml")
 EXTRA_INPUTS = ("scripts/test_workspace_os_denial.py", "scripts/verify_workspace_os_denial.py",
-                "scripts/test_verify_workspace_os_denial.py")
+                "scripts/test_verify_workspace_os_denial.py", "scripts/test_workspace_stdlib_link_diagnostic.py")
 QUALIFICATION = ("facilities_qualified", "three_owned_namespaces", "dut_lo_only_before",
                  "dut_lo_only_after", "canary_dual_family", "client_preexec_fence", "protected_execution")
 OWNED = ("owned_processes_empty", "owned_references_closed", "owned_names_absent", "virtual_links_absent")
@@ -105,6 +105,8 @@ class GateError(ValueError):
         self.incomplete = incomplete
         self.tool_reason = tool_reason
         self.diagnostic = validate_tool_diagnostic(diagnostic)
+        self.link_subcondition = None
+        self.link_membership = None
         super().__init__(code)
 
 
@@ -418,6 +420,208 @@ def command(argv, root, deadline, input_bytes=None, privileged=False):
             result.update(failure=result["failure"] or "cleanup-unverified", output=b"")
 
 
+# Separate fixed-site/inventory observation; the shared leaf admission and proof profile remain unchanged.
+LINK_DETAIL_SCHEMA = "forge.stdlib-unsupported-link-diagnostic/2"
+LINK_DETAIL_OUTPUT = "stdlib-unsupported-link-diagnostic-v2.json"
+LINK_DETAIL_LIMIT = 2048
+LINK_DETAIL_ENGINE_PIN = {"bytes": 34284, "sha256": "88c46e18be0299e297c9484b84ffdeb15fc24f864d01a24dfe262ee3c0232305"}
+LINK_DETAIL_INPUTS = ("scripts/verify_workspace_os_denial.py", "scripts/test_workspace_os_denial.py",
+                      "scripts/test_workspace_stdlib_link_diagnostic.py", ".github/workflows/workspace-verification.yml")
+# Offsets are relative to the actual maintained method's def line, not its filename or a caller label.
+LINK_DETAIL_SITES = {
+    "trusted": {6: "required-kind-symlink"},
+    "read_link": {3: "inventoried-link-size", 10: "held-link-size", 17: "link-text-shape", 21: "link-text-utf8"},
+    "resolve": {5: "origin-not-in-link-inventory", 9: "physical-link-cycle", 35: "lexical-parent-escape",
+                40: "target-not-in-inventory", 47: "held-parent-escape", 62: "final-component-shape",
+                76: "resolved-target-not-in-inventory", 110: "link-hop-limit"},
+}
+LINK_DETAIL_CODES = frozenset(code for sites in LINK_DETAIL_SITES.values() for code in sites.values())
+
+
+def link_rejection_site(error):
+    """Classify only the actual innermost maintained raise site; never read frame locals, paths or exception prose."""
+    if type(error) is not LeafClosureError or (error.phase, error.reason) != ("stdlib-entry", "unsupported-link"):
+        return None
+    frame = error.__traceback__
+    last = None
+    for _ in range(16):
+        if frame is None:
+            break
+        last, frame = frame, frame.tb_next
+    if frame is not None or last is None:
+        return None
+    for name, offsets in LINK_DETAIL_SITES.items():
+        code = getattr(LeafClosure, name).__code__
+        if last.tb_frame.f_code is code:
+            return offsets.get(last.tb_lineno - code.co_firstlineno)
+    return None
+
+
+def link_membership_record(subcondition, carrier):
+    """Decode only the engine's fixed private tuple; unknown combinations never become public facts."""
+    record = {"availability": "unavailable", "target_form": None, "lexical_scope": None,
+              "inventory_kind": None, "basis": "existing-complete-inventory-only", "target_stat": "not-observed"}
+    if carrier is None:
+        return record
+    if (subcondition != "target-not-in-inventory" or type(carrier) is not tuple or len(carrier) != 3
+            or any(type(value) is not str for value in carrier)):
+        raise ValueError("invalid link membership")
+    form, scope, kind = carrier
+    if (form not in ("absolute", "relative")
+            or scope not in ("present-root-exact", "beneath-present-root", "outside-present-roots")
+            or kind not in ("inventoried-directory", "no-file-link-or-directory-row")
+            or scope == "outside-present-roots" and kind == "inventoried-directory"
+            or scope == "present-root-exact" and kind != "inventoried-directory"):
+        raise ValueError("invalid link membership")
+    record.update(availability="observed-inventory-facts", target_form=form, lexical_scope=scope, inventory_kind=kind)
+    return record
+
+
+def validate_link_diagnostic_record(value):
+    """Require the complete closed /2 record, source/engine pins and reachable inventory correlations before encoding."""
+    try:
+        fields = {"schema_version", "scope", "truth_state", "acceptance_eligible", "status", "phase", "reason",
+                  "subcondition", "requested_commit", "tested_commit", "source_inputs", "engine_pin",
+                  "outer_receipt_pin", "membership"}
+        if type(value) is not dict or set(value) != fields:
+            return False
+        if (value["schema_version"] != LINK_DETAIL_SCHEMA or value["scope"] != "ordinary-stdlib-rejection-raise-site"
+                or value["truth_state"] != "synthetic-development" or value["acceptance_eligible"] is not False
+                or value["status"] != "observed-rejection" or value["phase"] != "stdlib-entry"
+                or value["reason"] != "unsupported-link" or type(value["subcondition"]) is not str
+                or value["subcondition"] not in LINK_DETAIL_CODES):
+            return False
+        requested, tested = value["requested_commit"], value["tested_commit"]
+        if ((requested is not None and (type(requested) is not str or re.fullmatch(r"[0-9a-f]{40}", requested) is None))
+                or type(tested) is not str or re.fullmatch(r"[0-9a-f]{40}", tested) is None):
+            return False
+        inputs = value["source_inputs"]
+        if type(inputs) is not dict or set(inputs) != set(LINK_DETAIL_INPUTS):
+            return False
+        for item in inputs.values():
+            pin(item)
+        if pin(value["engine_pin"]) != LINK_DETAIL_ENGINE_PIN:
+            return False
+        pin(value["outer_receipt_pin"])
+        member = value["membership"]
+        if (type(member) is not dict or set(member) != {"availability", "target_form", "lexical_scope",
+                                                      "inventory_kind", "basis", "target_stat"}):
+            return False
+        if member["availability"] == "unavailable":
+            carrier = None
+        elif member["availability"] == "observed-inventory-facts":
+            carrier = (member["target_form"], member["lexical_scope"], member["inventory_kind"])
+        else:
+            return False
+        if member != link_membership_record(value["subcondition"], carrier):
+            return False
+        return len(shared.canonical_bytes(value)) <= LINK_DETAIL_LIMIT
+    except Exception:
+        return False
+
+
+def link_diagnostic_record(root, destination, receipt, subcondition, *, membership=None):
+    """Bind fixed-site/inventory facts to actual paired engines and outer bytes; no target metadata is inferred."""
+    if (subcondition not in LINK_DETAIL_CODES or receipt["status"] != "incomplete"
+            or receipt["failure"] != "tool-untrusted" or receipt["input_stability"] != "unchanged"
+            or receipt["diagnostic"] != {"phase": "stdlib-entry", "reason": "unsupported-link", "exit_code": None}
+            or receipt["producer"] != {"status": "not-run", "exit_code": None, "failure": None,
+                                       "receipt": None, "receipt_pin": None}
+            or receipt["cleanup"] != {"state": "verified-not-created", "forced": False}):
+        return None
+    inputs = {key: pin(receipt["identity"]["inputs"][key]) for key in LINK_DETAIL_INPUTS}
+    for key in LINK_DETAIL_INPUTS:
+        if pin_bytes(read_bytes(root / key)) != inputs[key]:
+            return None
+    raw = read_bytes(root / LINK_DETAIL_INPUTS[0])
+    if pin_bytes(raw) != inputs[LINK_DETAIL_INPUTS[0]]:
+        return None
+    first = raw.index(b"\nLEAF_PROOF_FORMAT =") + 1
+    last = raw.index(b"\n\ndef stdlib_inventory", first)
+    actual_engine = pin_bytes(raw[first:last])
+    if actual_engine != LINK_DETAIL_ENGINE_PIN:
+        return None
+    native = read_bytes(root / LINK_DETAIL_INPUTS[1])
+    if pin_bytes(native) != inputs[LINK_DETAIL_INPUTS[1]]:
+        return None
+    native_first = native.index(b"\nLEAF_PROOF_FORMAT =") + 1
+    native_last = native.index(b"\n\ndef trusted_stdlib", native_first)
+    if native[native_first:native_last] != raw[first:last]:
+        return None
+    outer = shared.canonical_bytes(receipt)
+    if read_bytes(destination / OUTPUT) != outer:
+        return None
+    checkout = receipt["checkout"]
+    requested, tested = checkout["requested_head"], checkout["tested_commit"]
+    if (requested is not None and (type(requested) is not str or re.fullmatch(r"[0-9a-f]{40}", requested) is None)
+            or type(tested) is not str or re.fullmatch(r"[0-9a-f]{40}", tested) is None):
+        return None
+    record = {"schema_version": LINK_DETAIL_SCHEMA, "scope": "ordinary-stdlib-rejection-raise-site",
+            "truth_state": "synthetic-development", "acceptance_eligible": False,
+            "status": "observed-rejection", "phase": "stdlib-entry", "reason": "unsupported-link",
+            "subcondition": subcondition, "requested_commit": requested, "tested_commit": tested,
+            "source_inputs": inputs, "engine_pin": actual_engine, "outer_receipt_pin": pin_bytes(outer),
+            "membership": link_membership_record(subcondition, membership)}
+    return record if validate_link_diagnostic_record(record) else None
+
+
+def publish_link_diagnostic(root, destination, receipt, subcondition, deadline, published, *, membership=None):
+    """Keep this bounded, no-replace observation secondary to every original failure, fence and cleanup outcome."""
+    try:
+        if subcondition is None or time.monotonic() >= deadline:
+            return False
+        record = link_diagnostic_record(root, destination, receipt, subcondition, membership=membership)
+        if record is None or len(shared.canonical_bytes(record)) > LINK_DETAIL_LIMIT or time.monotonic() >= deadline:
+            return False
+        # The maintained publisher owns its staging descriptor/name and refuses any existing destination.
+        shared.atomic_receipt(destination / LINK_DETAIL_OUTPUT, record)
+        if published is not None:
+            published()
+        return True
+    except Exception:
+        # No secondary parser/publication/callback fault changes the already published primary receipt or exit.
+        return False
+
+
+def emit_link_diagnostic_publication_flag():
+    """Append only the fixed runner flag after successful fresh sidecar publication; existence is never authority."""
+    descriptor = None
+    accepted = False
+    try:
+        name = os.environ.get("GITHUB_OUTPUT")
+        if not name:
+            return False
+        path = Path(name)
+        before = path.lstat()
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > 1024 * 1024:
+            return False
+        flags = os.O_WRONLY | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
+        flags |= getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_CLOEXEC", 0)
+        flags |= getattr(os, "O_BINARY", 0)
+        descriptor = os.open(path, flags)
+        held = os.fstat(descriptor)
+        identity = (before.st_dev, before.st_ino)
+        if (not stat.S_ISREG(held.st_mode) or held.st_nlink != 1 or
+                (held.st_dev, held.st_ino) != identity or held.st_size > 1024 * 1024):
+            return False
+        line = b"stdlib_link_detail_published=true\n"
+        if os.write(descriptor, line) != len(line):
+            return False
+        after = path.lstat()
+        accepted = stat.S_ISREG(after.st_mode) and (after.st_dev, after.st_ino) == identity
+    except Exception:
+        accepted = False
+    finally:
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except Exception:
+                accepted = False
+    # A complete flag already written cannot be retracted after a later fault.
+    # Its prerequisite remains successful NEW bounded publication, never a stale file.
+    return accepted
+
+
 # Both qualifiers contain this literal proof engine; the engine imports no checkout helper.
 # Its independently computed proof is compared through the closed private plan.
 LEAF_PROOF_FORMAT = "forge.stdlib-leaf-closure/1"
@@ -435,9 +639,10 @@ LEAF_READ_SIZE = 32768
 class LeafClosureError(Exception):
     """Carry only a fixed qualification reason; OS details and private paths stay private."""
 
-    def __init__(self, reason, phase="stdlib-entry"):
-        """Keep the first fixed failure and its existing root/entry diagnostic phase."""
+    def __init__(self, reason, phase="stdlib-entry", *, membership=None):
+        """Keep the first fixed failure and optional private sanitized facts; no path or target bytes are retained."""
         self.reason, self.phase = reason, phase
+        self.membership = membership
         super().__init__(reason)
 
 
@@ -824,8 +1029,71 @@ class LeafClosure:
         if leaf_identity(os.fstat(fd)) != first:
             raise LeafClosureError("entry-observation-unverified")
 
-    def resolve(self, original, files, links):
-        """Resolve only inventoried leaf chains, qualifying every raw dot/dot-dot ancestor operation."""
+    def membership_detail(self, candidate, target, rows):
+        """Observe only already-inventoried coarse facts at a refusal; no target IO or admission is added.
+
+        The complete comparison work and 5*PATH scratch plus one 512-byte carrier
+        are reserved inside the existing monotonic ledgers before diagnostic growth.
+        Optional exhaustion, expiry or malformed private facts abstain and preserve
+        the original unsupported-link raise. Existing cleanup/deadline fences remain
+        authoritative. Charges bound byte payloads, not Python object overhead or
+        atomic timing. Inventory absence is not file absence.
+        """
+        try:
+            if (type(candidate) is not list or len(candidate) > 512
+                    or type(target) is not bytes or not target
+                    or type(rows) is not list or len(rows) > 2 * LEAF_ENTRY_LIMIT
+                    or type(self.roots) is not list or not 2 <= len(self.roots) <= 8):
+                return None
+            length = 1
+            for component in candidate:
+                if type(component) is not bytes or not component or component in (b".", b".."):
+                    return None
+                length += len(component) + 1
+            if max(1, length - 1) > LEAF_PATH_LIMIT:
+                return None
+            self.budget.charge("work", 1 + len(candidate) + len(rows) + len(self.roots),
+                               LEAF_WORK_LIMIT, "entry-bound")
+            self.budget.charge("state", 5 * LEAF_PATH_LIMIT + 512, LEAF_STATE_LIMIT, "byte-bound")
+            path = b"/" + b"/".join(candidate)
+            path_hex = path.hex()
+            scope = "outside-present-roots"
+            directory = False
+            for root in self.roots:
+                self.budget.check()
+                raw = root[0]
+                if type(raw) is not bytes or not raw or len(raw) > LEAF_PATH_LIMIT:
+                    return None
+                if path == raw:
+                    scope, directory = "present-root-exact", True
+                elif (scope != "present-root-exact" and path.startswith(raw)
+                      and path[len(raw):len(raw) + 1] == b"/"):
+                    scope = "beneath-present-root"
+            for row in rows:
+                self.budget.check()
+                if type(row) is not list or len(row) < 3:
+                    return None
+                if row[2] != "directory":
+                    continue
+                if (len(row) != 4 or type(row[0]) is not int or not 0 <= row[0] < len(self.roots)
+                        or type(row[1]) is not str or len(row[1]) > 2 * LEAF_PATH_LIMIT):
+                    return None
+                # Drop the previous scratch value before allocating the next bounded hex string.
+                root_hex = None
+                root_hex = self.roots[row[0]][0].hex()
+                start = len(root_hex) + 2
+                if (len(path_hex) == start + len(row[1]) and path_hex.startswith(root_hex)
+                        and path_hex[len(root_hex):start] == "2f" and path_hex.startswith(row[1], start)):
+                    directory = True
+            self.budget.check()
+            return ("absolute" if target.startswith(b"/") else "relative", scope,
+                    "inventoried-directory" if directory else "no-file-link-or-directory-row")
+        except Exception:
+            # This optional observation never replaces the engine's original failure.
+            return None
+
+    def resolve(self, original, files, links, rows=None):
+        """Qualify raw dot/dot-dot walks; borrowed inventory rows add optional facts only at the unchanged refusal."""
         current, seen, chain, steps = original, set(), [], 0
         for _ in range(LEAF_HOP_LIMIT):
             if current not in links:
@@ -864,7 +1132,7 @@ class LeafClosure:
                         else:
                             candidate.append(component)
                     if b"/" + b"/".join(candidate) not in files and b"/" + b"/".join(candidate) not in links:
-                        raise LeafClosureError("unsupported-link")
+                        raise LeafClosureError("unsupported-link", membership=self.membership_detail(candidate, target, rows))
                     for component in parts[:-1]:
                         self.budget.charge("work", 1, LEAF_WORK_LIMIT, "entry-bound")
                         if component == b".":
@@ -954,7 +1222,7 @@ class LeafClosure:
         for row in tuple(rows):
             if row[2] == "link":
                 original = self.roots[row[0]][0] + b"/" + bytes.fromhex(row[1])
-                self.row(rows, [row[0], row[1], "resolution", self.resolve(original, files, links)])
+                self.row(rows, [row[0], row[1], "resolution", self.resolve(original, files, links, rows)])
         proof = [LEAF_PROOF_FORMAT, root_rows, sorted(rows)]
         if leaf_encoded_size(proof) + 1 > LEAF_STATE_LIMIT:
             raise LeafClosureError("byte-bound")
@@ -1022,7 +1290,10 @@ def stdlib_inventory(paths, deadline):
     except LeafClosureError as error:
         if error.reason == "deadline-expired":
             raise GateError("command-timeout", True, diagnostic=tool_diagnostic(error.phase, error.reason)) from None
-        raise GateError("tool-untrusted", True, diagnostic=tool_diagnostic(error.phase, error.reason)) from None
+        failure = GateError("tool-untrusted", True, diagnostic=tool_diagnostic(error.phase, error.reason))
+        failure.link_subcondition = link_rejection_site(error)
+        failure.link_membership = error.membership if failure.link_subcondition == "target-not-in-inventory" else None
+        raise failure from None
 
 
 def capture_tool_version(name, executable, root, deadline):
@@ -1069,7 +1340,7 @@ def capture_tools(root, deadline):
 
 
 def capture_identity(root, forge, timeout):
-    """Supplement unchanged shared commit-object and checkout inputs with this slice's three new sources."""
+    """Supplement unchanged shared commit-object and checkout inputs with this slice's additional source inputs."""
     value = shared.capture_identity(root, forge, timeout)
     value["inputs"].update({name: shared.hash_file(root / name) for name in EXTRA_INPUTS})
     return value
@@ -1214,7 +1485,7 @@ def native_run(root, forge, identity, paths, deadline):
 
 
 def verify(root, forge, output_dir, expected_commit=None, build_outcome="unrecorded", *, event="local",
-           checkout_kind="local", requested_head=None, requested_base=None):
+           checkout_kind="local", requested_head=None, requested_base=None, link_diagnostic_published=None):
     """Bind build/context/tool/source stability to one closed native experiment while keeping all wider acceptance gates open."""
     if build_outcome not in shared.BUILD_OUTCOMES:
         raise ValueError("build outcome")
@@ -1235,6 +1506,8 @@ def verify(root, forge, output_dir, expected_commit=None, build_outcome="unrecor
     before = None
     tools = None
     paths = None
+    link_subcondition = None
+    link_membership = None
     try:
         before = capture_identity(root, forge, 30)
         receipt["identity"] = before
@@ -1260,6 +1533,8 @@ def verify(root, forge, output_dir, expected_commit=None, build_outcome="unrecor
         elif producer["status"] == "passed":
             raise GateError("execution-unverified")
     except GateError as error:
+        link_subcondition = error.link_subcondition
+        link_membership = error.link_membership
         retain_tool_diagnostic(receipt, error)
         receipt.update(status="incomplete" if error.incomplete and not dispatched else "failed", failure=error.code)
     except Exception as error:
@@ -1283,6 +1558,8 @@ def verify(root, forge, output_dir, expected_commit=None, build_outcome="unrecor
     if len(shared.canonical_bytes(receipt)) > MAX_CAPTURE:
         raise ValueError("outer bound")
     shared.atomic_receipt(destination / OUTPUT, receipt)
+    publish_link_diagnostic(root, destination, receipt, link_subcondition, deadline, link_diagnostic_published,
+                            membership=link_membership)
     return receipt
 
 
@@ -1301,7 +1578,8 @@ def main():
     try:
         value = verify(Path(__file__).resolve().parents[1], args.forge.absolute(), args.output_dir,
             args.expected_commit, args.build_outcome, event=args.event, checkout_kind=args.checkout_kind,
-            requested_head=args.requested_head, requested_base=args.requested_base)
+            requested_head=args.requested_head, requested_base=args.requested_base,
+            link_diagnostic_published=emit_link_diagnostic_publication_flag)
     except Exception:
         print("OS-denial prerequisite receipt could not be published.", file=sys.stderr)
         return 1

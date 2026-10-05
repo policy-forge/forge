@@ -1,0 +1,74 @@
+{
+  "format": "forge.f04-target-membership-verification/1",
+  "basis": "2967715dd72bb707e1e89b4e1b45c4320b0a597d",
+  "status": "ordinary source controls passed; authentic hosted /2 observation pending",
+  "acceptance_eligible": false,
+  "tests": {
+    "registered": 227,
+    "ordinary_passed": 205,
+    "failed": 0,
+    "linux_physical_locally_skipped": 22
+  },
+  "docstrings": {
+    "functions": [
+      604,
+      604
+    ],
+    "selected_new_changed_functions": [
+      38,
+      38
+    ],
+    "classes": [
+      39,
+      39
+    ],
+    "physical_embedded_programs": [
+      11,
+      11
+    ]
+  },
+  "python_lines": {
+    "covered": 5488,
+    "total": 7539,
+    "branches": null,
+    "protected_runner": [
+      0,
+      102
+    ]
+  },
+  "rust_inputs": {
+    "compared": 334,
+    "all_equal": true,
+    "raw_llvm": {
+      "path": "/private/tmp/forge-f04-leaf-closure-managed-llvm-v1.json",
+      "bytes": 24542843,
+      "sha256": "db28ac04facac377c99614f32f90e446fadd26c7af7cbcf5d9d562da07ce23c7"
+    }
+  },
+  "source_packet": {
+    "bytes": 12195,
+    "sha256": "17bcdc71b6afd832dca5fa1b0eb2144bd9d80323325ccf277ef1d1ad2599bf64"
+  },
+  "bounded_independent_review": {
+    "bytes": 9104,
+    "sha256": "ad4860ba02c965bd21dcc5e934a6725afbaa9053c990eaa086096eb7a457471c"
+  },
+  "complete_evidence": {
+    "path": "evidence/2026-10-04-f04-target-membership-verification-v1-complete.json.gz",
+    "archive": {
+      "bytes": 532963,
+      "sha256": "fccc78e16139ea2e7ada09fba8dd1b283825af5f7406aa84772d546061dbb13b"
+    },
+    "uncompressed": {
+      "bytes": 5858074,
+      "sha256": "583361bf84606d3e0a59912e997d5a5f18072b68cac7b007d87d3acf2afcca70"
+    },
+    "lossless": true
+  },
+  "limits": [
+    "Only existing complete inventory facts; target stat not observed and inventory absence is not filesystem absence.",
+    "Optional detail remains bounded, secondary and nonauthoritative; original admission, success proof, failure/cleanup priorities stay intact.",
+    "Historical /1 records and observer remain unchanged; old observer pins are not widened to accept the new engine.",
+    "Actual Linux runtime/bootstrap/loaded-byte/IP-denial, supported-platform/client/browser, owner/audit/product/release acceptance and whole-goal final docs remain required."
+  ]
+}
