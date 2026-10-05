@@ -6,8 +6,39 @@ use forge::error::ForgeError;
 use forge::exit_code;
 use tracing_subscriber::EnvFilter;
 
-/// Dispatch the selected CLI and preserve valid action exits without printing an error.
+/// Fixed Windows CLI stack reservation; domain input and work limits remain unchanged.
+#[cfg(windows)]
+const WINDOWS_CLI_STACK_BYTES: usize = 8 * 1024 * 1024;
+
+/// Start CLI parsing and execution on a bounded Windows worker before building the command tree.
+#[cfg(windows)]
 fn main() -> ExitCode {
+    let worker = match std::thread::Builder::new()
+        .name("forge-cli".to_string())
+        .stack_size(WINDOWS_CLI_STACK_BYTES)
+        .spawn(run_cli)
+    {
+        Ok(worker) => worker,
+        Err(_) => {
+            eprintln!("Error: CLI startup failed");
+            return ExitCode::FAILURE;
+        }
+    };
+    match worker.join() {
+        Ok(code) => code,
+        Err(payload) => std::panic::resume_unwind(payload),
+    }
+}
+
+/// Keep CLI parsing and execution on the original main thread outside Windows.
+#[cfg(not(windows))]
+fn main() -> ExitCode {
+    run_cli()
+}
+
+/// Dispatch the selected CLI and preserve valid action exits without printing an error.
+#[inline(never)]
+fn run_cli() -> ExitCode {
     let cli = Cli::parse();
 
     let default_filter = if cli.verbose {
