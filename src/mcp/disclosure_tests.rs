@@ -476,10 +476,15 @@ fn root_disjointness_and_raw_spelling_are_required() {
         .unwrap(),
         DisclosureGate::Unavailable
     ));
-    let unsafe_root = fixture.project.root().join(".");
+    // Windows verbatim PathBuf::push may erase a dot component; preserve input bytes.
+    let mut unsafe_spelling = fixture.project.root().as_os_str().to_os_string();
+    unsafe_spelling.push(std::path::MAIN_SEPARATOR_STR);
+    unsafe_spelling.push(".");
+    let unsafe_root = Path::new(&unsafe_spelling);
+    assert_ne!(unsafe_root.as_os_str(), fixture.project.root().as_os_str());
     assert!(matches!(
         load_disclosure_decision(
-            &unsafe_root,
+            unsafe_root,
             Some(&fixture.decision_root()),
             Some(&fixture.decision_pin),
             &fixture.profile_pin,
