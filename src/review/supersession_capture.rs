@@ -1,7 +1,7 @@
-//! Proposed S4 capture geometry and private complete-union preparation.
+//! S4 capture geometry and private complete-union preparation.
 //!
-//! This unintegrated source supplies no captured Impact producer. Its required
-//! Impact type port belongs to the genuine complete reader being authored separately.
+//! The complete captured Impact reader supplies the private pending comparison.
+//! Its native facts and original leases remain held through complete union sealing.
 //! Plain borrowed native facts and stored-report equality cannot issue that port.
 //! Existing ordinary seals and recorded/Queue binders remain unchanged.
 
@@ -141,7 +141,7 @@ impl ImpactSourcePurpose {
 struct ImpactUse {
     /// Actual successful entry index on this same capture owner.
     index: usize,
-    /// Exact purpose supplied by the future declared native reader.
+    /// Exact purpose supplied by the declared native reader.
     purpose: ImpactSourcePurpose,
 }
 
@@ -629,14 +629,14 @@ pub(crate) enum NewNativeCohort {
     Applicability(ApprovedApplicabilityClosure),
 }
 
-/// Proposed final same-owner binding; its genuine Impact reader is a separately required port.
+/// Final same-owner binding that retains the genuine captured Impact reader result.
 /// It supplies no public queue/currentness/deserialization constructor or historical approval.
 pub(crate) struct HeldSupersessionInputs {
     /// The one genuine held registry, retaining every original and reserved namespace.
     held: Rc<HeldReviewInputs>,
     /// The exact consumed genuine domain closure shares this same complete held owner.
     new_native: NewNativeCohort,
-    /// The future complete genuine captured comparison/read qualification remains owned.
+    /// Complete native comparison facts and captured reader originals remain owned.
     impact: PendingImpactCohort,
 }
 
@@ -663,17 +663,17 @@ impl HeldSupersessionInputs {
             .ok_or(ContractError::Binding)
     }
 
-    /// Borrow the same actual held owner for future coupled adapter/publication ports.
+    /// Borrow the same actual held owner for coupled adapter and publication work.
     pub(crate) fn held_inputs(&self) -> &Rc<HeldReviewInputs> {
         &self.held
     }
 
-    /// Borrow only the genuine existing domain closure for Root's exact new-queue adapter.
+    /// Borrow only the genuine domain closure for exact current-new queue binding.
     pub(crate) fn new_native(&self) -> &NewNativeCohort {
         &self.new_native
     }
 
-    /// Borrow the entire genuine C-owned comparison/cohort, never a selected report row.
+    /// Borrow the complete captured reader comparison/cohort, never a selected report row.
     pub(crate) fn impact(&self) -> &PendingImpactCohort {
         &self.impact
     }
@@ -693,7 +693,7 @@ impl HeldSupersessionInputs {
 }
 
 /// Consume both complete private pending cohorts and require exact complete Source-union equality.
-/// This proposal has no Impact constructor; Root must couple and qualify its genuine reader first.
+/// Only the complete captured reader can supply its private Impact pending cohort.
 pub(crate) fn seal_complete_union(
     held: Rc<HeldReviewInputs>,
     new_native: PendingNewNativeCohort,
@@ -898,7 +898,7 @@ fn native_role(model: SourceModel) -> CaptureRole {
     }
 }
 
-/// Bind every future reader member to the full actual ordered purpose registration cohort.
+/// Bind every captured reader member to the full actual ordered purpose registration cohort.
 fn verify_impact_members(
     held: &HeldReviewInputs,
     state: &SupersessionRegistrations,
@@ -953,8 +953,8 @@ fn verify_impact_members(
     if manifests != 1 || current_reports != 1 {
         return Err(ContractError::Binding);
     }
-    // These geometry checks cannot establish native read completeness. Qualification
-    // must come from the separately authored genuine complete reader + C native work + D oracle.
+    // These geometry checks cannot establish native read completeness. The pending cohort
+    // must come from the complete captured reader's native computation and stored-report oracle.
     ledger.checkpoint(control)
 }
 
@@ -1002,7 +1002,7 @@ fn union_contains(
     Ok(found)
 }
 
-/// Real-file capture proposal controls; none are compiled or executed in this packet.
+/// Real-file purpose-qualified capture geometry and original-owner controls.
 #[cfg(test)]
 #[path = "supersession_capture_tests.rs"]
 mod tests;
