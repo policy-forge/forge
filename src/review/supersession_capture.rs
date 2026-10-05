@@ -390,12 +390,7 @@ impl ReviewCapture {
                 .ok_or(ContractError::Capacity)?;
             total.checked_add(pair).ok_or(ContractError::Capacity)
         })?)?;
-        if self.entries.iter().any(|entry| {
-            entry.path != path
-                && entry.path.as_os_str().as_encoded_bytes().eq_ignore_ascii_case(spelling)
-        }) {
-            return Err(ContractError::Invalid);
-        }
+        self.reject_folded_aliases(path, components, ledger, control)?;
         Ok((per_file.min(per_file_cap), components))
     }
 
@@ -527,7 +522,7 @@ impl ReviewCapture {
                 .ok_or(ContractError::Capacity)?;
             ledger.checkpoint(control)?;
             let index = self.entries.len();
-            self.entries.push(Entry { path: path.to_path_buf(), role, pool, lease });
+            self.entries.push(Entry { path: path.to_path_buf(), components, role, pool, lease });
             self.supersession_register(index, request, ledger, control)?;
             Ok(index)
         })

@@ -105,6 +105,8 @@ struct PoolCount {
 struct Entry {
     /// Complete validated private descendant spelling.
     path: PathBuf,
+    /// Actual validated descendant component count, cached without reparsing each pair.
+    components: usize,
     /// Exact compatible internal native role.
     role: CaptureRole,
     /// Immutable typed raw pool; a repeated path cannot switch pools.
@@ -290,6 +292,8 @@ impl ReviewCapture {
                     .and_then(|n| n.checked_add(ancestor))
                     .ok_or(ContractError::Capacity)?,
             )?;
+            // Preserve the existing fixed reserve and admit the additional cached count.
+            ledger.derived(std::mem::size_of::<usize>())?;
             let lease = self
                 .session
                 .required_admitted(
@@ -306,7 +310,7 @@ impl ReviewCapture {
                 .ok_or(ContractError::Capacity)?;
             ledger.checkpoint(control)?;
             let index = self.entries.len();
-            self.entries.push(Entry { path: path.to_path_buf(), role, pool, lease });
+            self.entries.push(Entry { path: path.to_path_buf(), components, role, pool, lease });
             self.register_original(index, pool, ledger, control)?;
             Ok(index)
         })
@@ -372,13 +376,49 @@ impl ReviewCapture {
                 .ok_or(ContractError::Capacity)?;
             n.checked_add(pair).ok_or(ContractError::Capacity)
         })?)?;
-        if self.entries.iter().any(|entry| {
-            entry.path != path
-                && entry.path.as_os_str().as_encoded_bytes().eq_ignore_ascii_case(spelling)
-        }) {
-            return Err(ContractError::Invalid);
-        }
+        self.reject_folded_aliases(path, components, ledger, control)?;
         Ok((maximum, components))
+    }
+
+    /// Admit every pair's cached count work and both complete component walks before comparison.
+    /// Exact duplicate paths retain their ordinary compatible-role/native-original checks.
+    fn reject_folded_aliases(
+        &self,
+        path: &Path,
+        components: usize,
+        ledger: &mut ContractLedger,
+        control: &mut dyn WorkControl,
+    ) -> Result<(), ContractError> {
+        // Charge the budget calculation itself before reading either count in every pair.
+        ledger.visits(self.entries.len())?;
+        ledger.bytes(
+            self.entries
+                .len()
+                .checked_mul(std::mem::size_of::<usize>())
+                .and_then(|bytes| bytes.checked_mul(2))
+                .ok_or(ContractError::Capacity)?,
+        )?;
+        let inspections = self.entries.iter().try_fold(0_usize, |total, entry| {
+            let pair = entry
+                .components
+                .checked_add(components)
+                .and_then(|count| count.checked_add(2))
+                .and_then(|count| count.checked_mul(2))
+                .and_then(|count| count.checked_add(2))
+                .ok_or(ContractError::Capacity)?;
+            total.checked_add(pair).ok_or(ContractError::Capacity)
+        })?;
+        // Each walk visits both sides plus terminal probes; both control fences are included.
+        ledger.visits(inspections)?;
+        for entry in &self.entries {
+            ledger.checkpoint(control)?;
+            let collision = entry.path != path && folded_components_equal(&entry.path, path);
+            ledger.checkpoint(control)?;
+            if collision {
+                return Err(ContractError::Invalid);
+            }
+        }
+        Ok(())
     }
 
     /// Retain successful cohort multiplicity under the same before-growth ledger.
@@ -562,6 +602,24 @@ impl HeldReviewInputs {
                 .map_err(verification_error)?;
             ledger.checkpoint(control)
         })
+    }
+}
+
+/// Compare lossless component names with ASCII folding, accepting native separator spellings.
+/// Callers validate normal descendants and admit both full walks before invoking this no-IO helper.
+fn folded_components_equal(left: &Path, right: &Path) -> bool {
+    let mut left = left.components();
+    let mut right = right.components();
+    loop {
+        match (left.next(), right.next()) {
+            (None, None) => return true,
+            (Some(left), Some(right))
+                if left
+                    .as_os_str()
+                    .as_encoded_bytes()
+                    .eq_ignore_ascii_case(right.as_os_str().as_encoded_bytes()) => {}
+            _ => return false,
+        }
     }
 }
 
@@ -1294,5 +1352,87 @@ mod recorded_pool_tests {
             ),
             Err(ContractError::Capacity)
         );
+    }
+}
+
+#[cfg(test)]
+mod folded_component_registration_tests {
+    use super::*;
+    use crate::workspace::preparation::NoopControl;
+
+    /// Keep a real normalized temporary root and nested regular original alive for each mode.
+    fn nested_original() -> (tempfile::TempDir, PathBuf) {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().canonicalize().unwrap();
+        std::fs::create_dir(root.join("impact")).unwrap();
+        std::fs::write(root.join("impact/one.json"), b"original").unwrap();
+        (directory, root)
+    }
+
+    /// A changed source and zero native byte limit distinguish lexical admission from native IO.
+    fn assert_alias_refuses_before_read(
+        mut capture: ReviewCapture,
+        root: &Path,
+        ledger: &mut ContractLedger,
+        control: &mut dyn WorkControl,
+    ) {
+        let original = capture
+            .required(
+                Path::new("impact/one.json"),
+                CaptureRole::Catalog,
+                Pool::Source,
+                8,
+                ledger,
+                control,
+            )
+            .unwrap();
+        let lease = capture.lease(original).unwrap();
+        let attempts = capture.attempts;
+        std::fs::write(root.join("impact/one.json"), b"changed-bytes").unwrap();
+        let routed = Path::new("impact").join("ONE.json");
+        assert!(matches!(
+            capture.required(&routed, CaptureRole::Catalog, Pool::Source, 0, ledger, control),
+            Err(ContractError::Invalid)
+        ));
+        assert_eq!(capture.entries.len(), 1);
+        assert_eq!(capture.pools[Pool::Source.index()].bytes, 8);
+        assert_eq!(capture.pools[Pool::Source.index()].registrations, 2);
+        assert_eq!(capture.attempts, attempts + 1);
+        assert_eq!(capture.bytes(original).unwrap(), b"original");
+        assert!(capture.lease(original).unwrap().same_original(&lease));
+        assert!(matches!(
+            capture.finish().verify_inputs(ledger, control),
+            Err(ContractError::Binding)
+        ));
+        assert!(!root.join("out.json").exists());
+    }
+
+    /// Ordinary capture refuses slash-registered versus native-joined folded aliases before IO.
+    #[test]
+    fn ordinary_nested_folded_alias_refuses_before_capture() {
+        let (_directory, root) = nested_original();
+        let mut ledger = ContractLedger::default();
+        let mut caller = NoopControl;
+        let mut control = ReviewControl::accept(&mut caller);
+        let capture =
+            ReviewCapture::new(&root, &[Path::new("out.json")], &mut ledger, &mut control).unwrap();
+        assert_alias_refuses_before_read(capture, &root, &mut ledger, &mut control);
+    }
+
+    /// Actual S4 mode preserves the same before-read collision and complete original freshness gate.
+    #[test]
+    fn supersession_nested_folded_alias_refuses_before_capture() {
+        let (_directory, root) = nested_original();
+        let mut ledger = ContractLedger::default();
+        let mut caller = NoopControl;
+        let mut control = ReviewControl::accept(&mut caller);
+        let capture = ReviewCapture::new_supersession(
+            &root,
+            Path::new("out.json"),
+            &mut ledger,
+            &mut control,
+        )
+        .unwrap();
+        assert_alias_refuses_before_read(capture, &root, &mut ledger, &mut control);
     }
 }

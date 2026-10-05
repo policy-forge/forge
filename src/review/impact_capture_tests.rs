@@ -1,8 +1,7 @@
-//! Prospective genuine captured-reader controls; no cohort or native proof is constructed.
+//! Genuine captured-reader controls over complete maintained native Impact fixtures.
 //!
-//! These sources have not been compiled or run in this proposal. Every positive
-//! fixture obtains its complete expected report through the maintained file producer.
-//! Tests retain their actual temporary root and use real capture registrations/leases.
+//! Positive fixtures obtain their full expected report through the maintained file producer.
+//! Tests retain actual temporary roots and use real capture registrations and leases.
 
 use super::*;
 use crate::framework::model::ImpactReport;

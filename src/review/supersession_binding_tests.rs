@@ -24,20 +24,96 @@ fn write(root: &Path, name: &str, value: &Value) {
     std::fs::write(root.join(name), serde_json::to_vec_pretty(value).unwrap()).unwrap();
 }
 
-/// Initialize both real queue originals through actual approved native source gates.
+/// Initialize genuine queues while retaining the production Windows publication refusal.
 fn init(root: &Path, id: &str, output: &str) {
-    commands::init(
-        &InitOptions {
-            project_root: root,
-            sources: Path::new("locator.json"),
-            policy: Path::new("init.json"),
-            queue_id: id,
-            created_at: "2026-10-04T00:00:00Z",
-            output: Path::new(output),
-        },
-        &mut NoopControl,
-    )
-    .unwrap();
+    let options = InitOptions {
+        project_root: root,
+        sources: Path::new("locator.json"),
+        policy: Path::new("init.json"),
+        queue_id: id,
+        created_at: "2026-10-04T00:00:00Z",
+        output: Path::new(output),
+    };
+    let raw = native_queue_fixture_bytes(&options).unwrap();
+    let result = commands::init(&options, &mut NoopControl);
+    #[cfg(not(windows))]
+    {
+        result.unwrap();
+        assert_eq!(std::fs::read(root.join(output)).unwrap(), raw);
+    }
+    #[cfg(windows)]
+    {
+        assert!(matches!(result, Err(commands::CommandError::Publication)));
+        assert!(!root.join(output).exists());
+        // This is cfg-only fixture persistence after the real init core and all
+        // its input fences; it is not a supported production publication route.
+        std::fs::write(root.join(output), raw).unwrap();
+    }
+}
+
+/// Generate fixture bytes on every platform through the maintained complete initialization core.
+/// No native/approval facts or proof are supplied by this helper; every phase uses
+/// one genuine capture, accepted caller and ledger. All owners drop before return,
+/// so fixture persistence cannot be mistaken for guarded Windows publication.
+fn native_queue_fixture_bytes(options: &InitOptions<'_>) -> Result<Vec<u8>, ContractError> {
+    let mut caller = NoopControl;
+    let mut control = ReviewControl::accept(&mut caller);
+    let mut ledger = ContractLedger::default();
+    native_queue_fixture_inner(options, &mut ledger, &mut control)
+}
+
+/// Preserve the actual `init_inner` pre-publication chronology and native final fences.
+fn native_queue_fixture_inner(
+    options: &InitOptions<'_>,
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<Vec<u8>, ContractError> {
+    ledger.checkpoint(control)?;
+    ledger.bytes(
+        options
+            .queue_id
+            .len()
+            .checked_add(options.created_at.len())
+            .ok_or(ContractError::Capacity)?,
+    )?;
+    if options.queue_id.len() != 36 || options.created_at.len() != 20 {
+        return Err(ContractError::Invalid);
+    }
+    validate::uuid(options.queue_id)?;
+    validate::time(options.created_at)?;
+    let mut capture = ReviewCapture::new(options.project_root, &[options.output], ledger, control)?;
+    let sources = commands::auxiliary(&mut capture, options.sources, 1_048_576, ledger, control)?;
+    let policy = commands::auxiliary(&mut capture, options.policy, 1_048_576, ledger, control)?;
+    let pending = commands::prepare_native(&mut capture, sources, ledger, control)?;
+    let held = commands::owned(capture, ledger, control)?;
+    let closure = pending.seal(Rc::clone(&held), ledger, control)?;
+    let domain = closure.domain();
+    let request = commands::init_request_domain(held.bytes(policy)?, domain, ledger, control)?;
+    let mut selected = crate::review::chain::reserved(request.items.len(), ledger)?;
+    for item in &request.items {
+        crate::review::chain::visit(ledger, control)?;
+        selected.push(item.subject_id.as_str());
+    }
+    commands::sort_subjects_domain(&mut selected, domain, ledger, control)?;
+    let prepared = closure.prepare(&selected, ledger, control)?;
+    let native = prepared.view();
+    ledger.visits(1)?;
+    if native.selected_count() != selected.len() {
+        return Err(ContractError::Binding);
+    }
+    drop(selected);
+    let queue = commands::build_queue(request, options, native, ledger, control)?;
+    let output = encode::queue(&queue, ledger, control)?;
+    let closed = decode::decode_queue(&output, ledger, control)?;
+    native.bind_queue(&closed, ledger, control)?;
+    native.verify_inputs(ledger, control)?;
+    // Preserve the command publisher's final shared admission, then recheck
+    // genuine native originals before accepting bytes for fixture persistence.
+    ledger.checkpoint(control)?;
+    ledger.bytes(output.len())?;
+    native.verify_inputs(ledger, control)?;
+    ledger.checkpoint(control)?;
+    Ok(output)
 }
 
 /// Genuine native fixture with archived old originals and exact current generated sources.
@@ -45,7 +121,7 @@ fn case(profile: bool, changed: bool) -> Case {
     case_with_items(profile, changed, &["c1"])
 }
 
-/// Select only real declared native Controls for actual old/new `commands::init` outputs.
+/// Select real declared native Controls for old/new queues from the maintained init core.
 fn case_with_items(profile: bool, changed: bool, subjects: &[&str]) -> Case {
     let fixture = Fixture::new(profile);
     let root = fixture.root();
@@ -440,7 +516,7 @@ impl WorkControl for BindingStop {
     }
 }
 
-/// Read only the item UUID actually emitted by `commands::init` for the selected genuine subject.
+/// Read only the item UUID actually emitted by the init core for the selected genuine subject.
 fn emitted_item(root: &Path, queue: &str, subject: &str) -> String {
     let value: Value = serde_json::from_slice(&std::fs::read(root.join(queue)).unwrap()).unwrap();
     let matching: Vec<_> = value["items"]
