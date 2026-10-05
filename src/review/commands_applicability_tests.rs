@@ -579,3 +579,345 @@ fn actual_queue_response_and_merge_outputs_preserve_existing_bytes() {
     );
     assert_native_unchanged(&fixture, &originals);
 }
+
+/// Rebind a declared synthetic lifecycle to every actual regenerated native/report original.
+/// Maintained record validation and event IDs preserve the whole neutral history;
+/// this test orchestration neither constructs capture proof nor authenticates its actors.
+fn refresh_synthetic_report_approval(fixture: &Fixture) {
+    use crate::lifecycle::record;
+
+    let path = fixture.root().join("lifecycle.json");
+    let mut lifecycle = read_value(&path);
+    let source_hash =
+        crate::hashing::sha256_hex(&std::fs::read(fixture.root().join("report.json")).unwrap());
+    lifecycle["policy"]["source"]["sha256"] = json!(source_hash);
+    let generated = lifecycle["policy"]["generated_artifacts"].as_array_mut().unwrap();
+    for row in generated.iter_mut() {
+        let raw = std::fs::read(fixture.root().join(row["path"].as_str().unwrap())).unwrap();
+        let native: Value = serde_json::from_slice(&raw).unwrap();
+        let kind = row["oscal_type"].as_str().unwrap();
+        let model = if kind == "mapping-collection" {
+            crate::validate::OscalModelType::Mapping
+        } else {
+            crate::validate::OscalModelType::Catalog
+        };
+        assert!(crate::validate::validate_artifact(&native, model).unwrap().is_valid);
+        let root_uuid = native[kind]["uuid"].clone();
+        row["sha256"] = json!(crate::hashing::sha256_hex(&raw));
+        row["root_uuid"] = root_uuid;
+    }
+    let generated_hashes = generated
+        .iter()
+        .map(|row| json!({"path":row["path"],"sha256":row["sha256"]}))
+        .collect::<Vec<_>>();
+    let fingerprints = json!({"source_sha256":source_hash,"generated_artifacts":generated_hashes});
+    for event in lifecycle["history"].as_array_mut().unwrap() {
+        event["fingerprints"] = fingerprints.clone();
+    }
+    let mut declared: record::LifecycleRecord = serde_json::from_value(lifecycle).unwrap();
+    for index in 0..declared.history.len() {
+        declared.history[index].event_id =
+            record::event_id(&declared, &declared.history[index]).unwrap();
+    }
+    record::validate(&declared).unwrap();
+    std::fs::write(path, serde_json::to_vec(&declared).unwrap()).unwrap();
+}
+
+/// Extend genuine saved Catalog inputs, then rerun maintained inventory/Mapping/report producers.
+/// Seven complete controls retain six classifications, six explicit decisions and one omission.
+fn expanded_category_fixture() -> Fixture {
+    let fixture = Fixture::new(false);
+    let mut catalog = read_value(&fixture.root().join("framework.json"));
+    let controls = catalog["catalog"]["groups"][0]["controls"].as_array_mut().unwrap();
+    for id in ["c4", "c5", "c6", "c7"] {
+        controls.push(json!({"id":id,"title":format!("Control {id}"),
+            "parts":[{"id":format!("{id}_smt"),"name":"statement",
+                "prose":format!("Actual synthetic statement {id}.")}]}));
+    }
+    write_value(&fixture.root().join("framework.json"), &catalog);
+    let mut mapping = read_value(&fixture.root().join("mapping-manifest.json"));
+    let mut framework: crate::mapping::manifest::ResourceManifest =
+        serde_json::from_value(mapping["mapping"]["target"].clone()).unwrap();
+    framework.expected_sha256 = None;
+    framework.inventory = None;
+    let loaded =
+        crate::mapping::inventory::load(fixture.root(), "expanded synthetic framework", &framework)
+            .unwrap();
+    framework.expected_sha256 = Some(loaded.evidence.raw_sha256.clone());
+    framework.inventory = Some(loaded.snapshot());
+    mapping["mapping"]["target"] = serde_json::to_value(&framework).unwrap();
+    let mut no_relationship = mapping["mapping"]["maps"][0].clone();
+    no_relationship["key"] = json!("reviewed-no-relationship");
+    no_relationship["relationship"] = json!("no-relationship");
+    no_relationship["targets"] = json!([
+        {"type":"control","id_ref":"c4"},
+        {"type":"control","id_ref":"c6"}
+    ]);
+    no_relationship["rationale"] = json!("PRIVATE-NO-RELATIONSHIP-RATIONALE");
+    mapping["mapping"]["maps"].as_array_mut().unwrap().push(no_relationship);
+    write_value(&fixture.root().join("mapping-manifest.json"), &mapping);
+    let built = crate::mapping::prepare(&fixture.root().join("mapping-manifest.json"), None, false)
+        .unwrap();
+    std::fs::write(fixture.root().join("mapping.json"), built.artifact_json.as_bytes()).unwrap();
+    let mut source = read_value(&fixture.root().join("applicability.json"));
+    source["framework"] = serde_json::to_value(framework).unwrap();
+    source["decisions"].as_array_mut().unwrap().extend([
+        json!({"control_id":"c4","state":"applicable","reviewer_key":"scope-reviewer",
+            "reviewed_at":"2026-08-25T09:00:00Z"}),
+        json!({"control_id":"c5","state":"applicable","reviewer_key":"scope-reviewer",
+            "reviewed_at":"2026-08-25T09:00:00Z"}),
+        json!({"control_id":"c6","state":"not-applicable","reviewer_key":"scope-reviewer",
+            "reviewed_at":"2026-08-25T09:00:00Z","rationale":"PRIVATE-SCOPE-RATIONALE"}),
+        json!({"control_id":"c7","state":"under-review","reviewer_key":"scope-reviewer",
+            "note":"PRIVATE-UNDER-REVIEW-NOTE"}),
+    ]);
+    write_value(&fixture.root().join("applicability.json"), &source);
+    let report = crate::applicability::prepare_analysis(
+        &fixture.root().join("applicability.json"),
+        crate::applicability::model::ReportFilters::default(),
+    )
+    .unwrap();
+    write_value(
+        &fixture.root().join("report.json"),
+        &serde_json::to_value(&report.report).unwrap(),
+    );
+    refresh_synthetic_report_approval(&fixture);
+    fixture
+}
+
+/// Consume one actual full native capture before inspecting selected command outputs.
+fn assert_complete_category_capture(fixture: &Fixture) {
+    let mut ledger = ContractLedger::default();
+    let mut capture =
+        ReviewCapture::new(fixture.root(), &[], &mut ledger, &mut NoopControl).unwrap();
+    let locator = capture
+        .required(
+            Path::new("locator.json"),
+            CaptureRole::ReviewPrivateConfig,
+            Pool::Auxiliary,
+            1_048_576,
+            &mut ledger,
+            &mut NoopControl,
+        )
+        .unwrap();
+    let pending =
+        applicability_capture::prepare(&mut capture, locator, &mut ledger, &mut NoopControl)
+            .unwrap();
+    let closure = pending.seal(Rc::new(capture.finish()), &mut ledger, &mut NoopControl).unwrap();
+    let prepared = applicability_adapter::prepare(
+        &closure,
+        &["c4", "c5", "c6", "c7"],
+        &mut ledger,
+        &mut NoopControl,
+    )
+    .unwrap();
+    assert_eq!(prepared.selected_count(), 4);
+    assert_eq!(prepared.complete_controls(), 7);
+    assert_eq!(prepared.explicit_decisions(), 6);
+    assert_eq!(prepared.omitted_decisions(), 1);
+    let counts = prepared.complete_counts();
+    assert_eq!(counts.total, 7);
+    assert_eq!(counts.applicable_mapped, 1);
+    assert_eq!(counts.applicable_reviewed_no_relationship, 1);
+    assert_eq!(counts.applicable_unmapped, 1);
+    assert_eq!(counts.not_applicable, 1);
+    assert_eq!(counts.deferred, 1);
+    assert_eq!(counts.under_review, 2);
+    assert_eq!(prepared.complete_maps(), 2);
+    assert_eq!(prepared.complete_pair_inspections(), 8);
+    let c4 = closure.control_facts().iter().find(|row| row.control_id() == "c4").unwrap();
+    assert_eq!(c4.positive_count(), 0);
+    assert_eq!(c4.no_relationship_count(), 1);
+    let c6 = closure.control_facts().iter().find(|row| row.control_id() == "c6").unwrap();
+    assert_eq!(c6.no_relationship_count(), 1);
+    assert_eq!(
+        prepared
+            .facts()
+            .map(applicability_adapter::ApplicabilityFact::subject_id)
+            .collect::<Vec<_>>(),
+        ["c4", "c5", "c6", "c7"]
+    );
+    prepared.verify_inputs(&mut ledger, &mut NoopControl).unwrap();
+}
+
+/// All genuine categories survive selected re-review, with native edge counts distinct from pairs.
+#[test]
+fn selected_category_commands_preserve_complete_native_and_omitted_denominators() {
+    let fixture = expanded_category_fixture();
+    let originals = native_originals(&fixture);
+    assert_complete_category_capture(&fixture);
+    write_policy(&fixture, &["c4", "c5", "c6", "c7"]);
+    initialize(&fixture, Path::new("queue.json")).unwrap();
+    let queue_raw = std::fs::read(fixture.root().join("queue.json")).unwrap();
+    let queue =
+        decode::decode_queue(&queue_raw, &mut ContractLedger::default(), &mut NoopControl).unwrap();
+    assert_eq!(queue.document().items.len(), 4);
+    let expected_classes = [
+        "applicable-reviewed-no-relationship",
+        "applicable-unmapped",
+        "not-applicable",
+        "under-review",
+    ];
+    for (item, classification) in queue.document().items.iter().zip(expected_classes) {
+        assert_eq!(item.domain, Domain::ApplicabilityDecision);
+        assert_eq!(item.adapter_version, "forge.applicability-review/1");
+        assert!(item.context.reason_codes.iter().any(|reason| reason == classification));
+        assert_eq!(item.context.related_subject_ids, Vec::<String>::new());
+    }
+    let bytes = status_bytes(&fixture, &[]);
+    let current =
+        decode::decode_dispositions(&bytes, &mut ContractLedger::default(), &mut NoopControl)
+            .unwrap();
+    let document = current.document();
+    assert_eq!(document.currentness, RecordedCurrentness::RecordedCurrent);
+    assert_eq!(document.identity_disclaimer, IDENTITY_DISCLAIMER);
+    assert_eq!(document.counts.items, 4);
+    assert_eq!(document.counts.states.assigned, 4);
+    assert_eq!(document.counts.response_files, 0);
+    assert!(document.source_pins == queue.document().source_pins);
+    assert_generation(&fixture, &[], &bytes);
+    merge(&options(&fixture, &[]), Path::new("category-dispositions.json"), &mut NoopControl)
+        .unwrap();
+    assert_eq!(std::fs::read(fixture.root().join("category-dispositions.json")).unwrap(), bytes);
+    for raw in [&queue_raw, &bytes] {
+        assert_private_absent(&fixture, raw);
+        let text = std::str::from_utf8(raw).unwrap();
+        for marker in [
+            "PRIVATE-NO-RELATIONSHIP-RATIONALE",
+            "PRIVATE-SCOPE-RATIONALE",
+            "PRIVATE-UNDER-REVIEW-NOTE",
+        ] {
+            assert!(!text.contains(marker));
+        }
+    }
+    assert_native_unchanged(&fixture, &originals);
+}
+
+/// An empty assignment roster remains genuinely unassigned with all required seats intact.
+#[test]
+fn actual_unassigned_queue_preserves_unsatisfied_seats_in_current_merge() {
+    let fixture = Fixture::new(false);
+    let originals = native_originals(&fixture);
+    write_policy(&fixture, &["c1"]);
+    let policy_path = fixture.root().join("review-policy.json");
+    let mut policy = read_value(&policy_path);
+    policy["items"][0]["assignments"] = json!([]);
+    write_value(&policy_path, &policy);
+    initialize(&fixture, Path::new("queue.json")).unwrap();
+    let bytes = status_bytes(&fixture, &[]);
+    assert_status(&bytes, ItemState::Unassigned, 0, 0, 0);
+    assert_generation(&fixture, &[], &bytes);
+    let current =
+        decode::decode_dispositions(&bytes, &mut ContractLedger::default(), &mut NoopControl)
+            .unwrap();
+    let document = current.document();
+    assert_eq!(document.counts.states.unassigned, 1);
+    assert_eq!(document.counts.states.quorum_met, 0);
+    let item = &document.items[0];
+    assert_eq!(item.required_seats, 2);
+    assert!(item.met_seats.is_empty());
+    assert_eq!(item.unmet_seats.len(), 2);
+    assert_eq!(item.response_ids, Vec::<String>::new());
+    assert_eq!(item.dissent_ids, Vec::<String>::new());
+    assert!(!item.blocking);
+    merge(&options(&fixture, &[]), Path::new("unassigned-dispositions.json"), &mut NoopControl)
+        .unwrap();
+    assert_eq!(std::fs::read(fixture.root().join("unassigned-dispositions.json")).unwrap(), bytes);
+    assert_private_absent(&fixture, &bytes);
+    assert_native_unchanged(&fixture, &originals);
+}
+
+/// An actual timely change request preserves dissent and blocks seats in the native current result.
+#[test]
+fn actual_change_request_blocks_current_status_and_preserves_merge_dissent() {
+    let fixture = initialized(false, &["c1"]);
+    let originals = native_originals(&fixture);
+    let responses = vec![response(&fixture, 0, Disposition::RequestChanges)];
+    let bytes = status_bytes(&fixture, &responses);
+    assert_status(&bytes, ItemState::ChangesRequested, 1, 1, 0);
+    assert_generation(&fixture, &responses, &bytes);
+    let current =
+        decode::decode_dispositions(&bytes, &mut ContractLedger::default(), &mut NoopControl)
+            .unwrap();
+    let document = current.document();
+    assert_eq!(document.counts.states.changes_requested, 1);
+    assert_eq!(document.counts.states.quorum_met, 0);
+    assert_eq!(
+        document.responses[0].classification,
+        crate::review::wire::ResponseClassification::Current
+    );
+    let item = &document.items[0];
+    assert!(item.blocking);
+    assert_eq!(item.required_seats, 2);
+    assert!(item.met_seats.is_empty());
+    assert_eq!(item.unmet_seats.len(), 2);
+    assert_eq!(item.response_ids.iter().map(String::as_str).collect::<Vec<_>>(), [RESPONSE_IDS[0]]);
+    assert_eq!(item.dissent_ids.iter().map(String::as_str).collect::<Vec<_>>(), [RESPONSE_IDS[0]]);
+    assert!(item.reason_codes.iter().any(|reason| reason == "request-changes-blocks"));
+    merge(&options(&fixture, &responses), Path::new("changes-dispositions.json"), &mut NoopControl)
+        .unwrap();
+    assert_eq!(std::fs::read(fixture.root().join("changes-dispositions.json")).unwrap(), bytes);
+    assert_private_absent(&fixture, &bytes);
+    assert_native_unchanged(&fixture, &originals);
+}
+
+/// Exact asserted UTC due equality expires incomplete seats without erasing a timely approval.
+#[test]
+fn actual_due_equality_expires_incomplete_current_quorum_and_preserves_timely_vote() {
+    let fixture = Fixture::new(false);
+    let originals = native_originals(&fixture);
+    write_policy(&fixture, &["c1"]);
+    let policy_path = fixture.root().join("review-policy.json");
+    let mut policy = read_value(&policy_path);
+    policy["items"][0]["due_at"] = json!(AS_OF);
+    write_value(&policy_path, &policy);
+    initialize(&fixture, Path::new("queue.json")).unwrap();
+    let mut assigned_options = options(&fixture, &[]);
+    assigned_options.as_of = "2026-10-04T11:59:59Z";
+    let mut assigned = Vec::new();
+    status(&assigned_options, &mut assigned, &mut NoopControl).unwrap();
+    let assigned_closed =
+        decode::decode_dispositions(&assigned, &mut ContractLedger::default(), &mut NoopControl)
+            .unwrap();
+    assert_eq!(assigned_closed.document().items[0].state, ItemState::Assigned);
+    assert_eq!(assigned_closed.document().items[0].unmet_seats.len(), 2);
+    let responses = vec![response(&fixture, 0, Disposition::Approve)];
+    let mut before_options = options(&fixture, &responses);
+    before_options.as_of = "2026-10-04T11:59:59Z";
+    let mut before = Vec::new();
+    status(&before_options, &mut before, &mut NoopControl).unwrap();
+    let before_closed =
+        decode::decode_dispositions(&before, &mut ContractLedger::default(), &mut NoopControl)
+            .unwrap();
+    assert_eq!(before_closed.document().items[0].state, ItemState::InReview);
+    assert_eq!(before_closed.document().items[0].met_seats.len(), 1);
+    let bytes = status_bytes(&fixture, &responses);
+    assert_status(&bytes, ItemState::Expired, 1, 1, 0);
+    assert_generation(&fixture, &responses, &bytes);
+    let current =
+        decode::decode_dispositions(&bytes, &mut ContractLedger::default(), &mut NoopControl)
+            .unwrap();
+    let document = current.document();
+    assert_eq!(document.counts.states.expired, 1);
+    assert_eq!(document.counts.states.quorum_met, 0);
+    assert_eq!(
+        document.responses[0].classification,
+        crate::review::wire::ResponseClassification::Current
+    );
+    let item = &document.items[0];
+    assert!(!item.blocking);
+    assert_eq!(item.required_seats, 2);
+    assert_eq!(item.met_seats.len(), 1);
+    assert_eq!(item.unmet_seats.len(), 1);
+    assert_eq!(item.met_seats[0].reviewer_key, "a-reviewer");
+    assert_eq!(item.met_seats[0].response_id, RESPONSE_IDS[0]);
+    assert_eq!(item.response_ids.iter().map(String::as_str).collect::<Vec<_>>(), [RESPONSE_IDS[0]]);
+    assert_eq!(item.dissent_ids, Vec::<String>::new());
+    assert!(item.reason_codes.iter().any(|reason| reason == "deadline-unsatisfied"));
+    assert_ne!(before_closed.document().closure_generation, document.closure_generation);
+    merge(&options(&fixture, &responses), Path::new("expired-dispositions.json"), &mut NoopControl)
+        .unwrap();
+    assert_eq!(std::fs::read(fixture.root().join("expired-dispositions.json")).unwrap(), bytes);
+    assert_private_absent(&fixture, &bytes);
+    assert_native_unchanged(&fixture, &originals);
+}
