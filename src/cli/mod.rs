@@ -432,6 +432,12 @@ pub enum ReviewCommand {
         /// Complete actual current inputs and explicit evaluation time.
         Box<ReviewCurrentArgs>,
     ),
+    /// Export complete recorded queue assignments as local notification JSON
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    ExportNotifications(
+        /// Exact recorded queue and new local JSON destination; no delivery.
+        Box<ReviewNotificationsArgs>,
+    ),
     /// Render a captured recorded disposition bundle as inert static HTML
     #[command(after_help = REVIEW_IDENTITY_HELP)]
     ExportHtml(
@@ -573,6 +579,21 @@ pub struct ReviewHtmlArgs {
     pub output: PathBuf,
 }
 
+/// Complete recorded-only local notification export arguments.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct ReviewNotificationsArgs {
+    /// Actual normalized project root for the queue and new destination
+    #[arg(long)]
+    pub project_root: PathBuf,
+    /// Exact complete recorded queue original; no native currentness claim
+    #[arg(long)]
+    pub queue: PathBuf,
+    /// Confined new local notification JSON file; existing destinations are refused
+    #[arg(long)]
+    pub output: PathBuf,
+}
+
 /// Convert only fixed contract/publication diagnostics; native source prose stays private.
 fn review_error(error: crate::review::commands::CommandError) -> ForgeError {
     match error {
@@ -656,6 +677,14 @@ fn run_review(command: &ReviewCommand) -> Result<(), ForgeError> {
         ReviewCommand::Status(args) => commands::status(
             &review_current_options(args),
             &mut std::io::stdout().lock(),
+            &mut control,
+        ),
+        ReviewCommand::ExportNotifications(args) => commands::export_notifications(
+            &commands::ExportNotificationsOptions {
+                project_root: &args.project_root,
+                queue: &args.queue,
+                output: &args.output,
+            },
             &mut control,
         ),
         ReviewCommand::ExportHtml(args) => commands::export_html(

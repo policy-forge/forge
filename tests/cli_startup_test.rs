@@ -36,10 +36,10 @@ fn root_help_and_version_start_the_actual_binary() {
     assert!(text.contains(env!("CARGO_PKG_VERSION")));
 }
 
-/// Each existing review help must survive binary startup and preserve its authority disclosure.
+/// Each maintained review help must survive binary startup and preserve its authority disclosure.
 #[test]
 fn review_operation_help_starts_the_actual_binary() {
-    for operation in ["init", "respond", "merge", "status", "export-html"] {
+    for operation in ["init", "respond", "merge", "status", "export-html", "export-notifications"] {
         let output = run(&["review", operation, "--help"]);
         assert_no_panic(&output);
         assert!(output.status.success(), "{operation} help failed: {output:?}");

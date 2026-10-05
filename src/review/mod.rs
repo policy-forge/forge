@@ -39,7 +39,10 @@ pub(crate) mod mapping_capture;
 /// Genuine full applicability report-source capture and recorded-current lifecycle gate.
 pub(crate) mod applicability_capture;
 
-/// Five explicit-path review flows using one actual capture/ledger/control owner.
+/// Six explicit-path review flows using one actual capture/ledger/control owner.
 pub(crate) mod commands;
 /// Bounded complete closed JSON output under the same command ledger.
 pub(crate) mod encode;
+
+/// Complete local notifications from one captured recorded queue; no delivery authority.
+pub(crate) mod notifications;

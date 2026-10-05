@@ -1,4 +1,4 @@
-//! Five explicit-path portable review workflows over genuine held originals.
+//! Six explicit-path portable review workflows over genuine held originals.
 //! Each invocation accepts one cooperative control before IO and keeps one ledger
 //! through capture, native preparation, decoding, projection and its output fence.
 //! Asserted keys/times and review quorum never promote native domain approval.
@@ -15,7 +15,9 @@ use super::wire::{
     RequestedAction, ResponseDocument, ReviewItem, ReviewPolicy, Reviewer, RoleDefinition,
     Sensitivity, SourcePin, SupersessionReference,
 };
-use super::{applicability_capture, encode, finalize, html, mapping_capture, validate};
+use super::{
+    applicability_capture, encode, finalize, html, mapping_capture, notifications, validate,
+};
 use crate::evidence_capture::CaptureRole;
 use crate::workspace::preparation::WorkControl;
 use serde::Deserialize;
@@ -113,6 +115,16 @@ pub(crate) struct ExportHtmlOptions<'a> {
     /// Complete actual closed dispositions original, up to 32 MiB in `Pool::Recorded`.
     pub(crate) dispositions: &'a Path,
     /// Confined immutable HTML destination; no arbitrary URL or remote assets.
+    pub(crate) output: &'a Path,
+}
+
+/// Explicit recorded queue export; no response, currentness or delivery evaluation.
+pub(crate) struct ExportNotificationsOptions<'a> {
+    /// Actual project root containing the recorded queue and reserved new output.
+    pub(crate) project_root: &'a Path,
+    /// Exact complete closed queue original; native pins remain recorded metadata.
+    pub(crate) queue: &'a Path,
+    /// Confined new local JSON artifact; an existing destination is refused.
     pub(crate) output: &'a Path,
 }
 
@@ -544,6 +556,38 @@ pub(crate) fn export_html(
         &mut ledger,
         &mut control,
         |ledger, control| held.verify_inputs(ledger, control),
+    )
+}
+
+/// Export every explicit assignment or unassigned row from a captured recorded queue.
+/// One caller/ledger/held original remains alive through guarded no-replace publication.
+/// No native currentness, evaluated quorum, recipient identity or delivery is inferred.
+pub(crate) fn export_notifications(
+    options: &ExportNotificationsOptions<'_>,
+    caller: &mut dyn WorkControl,
+) -> Result<(), CommandError> {
+    let mut control = ReviewControl::accept(caller);
+    let mut ledger = ContractLedger::default();
+    let mut capture =
+        ReviewCapture::new(options.project_root, &[options.output], &mut ledger, &mut control)?;
+    let slot = capture.required(
+        options.queue,
+        CaptureRole::ReviewQueue,
+        Pool::Queue,
+        10_485_760,
+        &mut ledger,
+        &mut control,
+    )?;
+    let held = owned(capture, &mut ledger, &mut control)?;
+    let prepared = notifications::prepare(&held, slot, &mut ledger, &mut control)?;
+    prepared.verify_inputs(&mut ledger, &mut control)?;
+    publish(
+        options.project_root,
+        options.output,
+        prepared.bytes(),
+        &mut ledger,
+        &mut control,
+        |ledger, control| prepared.verify_inputs(ledger, control),
     )
 }
 

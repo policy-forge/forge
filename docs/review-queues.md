@@ -189,20 +189,60 @@ exact prior original. It cannot erase a different asserted reviewer's dissent.
 For an empty abstention rationale, use a reason explicitly permitted by the
 policy with `--abstention-reason`; an ordinary empty rationale is rejected.
 
+## Offline notification export
+
+Create a complete local notification artifact from an explicitly named recorded
+queue:
+
+```bash
+forge review export-notifications --project-root /absolute/project \
+  --queue review/queue.json --output review/notifications.json
+```
+
+The closed `forge.review-notifications/1` artifact has one `request-review` row
+for each explicit reviewer/role assignment and one `assign-reviewer` row with
+null recipient fields for each unassigned item. It preserves complete queue,
+assignment and recorded source-pin counts. Authors, substitutes and other roster
+members are not inferred as recipients.
+
+The export captures the exact queue bytes and checks those held originals again
+before publishing a new file. It reads no responses or native source closure,
+evaluates no current quorum or deadline state, and sends nothing. Its fixed
+labels are `captured-queue-recorded-snapshot-only` and `local-export-only`.
+Reviewer keys, roles, source pins and times remain recorded assertions. Only the
+queue original is freshly captured; the embedded native pins remain metadata.
+
+The versioned notification key binds the queue ID, derived item ID, intention
+and nullable recipient key/role. Reformatting a queue changes its recorded raw
+hash while preserving notice keys when its typed items remain the same. Semantic
+changes to an item, its policy or deadline change its derived item ID and thus
+its notice keys. This key supplies no recipient authentication or remote retry
+receipt.
+
+The field whitelist omits dedicated source paths, URLs, rationale, excerpts and
+related-subject context. Exact identifiers and schema/version labels can still
+contain sensitive author-selected metadata; inspect the artifact before sharing
+it. The complete export is bounded to 100,000 rows and 10 MiB including its final
+newline, within the same shared invocation ledger. Exhaustion refuses the whole
+export. Existing output files are refused. Publication uses native
+no-replace rename on Linux and macOS; the qualification for this slice is local
+macOS. Windows publication refuses.
+
 ## Sharing and limits
 
-Queue, response and dispositions formats are closed and versioned by the three
-`schemas/forge.review-*-1.schema.json` files. Private responses retain rationale.
+Queue, response, dispositions and notification formats are closed and versioned
+by their `schemas/forge.review-*-1.schema.json` files. Private responses retain rationale.
 Default queue context and dispositions/HTML omit response rationale and source
 excerpts. Identifiers, schema labels and hashes can still reveal sensitive
 information; review the actual artifacts before sharing them.
 
 HTML is a static rendering of a captured recorded bundle. It does not perform a
 fresh source check or authenticate its recorded labels. The current CLI performs
-no remote upload, notification or automatic domain edit. Non-null proposed edits
+no remote upload, notification delivery or automatic domain edit. Non-null proposed edits
 are rejected. Supported proposed edits and remaining native adapters are
-pending. The interactive client, signed response design/envelope, notification
-export and links between superseded queues also remain open requirements.
+pending. The interactive client, signed response design/envelope and links between
+superseded queues remain open requirements. Local notification export is implemented;
+its connector/delivery integration and acceptance gates remain open.
 
 The command shares one cooperative 30-second deadline and one monotonic ledger.
 Its logical derived allowance is 32 MiB, with separately bounded work and raw

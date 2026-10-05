@@ -477,6 +477,40 @@ impl HeldReviewInputs {
         })
     }
 
+    /// Bind the complete one-Queue retained cohort for recorded notification export.
+    /// Every extra retained Source, Auxiliary, Response or Recorded original refuses.
+    /// This verifies successful registrations only, not failed attempts or directory absence.
+    pub(crate) fn bind_queue_export_original(
+        &self,
+        queue_index: usize,
+        ledger: &mut ContractLedger,
+        control: &mut dyn WorkControl,
+    ) -> Result<(), ContractError> {
+        ledger.bound(|ledger| {
+            ledger.checkpoint(control)?;
+            let extent = self
+                .entries
+                .len()
+                .checked_add(self.response_originals.len())
+                .and_then(|count| count.checked_add(1))
+                .ok_or(ContractError::Capacity)?;
+            ledger.visits(extent)?;
+            ledger.bytes(
+                extent.checked_mul(std::mem::size_of::<usize>()).ok_or(ContractError::Capacity)?,
+            )?;
+            if self.entries.len() != 1
+                || !self.response_originals.is_empty()
+                || self.queue_original != Some(queue_index)
+                || self.entries.get(queue_index).is_none_or(|entry| {
+                    entry.pool != Pool::Queue || entry.role != CaptureRole::ReviewQueue
+                })
+            {
+                return Err(ContractError::Binding);
+            }
+            ledger.checkpoint(control)
+        })
+    }
+
     /// Count the complete distinct actual Source-pool originals without reading or cloning bytes.
     pub(crate) fn source_original_count(&self) -> usize {
         self.entries.iter().filter(|entry| entry.pool == Pool::Source).count()

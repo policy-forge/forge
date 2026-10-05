@@ -1,0 +1,382 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forge.review-notifications/1",
+  "title": "Offline recorded review notification export",
+  "description": "Recorded queue metadata only. No current native approval, quorum, authenticated identity, delivery or connector plan. Complete correlations, UTF8/encoded byte bounds, original pins and fences are runtime obligations.",
+  "$ref": "#/$defs/Notifications",
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "time": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+    },
+    "SourceModel": {
+      "type": "string",
+      "enum": [
+        "mapping",
+        "catalog",
+        "profile",
+        "resolved-catalog",
+        "component-definition",
+        "mapping-manifest",
+        "applicability-manifest",
+        "applicability-report",
+        "lifecycle-record"
+      ]
+    },
+    "SourcePin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_key",
+        "model",
+        "native_root_uuid",
+        "raw_sha256",
+        "byte_length",
+        "schema_identity"
+      ],
+      "properties": {
+        "artifact_key": {
+          "$ref": "#/$defs/key"
+        },
+        "model": {
+          "$ref": "#/$defs/SourceModel"
+        },
+        "native_root_uuid": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "schema_identity": {
+          "$ref": "#/$defs/version"
+        }
+      }
+    },
+    "Domain": {
+      "type": "string",
+      "enum": [
+        "mapping-assertion",
+        "applicability-decision"
+      ]
+    },
+    "QueueOriginal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "queue_id",
+        "raw_sha256",
+        "byte_length",
+        "created_at"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "forge.review-queue/1"
+        },
+        "queue_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "created_at": {
+          "$ref": "#/$defs/time"
+        }
+      }
+    },
+    "Counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "queue_items",
+        "assigned_items",
+        "unassigned_items",
+        "assignment_occurrences",
+        "notification_rows",
+        "declared_reviewers",
+        "declared_roles",
+        "declared_policies",
+        "recorded_source_pins"
+      ],
+      "properties": {
+        "queue_items": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "assigned_items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "unassigned_items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "assignment_occurrences": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "notification_rows": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "declared_reviewers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "declared_roles": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "declared_policies": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "recorded_source_pins": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    },
+    "Notice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "notification_key",
+        "item_key",
+        "item_id",
+        "domain",
+        "adapter_version",
+        "subject_id",
+        "subject_sha256",
+        "context_sha256",
+        "policy_key",
+        "policy_sha256",
+        "source_keys",
+        "reason_codes",
+        "due_at",
+        "intention",
+        "recipient_key",
+        "recipient_role"
+      ],
+      "properties": {
+        "notification_key": {
+          "type": "string",
+          "pattern": "^notice_[0-9a-f]{64}$"
+        },
+        "item_key": {
+          "$ref": "#/$defs/key"
+        },
+        "item_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "domain": {
+          "$ref": "#/$defs/Domain"
+        },
+        "adapter_version": {
+          "$ref": "#/$defs/version"
+        },
+        "subject_id": {
+          "$ref": "#/$defs/subject"
+        },
+        "subject_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "context_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "policy_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "source_keys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/key"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/key"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "due_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "intention": {
+          "enum": [
+            "request-review",
+            "assign-reviewer"
+          ]
+        },
+        "recipient_key": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/key"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recipient_role": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/key"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "intention": {
+              "const": "request-review"
+            },
+            "recipient_key": {
+              "$ref": "#/$defs/key"
+            },
+            "recipient_role": {
+              "$ref": "#/$defs/key"
+            }
+          }
+        },
+        {
+          "properties": {
+            "intention": {
+              "const": "assign-reviewer"
+            },
+            "recipient_key": {
+              "type": "null"
+            },
+            "recipient_role": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    },
+    "Notifications": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "identity_disclaimer",
+        "source_scope",
+        "delivery_scope",
+        "sensitivity",
+        "queue_original",
+        "recorded_source_pins",
+        "counts",
+        "notifications"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "forge.review-notifications/1"
+        },
+        "identity_disclaimer": {
+          "const": "keys-roles-authors-and-times-are-asserted-not-authenticated-signed-or-non-repudiable"
+        },
+        "source_scope": {
+          "const": "captured-queue-recorded-snapshot-only"
+        },
+        "delivery_scope": {
+          "const": "local-export-only"
+        },
+        "sensitivity": {
+          "const": "ids-and-hashes"
+        },
+        "queue_original": {
+          "$ref": "#/$defs/QueueOriginal"
+        },
+        "recorded_source_pins": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourcePin"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "counts": {
+          "$ref": "#/$defs/Counts"
+        },
+        "notifications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Notice"
+          },
+          "minItems": 1,
+          "maxItems": 100000
+        }
+      }
+    }
+  }
+}
