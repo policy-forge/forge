@@ -200,6 +200,15 @@ check triggers `--fail-on`, and `2` when trustworthy analysis is impossible.
 Reports default to identifiers, counts, and hashes; `--include-excerpts` is an
 explicit sensitive-output opt-in.
 
+### Portable review queues
+
+`forge review init`, `respond`, `merge`, `status` and `export-html` provide
+explicit local re-review of selected Mapping assertions. Current source checks
+consume the complete recorded Approved/current closure. Reviewer keys and times
+remain asserted; quorum does not promote domain approval. See the
+[portable review queue guide](docs/review-queues.md) for the private inputs,
+immutable responses, dissent, disclosure limits and remaining acceptance gates.
+
 ### Assessment Results
 
 Package explicit assessor-authored observations, findings, and risks into

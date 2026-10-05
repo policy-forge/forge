@@ -26,6 +26,20 @@ pub(crate) const MAX_PROJECTION_BYTES: usize = 10 * 1024 * 1024;
 /// Compatible native models and declarations sharing an exact captured original.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CaptureRole {
+    /// Closed private review locator; declaration alone confers no native approval.
+    ReviewPrivateConfig,
+    /// Exact immutable portable review queue original.
+    ReviewQueue,
+    /// Closed recorded disposition original; it grants no current-source or queue authority.
+    ReviewDispositions,
+    /// Exact immutable private reviewer-response original.
+    ReviewResponse,
+    /// Complete native Mapping producer manifest.
+    MappingManifest,
+    /// Complete OSCAL Mapping Collection original.
+    MappingCollection,
+    /// Complete intrinsically validated lifecycle record original.
+    LifecycleRecord,
     /// POA&M authoring declaration; it never grants native terminal admission.
     WorkflowDeclaration,
     /// Actual empty foundation declaration for explicit reviewed-risk authoring.
@@ -54,6 +68,22 @@ pub(crate) enum CaptureRole {
     ComponentDefinition,
     /// Local evidence, which must not alias any source or declaration role.
     LocalEvidence,
+}
+
+/// Actual held-input observations passed to a stricter caller before reads and growth.
+#[derive(Clone, Copy)]
+pub(crate) enum CaptureCharge {
+    /// Check the caller's unchanged accepted deadline and cancellation before a phase.
+    Checkpoint,
+    /// The held original's current size and actual remaining raw read limit, before retention.
+    Observed {
+        /// Actual held-handle length, without reading file content.
+        bytes: u64,
+        /// The minimum individual and remaining complete native raw limits.
+        limit: u64,
+    },
+    /// Potential bounded scratch read/copy or exact comparison extent before the primitive.
+    ByteWork(usize),
 }
 
 /// Private counters shared only by actual original holders in one preparation.
@@ -167,6 +197,11 @@ pub(crate) struct CaptureLease {
 }
 
 impl CaptureLease {
+    /// Compare actual shared original ownership without copying bytes or manufacturing a generation.
+    pub(crate) fn same_original(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.original, &other.original)
+    }
+
     /// Borrow the complete captured original generation without re-reading a path.
     pub(crate) fn bytes(&self) -> &[u8] {
         &self.original.bytes
@@ -219,10 +254,113 @@ pub(crate) struct CaptureSession {
 }
 
 impl CaptureSession {
+    /// Capture an actual required original under caller admission before content reads.
+    /// Existing required/optional callers retain their unchanged capture implementation.
+    /// The returned lease is from this same actual registry and raw-byte owner.
+    pub(crate) fn required_admitted<E>(
+        &mut self,
+        relative: &Path,
+        role: CaptureRole,
+        max_bytes: u64,
+        admit: &mut impl FnMut(CaptureCharge) -> Result<(), E>,
+    ) -> Result<CaptureLease, fresh::VerificationError<E>> {
+        admit(CaptureCharge::Checkpoint).map_err(fresh::VerificationError::Admission)?;
+        admit(CaptureCharge::ByteWork(relative.as_os_str().as_encoded_bytes().len()))
+            .map_err(fresh::VerificationError::Admission)?;
+        fresh::validate_relative(relative)?;
+        check_output_namespace_admitted(&self.reserved_outputs, relative, false, &mut |bytes| {
+            if bytes == 0 {
+                admit(CaptureCharge::Checkpoint)
+            } else {
+                admit(CaptureCharge::ByteWork(bytes))
+            }
+        })?;
+        if let Some((previous_role, observation)) = self.inputs.get(relative) {
+            if *previous_role != role {
+                return Err(error("evidence inspection input has incompatible roles").into());
+            }
+            let LocalObservation::Present(lease) = observation else {
+                return Err(error("required evidence inspection input is unavailable").into());
+            };
+            let length = u64::try_from(lease.bytes().len())
+                .map_err(|_| error("input size conversion failed"))?;
+            admit(CaptureCharge::Observed { bytes: length, limit: max_bytes })
+                .map_err(fresh::VerificationError::Admission)?;
+            if length > max_bytes {
+                return Err(fresh::VerificationError::Capacity);
+            }
+            fresh::verify_file_admitted(&lease.original.generation, lease.bytes(), &mut |bytes| {
+                if bytes == 0 {
+                    admit(CaptureCharge::Checkpoint)
+                } else {
+                    admit(CaptureCharge::ByteWork(bytes))
+                }
+            })?;
+            return Ok(lease.clone());
+        }
+        self.budget.input_slot()?;
+        let limit = self.budget.remaining_read(max_bytes)?;
+        admit(CaptureCharge::Checkpoint).map_err(fresh::VerificationError::Admission)?;
+        let prepared =
+            fresh::prepare_local_admitted(Rc::clone(&self.root), relative, false, &mut |bytes| {
+                if bytes == 0 {
+                    admit(CaptureCharge::Checkpoint)
+                } else {
+                    admit(CaptureCharge::ByteWork(bytes))
+                }
+            })?;
+        let measured = prepared.observed_size()?;
+        admit(CaptureCharge::Observed { bytes: measured, limit })
+            .map_err(fresh::VerificationError::Admission)?;
+        if measured > limit {
+            return Err(fresh::VerificationError::Capacity);
+        }
+        if self.inputs.values().any(|(_, previous)| {
+            matches!(previous,
+            LocalObservation::Present(lease) if Some(lease.identity()) == prepared.identity())
+        }) {
+            return Err(
+                error("distinct evidence inspection paths alias an actual file identity").into()
+            );
+        }
+        let fresh::CapturedLocal::Present(bytes, generation) =
+            prepared.read_admitted(limit, &mut |bytes| {
+                if bytes == 0 {
+                    admit(CaptureCharge::Checkpoint)
+                } else {
+                    admit(CaptureCharge::ByteWork(bytes))
+                }
+            })?
+        else {
+            return Err(error("required evidence inspection input is unavailable").into());
+        };
+        let charge = self.budget.retain(bytes.len())?;
+        let lease =
+            CaptureLease { original: Rc::new(Original { bytes, generation, _charge: charge }) };
+        self.inputs
+            .insert(relative.to_path_buf(), (role, LocalObservation::Present(lease.clone())));
+        admit(CaptureCharge::Checkpoint).map_err(fresh::VerificationError::Admission)?;
+        Ok(lease)
+    }
+
     /// Qualify one actual directory root before any source or evidence observation.
     pub(crate) fn new(root: &Path) -> Result<Self, ForgeError> {
         Ok(Self {
             root: Rc::new(fresh::qualify_root(root)?),
+            inputs: BTreeMap::new(),
+            directories: BTreeMap::new(),
+            reserved_outputs: Vec::new(),
+            budget: ReadBudget::new(),
+        })
+    }
+
+    /// Qualify the actual root under caller geometry admission without changing legacy `new`.
+    pub(crate) fn new_admitted<E>(
+        root: &Path,
+        admit: &mut impl FnMut(usize) -> Result<(), E>,
+    ) -> Result<Self, fresh::VerificationError<E>> {
+        Ok(Self {
+            root: Rc::new(fresh::qualify_root_admitted(root, admit)?),
             inputs: BTreeMap::new(),
             directories: BTreeMap::new(),
             reserved_outputs: Vec::new(),
@@ -398,6 +536,40 @@ pub(crate) struct CaptureProof {
 }
 
 impl CaptureProof {
+    /// Reconcile every actual held generation under one caller-owned admission and stop source.
+    /// Zero callback charges are checkpoints; positive charges pre-admit bounded byte comparisons.
+    /// Present, missing, directory, output and root generations all remain in this actual proof.
+    pub(crate) fn verify_inputs_admitted<E>(
+        &self,
+        admit: &mut impl FnMut(usize) -> Result<(), E>,
+    ) -> Result<(), fresh::VerificationError<E>> {
+        admit(0).map_err(fresh::VerificationError::Admission)?;
+        for relative in self.inputs.keys() {
+            check_output_namespace_admitted(&self.reserved_outputs, relative, false, admit)?;
+        }
+        for relative in self.directories.keys() {
+            check_output_namespace_admitted(&self.reserved_outputs, relative, true, admit)?;
+        }
+        fresh::verify_root_admitted(&self.root, admit)?;
+        for directory in self.directories.values() {
+            fresh::verify_root_admitted(directory, admit)?;
+        }
+        for (_, observation) in self.inputs.values() {
+            admit(0).map_err(fresh::VerificationError::Admission)?;
+            match observation {
+                LocalObservation::Present(lease) => {
+                    fresh::verify_file_admitted(&lease.original.generation, lease.bytes(), admit)?;
+                }
+                LocalObservation::Absent(lease) => {
+                    fresh::verify_absence_admitted(&lease.generation, admit)?;
+                }
+            }
+        }
+        fresh::verify_root_admitted(&self.root, admit)?;
+        admit(0).map_err(fresh::VerificationError::Admission)?;
+        Ok(())
+    }
+
     /// Count distinct actually retained present originals, excluding unavailable-local observations.
     pub(crate) fn captured_original_generations(&self) -> usize {
         self.inputs
@@ -481,6 +653,33 @@ fn check_output_namespace(
             return Err(error("report output aliases or overlaps a held input namespace"));
         }
     }
+    Ok(())
+}
+
+/// Charge both complete namespace spellings before the unchanged folded prefix rules.
+/// All directions and component visits are precharged even when the first one refuses.
+fn check_output_namespace_admitted<E>(
+    outputs: &[PathBuf],
+    input: &Path,
+    directory: bool,
+    admit: &mut impl FnMut(usize) -> Result<(), E>,
+) -> Result<(), fresh::VerificationError<E>> {
+    let input_extent = input.as_os_str().as_encoded_bytes().len();
+    admit(input_extent).map_err(fresh::VerificationError::Admission)?;
+    for output in outputs {
+        let pair = input_extent
+            .checked_add(output.as_os_str().as_encoded_bytes().len())
+            .ok_or(fresh::VerificationError::Capacity)?;
+        let directions = if directory { 1 } else { 2 };
+        for _ in 0..directions {
+            admit(pair).map_err(fresh::VerificationError::Admission)?;
+            for _ in output.components().chain(input.components()) {
+                admit(1).map_err(fresh::VerificationError::Admission)?;
+            }
+        }
+    }
+    check_output_namespace(outputs, input, directory)?;
+    admit(0).map_err(fresh::VerificationError::Admission)?;
     Ok(())
 }
 
@@ -1074,5 +1273,66 @@ mod tests {
         let mut directory_proof = directory.finish();
         directory_proof.reserved_outputs[1] = PathBuf::from("EVIDENCE");
         assert!(directory_proof.verify_inputs().is_err());
+    }
+}
+
+#[cfg(all(test, any(unix, windows)))]
+/// Actual retained proof and namespace-accounting controls for the admitted ports.
+mod admitted_namespace_tests {
+    use super::*;
+
+    /// Both full prefix directions are charged even when the first rule rejects.
+    #[test]
+    fn bilateral_namespace_extents_precede_refusal() {
+        let outputs = [PathBuf::from("long/output.json")];
+        let input = Path::new("long");
+        let pair = input.as_os_str().as_encoded_bytes().len()
+            + outputs[0].as_os_str().as_encoded_bytes().len();
+        let mut charges = Vec::new();
+        let result = check_output_namespace_admitted(&outputs, input, false, &mut |bytes| {
+            charges.push(bytes);
+            Ok::<(), ()>(())
+        });
+        assert!(matches!(result, Err(fresh::VerificationError::Domain(_))));
+        assert_eq!(charges.iter().filter(|&&bytes| bytes == pair).count(), 2);
+        let expected = input.as_os_str().as_encoded_bytes().len()
+            + 2 * pair
+            + 2 * (outputs[0].components().count() + input.components().count());
+        assert_eq!(charges.iter().sum::<usize>(), expected);
+    }
+
+    /// A complete actual proof includes directories, absence and an after-root final stop.
+    #[test]
+    fn complete_proof_post_native_stop_is_not_success() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().canonicalize().unwrap();
+        std::fs::write(root.join("original.bin"), b"actual").unwrap();
+        std::fs::create_dir(root.join("evidence")).unwrap();
+        let mut capture = CaptureSession::new(&root).unwrap();
+        capture.reserve_outputs(&[Path::new("native.json"), Path::new("report.json")]).unwrap();
+        capture.required(Path::new("original.bin"), CaptureRole::Catalog, 6).unwrap();
+        capture.optional_local(Path::new("evidence/missing.bin"), 6).unwrap();
+        capture.directory(Path::new("evidence")).unwrap();
+        let proof = capture.finish();
+        let mut sequence = Vec::new();
+        proof
+            .verify_inputs_admitted(&mut |bytes| {
+                sequence.push(bytes);
+                Ok::<(), ()>(())
+            })
+            .unwrap_or_else(|_| panic!("complete actual proof must remain stable"));
+        assert_eq!(sequence.last(), Some(&0));
+        let mut index = 0_usize;
+        let result = proof.verify_inputs_admitted(&mut |bytes| {
+            index += 1;
+            if index == sequence.len() {
+                assert_eq!(bytes, 0);
+                Err("final-stop")
+            } else {
+                Ok(())
+            }
+        });
+        assert_eq!(index, sequence.len());
+        assert!(matches!(result, Err(fresh::VerificationError::Admission("final-stop"))));
     }
 }

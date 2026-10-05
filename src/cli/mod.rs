@@ -331,6 +331,13 @@ pub enum Commands {
         command: SuggestCommand,
     },
 
+    /// Exchange immutable offline review files using asserted reviewer identities
+    Review {
+        /// Explicit portable review operation
+        #[command(subcommand)]
+        command: ReviewCommand,
+    },
+
     /// Serve bounded read-only local project tools over stdio
     Mcp {
         /// Explicit MCP operation
@@ -391,6 +398,276 @@ pub enum Commands {
         #[arg(long)]
         timestamp: Option<chrono::DateTime<chrono::Utc>>,
     },
+}
+
+/// Persistent CLI limitation, repeated in each portable review operation help.
+const REVIEW_IDENTITY_HELP: &str = "Reviewer keys, roles, authors and times are asserted, not authenticated or signed. Quorum-met means the declared review policy is satisfied; it grants no domain approval.";
+
+/// Offline immutable review files; asserted keys and quorum never approve domain artifacts.
+#[derive(Subcommand)]
+#[deny(missing_docs)]
+#[command(after_help = REVIEW_IDENTITY_HELP)]
+pub enum ReviewCommand {
+    /// Create a queue for selected assertions in an Approved/current Mapping closure
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Init(
+        /// Complete explicit source locator, private review policy and new queue destination.
+        Box<ReviewInitArgs>,
+    ),
+    /// Write one immutable private response to an exact queue original
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Respond(
+        /// Explicit asserted reviewer, disposition, time, private rationale and destination.
+        Box<ReviewRespondArgs>,
+    ),
+    /// Merge every explicitly supplied response and publish a new disposition bundle
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Merge(
+        /// Complete actual current inputs, explicit evaluation time and new destination.
+        Box<ReviewMergeArgs>,
+    ),
+    /// Write current disposition JSON to stdout without project mutation
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Status(
+        /// Complete actual current inputs and explicit evaluation time.
+        Box<ReviewCurrentArgs>,
+    ),
+    /// Render a captured recorded disposition bundle as inert static HTML
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    ExportHtml(
+        /// Exact recorded input and new local HTML destination.
+        Box<ReviewHtmlArgs>,
+    ),
+}
+
+/// Explicit Mapping queue inputs; every file path is a private root descendant.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct ReviewInitArgs {
+    /// Actual normalized project root; no implicit project discovery
+    #[arg(long)]
+    pub project_root: PathBuf,
+    /// Closed forge.review-source-locator/1 original with the complete native source set
+    #[arg(long)]
+    pub sources: PathBuf,
+    /// Closed forge.review-init/1 declaration of subjects, reviewers and quorum policy
+    #[arg(long)]
+    pub policy: PathBuf,
+    /// Explicit canonical queue revision UUID
+    #[arg(long)]
+    pub queue_id: String,
+    /// Asserted creation time in canonical UTC seconds
+    #[arg(long)]
+    pub created_at: String,
+    /// Confined new queue file; existing destinations are refused
+    #[arg(long)]
+    pub output: PathBuf,
+}
+
+/// Complete explicit current inputs shared by merge and status.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct ReviewCurrentArgs {
+    /// Actual normalized root containing every explicitly declared original
+    #[arg(long)]
+    pub project_root: PathBuf,
+    /// Complete closed native source locator original
+    #[arg(long)]
+    pub sources: PathBuf,
+    /// Exact immutable queue original
+    #[arg(long)]
+    pub queue: PathBuf,
+    /// One explicit response occurrence; repeat this flag to preserve every occurrence
+    #[arg(long = "response", action = clap::ArgAction::Append)]
+    pub responses: Vec<PathBuf>,
+    /// Explicit policy evaluation time in canonical UTC seconds
+    #[arg(long)]
+    pub as_of: String,
+}
+
+/// Current merge inputs and an immutable publication destination.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct ReviewMergeArgs {
+    /// Complete current native, queue and response originals and evaluation time
+    #[command(flatten)]
+    pub current: ReviewCurrentArgs,
+    /// Confined new disposition file; existing destinations are refused
+    #[arg(long)]
+    pub output: PathBuf,
+}
+
+/// Explicit immutable response arguments; reviewer assertions are not authentication.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct ReviewRespondArgs {
+    /// Actual normalized root for the queue, rationale and destination
+    #[arg(long)]
+    pub project_root: PathBuf,
+    /// Exact immutable queue original
+    #[arg(long)]
+    pub queue: PathBuf,
+    /// Selected queue-local item key
+    #[arg(long)]
+    pub item_key: String,
+    /// Asserted reviewer key, with no identity lookup or authentication
+    #[arg(long)]
+    pub reviewer_key: String,
+    /// Asserted reviewer role, checked against the explicit assignment
+    #[arg(long)]
+    pub reviewer_role: String,
+    /// Independent disposition to retain
+    #[arg(long, value_enum)]
+    pub disposition: ReviewDisposition,
+    /// Asserted response time in canonical UTC seconds
+    #[arg(long)]
+    pub responded_at: String,
+    /// Explicit canonical response UUID
+    #[arg(long)]
+    pub response_id: String,
+    /// Confined UTF-8 private rationale file, at most8 KiB
+    #[arg(long)]
+    pub rationale_file: PathBuf,
+    /// Explicit policy-defined reason permitting an empty abstention rationale
+    #[arg(long)]
+    pub abstention_reason: Option<String>,
+    /// Explicit previous response UUID; requires its exact original hash
+    #[arg(long, requires = "supersedes_sha256")]
+    pub supersedes_id: Option<String>,
+    /// Exact SHA-256 of the previous response original; requires its UUID
+    #[arg(long, requires = "supersedes_id")]
+    pub supersedes_sha256: Option<String>,
+    /// Confined new response file; existing destinations are refused
+    #[arg(long)]
+    pub output: PathBuf,
+}
+
+/// Closed independent dispositions, preserving dissent and documented nonapproval.
+#[derive(Clone, Copy, ValueEnum)]
+#[deny(missing_docs)]
+pub enum ReviewDisposition {
+    /// Assert approval under the declared review policy only
+    Approve,
+    /// Preserve an independent rejection
+    Reject,
+    /// Preserve a request for changes without applying a domain edit
+    RequestChanges,
+    /// Preserve an abstention which never fills an approval seat
+    Abstain,
+    /// Explicitly supersede the same asserted reviewer's exact prior response
+    Superseded,
+}
+
+/// Recorded-only static HTML export arguments.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct ReviewHtmlArgs {
+    /// Actual normalized root for the recorded input and destination
+    #[arg(long)]
+    pub project_root: PathBuf,
+    /// Exact closed recorded disposition original, without a fresh-currentness claim
+    #[arg(long)]
+    pub dispositions: PathBuf,
+    /// Confined new inert HTML file; existing destinations are refused
+    #[arg(long)]
+    pub output: PathBuf,
+}
+
+/// Convert only fixed contract/publication diagnostics; native source prose stays private.
+fn review_error(error: crate::review::commands::CommandError) -> ForgeError {
+    match error {
+        crate::review::commands::CommandError::Contract(error) => {
+            ForgeError::Validation(error.to_string())
+        }
+        crate::review::commands::CommandError::Publication => {
+            ForgeError::Io(std::io::Error::other("review output publication failed"))
+        }
+        crate::review::commands::CommandError::Output => {
+            ForgeError::Io(std::io::Error::other("review status output failed"))
+        }
+    }
+}
+
+/// Borrow the existing clap response vector; all subsequent growth belongs to one command ledger.
+fn review_current_options(args: &ReviewCurrentArgs) -> crate::review::commands::CurrentOptions<'_> {
+    crate::review::commands::CurrentOptions {
+        project_root: &args.project_root,
+        sources: &args.sources,
+        queue: &args.queue,
+        responses: &args.responses,
+        as_of: &args.as_of,
+    }
+}
+
+/// Dispatch explicit offline review inputs without touching workspace configuration or logs.
+fn run_review(command: &ReviewCommand) -> Result<(), ForgeError> {
+    use crate::review::commands;
+    let mut control = crate::workspace::preparation::NoopControl;
+    let result = match command {
+        ReviewCommand::Init(args) => commands::init(
+            &commands::InitOptions {
+                project_root: &args.project_root,
+                sources: &args.sources,
+                policy: &args.policy,
+                queue_id: &args.queue_id,
+                created_at: &args.created_at,
+                output: &args.output,
+            },
+            &mut control,
+        ),
+        ReviewCommand::Respond(args) => {
+            let disposition = match args.disposition {
+                ReviewDisposition::Approve => crate::review::wire::Disposition::Approve,
+                ReviewDisposition::Reject => crate::review::wire::Disposition::Reject,
+                ReviewDisposition::RequestChanges => {
+                    crate::review::wire::Disposition::RequestChanges
+                }
+                ReviewDisposition::Abstain => crate::review::wire::Disposition::Abstain,
+                ReviewDisposition::Superseded => crate::review::wire::Disposition::Superseded,
+            };
+            let supersedes = match (&args.supersedes_id, &args.supersedes_sha256) {
+                (None, None) => None,
+                (Some(response_id), Some(raw_sha256)) => {
+                    Some(commands::Supersedes { response_id, raw_sha256 })
+                }
+                _ => return Err(ForgeError::Validation("invalid review response chain".into())),
+            };
+            commands::respond(
+                &commands::RespondOptions {
+                    project_root: &args.project_root,
+                    queue: &args.queue,
+                    rationale_file: &args.rationale_file,
+                    item_key: &args.item_key,
+                    reviewer_key: &args.reviewer_key,
+                    reviewer_role: &args.reviewer_role,
+                    disposition,
+                    responded_at: &args.responded_at,
+                    response_id: &args.response_id,
+                    abstention_reason: args.abstention_reason.as_deref(),
+                    supersedes,
+                    output: &args.output,
+                },
+                &mut control,
+            )
+        }
+        ReviewCommand::Merge(args) => {
+            commands::merge(&review_current_options(&args.current), &args.output, &mut control)
+        }
+        ReviewCommand::Status(args) => commands::status(
+            &review_current_options(args),
+            &mut std::io::stdout().lock(),
+            &mut control,
+        ),
+        ReviewCommand::ExportHtml(args) => commands::export_html(
+            &commands::ExportHtmlOptions {
+                project_root: &args.project_root,
+                dispositions: &args.dispositions,
+                output: &args.output,
+            },
+            &mut control,
+        ),
+    };
+    result.map_err(review_error)
 }
 
 /// Explicit local read-only MCP operations.
@@ -1832,6 +2109,7 @@ fn run_migrate(
 pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
     reject_unsupported_config_selector(cli)?;
     match &cli.command {
+        Commands::Review { command } => run_review(command),
         Commands::Mcp { command } => match command {
             McpCommand::Serve { project, decision_root, decision_sha256, profile_sha256 } => {
                 crate::mcp::serve(
@@ -3462,6 +3740,25 @@ mod tests {
                 };
 
             assert!(error.contains("1..=51200"), "unexpected error: {error}");
+        }
+    }
+}
+
+#[cfg(test)]
+/// Persistent reviewer-identity disclosure is part of every public command's help.
+mod review_help_tests {
+    use super::*;
+
+    /// Each explicit operation exposes asserted identity and the domain-authority boundary.
+    #[test]
+    fn every_review_operation_help_retains_identity_and_domain_limitation() {
+        for operation in ["init", "respond", "merge", "status", "export-html"] {
+            let error =
+                Cli::try_parse_from(["forge", "review", operation, "--help"]).err().unwrap();
+            assert_eq!(error.kind(), clap::error::ErrorKind::DisplayHelp);
+            let help = error.to_string();
+            assert!(help.contains("not authenticated or signed"));
+            assert!(help.contains("grants no domain approval"));
         }
     }
 }

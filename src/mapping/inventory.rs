@@ -77,6 +77,25 @@ impl Inventory {
         self.excerpts.get(&subject_type).and_then(|excerpts| excerpts.get(id)).map(String::as_str)
     }
 
+    /// Borrow every actual eligible type, original ID and native fingerprint without lookup or cloning.
+    pub(crate) fn subject_entries_refs(&self) -> impl Iterator<Item = (SubjectType, &str, &str)> {
+        self.subjects.iter().flat_map(|(kind, subjects)| {
+            subjects.iter().map(move |(id, fingerprint)| (*kind, id.as_str(), fingerprint.as_str()))
+        })
+    }
+
+    /// Borrow actual excerpt rows directly; the maintained loader admits their eligible subject first.
+    pub(crate) fn excerpt_entries_refs(&self) -> impl Iterator<Item = (SubjectType, &str, &str)> {
+        self.excerpts.iter().flat_map(|(kind, excerpts)| {
+            excerpts.iter().map(move |(id, excerpt)| (*kind, id.as_str(), excerpt.as_str()))
+        })
+    }
+
+    /// Borrow all actual ineligible part identifiers and names without allocation or file access.
+    pub(crate) fn ineligible_parts_refs(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.ineligible_parts.iter().map(|(id, name)| (id.as_str(), name.as_str()))
+    }
+
     /// Borrow native subject IDs without cloning a complete inventory before projection admission.
     pub(crate) fn ids_of_type_refs(&self, subject_type: SubjectType) -> impl Iterator<Item = &str> {
         self.subjects
