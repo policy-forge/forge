@@ -432,6 +432,12 @@ pub enum ReviewCommand {
         /// Complete actual current inputs and explicit evaluation time.
         Box<ReviewCurrentArgs>,
     ),
+    /// Record explicit direct old/new queue lineage after complete current native comparison
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Supersede(
+        /// Whole original queues, current sources, complete Impact, explicit links and new destination.
+        Box<ReviewSupersedeArgs>,
+    ),
     /// Export complete recorded queue assignments as local notification JSON
     #[command(after_help = REVIEW_IDENTITY_HELP)]
     ExportNotifications(
@@ -594,6 +600,39 @@ pub struct ReviewNotificationsArgs {
     pub output: PathBuf,
 }
 
+/// Complete explicit direct-lineage inputs; identity and times remain caller assertions.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct ReviewSupersedeArgs {
+    /// Actual normalized project root for every retained original and output
+    #[arg(long)]
+    pub project_root: PathBuf,
+    /// Whole historical queue original; old responses and approval are not transferred
+    #[arg(long)]
+    pub old_queue: PathBuf,
+    /// Whole new queue original bound to the current native adapter
+    #[arg(long)]
+    pub new_queue: PathBuf,
+    /// Complete current Mapping or applicability source locator
+    #[arg(long)]
+    pub sources: PathBuf,
+    /// Closed seven-field Impact locator naming the complete native report
+    #[arg(long)]
+    pub impact: PathBuf,
+    /// Closed explicit old/new item pairs and selected current finding IDs
+    #[arg(long)]
+    pub links: PathBuf,
+    /// Explicit canonical nonnil companion UUID
+    #[arg(long)]
+    pub supersession_id: String,
+    /// Asserted canonical UTC seconds no earlier than either queue declaration
+    #[arg(long)]
+    pub created_at: String,
+    /// Confined new companion file; existing destinations are refused
+    #[arg(long)]
+    pub output: PathBuf,
+}
+
 /// Convert only fixed contract/publication diagnostics; native source prose stays private.
 fn review_error(error: crate::review::commands::CommandError) -> ForgeError {
     match error {
@@ -677,6 +716,20 @@ fn run_review(command: &ReviewCommand) -> Result<(), ForgeError> {
         ReviewCommand::Status(args) => commands::status(
             &review_current_options(args),
             &mut std::io::stdout().lock(),
+            &mut control,
+        ),
+        ReviewCommand::Supersede(args) => commands::supersede(
+            &commands::SupersedeOptions {
+                project_root: &args.project_root,
+                old_queue: &args.old_queue,
+                new_queue: &args.new_queue,
+                sources: &args.sources,
+                impact: &args.impact,
+                links: &args.links,
+                supersession_id: &args.supersession_id,
+                created_at: &args.created_at,
+                output: &args.output,
+            },
             &mut control,
         ),
         ReviewCommand::ExportNotifications(args) => commands::export_notifications(

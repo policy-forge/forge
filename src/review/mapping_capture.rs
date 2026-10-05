@@ -151,6 +151,49 @@ impl PendingMappingClosure {
     }
 }
 
+impl PendingMappingClosure {
+    /// Consume only this genuine complete factory pending result for S4 preparation.
+    /// The ordinary seal retains its exact whole-Source equality.
+    pub(crate) fn into_supersession_pending(
+        self,
+    ) -> super::capture::supersession::PendingNewNativeCohort {
+        super::capture::supersession::PendingNewNativeCohort::mapping(self)
+    }
+
+    /// Consume this same genuine pending result only through the private complete S4 union issuer.
+    /// The token has no caller constructor and is not returned separately from its bound closure.
+    pub(super) fn seal_supersession_union(
+        self,
+        union: &super::capture::supersession::NativeUnionSeal,
+    ) -> ApprovedMappingClosure {
+        ApprovedMappingClosure {
+            native: self.native,
+            pins: self.pins,
+            held: Rc::clone(union.held_inputs()),
+        }
+    }
+
+    /// Borrow the complete factory-issued pin roster, never a caller-selected subset.
+    pub(super) fn supersession_pins(&self) -> &[SourcePin] {
+        &self.pins
+    }
+
+    /// Count every factory original, including the real captured private locator.
+    pub(super) fn supersession_original_count(&self) -> usize {
+        self.originals.len()
+    }
+
+    /// Borrow the genuine original locator binding retained by this factory.
+    pub(super) fn supersession_locator(&self) -> Option<(usize, &CaptureLease)> {
+        self.originals.first().map(|original| (original.index, &original.lease))
+    }
+
+    /// Borrow one member of the full owned roster in its unchanged factory order.
+    pub(super) fn supersession_member(&self, slot: usize) -> Option<(usize, &CaptureLease)> {
+        self.originals.get(slot.checked_add(1)?).map(|original| (original.index, &original.lease))
+    }
+}
+
 impl ApprovedMappingClosure {
     /// Borrow the actual complete native original used by item minimization.
     pub(crate) fn native_value(&self) -> &Value {
@@ -1311,7 +1354,7 @@ impl Write for Counter<'_> {
 
 #[cfg(test)]
 /// Genuine native originals and declared legacy lifecycle history are test facts only.
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::workspace::preparation::NoopControl;
     use serde_json::json;
@@ -1479,6 +1522,130 @@ mod tests {
         std::fs::write(f.root.join("request.json"), serde_json::to_vec(&request).unwrap()).unwrap();
         std::fs::write(f.root.join("rationale.txt"), b"SENSITIVE_REVIEW_RATIONALE").unwrap();
         f
+    }
+
+    /// Persist only test fixture declarations before any genuine capture starts.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    fn supersession_value(root: &Path, name: &str, value: &Value) {
+        std::fs::write(root.join(name), serde_json::to_vec_pretty(value).unwrap()).unwrap();
+    }
+
+    /// Create each complete raw queue through the actual approved/current Mapping command.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    fn supersession_init(root: &Path, id: &str, output: &str) {
+        super::super::commands::init(
+            &super::super::commands::InitOptions {
+                project_root: root,
+                sources: Path::new("locator.json"),
+                policy: Path::new("request.json"),
+                queue_id: id,
+                created_at: "2026-10-04T00:00:00Z",
+                output: Path::new(output),
+            },
+            &mut NoopControl,
+        )
+        .unwrap();
+    }
+
+    /// Derive exact file-oriented Impact evidence declarations from actual archived/current originals.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    fn supersession_resource(root: &Path, prefix: &str, profile: bool) -> Value {
+        let bytes = std::fs::read(root.join(format!("{prefix}source.json"))).unwrap();
+        let value: Value = serde_json::from_slice(&bytes).unwrap();
+        let family = if profile { "profile" } else { "catalog" };
+        let mut resource = json!({"type":family,"artifact":format!("{prefix}source.json"),
+            "expected_sha256":sha256_hex(&bytes),"root_uuid":value[family]["uuid"],
+            "document_version":value[family]["metadata"]["version"],"oscal_version":"1.2.3"});
+        if profile {
+            let path = format!("{prefix}source-resolved.json");
+            resource["resolved_catalog"] = json!(path);
+            resource["resolved_catalog_attestation"] = json!(true);
+            resource["expected_resolved_catalog_sha256"] =
+                json!(sha256_hex(&std::fs::read(root.join(path)).unwrap()));
+        }
+        resource
+    }
+
+    /// Change actual native control content and regenerate Mapping/lifecycle using maintained producers.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    fn supersession_refresh_source(root: &Path, profile: bool) {
+        let path = if profile { "source-resolved.json" } else { "source.json" };
+        let mut catalog: Value =
+            serde_json::from_slice(&std::fs::read(root.join(path)).unwrap()).unwrap();
+        catalog["catalog"]["controls"][0]["parts"] = json!([{
+            "id":"a-1_statement","name":"statement","prose":"Synthetic changed native control statement."}]);
+        supersession_value(root, path, &catalog);
+        if profile {
+            let mut declaration: Value =
+                serde_json::from_slice(&std::fs::read(root.join("manifest.json")).unwrap())
+                    .unwrap();
+            declaration["mapping"]["source"]["expected_resolved_catalog_sha256"] =
+                json!(sha256_hex(&std::fs::read(root.join(path)).unwrap()));
+            supersession_value(root, "manifest.json", &declaration);
+        }
+        rebuild_native(root);
+        recorded_approval(root, profile);
+    }
+
+    /// Return only real owned fixture files, never any native/currentness/capture capability.
+    /// Actual commands issue old/new queues; real file analysis produces the complete report.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    pub(crate) fn supersession_mapping_fixture(
+        profile: bool,
+        changed: bool,
+        second_map: bool,
+    ) -> (tempfile::TempDir, PathBuf) {
+        use crate::framework::{analysis, manifest as impact_manifest, model::ImpactFilters};
+        let Fixture { directory, root } = command_fixture(profile);
+        if second_map {
+            let mut declaration: Value =
+                serde_json::from_slice(&std::fs::read(root.join("manifest.json")).unwrap())
+                    .unwrap();
+            let mut second = declaration["mapping"]["maps"][0].clone();
+            second["key"] = json!("map-2");
+            declaration["mapping"]["maps"].as_array_mut().unwrap().push(second);
+            supersession_value(&root, "manifest.json", &declaration);
+            rebuild_native(&root);
+            recorded_approval(&root, profile);
+        }
+        supersession_init(&root, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "old-queue.json");
+        std::fs::create_dir(root.join("old")).unwrap();
+        for name in ["source.json", "mapping.json"] {
+            std::fs::copy(root.join(name), root.join("old").join(name)).unwrap();
+        }
+        if profile {
+            std::fs::copy(root.join("source-resolved.json"), root.join("old/source-resolved.json"))
+                .unwrap();
+        }
+        if changed {
+            supersession_refresh_source(&root, profile);
+        }
+        supersession_init(&root, "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", "new-queue.json");
+        let declaration = json!({"schema_version":impact_manifest::MANIFEST_SCHEMA_VERSION,
+            "old":supersession_resource(&root,"old/",profile),
+            "new":supersession_resource(&root,"",profile),
+            "mapping_collections":[{"artifact":"old/mapping.json","framework_role":"source"}]});
+        supersession_value(&root, "impact-manifest.json", &declaration);
+        let declaration =
+            impact_manifest::parse(&std::fs::read(root.join("impact-manifest.json")).unwrap())
+                .unwrap();
+        let (report, _) = analysis::analyze(&root, &declaration, ImpactFilters::default()).unwrap();
+        supersession_value(&root, "impact-report.json", &serde_json::to_value(&report).unwrap());
+        supersession_value(
+            &root,
+            "impact-locator.json",
+            &json!({
+            "schema_version":"forge.review-queue-impact-locator/1", "manifest_path":"impact-manifest.json",
+            "report_path":"impact-report.json", "old_framework_source_key":"source", "new_framework_source_key":"source",
+            "old_resolved_source_key":if profile {json!("source-resolved")} else {Value::Null},
+            "new_resolved_source_key":if profile {json!("source-resolved")} else {Value::Null}}),
+        );
+        supersession_value(
+            &root,
+            "links.json",
+            &json!({"schema_version":crate::review::links::LINKS_SCHEMA,"links":[]}),
+        );
+        (directory, root)
     }
 
     /// Enter the actual public clap dispatch; every native consumer remains genuine.
@@ -1996,6 +2163,129 @@ mod tests {
             prepared.seal(held, &mut ledger, &mut control),
             Err(ContractError::Binding)
         ));
+    }
+    mod supersession_tests {
+        //! Genuine Mapping pending/complete Impact union controls within the maintained fixture module.
+
+        use super::*;
+        use crate::framework::{analysis, manifest as impact_manifest, model::ImpactFilters};
+        use crate::review::capture::supersession::{
+            AuxiliaryPurpose, NewNativeCohort, QueuePurpose, seal_complete_union,
+        };
+        use crate::review::impact_capture;
+        use serde_json::json;
+
+        /// Produce every unchanged Impact declaration/report/locator through the maintained analysis.
+        fn write_unchanged_impact_originals(root: &Path, profile: bool) {
+            let raw = std::fs::read(root.join("source.json")).unwrap();
+            let parsed: Value = serde_json::from_slice(&raw).unwrap();
+            let model = if profile { "profile" } else { "catalog" };
+            let mut resource = json!({
+                "type":model, "artifact":"source.json", "expected_sha256":sha256_hex(&raw),
+                "root_uuid":parsed[model]["uuid"], "document_version":parsed[model]["metadata"]["version"],
+                "oscal_version":parsed[model]["metadata"]["oscal-version"]
+            });
+            if profile {
+                resource["resolved_catalog"] = json!("source-resolved.json");
+                resource["resolved_catalog_attestation"] = json!(true);
+                resource["expected_resolved_catalog_sha256"] =
+                    json!(sha256_hex(&std::fs::read(root.join("source-resolved.json")).unwrap()));
+            }
+            let declaration = json!({"schema_version":impact_manifest::MANIFEST_SCHEMA_VERSION,
+                "old":resource,"new":resource,
+                "mapping_collections":[{"artifact":"mapping.json","framework_role":"source"}]});
+            let raw = serde_json::to_vec_pretty(&declaration).unwrap();
+            std::fs::write(root.join("impact-manifest.json"), &raw).unwrap();
+            let declaration = impact_manifest::parse(&raw).unwrap();
+            let (report, _) =
+                analysis::analyze(root, &declaration, ImpactFilters::default()).unwrap();
+            std::fs::write(
+                root.join("impact-report.json"),
+                serde_json::to_vec_pretty(&report).unwrap(),
+            )
+            .unwrap();
+            let locator = json!({"schema_version":"forge.review-queue-impact-locator/1",
+                "manifest_path":"impact-manifest.json","report_path":"impact-report.json",
+                "old_framework_source_key":"source","new_framework_source_key":"source",
+                "old_resolved_source_key":if profile {json!("source-resolved")} else {Value::Null},
+                "new_resolved_source_key":if profile {json!("source-resolved")} else {Value::Null}});
+            std::fs::write(root.join("impact-locator.json"), serde_json::to_vec(&locator).unwrap())
+                .unwrap();
+        }
+
+        /// Real Catalog/Profile Mapping pending values and native Impact originals seal one complete owner.
+        #[test]
+        fn actual_mapping_and_impact_complete_union_seals_catalog_and_profile() {
+            for profile in [false, true] {
+                let fixture = fixture(profile);
+                let root = &fixture.root;
+                write_unchanged_impact_originals(root, profile);
+                for (name, raw) in [
+                    ("old-queue.json", b"old".as_slice()),
+                    ("new-queue.json", b"new".as_slice()),
+                    ("links.json", b"{}".as_slice()),
+                ] {
+                    std::fs::write(root.join(name), raw).unwrap();
+                }
+                let mut ledger = ContractLedger::default();
+                let mut capture = ReviewCapture::new_supersession(
+                    root,
+                    Path::new("union.json"),
+                    &mut ledger,
+                    &mut NoopControl,
+                )
+                .unwrap();
+                for (name, purpose) in [
+                    ("old-queue.json", QueuePurpose::HistoricalOld),
+                    ("new-queue.json", QueuePurpose::CurrentNew),
+                ] {
+                    capture
+                        .required_supersession_queue(
+                            Path::new(name),
+                            purpose,
+                            &mut ledger,
+                            &mut NoopControl,
+                        )
+                        .unwrap();
+                }
+                for (name, purpose) in [
+                    ("locator.json", AuxiliaryPurpose::NewNativeLocator),
+                    ("impact-locator.json", AuxiliaryPurpose::ImpactLocator),
+                    ("links.json", AuxiliaryPurpose::Links),
+                ] {
+                    capture
+                        .required_supersession_auxiliary(
+                            Path::new(name),
+                            purpose,
+                            &mut ledger,
+                            &mut NoopControl,
+                        )
+                        .unwrap();
+                }
+                let locator = capture
+                    .supersession_auxiliary_original(AuxiliaryPurpose::NewNativeLocator)
+                    .unwrap();
+                let native = prepare(&mut capture, locator, &mut ledger, &mut NoopControl)
+                    .unwrap()
+                    .into_supersession_pending();
+                let impact =
+                    impact_capture::prepare(&mut capture, &mut ledger, &mut NoopControl).unwrap();
+                let held = Rc::new(capture.finish());
+                let union = seal_complete_union(
+                    Rc::clone(&held),
+                    native,
+                    impact,
+                    &mut ledger,
+                    &mut NoopControl,
+                )
+                .unwrap();
+                assert!(matches!(union.new_native(), NewNativeCohort::Mapping(_)));
+                assert!(Rc::ptr_eq(union.held_inputs(), &held));
+                union.verify_inputs(&mut ledger, &mut NoopControl).unwrap();
+                assert!(!root.join("union.json").exists());
+                assert_eq!(union.impact().facts().report.summary.unchanged, 1);
+            }
+        }
     }
 }
 

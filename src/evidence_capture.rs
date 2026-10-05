@@ -44,6 +44,14 @@ pub(crate) enum CaptureRole {
     MappingCollection,
     /// Complete intrinsically validated lifecycle record original.
     LifecycleRecord,
+    /// Exact maintained native Impact manifest, admitted only by the S4 review profile.
+    ImpactManifest,
+    /// Exact complete current/prior native Impact report; use purposes remain separate.
+    ImpactReport,
+    /// Exact native control successor relation; no href discovery or approval is implied.
+    ControlSuccessorMap,
+    /// Exact native Impact dispositions, distinct from portable review dispositions.
+    ImpactDispositions,
     /// POA&M authoring declaration; it never grants native terminal admission.
     WorkflowDeclaration,
     /// Actual empty foundation declaration for explicit reviewed-risk authoring.

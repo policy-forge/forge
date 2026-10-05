@@ -1,0 +1,313 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forge.review-queue-links-request/1",
+  "title": "Closed private explicit links selection with inert companion fragments",
+  "$comment": "Ordering, aggregate occurrence capacity, exact decoded endpoint binding and native finding association require their separate maintained semantic consumers. Fragments are inert, never a complete companion producer or currentness proof.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "links"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.review-queue-links-request/1"
+    },
+    "links": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/LinkRequest"
+      }
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "not": {
+        "const": "00000000-0000-0000-0000-000000000000"
+      }
+    },
+    "Domain": {
+      "type": "string",
+      "enum": [
+        "mapping-assertion",
+        "applicability-decision"
+      ]
+    },
+    "SourceModel": {
+      "type": "string",
+      "enum": [
+        "mapping",
+        "catalog",
+        "profile",
+        "resolved-catalog",
+        "component-definition",
+        "mapping-manifest",
+        "applicability-manifest",
+        "applicability-report",
+        "lifecycle-record"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+    },
+    "SourcePin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_key",
+        "model",
+        "native_root_uuid",
+        "raw_sha256",
+        "byte_length",
+        "schema_identity"
+      ],
+      "properties": {
+        "artifact_key": {
+          "$ref": "#/$defs/key"
+        },
+        "model": {
+          "$ref": "#/$defs/SourceModel"
+        },
+        "native_root_uuid": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "schema_identity": {
+          "$ref": "#/$defs/version"
+        }
+      }
+    },
+    "LinkRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "old_item_id",
+        "new_item_id",
+        "finding_ids"
+      ],
+      "properties": {
+        "old_item_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "new_item_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "finding_ids": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 100000,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/uuid"
+          }
+        }
+      }
+    },
+    "Endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "item_id",
+        "domain",
+        "adapter_version",
+        "subject_id",
+        "subject_sha256",
+        "context_sha256",
+        "policy_key",
+        "policy_sha256",
+        "requested_action",
+        "source_keys"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "item_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "domain": {
+          "$ref": "#/$defs/Domain"
+        },
+        "adapter_version": {
+          "enum": [
+            "forge.mapping-review/1",
+            "forge.applicability-review/1"
+          ]
+        },
+        "subject_id": {
+          "$ref": "#/$defs/subject"
+        },
+        "subject_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "context_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "policy_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "requested_action": {
+          "const": "re-review"
+        },
+        "source_keys": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/key"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "domain": {
+                "const": "mapping-assertion"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "adapter_version": {
+                "const": "forge.mapping-review/1"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "adapter_version": {
+                "const": "forge.applicability-review/1"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Differences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject",
+        "context",
+        "policy",
+        "source_pins"
+      ],
+      "properties": {
+        "subject": {
+          "type": "boolean"
+        },
+        "context": {
+          "type": "boolean"
+        },
+        "policy": {
+          "type": "boolean"
+        },
+        "source_pins": {
+          "type": "boolean"
+        }
+      }
+    },
+    "OriginalPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_sha256",
+        "byte_length"
+      ],
+      "properties": {
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10485760
+        }
+      }
+    },
+    "QueueReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "queue_id",
+        "raw_sha256",
+        "byte_length",
+        "source_pins",
+        "item_count"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "forge.review-queue/1"
+        },
+        "queue_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "source_pins": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/SourcePin"
+          }
+        },
+        "item_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        }
+      }
+    }
+  }
+}

@@ -93,7 +93,7 @@ FORGE detects and processes:
 
 PDF and DOCX source documents are also accepted directly — Word heading and list styles are mapped to the document model automatically. For other formats, convert to Markdown first using [pandoc](https://pandoc.org/) or [markitdown](https://github.com/microsoft/markitdown).
 
-## 3. The Seven CLI Subcommands
+## 3. CLI Workflows
 
 ### 3.1 `convert` — Convert Policy to OSCAL
 
@@ -887,6 +887,30 @@ for the selection format, complete native matching, minimized fields and bounds.
 
 Inspect local evidence with `forge poam evidence --manifest ./assessment-bundle/authored.json --links review/evidence-links.json --as-of 2026-10-04`. Add `--report inspection.json` to publish a new report beside the plan on Linux or macOS. See [local evidence inspection](poam-evidence-inspection.md) for explicit assertion bindings, complete counts and unchanged closure gates.
 
+### 3.15 `review` — Coordinate Portable Local Re-review
+
+Portable review commands are an unreleased F12 implementation candidate and are
+not included in the published v1.1.0 binary.
+
+Use `forge review init` for selected Mapping assertions or explicit applicability
+decisions in complete recorded Approved/current native closures. `respond` binds
+to the exact recorded queue; `merge` and `status` check the complete current source
+closure. Reviewer keys, roles, authors and times are asserted. A satisfied quorum
+does not approve or modify the domain artifact.
+
+`export-html` renders a recorded disposition bundle; `export-notifications`
+exports recorded queue assignments without sending them or checking current
+native sources. `supersede` creates a separate immutable old/new lineage companion
+from explicit links and a complete native Impact comparison. The old queue stays
+historical, and responses and quorum do not transfer to the new queue.
+
+See the [portable review queue guide](review-queues.md) for the private source,
+policy, Impact and link formats, exact commands, source requirements, sharing
+limits and remaining acceptance gates. Inputs and outputs are explicit paths
+under an absolute project root; output files must be new. Publication uses the
+Linux/macOS no-replace publisher and refuses on Windows. Identifiers and hashes
+can still contain sensitive project metadata.
+
 ## 4. Global Options
 
 ```bash
@@ -1075,6 +1099,7 @@ remain open.
 ## Further Reading
 
 - [README.md](../README.md) — project overview and quick start
+- [Portable review queues](review-queues.md) — asserted review policy, immutable responses, recorded exports and explicit queue supersession
 - [Evidence and Implementation Linking](evidence-linkage.md) — exact subject/evidence metadata linkage, freshness, privacy, and baseline contracts
 - [Evidence overlays](evidence-overlays.md) — new Catalog/Component JSON documents, complete source preservation and generated metadata boundaries
 - [Contributing Guide](../CONTRIBUTING.md) — development setup and PR process

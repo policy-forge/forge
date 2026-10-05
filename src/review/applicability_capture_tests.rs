@@ -562,3 +562,49 @@ fn report_output_namespace_alias_refuses_actual_source_registration() {
         .unwrap();
     assert!(prepare(&mut capture, locator, &mut ledger, &mut NoopControl).is_err());
 }
+
+// Test-only successor helper inside the existing fixture-owning cfg module.
+impl Fixture {
+    /// Regenerate genuine native Mapping/applicability/lifecycle after one real framework change.
+    pub(crate) fn refresh_framework_statement_for_supersession(&self) {
+        let catalog_path =
+            self.root.join(if self.profile { "resolved-catalog.json" } else { "framework.json" });
+        let mut catalog = read_json(&catalog_path);
+        catalog["catalog"]["metadata"]["version"] = json!("2.0.0");
+        catalog["catalog"]["groups"][0]["controls"][0]["parts"][0]["prose"] =
+            json!("Changed synthetic control c1 statement.");
+        write_json(&catalog_path, &catalog);
+        if self.profile {
+            let mut profile = read_json(&self.root.join("framework.json"));
+            profile["profile"]["metadata"]["version"] = json!("2.0.0");
+            write_json(&self.root.join("framework.json"), &profile);
+        }
+        let mut framework = resource(
+            if self.profile { ResourceType::Profile } else { ResourceType::Catalog },
+            "framework.json",
+        );
+        if self.profile {
+            framework.resolved_catalog = Some("resolved-catalog.json".into());
+            framework.resolved_catalog_attestation = Some(true);
+            framework.expected_resolved_catalog_sha256 =
+                Some(sha256_hex(&std::fs::read(self.root.join("resolved-catalog.json")).unwrap()));
+        }
+        let loaded =
+            inventory::load(&self.root, "synthetic changed framework", &framework).unwrap();
+        framework.expected_sha256 = Some(loaded.evidence.raw_sha256.clone());
+        framework.inventory = Some(loaded.snapshot());
+        write_json(&self.root.join("mapping-manifest.json"), &mapping_source(&framework, false));
+        let built =
+            crate::mapping::prepare(&self.root.join("mapping-manifest.json"), None, false).unwrap();
+        std::fs::write(self.root.join("mapping.json"), built.artifact_json.as_bytes()).unwrap();
+        write_json(&self.root.join("applicability.json"), &applicability_source(&framework));
+        let report = crate::applicability::prepare_analysis(
+            &self.root.join("applicability.json"),
+            ReportFilters::default(),
+        )
+        .unwrap();
+        write_json(&self.root.join("report.json"), &serde_json::to_value(&report.report).unwrap());
+        self.approve("report.json");
+        self.write_locator();
+    }
+}

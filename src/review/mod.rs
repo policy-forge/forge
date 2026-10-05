@@ -39,6 +39,9 @@ pub(crate) mod mapping_capture;
 /// Genuine full applicability report-source capture and recorded-current lifecycle gate.
 pub(crate) mod applicability_capture;
 
+/// Plain legacy preparations under the existing command ledger and cooperative control.
+pub(crate) mod legacy_work;
+
 /// Six explicit-path review flows using one actual capture/ledger/control owner.
 pub(crate) mod commands;
 /// Bounded complete closed JSON output under the same command ledger.
@@ -46,3 +49,17 @@ pub(crate) mod encode;
 
 /// Complete local notifications from one captured recorded queue; no delivery authority.
 pub(crate) mod notifications;
+
+/// Complete actual captured legacy Impact roster and strict stored-current comparison.
+pub(crate) mod impact_capture;
+/// Strict full stored/native Impact equality returning non-authorizing borrowed data.
+pub(crate) mod impact_report;
+
+/// Strict explicit links and complete plain old/new item accounting; no native proof.
+pub(crate) mod links;
+
+/// Inert fixed-whitelist companion endpoint and original/queue pin fragments.
+pub(crate) mod supersession_wire;
+
+/// Inert closed recorded supersession decoding and exact queue-data binding.
+pub(crate) mod supersession_decode;

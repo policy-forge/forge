@@ -17,6 +17,10 @@ use crate::workspace::preparation::{
 
 use super::decode::{ContractError, ContractLedger};
 
+/// Mode-private S4 preparation; the ordinary capture and binders retain their behavior.
+#[path = "supersession_capture.rs"]
+pub(super) mod supersession;
+
 /// Complete actual file attempts across the separate bounded pools.
 const MAX_ATTEMPTS: usize = 10_105;
 
@@ -127,6 +131,8 @@ pub(crate) struct ReviewCapture {
     response_originals: Vec<usize>,
     /// The one actual successful Queue-pool original, never a wire declaration.
     queue_original: Option<usize>,
+    /// Actual S4 purpose registrations; ordinary captures leave this absent.
+    supersession: Option<supersession::SupersessionRegistrations>,
 }
 
 impl ReviewCapture {
@@ -221,6 +227,7 @@ impl ReviewCapture {
                 root_extent,
                 response_originals: Vec::new(),
                 queue_original: None,
+                supersession: None,
             })
         })
     }
@@ -236,6 +243,9 @@ impl ReviewCapture {
         ledger: &mut ContractLedger,
         control: &mut dyn WorkControl,
     ) -> Result<usize, ContractError> {
+        if self.supersession.is_some() {
+            return self.required_supersession_native(path, role, pool, per_file, ledger, control);
+        }
         ledger.bound(|ledger| {
             let (maximum, components) =
                 self.admit_registration(path, role, pool, per_file, ledger, control)?;
@@ -422,6 +432,7 @@ impl ReviewCapture {
             entries: self.entries,
             response_originals: self.response_originals,
             queue_original: self.queue_original,
+            supersession: self.supersession,
         }
     }
 }
@@ -436,6 +447,8 @@ pub(crate) struct HeldReviewInputs {
     response_originals: Vec<usize>,
     /// The one actual successful Queue-pool registration.
     queue_original: Option<usize>,
+    /// Actual S4 purpose registrations; ordinary captures leave this absent.
+    supersession: Option<supersession::SupersessionRegistrations>,
 }
 
 impl HeldReviewInputs {

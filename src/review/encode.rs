@@ -136,6 +136,17 @@ pub(crate) fn dispositions(
     })
 }
 
+/// Encode a complete minimized companion under the same finite 32-MiB writer.
+/// The genuine command checks the actual encoded recorded form before publication.
+/// Encoding grants no capture, native currentness, approval or publication capability.
+pub(crate) fn supersession(
+    document: &super::supersession_wire::SupersessionDocument,
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<Vec<u8>, ContractError> {
+    encoded(document, 33_554_432, ledger, control)
+}
+
 #[cfg(test)]
 #[path = "encode_tests.rs"]
 /// Literal writer/closed-decoder controls; no positive native proof is manufactured.

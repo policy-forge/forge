@@ -1,4 +1,4 @@
-//! Six explicit-path portable review workflows over genuine held originals.
+//! Seven explicit-path portable review workflows over genuine held originals.
 //! Each invocation accepts one cooperative control before IO and keeps one ledger
 //! through capture, native preparation, decoding, projection and its output fence.
 //! Asserted keys/times and review quorum never promote native domain approval.
@@ -1389,3 +1389,18 @@ mod tests;
 #[path = "commands_applicability_tests.rs"]
 /// Actual synthetic applicability command/native proof controls; no human or platform acceptance.
 mod applicability_command_tests;
+
+/// Genuine complete supersession union and typed old-dependency binding.
+#[path = "supersession_binding.rs"]
+pub(super) mod supersession_binding;
+
+/// Complete direct-lineage command retaining genuine native owners through the output fence.
+#[path = "supersession_command.rs"]
+mod supersession_command;
+
+/// Minimized fixed-field projection after complete actual native/queue binding.
+#[path = "supersession_projection.rs"]
+mod supersession_projection;
+
+/// Explicit direct-lineage CLI inputs and genuine command entry point.
+pub(crate) use supersession_command::{SupersedeOptions, supersede};

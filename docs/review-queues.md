@@ -228,9 +228,100 @@ export. Existing output files are refused. Publication uses native
 no-replace rename on Linux and macOS; the qualification for this slice is local
 macOS. Windows publication refuses.
 
+## Link a queue revision after change impact
+
+Create the new queue with `forge review init` against its complete current native
+source closure and recorded Approved lifecycle tuple. Preserve the complete old
+queue original and the historical framework and Mapping/applicability originals
+needed by the declared Impact manifest. A supersession companion records explicit
+lineage between those queues; it transfers no responses, quorum or domain approval.
+
+The private `forge.review-queue-impact-locator/1` file names the native Impact
+manifest and the complete stored current Impact report. Replace the source keys
+below with the exact framework keys in each respective queue. For Profiles,
+provide both exact resolved-Catalog source keys. For Catalogs, retain explicit
+`null`; omitting either nullable field is rejected.
+
+```json
+{
+  "schema_version": "forge.review-queue-impact-locator/1",
+  "manifest_path": "private/impact.json",
+  "report_path": "private/impact-report.json",
+  "old_framework_source_key": "framework",
+  "new_framework_source_key": "framework",
+  "old_resolved_source_key": null,
+  "new_resolved_source_key": null
+}
+```
+
+The complete Impact reader follows the maintained manifests' declared resources,
+including configured applicability, successor and paired prior-report/disposition
+inputs. It reconstructs the full unfiltered native report and compares every
+stored field, including private version, href and history data, before producing
+the minimized companion. Historical policy hrefs, Profile imports and old Mapping
+producer manifests are not file routes for this reader. The new native source
+locator still requires its complete normal current closure.
+
+Supply a closed `forge.review-queue-links-request/1` request with explicit old/new item
+IDs and current native finding IDs. Replace the example UUIDs with actual IDs
+from the two queues and full current report. Sort links by `(old_item_id,
+new_item_id)` and finding IDs within each link; reject duplicate pairs or IDs.
+An empty `finding_ids` array is permitted. No correspondence is inferred.
+
+```json
+{
+  "schema_version": "forge.review-queue-links-request/1",
+  "links": [{
+    "old_item_id": "11111111-1111-4111-8111-111111111111",
+    "new_item_id": "22222222-2222-4222-8222-222222222222",
+    "finding_ids": []
+  }]
+}
+```
+
+```sh
+forge review supersede --project-root /absolute/project \
+  --old-queue review/old-queue.json --new-queue review/new-queue.json \
+  --sources private/new-sources.json --impact private/impact-locator.json \
+  --links private/links.json \
+  --supersession-id 55555555-5555-4555-8555-555555555555 \
+  --created-at 2026-10-05T12:00:00Z --output review/supersession.json
+```
+
+Each explicit link must use the same supported domain on both endpoints. Explicit many-to-many links
+preserve distinct endpoint counts separately from edge and finding-occurrence
+counts. Referenced findings must exist in the full native report and match the
+captured old dependency and declared old source pin. All unreferenced findings
+and unmatched queue items remain represented. The asserted companion time must
+be no earlier than either queue's declared creation time.
+
+The closed `forge.review-queue-supersession/1` output contains exact whole-queue
+raw and source pins, eleven fixed endpoint fields, typed differences, associated
+native finding references, full native denominators and all fifteen summary
+counts. Native Impact source pins preserve every declared read occurrence in
+order, with synthetic keys `impact:<role>:<ordinal>`. Default output omits private
+paths, hrefs, prose, rationale and document versions. Exact identifiers and hashes
+can still disclose sensitive project metadata; inspect the artifact before sharing.
+
+`no-detected-native-change` requires all four substantive change counters to be
+zero and the complete native finding list to be empty. The total change count
+includes unchanged controls. Loaded recorded labels remain inert data: the old
+queue is `historical-unverified`, and its companion's recorded new-current label
+does not replace a fresh native check. The command keeps both queues and all
+originals held through encoding, semantic output validation and the final native
+publication fence. Existing output files are refused.
+
+The command shares the ordinary cooperative deadline and derived/work ledger.
+It admits two whole queues of at most 10 MiB each, three private auxiliaries of at
+most 1 MiB each, and the same complete 100-registration/50 MiB source pool. Links
+are bounded to 10,000 edges and 100,000 finding occurrences; the final compact
+JSON plus newline is at most 32 MiB. Near-limit inputs may exhaust the shared
+budget and refuse the whole result. Publication uses the existing Linux/macOS
+no-replace publisher; Windows publication refuses.
+
 ## Sharing and limits
 
-Queue, response, dispositions and notification formats are closed and versioned
+Queue, response, dispositions, notification and supersession formats are closed and versioned
 by their `schemas/forge.review-*-1.schema.json` files. Private responses retain rationale.
 Default queue context and dispositions/HTML omit response rationale and source
 excerpts. Identifiers, schema labels and hashes can still reveal sensitive
@@ -240,8 +331,9 @@ HTML is a static rendering of a captured recorded bundle. It does not perform a
 fresh source check or authenticate its recorded labels. The current CLI performs
 no remote upload, notification delivery or automatic domain edit. Non-null proposed edits
 are rejected. Supported proposed edits and remaining native adapters are
-pending. The interactive client, signed response design/envelope and links between
-superseded queues remain open requirements. Local notification export is implemented;
+pending. The interactive client and signed response design/envelope remain open
+requirements. Supersession currently covers the Mapping and applicability domains;
+remaining domain adapters and acceptance gates stay open. Local notification export is implemented;
 its connector/delivery integration and acceptance gates remain open.
 
 The command shares one cooperative 30-second deadline and one monotonic ledger.

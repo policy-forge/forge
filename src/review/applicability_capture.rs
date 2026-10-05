@@ -210,6 +210,54 @@ impl PendingApplicabilityClosure {
     }
 }
 
+impl PendingApplicabilityClosure {
+    /// Consume only this genuine complete factory pending result for S4 preparation.
+    /// The ordinary seal retains its exact whole-Source equality.
+    pub(crate) fn into_supersession_pending(
+        self,
+    ) -> super::capture::supersession::PendingNewNativeCohort {
+        super::capture::supersession::PendingNewNativeCohort::applicability(self)
+    }
+
+    /// Consume this same genuine pending result only through the private complete S4 union issuer.
+    /// The token has no caller constructor and is not returned separately from its bound closure.
+    pub(super) fn seal_supersession_union(
+        self,
+        union: &super::capture::supersession::NativeUnionSeal,
+    ) -> ApprovedApplicabilityClosure {
+        ApprovedApplicabilityClosure {
+            manifest: self.manifest,
+            controls: self.controls,
+            framework: self.framework,
+            counts: self.counts,
+            maps: self.maps,
+            pairs: self.pairs,
+            pins: self.pins,
+            held: Rc::clone(union.held_inputs()),
+        }
+    }
+
+    /// Borrow the complete factory-issued pin roster, never a caller-selected subset.
+    pub(super) fn supersession_pins(&self) -> &[SourcePin] {
+        &self.pins
+    }
+
+    /// Count every factory original, including the real captured private locator.
+    pub(super) fn supersession_original_count(&self) -> usize {
+        self.originals.len()
+    }
+
+    /// Borrow the genuine original locator binding retained by this factory.
+    pub(super) fn supersession_locator(&self) -> Option<(usize, &CaptureLease)> {
+        self.originals.first().map(|original| (original.index, &original.lease))
+    }
+
+    /// Borrow one member of the full owned roster in its unchanged factory order.
+    pub(super) fn supersession_member(&self, slot: usize) -> Option<(usize, &CaptureLease)> {
+        self.originals.get(slot.checked_add(1)?).map(|original| (original.index, &original.lease))
+    }
+}
+
 impl ApprovedApplicabilityClosure {
     /// Borrow the complete exact current Source-original roster.
     pub(crate) fn source_pins(&self) -> &[SourcePin] {

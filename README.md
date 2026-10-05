@@ -202,12 +202,17 @@ explicit sensitive-output opt-in.
 
 ### Portable review queues
 
-`forge review init`, `respond`, `merge`, `status`, `export-html` and
-`export-notifications` support explicit local re-review of selected Mapping
-assertions and applicability decisions, plus exports of recorded dispositions
-and queue assignments. Current source checks consume the complete recorded Approved/current
-closure. Reviewer keys and times
-remain asserted; quorum does not promote domain approval. See the
+Portable review commands are an unreleased F12 implementation candidate and are
+not included in the published v1.1.0 binary.
+
+`forge review init`, `respond`, `merge`, `status`, `export-html`,
+`export-notifications` and `supersede` support explicit local re-review of selected
+Mapping assertions and applicability decisions. `init`, `merge` and `status`
+consume the complete recorded Approved/current closure; recorded exports preserve their
+snapshot limits. Supersession links explicit old/new items after complete native
+change impact, keeps the old queue historical, and transfers no responses or
+quorum. Reviewer keys and times remain asserted; quorum does not promote domain
+approval. See the
 [portable review queue guide](docs/review-queues.md) for the private inputs,
 immutable responses, dissent, disclosure limits and remaining acceptance gates.
 
