@@ -1,0 +1,57 @@
+{
+  "format": "forge.f04-target-membership-hosted/1",
+  "requested_head": "641f57d4ea0dceffb62349cfaa00d94f31c894a4",
+  "run": 37249325602,
+  "job": 111573516605,
+  "tested_merge": "03cd96b2a2d065d2f96542f8c9c978e4d00fe354",
+  "ordered_parents": [
+    "58422646deacc8abefca40b9dfe0080e5888c024",
+    "641f57d4ea0dceffb62349cfaa00d94f31c894a4"
+  ],
+  "source_bindings": {
+    "count": 23,
+    "head_and_tested_tree_equal": true
+  },
+  "diagnostic": {
+    "schema": "forge.stdlib-unsupported-link-diagnostic/2",
+    "outer_receipt_pin": {
+      "bytes": 4378,
+      "sha256": "9e65faa4d342fe122c84c88e72b7cc03df5f351ffee371d2de26f426a86df73d"
+    },
+    "subcondition": "target-not-in-inventory",
+    "membership": {
+      "availability": "observed-inventory-facts",
+      "basis": "existing-complete-inventory-only",
+      "inventory_kind": "no-file-link-or-directory-row",
+      "lexical_scope": "outside-present-roots",
+      "target_form": "absolute",
+      "target_stat": "not-observed"
+    }
+  },
+  "physical_controls": {
+    "discovered": 22,
+    "passed": 22,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "ownership_reaping_fixture_cleanup_verified": true,
+    "scope": "synthetic-only"
+  },
+  "release_build": "passed",
+  "runtime": "incomplete/tool-untrusted",
+  "producer": "not-run",
+  "attempted_egress": "unmeasured",
+  "acceptance_eligible": false,
+  "complete_evidence": {
+    "path": "evidence/2026-10-04-f04-target-membership-hosted-v1-complete.json.gz",
+    "archive": {
+      "bytes": 194722,
+      "sha256": "abb24dbbdd74e11fc3ab0d384ffa8825b17494d5f99b79dbee31fda1a7b89ee8"
+    },
+    "uncompressed": {
+      "bytes": 1216868,
+      "sha256": "c562b956c3dcff1a9fcae0f129d789a1c97130591ef731cead444c35e4e28c89"
+    },
+    "lossless": true
+  }
+}
