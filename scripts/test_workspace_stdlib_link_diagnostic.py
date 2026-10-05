@@ -160,7 +160,7 @@ class LinkDiagnosticControls(unittest.TestCase):
             record = wrapper.link_diagnostic_record(root, destination, receipt, "target-not-in-inventory")
             self.assertEqual(set(record), {"schema_version", "scope", "truth_state", "acceptance_eligible", "status",
                              "phase", "reason", "subcondition", "requested_commit", "tested_commit", "source_inputs",
-                             "engine_pin", "outer_receipt_pin"})
+                             "engine_pin", "outer_receipt_pin", "membership"})
             self.assertFalse(record["acceptance_eligible"])
             self.assertEqual(record["outer_receipt_pin"], wrapper.pin_bytes((destination / wrapper.OUTPUT).read_bytes()))
             raw = wrapper.shared.canonical_bytes(record)
@@ -270,6 +270,358 @@ class LinkDiagnosticControls(unittest.TestCase):
             record = json.loads((output / wrapper.LINK_DETAIL_OUTPUT).read_bytes())
             self.assertEqual(record["subcondition"], "inventoried-link-size")
             self.assertFalse(record["acceptance_eligible"])
+            callback.assert_called_once_with()
+            native_run.assert_not_called()
+
+    def membership_engines(self):
+        """Load both maintained literal engines in controls only; no producer, tools or qualification entrypoint runs."""
+        raw = (HERE / "test_workspace_os_denial.py").read_bytes()
+        first = raw.index(b"\nLEAF_PROOF_FORMAT =") + 1
+        last = raw.index(b"\n\ndef trusted_stdlib", first)
+        namespace = {name: getattr(wrapper, name) for name in ("os", "stat", "time", "json", "hashlib", "sys", "re")}
+        exec(compile(raw[first:last], "synthetic-native-leaf-engine", "exec"), namespace)
+        return (wrapper, types.SimpleNamespace(**namespace))
+
+    def membership_instance(self, engine):
+        """Construct a synthetic existing-inventory owner without asserting a native root or detached success proof."""
+        instance = engine.LeafClosure.__new__(engine.LeafClosure)
+        instance.budget = engine.LeafBudget(100)
+        generation = engine.leaf_identity(self.info(mode=stat.S_IFDIR | 0o755))
+        instance.roots = [(b"/trusted/stdlib", 21, generation, []),
+                          (b"/trusted/stdlib/lib-dynload", 22, generation, [])]
+        instance.paths = [b"/trusted/stdlib", b"/trusted/stdlib/lib-dynload", b"/trusted/optional.zip"]
+        instance.slash = 9
+        instance.scan_entries = 0
+        return instance
+
+    def membership_rows(self, engine):
+        """Supply the existing complete scan-row shape with one known descendant directory and one regular member."""
+        directory = engine.leaf_identity(self.info(mode=stat.S_IFDIR | 0o755))
+        regular = engine.leaf_identity(self.info(mode=stat.S_IFREG | 0o644))
+        return [[0, b"pkg".hex(), "directory", directory],
+                [0, b"os.py".hex(), "file", regular, {"bytes": 1, "sha256": "a" * 64}]]
+
+    def membership_refusal(self, engine, target, rows, *, no_rows=False, final_drift=False, detail_fault=False):
+        """Run real lexical resolve/refusal/finally code with explicit synthetic origin IO and forbidden target IO."""
+        instance = self.membership_instance(engine)
+        origin = b"/trusted/stdlib/link"
+        identity = engine.leaf_identity(self.info(size=len(target)))
+        ancestry = [[b"/".hex(), engine.leaf_identity(self.info(mode=stat.S_IFDIR | 0o755))]]
+        instance.absolute_directory = mock.Mock(return_value=(11, ancestry))
+        instance.verify = mock.Mock(side_effect=[None, engine.LeafClosureError("entry-observation-unverified")]
+                                    if final_drift else None)
+        instance.read_link = mock.Mock(return_value=target)
+        instance.directory = mock.Mock(side_effect=AssertionError("target directory IO forbidden"))
+        instance.hash_leaf = mock.Mock(side_effect=AssertionError("target hashing forbidden"))
+        if detail_fault:
+            instance.membership_detail = mock.Mock(return_value=None)
+        with mock.patch.object(engine.time, "monotonic", return_value=0), \
+             mock.patch.object(engine.os, "O_PATH", 0x200000, create=True), \
+             mock.patch.object(engine.os, "open", return_value=100) as opened, \
+             mock.patch.object(engine.os, "fstat", side_effect=lambda fd: self.info(size=len(target))
+                               if fd == 100 else self.info(mode=stat.S_IFDIR | 0o755)), \
+             mock.patch.object(engine.os, "stat", side_effect=AssertionError("target stat forbidden")) as stated, \
+             mock.patch.object(engine.os, "readlink", side_effect=AssertionError("target readlink forbidden")) as read, \
+             mock.patch.object(engine.os, "close") as closed:
+            try:
+                if no_rows:
+                    instance.resolve(origin, {}, {origin: (identity, target)})
+                else:
+                    instance.resolve(origin, {}, {origin: (identity, target)}, rows)
+            except engine.LeafClosureError as error:
+                failure = error
+            else:
+                self.fail("expected unchanged leaf-target refusal")
+            opened.assert_called_once_with(b"link", engine.os.O_PATH | engine.os.O_NOFOLLOW | engine.os.O_CLOEXEC,
+                                          dir_fd=11)
+            stated.assert_not_called()
+            read.assert_not_called()
+            instance.directory.assert_not_called()
+            instance.hash_leaf.assert_not_called()
+            closed.assert_called_once_with(100)
+        self.assertFalse(instance.budget.held)
+        self.assertFalse(instance.budget.streams)
+        return failure
+
+    def test_membership_complete_rows_directory_root_and_component_boundaries(self):
+        """Both literal engines distinguish root equality, inventoried descendants and similarly prefixed siblings without IO."""
+        vectors = [([b"trusted", b"stdlib"], b"/trusted/stdlib", "present-root-exact", "inventoried-directory"),
+                   ([b"trusted", b"stdlib", b"pkg"], b"pkg", "beneath-present-root", "inventoried-directory"),
+                   ([b"trusted", b"stdlib", b"missing"], b"missing", "beneath-present-root", "no-file-link-or-directory-row"),
+                   ([b"trusted", b"stdlib-extra", b"pkg"], b"/trusted/stdlib-extra/pkg", "outside-present-roots", "no-file-link-or-directory-row"),
+                   ([b"trusted", b"optional.zip"], b"/trusted/optional.zip", "outside-present-roots", "no-file-link-or-directory-row")]
+        for engine in self.membership_engines():
+            for candidate, target, scope, kind in vectors:
+                with self.subTest(candidate=candidate, scope=scope), mock.patch.object(engine.time, "monotonic", return_value=0), \
+                     mock.patch.object(engine.os, "stat") as stated, mock.patch.object(engine.os, "open") as opened, \
+                     mock.patch.object(engine.os, "readlink") as read, mock.patch.object(engine.os, "scandir") as scanned:
+                    instance = self.membership_instance(engine)
+                    before = (instance.budget.work, instance.budget.state)
+                    expected = ("absolute" if target.startswith(b"/") else "relative", scope, kind)
+                    self.assertEqual(instance.membership_detail(candidate, target, self.membership_rows(engine)), expected)
+                    self.assertGreater(instance.budget.work, before[0])
+                    self.assertGreater(instance.budget.state, before[1])
+                    self.assertLessEqual(instance.budget.state, engine.LEAF_STATE_LIMIT)
+                    carrier = wrapper.link_membership_record("target-not-in-inventory", expected)
+                    self.assertLessEqual(len(wrapper.shared.canonical_bytes(carrier)), 512)
+                    stated.assert_not_called()
+                    opened.assert_not_called()
+                    read.assert_not_called()
+                    scanned.assert_not_called()
+
+    def test_membership_real_resolve_preserves_absolute_relative_and_dot_reduction(self):
+        """Real lexical rejection yields coarse facts after existing dot reduction, never directory-target admission."""
+        for engine in self.membership_engines():
+            for target, expected in [(b"pkg", ("relative", "beneath-present-root", "inventoried-directory")),
+                                     (b"./pkg/../pkg", ("relative", "beneath-present-root", "inventoried-directory")),
+                                     (b"/trusted/stdlib/pkg", ("absolute", "beneath-present-root", "inventoried-directory")),
+                                     (b"/trusted/stdlib", ("absolute", "present-root-exact", "inventoried-directory")),
+                                     (b"/trusted/stdlib-extra/pkg", ("absolute", "outside-present-roots", "no-file-link-or-directory-row"))]:
+                with self.subTest(target=target):
+                    error = self.membership_refusal(engine, target, self.membership_rows(engine))
+                    self.assertEqual((error.reason, error.phase), ("unsupported-link", "stdlib-entry"))
+                    self.assertEqual(error.membership, expected)
+                    if engine is wrapper:
+                        self.assertEqual(wrapper.link_rejection_site(error), "target-not-in-inventory")
+                    self.assertNotIn(target.decode(), str(error))
+
+    def test_membership_inventory_absence_is_not_target_filesystem_absence(self):
+        """Owned existing and missing external targets yield identical outside-inventory facts without target observation."""
+        with tempfile.TemporaryDirectory() as name:
+            existing = Path(name) / "existing.py"
+            existing.write_bytes(b"synthetic private target; never read by membership\n")
+            missing = Path(name) / "missing.py"
+            for engine in self.membership_engines():
+                for path in (existing, missing):
+                    error = self.membership_refusal(engine, str(path).encode(), self.membership_rows(engine))
+                    self.assertEqual(error.membership, ("absolute", "outside-present-roots", "no-file-link-or-directory-row"))
+                    self.assertEqual(error.reason, "unsupported-link")
+
+    def test_membership_optional_direct_resolve_rows_abstain_without_new_io(self):
+        """The old three-argument resolve call preserves the primary failure and carries no invented complete inventory facts."""
+        for engine in self.membership_engines():
+            error = self.membership_refusal(engine, b"pkg", None, no_rows=True)
+            self.assertEqual((error.reason, error.phase, error.membership), ("unsupported-link", "stdlib-entry", None))
+
+    def test_membership_shared_work_state_and_deadline_limits_abstain(self):
+        """The original monotonic ledger and deadline suppress only diagnostic facts without renewal or cap increase."""
+        for engine in self.membership_engines():
+            for exhausted in ("work", "state", "deadline"):
+                with self.subTest(exhausted=exhausted), mock.patch.object(engine.time, "monotonic", return_value=0):
+                    instance = self.membership_instance(engine)
+                    if exhausted == "deadline":
+                        instance.budget.deadline = 0
+                    else:
+                        setattr(instance.budget, exhausted, getattr(engine, "LEAF_" + exhausted.upper() + "_LIMIT"))
+                    old_deadline = instance.budget.deadline
+                    self.assertIsNone(instance.membership_detail([b"trusted", b"stdlib", b"pkg"], b"pkg", self.membership_rows(engine)))
+                    self.assertEqual(instance.budget.deadline, old_deadline)
+                    self.assertLessEqual(instance.budget.work, engine.LEAF_WORK_LIMIT)
+                    self.assertLessEqual(instance.budget.state, engine.LEAF_STATE_LIMIT)
+                    self.assertFalse(instance.budget.held)
+                    self.assertFalse(instance.budget.streams)
+
+    def test_membership_diagnostic_allocation_fault_abstains(self):
+        """A synthetic diagnostic accounting/allocation fault cannot turn inventory-relative metadata into a new primary failure."""
+        for engine in self.membership_engines():
+            with mock.patch.object(engine.time, "monotonic", return_value=0):
+                instance = self.membership_instance(engine)
+                with mock.patch.object(instance.budget, "charge", side_effect=MemoryError("PRIVATE")):
+                    self.assertIsNone(instance.membership_detail([b"trusted", b"stdlib", b"pkg"], b"pkg", self.membership_rows(engine)))
+                error = self.membership_refusal(engine, b"pkg", self.membership_rows(engine), detail_fault=True)
+                self.assertEqual((error.reason, error.membership), ("unsupported-link", None))
+
+    def test_membership_origin_final_generation_failure_overrides_observed_detail(self):
+        """An actual resolve finally-fence failure keeps observation failure priority and cannot carry a usable membership profile."""
+        for engine in self.membership_engines():
+            error = self.membership_refusal(engine, b"pkg", self.membership_rows(engine), final_drift=True)
+            self.assertEqual((error.reason, error.phase, error.membership), ("entry-observation-unverified", "stdlib-entry", None))
+            if engine is wrapper:
+                self.assertIsNone(wrapper.link_rejection_site(error))
+
+    def test_membership_successful_scan_keeps_historical_exact_private_proof_bytes(self):
+        """The real complete scan serializer preserves a fixed historical regular-member proof and allocates no rejection carrier."""
+        expected = (b'["forge.stdlib-leaf-closure/1",[],[[0,"6f732e7079","file",[1,2,33188,0,0,1,3,4],'
+                    b'{"bytes":1,"sha256":"' + b'a' * 64 + b'"}],[1,"6e61746976652e736f","file",'
+                    b'[1,2,33188,0,0,1,3,4],{"bytes":1,"sha256":"' + b'a' * 64 + b'"}]]]\n')
+        for engine in self.membership_engines():
+            instance = self.membership_instance(engine)
+            instance.membership_detail = mock.Mock(side_effect=AssertionError("success diagnostic allocation forbidden"))
+            regular = engine.leaf_identity(self.info(mode=stat.S_IFREG | 0o644))
+            digest = {"bytes": 1, "sha256": "a" * 64}
+            def visit(index, raw, _fd, _relative, _depth, rows, files, _links):
+                """Supply complete synthetic existing scan facts; retain actual row charging and serialization logic."""
+                name = b"os.py" if index == 0 else b"native.so"
+                instance.budget.charge("entries", 1, engine.LEAF_ENTRY_LIMIT * 2, "entry-bound")
+                instance.row(rows, [index, name.hex(), "file", regular, digest])
+                files[raw + b"/" + name] = (regular, digest)
+            instance.visit = visit
+            with mock.patch.object(engine.time, "monotonic", return_value=0), \
+                 mock.patch.object(engine.os, "fstat", return_value=self.info(mode=stat.S_IFDIR | 0o755)):
+                raw, count, files = instance.scan([])
+            self.assertEqual(raw, expected)
+            self.assertEqual(count, 2)
+            self.assertEqual(len(files), 2)
+            instance.membership_detail.assert_not_called()
+
+    def test_membership_carrier_closed_tuple_and_subcondition_coupling(self):
+        """Only the exact three closed private facts at the actual target-not-in-inventory category become observed membership."""
+        observed = wrapper.link_membership_record("target-not-in-inventory", ("relative", "beneath-present-root", "inventoried-directory"))
+        self.assertEqual(observed, {"availability": "observed-inventory-facts", "target_form": "relative",
+                         "lexical_scope": "beneath-present-root", "inventory_kind": "inventoried-directory",
+                         "basis": "existing-complete-inventory-only", "target_stat": "not-observed"})
+        unavailable = wrapper.link_membership_record("link-text-shape", None)
+        self.assertEqual(unavailable, dict(observed, availability="unavailable", target_form=None,
+                                         lexical_scope=None, inventory_kind=None))
+        bad = [(), ("relative", "beneath-present-root"), ("relative", "beneath-present-root", "inventoried-directory", "PRIVATE"),
+               ["relative", "beneath-present-root", "inventoried-directory"],
+               ("PRIVATE", "beneath-present-root", "inventoried-directory"),
+               ("relative", "PRIVATE", "inventoried-directory"),
+               ("relative", "beneath-present-root", "PRIVATE"),
+               ("absolute", "outside-present-roots", "inventoried-directory"),
+               ("absolute", "present-root-exact", "no-file-link-or-directory-row")]
+        for carrier in bad:
+            with self.subTest(carrier=carrier), self.assertRaises(ValueError):
+                wrapper.link_membership_record("target-not-in-inventory", carrier)
+        with self.assertRaises(ValueError):
+            wrapper.link_membership_record("link-text-shape", ("relative", "beneath-present-root", "inventoried-directory"))
+
+    def test_membership_current_record_closed_six_fields_and_original_primary_binding(self):
+        """Real owned-file publication inputs produce one bounded /2 record without origin, target or private receipt mutation."""
+        with tempfile.TemporaryDirectory() as name:
+            root, destination, receipt = self.fixture(Path(name))
+            original = copy.deepcopy(receipt)
+            record = wrapper.link_diagnostic_record(root, destination, receipt, "target-not-in-inventory",
+                                                     membership=("relative", "beneath-present-root", "inventoried-directory"))
+            self.assertTrue(wrapper.validate_link_diagnostic_record(record))
+            self.assertEqual(record["schema_version"], "forge.stdlib-unsupported-link-diagnostic/2")
+            self.assertEqual(set(record["membership"]), {"availability", "target_form", "lexical_scope", "inventory_kind", "basis", "target_stat"})
+            self.assertEqual(record["outer_receipt_pin"], wrapper.pin_bytes((destination / wrapper.OUTPUT).read_bytes()))
+            raw = wrapper.shared.canonical_bytes(record)
+            self.assertLessEqual(len(raw), 2048)
+            self.assertNotIn(str(root).encode(), raw)
+            self.assertNotIn(b"PRIVATE", raw)
+            self.assertEqual(receipt, original)
+            self.assertFalse(record["acceptance_eligible"])
+
+    def test_membership_current_validator_rejects_forged_correlations_and_old_shape(self):
+        """The actual closed /2 validator rejects historical /1, unknowns, missing facts, false target stats and category contradictions."""
+        with tempfile.TemporaryDirectory() as name:
+            root, destination, receipt = self.fixture(Path(name))
+            good = wrapper.link_diagnostic_record(root, destination, receipt, "target-not-in-inventory",
+                                                   membership=("relative", "beneath-present-root", "inventoried-directory"))
+            historical = copy.deepcopy(good)
+            historical["schema_version"] = "forge.stdlib-unsupported-link-diagnostic/1"
+            historical.pop("membership")
+            self.assertFalse(wrapper.validate_link_diagnostic_record(historical))
+            mutations = [("availability", "unavailable"), ("target_form", None), ("target_form", "PRIVATE"),
+                         ("lexical_scope", "outside-present-roots"), ("inventory_kind", None),
+                         ("basis", "filesystem-observation"), ("target_stat", "observed"), ("PRIVATE", "PRIVATE")]
+            for field, value in mutations:
+                with self.subTest(field=field, value=value):
+                    changed = copy.deepcopy(good)
+                    changed["membership"][field] = value
+                    self.assertFalse(wrapper.validate_link_diagnostic_record(changed))
+            changed = copy.deepcopy(good)
+            changed["membership"].update(lexical_scope="present-root-exact", inventory_kind="no-file-link-or-directory-row")
+            self.assertFalse(wrapper.validate_link_diagnostic_record(changed))
+            changed = copy.deepcopy(good)
+            changed["subcondition"] = "link-text-shape"
+            self.assertFalse(wrapper.validate_link_diagnostic_record(changed))
+            changed = copy.deepcopy(good)
+            changed.pop("membership")
+            self.assertFalse(wrapper.validate_link_diagnostic_record(changed))
+            changed = copy.deepcopy(good)
+            changed["PRIVATE"] = "PRIVATE"
+            self.assertFalse(wrapper.validate_link_diagnostic_record(changed))
+
+    def test_membership_unavailable_null_facts_still_requires_current_shape(self):
+        """No private carrier means all three facts are null while fixed inventory-only and not-observed qualifiers remain mandatory."""
+        with tempfile.TemporaryDirectory() as name:
+            root, destination, receipt = self.fixture(Path(name))
+            record = wrapper.link_diagnostic_record(root, destination, receipt, "target-not-in-inventory")
+            self.assertTrue(wrapper.validate_link_diagnostic_record(record))
+            self.assertEqual(record["membership"], {"availability": "unavailable", "target_form": None,
+                             "lexical_scope": None, "inventory_kind": None,
+                             "basis": "existing-complete-inventory-only", "target_stat": "not-observed"})
+            for field, value in [("target_form", "relative"), ("lexical_scope", "beneath-present-root"),
+                                 ("inventory_kind", "no-file-link-or-directory-row")]:
+                changed = copy.deepcopy(record)
+                changed["membership"][field] = value
+                self.assertFalse(wrapper.validate_link_diagnostic_record(changed))
+
+    def test_membership_fresh_v2_publication_collision_and_invalid_carrier_never_reflag(self):
+        """Only actual NEW bounded /2 publication grants the existing fixed callback; a sentinel or forged carrier cannot replace it."""
+        with tempfile.TemporaryDirectory() as name, mock.patch.object(wrapper.time, "monotonic", return_value=0):
+            root, destination, receipt = self.fixture(Path(name))
+            callback = mock.Mock()
+            carrier = ("relative", "beneath-present-root", "inventoried-directory")
+            self.assertEqual(wrapper.LINK_DETAIL_OUTPUT, "stdlib-unsupported-link-diagnostic-v2.json")
+            self.assertTrue(wrapper.publish_link_diagnostic(root, destination, receipt, "target-not-in-inventory", 100, callback,
+                                                            membership=carrier))
+            first = (destination / wrapper.LINK_DETAIL_OUTPUT).read_bytes()
+            callback.assert_called_once_with()
+            callback.reset_mock()
+            self.assertFalse(wrapper.publish_link_diagnostic(root, destination, receipt, "target-not-in-inventory", 100, callback,
+                                                             membership=carrier))
+            self.assertEqual((destination / wrapper.LINK_DETAIL_OUTPUT).read_bytes(), first)
+            callback.assert_not_called()
+        with tempfile.TemporaryDirectory() as name, mock.patch.object(wrapper.time, "monotonic", return_value=0):
+            root, destination, receipt = self.fixture(Path(name))
+            callback = mock.Mock()
+            self.assertFalse(wrapper.publish_link_diagnostic(root, destination, receipt, "link-text-shape", 100, callback,
+                                                             membership=carrier))
+            self.assertFalse((destination / wrapper.LINK_DETAIL_OUTPUT).exists())
+            callback.assert_not_called()
+
+    def test_membership_secondary_publish_fault_retains_original_primary_and_no_authority(self):
+        """A /2 publisher fault retains the exact primary bytes and emits neither a sidecar nor positive callback."""
+        with tempfile.TemporaryDirectory() as name, mock.patch.object(wrapper.time, "monotonic", return_value=0):
+            root, destination, receipt = self.fixture(Path(name))
+            before = (destination / wrapper.OUTPUT).read_bytes()
+            callback = mock.Mock()
+            with mock.patch.object(wrapper.shared, "atomic_receipt", side_effect=OSError("PRIVATE")):
+                self.assertFalse(wrapper.publish_link_diagnostic(root, destination, receipt, "target-not-in-inventory", 100, callback,
+                                                                 membership=("relative", "beneath-present-root", "inventoried-directory")))
+            self.assertEqual((destination / wrapper.OUTPUT).read_bytes(), before)
+            self.assertFalse((destination / wrapper.LINK_DETAIL_OUTPUT).exists())
+            callback.assert_not_called()
+
+    def test_membership_actual_verify_carries_only_actual_refusal_tuple(self):
+        """Consume a real resolve traceback through actual inventory/verify/publication with synthetic origins and no native dispatch."""
+        with tempfile.TemporaryDirectory() as name:
+            root, _old_output, seed = self.fixture(Path(name))
+            identity = dict(seed["identity"], tracked_source_clean=True)
+            genuine = self.membership_refusal(wrapper, b"pkg", self.membership_rows(wrapper))
+            self.assertEqual(wrapper.link_rejection_site(genuine), "target-not-in-inventory")
+            def refuse(_paths, _deadline):
+                """Retain the actual engine traceback/private tuple; no detached site or target identity is constructed."""
+                raise genuine
+            def tools(_root, deadline):
+                """Drive the actual consuming inventory adapter with controlled non-native tool observation."""
+                return wrapper.stdlib_inventory(["/mock/a", "/mock/lib-dynload"], deadline)
+            with mock.patch.object(wrapper.time, "monotonic", return_value=0), \
+                 mock.patch.object(wrapper.sys, "platform", "linux"), \
+                 mock.patch.object(wrapper, "capture_identity", side_effect=[identity, copy.deepcopy(identity)]), \
+                 mock.patch.object(wrapper.shared, "checkout_binding", return_value=seed["checkout"]), \
+                 mock.patch.object(wrapper, "leaf_closure", side_effect=refuse), \
+                 mock.patch.object(wrapper, "capture_tools", side_effect=tools), \
+                 mock.patch.object(wrapper, "native_run") as native_run:
+                callback = mock.Mock()
+                output = Path(name) / "membership-output"
+                receipt = wrapper.verify(root, root / "forge", output, build_outcome="success",
+                                         link_diagnostic_published=callback)
+            self.assertEqual((receipt["status"], receipt["failure"], receipt["input_stability"]),
+                             ("incomplete", "tool-untrusted", "unchanged"))
+            self.assertEqual(receipt["diagnostic"], seed["diagnostic"])
+            self.assertEqual(receipt["producer"], seed["producer"])
+            self.assertEqual((output / wrapper.OUTPUT).read_bytes(), wrapper.shared.canonical_bytes(receipt))
+            record = json.loads((output / wrapper.LINK_DETAIL_OUTPUT).read_bytes())
+            self.assertTrue(wrapper.validate_link_diagnostic_record(record))
+            self.assertEqual(record["membership"], wrapper.link_membership_record("target-not-in-inventory", genuine.membership))
+            self.assertFalse(record["acceptance_eligible"])
+            self.assertEqual(record["outer_receipt_pin"], wrapper.pin_bytes((output / wrapper.OUTPUT).read_bytes()))
+            self.assertNotIn(b"/trusted", wrapper.shared.canonical_bytes(record))
             callback.assert_called_once_with()
             native_run.assert_not_called()
 

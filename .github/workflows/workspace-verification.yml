@@ -475,12 +475,12 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Retain actual fixed stdlib rejection-site detail
+      - name: Retain actual fixed stdlib rejection-site inventory detail v2
         if: ${{ failure() && steps.headless-denial-verification.outcome == 'failure' && steps.headless-denial-verification.outputs.stdlib_link_detail_published == 'true' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: workspace-stdlib-link-detail-${{ github.sha }}
-          path: headless-ip-denial-evidence/stdlib-unsupported-link-diagnostic.json
+          name: workspace-stdlib-link-detail-v2-${{ github.sha }}
+          path: headless-ip-denial-evidence/stdlib-unsupported-link-diagnostic-v2.json
           if-no-files-found: error
           retention-days: 14
 
