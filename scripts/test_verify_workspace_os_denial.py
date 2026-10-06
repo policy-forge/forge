@@ -822,8 +822,15 @@ class NativeControls(unittest.TestCase):
             api.plan["release_pin"] = {"bytes": 12, "sha256": native.hashlib.sha256(b"mock release").hexdigest()}
             old = os.umask(0o077)
             try:
-                with mock.patch.object(native.os, "chown"):
+                real_mkdtemp = native.tempfile.mkdtemp
+                def allocate(**kwargs):
+                    """Keep actual copies in this owned fixture while asserting the fixed native selector."""
+                    self.assertEqual(kwargs, {"prefix": "forge-os-denial-", "dir": "/var/lib"})
+                    return real_mkdtemp(prefix="protected-package-", dir=root)
+                with mock.patch.object(native.os, "chown"), mock.patch.object(native, "trusted_path") as trust, \
+                        mock.patch.object(native.tempfile, "mkdtemp", side_effect=allocate):
                     release, inputs = api.protect()
+                trust.assert_called_once_with("/var/lib", directory=True)
                 self.assertEqual(release, api.plan["release_pin"])
                 self.assertEqual(inputs, api.plan["source_pins"])
                 for directory in (api.package, api.package / "scripts", api.package / "docs", api.package / "docs/api"):

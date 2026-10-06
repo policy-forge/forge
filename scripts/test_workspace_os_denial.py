@@ -1332,7 +1332,12 @@ class Native:
     def protect(self):
         """Copy the exact planned release/four sources into a root-owned protected package."""
         remaining(self.setup_end)
-        self.base = Path(tempfile.mkdtemp(prefix="forge-os-denial-"))
+        # Forge qualifies every private-state ancestor before its listener.
+        # /tmp is writable by other users even when our own leaf is private.
+        # Use only this fixed root-owned, nonwritable ancestry; never a caller
+        # directory or a fallback that weakens Forge's durable-state contract.
+        trusted_path("/var/lib", directory=True)
+        self.base = Path(tempfile.mkdtemp(prefix="forge-os-denial-", dir="/var/lib"))
         self.created = True
         self.base.chmod(0o755)
         self.package, self.workspace = self.base / "package", self.base / "worker"
