@@ -25,8 +25,9 @@ The owner approved the committed incremental policy and 21 exact temporary
 exceptions on October 6, 2026. See the [recorded decision](../docs/plans/2026-10-06-merge-dependency-decisions.md)
 for the locked identities, rationale, review and expiry dates, and approval scope.
 Existing audit history and the frozen legacy baseline remain intact. The
-`chacha20` 0.10.2 runtime gap still requires a separate accepted audit or owned
-exception. Fixture signoffs are tests; no source-audit signoff is inferred.
+`chacha20` 0.10.2 runtime gap is covered by the separately approved, exact
+owned exception in that decision; its full-rooted source audit remains outstanding.
+Fixture signoffs are tests; no source-audit signoff is inferred.
 
 ```sh
 python3 scripts/dependency_inventory.py inventory --as-of 2026-10-06

@@ -1,6 +1,11 @@
 # Inspect lifecycle and framework impact
 
-Launch `forge workspace --project ./example --api-major 2` and open **Lifecycle & Impact**. Contracts 2.1.0, 2.2.0, 2.3.0 and the separately captured 2.4.0 working-tree successor admit this read-only view in both writable and read-only sessions. Default API1 sessions retain their existing navigation. Earlier API2/2.0.0 sessions supply registration and bundles; restart with the current server for inspection.
+> Integration update — October 6, 2026: the applicable workspace, MCP, assessment
+> and review implementations are now on main. See the [merge reconciliation](plans/2026-10-06-merge-documentation-reconciliation.md)
+> for exact commits and qualification scopes. Earlier draft states and failed
+> receipts below retain their dated meanings; human and release gates remain separate.
+
+In the open draft stack, launch `forge workspace --project ./example --api-major 2` and open **Lifecycle & Impact**. The exact stack-219 source at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4` advertises API2 contract **2.4.0** and admits this read-only view in both writable and read-only sessions. Earlier captured 2.1.0, 2.2.0 and 2.3.0 revisions also provided inspection. Default API1 sessions retain their existing navigation. API2/2.0.0 sessions supply registration and bundles; restart with the draft server for inspection. This is draft-source availability, not shipped-main or release acceptance.
 
 Create or explicitly migrate to index2, then register its inputs through **Policies & Artifacts**. Launching or inspecting never migrates an index. An absent index, an index1 awaiting explicit migration, an empty family and registered inputs needing attention have separate states.
 

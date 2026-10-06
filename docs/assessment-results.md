@@ -98,5 +98,8 @@ All processing is offline. Inputs must be confined regular JSON files beneath
 the manifest directory; symlink traversal, stale hashes, output/input aliases,
 unknown or duplicate keys, unsupported versions, oversized resources, and
 invalid references fail before writes. Output includes evidence keys and hashes
-only—never evidence content or absolute local paths. PRD 064 POA&M export and
-multi-epoch workflows are deliberately outside this command.
+only—never evidence content or absolute local paths. The one-result build
+interface described here excludes POA&M export and multi-epoch append. The
+separate [reviewed-risk export](assessment-results-reviewed-risks.md) and
+[sealed epoch append](assessment-results-epochs.md) commands retain their own
+bounded profiles and acceptance gates.

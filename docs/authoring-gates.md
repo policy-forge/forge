@@ -1,5 +1,10 @@
 # PRD-061 authoring gates
 
+> Integration update — October 6, 2026: the applicable workspace, MCP, assessment
+> and review implementations are now on main. See the [merge reconciliation](plans/2026-10-06-merge-documentation-reconciliation.md)
+> for exact commits and qualification scopes. Earlier draft states and failed
+> receipts below retain their dated meanings; human and release gates remain separate.
+
 Open and satisfied gates for
 [PRD-061 framework-guided policy authoring](PRD/061-prd-framework-guided-policy-authoring.md).
 Phase 1 (PR #144) and Phase 2 (PR #145, merge `3ac6815`) are merged technical
@@ -18,10 +23,11 @@ implemented, effective or approved language (M-14), and no approval or lifecycle
 evidence is created.
 
 The [Authoring `/3` review candidate](authoring-review-exchange.md) preserves
-these recorded dispositions and open pilot/release gates. Component test evidence
-does not authenticate asserted review keys, grant independent reviewer authority
-or promote a native plan. Its final integrated docstring/test-coverage and
-goal-wide documentation checks remain required.
+these recorded dispositions and open pilot/release gates. Its guide separates
+the earlier TEMP docstring/test-coverage qualification from the later integrated
+open-draft readback and remaining hosted gates. Neither authenticates asserted
+review keys, grants independent reviewer authority or promotes a native plan.
+The whole-goal documentation review remains open.
 
 ## Status
 

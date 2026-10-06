@@ -1,5 +1,10 @@
 # Select workspace API v2
 
+> Integration update — October 6, 2026: the applicable workspace, MCP, assessment
+> and review implementations are now on main. See the [merge reconciliation](../plans/2026-10-06-merge-documentation-reconciliation.md)
+> for exact commits and qualification scopes. Earlier draft states and failed
+> receipts below retain their dated meanings; human and release gates remain separate.
+
 API v2 adds explicit lifecycle and framework-impact registrations, versioned
 metadata bundles and captured read views. For a build publishing contract 2.4.0,
 it retains acknowledged metadata export and complete index-replacement
@@ -143,8 +148,7 @@ Historical API2/2.3.0 declares 57: the initial 39, nine captured read queries in
 2.1.0, three metadata receipt operations introduced in 2.2.0 and six source
 export/restore operations introduced in 2.3.0. Historical 2.2.0 declares 51. The maintained
 client preserves matching numeric API-major-2 descriptor/Session bootstrap
-negotiation. The consumed2.4 successor must explicitly admit inspection on2.1.0/2.2.0/2.3.0/2.4.0, metadata receipts on2.2.0/2.3.0/2.4.0 and inline source on2.3.0/2.4.0. Staged source requires exactly2.4.0. An accepted future major-2 bootstrap version alone does not grant these
-feature surfaces.
+negotiation. The maintained client admits inspection on 2.1.0/2.2.0/2.3.0/2.4.0, metadata receipts on 2.2.0/2.3.0/2.4.0 and inline source on 2.3.0/2.4.0. Staged source requires exactly 2.4.0. An accepted future major-2 bootstrap version alone does not grant these feature surfaces.
 Historical 2.0.0/39 and 2.1.0/48 receipts remain bound to those contracts.
 
 [release-artifacts.json](release-artifacts.json) declares both API families and
@@ -156,4 +160,4 @@ Windows runtime or final signed release provenance.
 
 ## Staged source transfer in2.4
 
-The separately captured working-tree contract is 2.4.0/65, under integration: eight operations beyond2.3/57. Bundle4 is separately packaged at [the standalone schema](../../schemas/forge.workspace-source-bundle-4.schema.json). Bundle3 and API1 bytes/interpretations remain unchanged. Follow [the staged guide](../workspace-staged-source-bundles.md) for full-artifact/part hashes, bounded staging, idempotent response-loss recovery, unconfirmed discard, complete preview and subsequent explicit restore confirmation. Numeric-major bootstrap is preserved; no automatic source write or transfer fallback is implied. The captured committed checkpoint `2064e293` remains 2.3.0/57. Working-tree declaration and route presence establish no compiled, merged, hosted or release result; Root owns actual conformance and delivery.
+The selected committed draft source (`304b31f8`) declares 2.4.0/65: eight operations beyond the historical 2.3/57 checkpoint. Bundle4 is separately packaged at [the standalone schema](../../schemas/forge.workspace-source-bundle-4.schema.json). Bundle3 and API1 bytes/interpretations remain unchanged. Follow [the staged guide](../workspace-staged-source-bundles.md) for full-artifact/part hashes, bounded staging, idempotent response-loss recovery, unconfirmed discard, complete preview and subsequent explicit restore confirmation. Numeric-major bootstrap is preserved; no automatic source write or transfer fallback is implied. The dated `2064e293` checkpoint remains 2.3.0/57. Current draft source availability is separate from published release, complete capacity/platform qualification and workflow acceptance.

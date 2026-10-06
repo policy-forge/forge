@@ -3,6 +3,8 @@
 > Generated from `cargo test --all-targets -- --list` and `cargo test --doc -- --list` on 2026-08-27.
 > Regenerate after adding, removing, or renaming test cases.
 
+> **Current-reference note (2026-10-05):** This is the historical 2026-08-27 list, not a current execution or coverage ledger. Its 2,032 test rows and 26 separate benchmark rows have blank results. Later candidate review tests are not enumerated. Regenerate from an exact source head before using a current denominator, and correlate results to authentic run names; filename or declaration existence does not establish a pass.
+
 ## Recording Instructions
 
 - Set **Result** to `Pass`, `Fail`, `Ignored`, or `Not run`.

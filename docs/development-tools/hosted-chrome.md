@@ -1,5 +1,12 @@
 # Installed Google Chrome verification prerequisite
 
+This page preserves the dated F04 development and hosted progression. The
+[later qualified viewport checkpoint](#qualified-viewport-checkpoint--2026-10-02)
+records all four campaigns passing at its exact requested head. Earlier failure,
+proposal and pending wording describes those earlier snapshots; it does not
+replace that later result or qualify a newer checkout, the whole browser matrix,
+OS denial or product acceptance.
+
 This F04 slice provides a Linux hosted job for the maintained workspace browser suite, an explicitly approved development graph and a bounded producer/receipt wrapper. The first two attempts failed before producer startup. The third through sixth attempted all four campaigns: three passed and long writable failed. The sixth at immutable `011b6a5499a21a62c138382a83b842edc3c7bc28` retained `metadata-screenshot / null await_step / unclassified / actual Node exit 1`; the cause remains unknown. The [viewport capture plan](../plans/2026-10-02-f04-hosted-chrome-viewport-capture.md) records that qualified history and the current two-option successor. The [screenshot-stage plan](../plans/2026-10-02-f04-hosted-chrome-screenshot-diagnostics.md), [await diagnostic guide](../plans/2026-10-02-f04-hosted-chrome-await-diagnostics.md), [browser failure guide](../plans/2026-10-02-f04-hosted-chrome-browser-failure-diagnostics.md), [dual-pipe guide](../plans/2026-10-02-f04-hosted-chrome-dualpipe.md) and [startup guide](../plans/2026-10-02-f04-hosted-chrome-diagnostics.md) preserve historical snapshots. Shared API `/2`, POSIX launcher and embedded assets retain their contracts/bytes. Local controls do not qualify Linux/Chrome, accessibility or product acceptance.
 
 The human user approved Playwright and playwright-core **1.62.1**, optional **fsevents 2.3.2** recorded in the lock but omitted from installation, **Node 24.19.0/npm 11.17.0**, and runner-installed named Google Chrome only. The introducing PR must name that approval, reason and exact graph. The [development-tool ledger](hosted-chrome.json) retains the approval receipt/proposal hashes, registry archive URLs and integrity, and the separate source-audit boundary. No browser, FFmpeg, Firefox or WebKit download is authorized by this approval.

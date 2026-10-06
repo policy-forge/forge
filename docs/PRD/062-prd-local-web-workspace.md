@@ -1212,3 +1212,9 @@ Definition of Ready is complete.
 | 0.2 | 2026-08-28 | Codex | Reframed the product around a review-queue golden path; defined personas, information architecture, workspace index, session and trust model, shared application-service boundary, preview/commit transaction, detailed requirements and traceability, metrics, verification layers, delivery slices, and Ready/Done gates |
 | 0.3 | 2026-08-28 | Codex | Made the system API-first with a normative OpenAPI contract, complete browser capability matrix, supported local compatibility policy, machine bootstrap, conditional/idempotent effects, queryable operations, headless conformance, and browser/API coverage gates |
 | 0.4 | 2026-08-28 | Codex | Added a required per-launch local passphrase unlock before browser capability issuance; specified Argon2id verification, throttling, generic failures, secret handling, headless separation, and the explicit rejection of ambient HTTP Basic credentials |
+
+## Source checkpoint — 2026-10-05
+
+The retained candidate provides the native local workspace /1 and additive version-selected APIs with embedded OpenAPI contracts, confined roots and bounded session/effect state. The original Architecture gap describes the planning baseline. Browser, privacy, accessibility, platform and actual-user gates need their own exact evidence; this note does not close them or qualify the complete UI.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/workspace/mod.rs](../../src/workspace/mod.rs), [src/workspace/http.rs](../../src/workspace/http.rs), [src/workspace/contract.rs](../../src/workspace/contract.rs), [src/cli/mod.rs](../../src/cli/mod.rs).

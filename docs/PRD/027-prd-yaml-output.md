@@ -466,3 +466,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+YAML serialization/deserialization uses serde_yaml_ng through the serde_yaml alias and reports typed YamlSerialization errors. Current generated artifacts use the OSCAL 1.2.3 baseline. The original export deferral belongs to WI27; later export availability does not change that recorded scope. Historical dependency suggestions do not authorize a new dependency.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/export/yaml.rs](../../src/export/yaml.rs), [src/cli/validate.rs](../../src/cli/validate.rs).

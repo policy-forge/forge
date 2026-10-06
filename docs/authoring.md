@@ -1,5 +1,10 @@
 # Framework-guided policy authoring
 
+> Integration update — October 6, 2026: the applicable workspace, MCP, assessment
+> and review implementations are now on main. See the [merge reconciliation](plans/2026-10-06-merge-documentation-reconciliation.md)
+> for exact commits and qualification scopes. Earlier draft states and failed
+> receipts below retain their dated meanings; human and release gates remain separate.
+
 `forge author` converts an exact, reviewed applicability/gap baseline and explicit
 human assignments into a drafting plan and Markdown skeletons. Default Phase 1
 builds write no substantive text beyond supplied human clause files and never
@@ -20,11 +25,12 @@ the recorded release approval and downstream review. This technical tranche does
 not claim source compatibility for those exhaustive matches.
 
 The [Authoring review exchange candidate](authoring-review-exchange.md) adds a
-separate local `/3` review of one complete current saved Phase 1 plan. Its TEMP
-candidate has completed full-test, strict-lint and compiled-CLI evidence, with
-Rustdoc and physical LLVM scopes in the linked guide. Final integrated checks
-and hosted/platform/human acceptance remain open. Asserted review policy does
-not update the plan, answers, clauses, authoring state or Lifecycle record.
+separate local `/3` review of one complete current saved Phase 1 plan in the
+integrated open draft. Its guide separates earlier TEMP test, lint, compiled-CLI,
+Rustdoc and physical LLVM evidence from the later integration/hosted readback.
+Published v1.1.0 does not include this exchange; remaining platform, human, pilot
+and release gates stay open. Asserted review policy does not update the plan,
+answers, clauses, authoring state or Lifecycle record.
 
 ## Commands
 

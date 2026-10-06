@@ -1,5 +1,10 @@
 # FORGE Architecture Plan
 
+> Historical initial architecture proposal. The repository description, version
+> statements and proposed pipeline below are retained design history, not the
+> current implementation or supported release contract. See the
+> [architecture](architecture.md) and [usage guide](usage-guide.md).
+
 ## Context
 
 FORGE (Framework for OSCAL Risk & Governance Execution) needs its initial architecture. The repo is a blank Rust project. We need to set up the module structure, dependencies, core types, and pipeline for converting security policy documents (Markdown, PDF, DOCX) into OSCAL JSON.

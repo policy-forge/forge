@@ -1,6 +1,6 @@
 # Project Configuration (`.forge.toml`)
 
-> PRD 051 · Schema version 1 · FORGE v1.2
+> PRD 051 · Schema version 1
 
 A checked-in `.forge.toml` establishes one reviewable source for FORGE command
 defaults. It removes repeated flags from developer commands, scripts, and CI

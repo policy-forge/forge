@@ -402,7 +402,7 @@ graph LR
 ```
 
 - **Requires:** [WI-14: Component Definition Structure](014-prd-component-definition-structure.md) — the Component Definition builder must exist to instrument it; [WI-9: Catalog Generation](009-prd-catalog-groups-controls.md) — the Catalog builder must exist to instrument it
-- **Parallel With:** [WI-15: Implemented Requirements](docs/PRD/015-prd-implemented-requirements.md) — runs in the same sprint; TraceLink captures implemented-requirement mappings produced by WI-15
+- **Parallel With:** [WI-15: Implemented Requirements](015-prd-component-implemented-requirements.md) — runs in the same sprint; TraceLink captures implemented-requirement mappings produced by WI-15
 - **Blocks:** [WI-17: Traceability Embedding](017-prd-traceability-embedding.md) — embeds TraceLinks into OSCAL artifacts as props/links; [WI-19: Schema Validation](019-prd-schema-validation.md) — validation must account for trace metadata
 - **External:** None
 
@@ -519,3 +519,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation (OQ-1 and OQ-2 are non-blocking design preferences)
+
+## Source checkpoint — 2026-10-05
+
+The current trace collection retains canonical link order, returns a borrowed RequirementTraceLinks view and rejects duplicate element IDs. SourceLocation.section_title is optional. The recorded glossary clarification and original readiness checklists remain intact; the Draft slice-return signature is not the current interface.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/model/trace.rs](../../src/model/trace.rs), [src/oscal/catalog.rs](../../src/oscal/catalog.rs).

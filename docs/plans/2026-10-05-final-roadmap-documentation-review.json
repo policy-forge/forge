@@ -1,0 +1,4691 @@
+{
+  "format": "forge.final-roadmap-docs-content-review/1",
+  "date": "2026-10-05",
+  "scope": "Frozen delivered-work Markdown population; later source changes require follow-up",
+  "baseline_main": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+  "integration_base": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+  "baseline_counts": {
+    "current_reference": {
+      "logical_pages": 119,
+      "selected_variants": 204,
+      "distinct_contents": 174,
+      "selected_variant_bytes": 4260525,
+      "distinct_content_bytes": 3461090
+    },
+    "historical_evidence_provenance": {
+      "logical_pages": 103,
+      "selected_variants": 113,
+      "distinct_contents": 105,
+      "selected_variant_bytes": 802070,
+      "distinct_content_bytes": 743042
+    },
+    "retained_advisory": {
+      "logical_pages": 21,
+      "selected_variants": 21,
+      "distinct_contents": 16,
+      "selected_variant_bytes": 21129,
+      "distinct_content_bytes": 17097
+    },
+    "all_groups": {
+      "logical_pages": 243,
+      "selected_variants": 338,
+      "distinct_contents": 295,
+      "selected_variant_bytes": 5083724,
+      "distinct_content_bytes": 4221229
+    }
+  },
+  "review_attribution": [
+    {
+      "owner_group": "A34",
+      "bytes": 33567,
+      "sha256": "96c1fda681323503b09cc286cf653878197f4f8ff15b988be507d00f635f4786",
+      "logical_pages": 34,
+      "selected_variants": 42,
+      "distinct_contents": 42,
+      "distinct_content_bytes": 455304
+    },
+    {
+      "owner_group": "C40",
+      "bytes": 17932,
+      "sha256": "d509f011e7e8ed3066689d6289324bd3b8dbe1c009dbe6c10e5cfd3a895df215",
+      "logical_pages": 40,
+      "selected_variants": 80,
+      "distinct_contents": 68,
+      "distinct_content_bytes": 2077840
+    },
+    {
+      "owner_group": "C5",
+      "bytes": 5771,
+      "sha256": "d43a738f28d455ca7c10cc31e2a1859958dbfd5bac26e4be1eb96d7f4bf99a9c",
+      "logical_pages": 5,
+      "selected_variants": 10,
+      "distinct_contents": 5,
+      "distinct_content_bytes": 116807
+    },
+    {
+      "owner_group": "E24",
+      "bytes": 2449,
+      "sha256": "01a807f88020f0518918ff9d912e9907f6a46ca0d121dbc8e3f0383b2060465d",
+      "logical_pages": 24,
+      "selected_variants": 47,
+      "distinct_contents": 39,
+      "distinct_content_bytes": 566337
+    },
+    {
+      "owner_group": "E10",
+      "bytes": 2634,
+      "sha256": "91036513504ff2ff461451d318f25785392f7ddfbb0c1b84ebd7278892d6e111",
+      "logical_pages": 10,
+      "selected_variants": 19,
+      "distinct_contents": 14,
+      "distinct_content_bytes": 226204
+    },
+    {
+      "owner_group": "Root6",
+      "bytes": 6275,
+      "sha256": "cd9786e3177ca9b9f2d085b9f733b9afaa15933e7e924dc3ee40507424a0eb14",
+      "logical_pages": 6,
+      "selected_variants": 6,
+      "distinct_contents": 6,
+      "distinct_content_bytes": 18598
+    }
+  ],
+  "pages": [
+    {
+      "page": "docs/FORGE_PRODUCT_ROADMAP.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 26216,
+          "sha256": "6b0b3299063666768f8d98a14e1eac679c2db21ea0e19377431f2bc0f9189690",
+          "population": "main"
+        },
+        {
+          "commit": "c2eac677ddbd148dab900a9be4ea7962a61eb04e",
+          "bytes": 28071,
+          "sha256": "9c57ba4cc086170ccf54f5ddcbf8f213de3fa4bc752037f30680b8b5b188b981",
+          "population": "open-candidate"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 28985,
+          "sha256": "fcafddfd7f8447b6e4e1221b48e9c346fbf5e4d69a6cc28eed2d730db0f8c74c",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/067-prd-read-only-mcp-governance-interface.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 15530,
+          "sha256": "1e186dd9b80b2787eb18bfd28b8f0e17940d8a9e086ee68bcf1f262abb702f91",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 16463,
+          "sha256": "699740fb4e27b64916bd3dbd6d63cf9d5659a2b16e54e239983ab17e636fa11b",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/assessment-results-epochs.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 10207,
+          "sha256": "49da5b525c962d27109acd50c052ca9e3ec6e1edec6555e213b5e2cdb5e67008",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/assessment-results-reviewed-risks.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6538,
+          "sha256": "15df735235c7b2f6f937316827faa53cf328afe4ac570cbebfdd2dabb544b96d",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/assessment-results.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 4063,
+          "sha256": "64106416141802c7f02e4e39a926199ee05717037b7b19e9caa522c075552847",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4928,
+          "sha256": "2a12abf8f3ac5ec471ad1200af1f51d3d3da8bcd0e6aba8824e72544d22c3c43",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/development-tools/hosted-chrome.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 18073,
+          "sha256": "ffc4a144ed695fe01320685c5c9667d7d6c56cffc7d88c7a9e550045d1ee3cee",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/development-tools/linux-headless-os-denial.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 24674,
+          "sha256": "61bcb47e70b21aeadc2e58cfb5d18ee9c8979f93362c205514d3f15a42fb8e40",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/development-tools/maintained-client-extension.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 9105,
+          "sha256": "edab2a5e1d9fceef092acd656f249a2b781ce99d1d75b3e9b9ff1a2a84a006c0",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/evidence-linkage.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 7282,
+          "sha256": "d03dfa7208d1171225a03ede70e89ccc73a9a543f7ff7cf73370c1a1c621df37",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7626,
+          "sha256": "19474065036708f6d19218992ae02530d761ece43ed3f836901379433e0e2014",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/evidence-overlays.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6818,
+          "sha256": "e9532ab3ac25a9f2e2d0547e1613ced843f1158ef6b225d7fde803ae6dc5c9ef",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/lifecycle-captured-status.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4161,
+          "sha256": "f578b0a5a3ce5a479e71320c47ff4ad6fd905ebd8516bae46fcc476c88dfc791",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/lifecycle-review-exchange.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 12253,
+          "sha256": "c8d86f02f8ca6bd68244b34d24d2e093ad679ca7df209c4e4295bfb515ca34d5",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/local-workspace.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 12538,
+          "sha256": "eddab3704476c643a1b2a7d5dd5893b9224141b33c2961438bf75b39c7944c37",
+          "population": "main"
+        },
+        {
+          "commit": "04bf2aac1a948c5b1380566d90a5aef04761c175",
+          "bytes": 16450,
+          "sha256": "bbc9bf8290f68a03123d53d572513308e18cd8a04e5c7f5befa8211b287ad2f9",
+          "population": "open-candidate"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 23725,
+          "sha256": "8e7758515a7d01c51e7ff14ac7fdf687bb51b4a1a078b1b1b42b4581d65d1787",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/mcp.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 13166,
+          "sha256": "eec893e23b779f7a1ed19a1dc459866bd1c2de5fce9e8475211411b126e045aa",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-baseline-comparison.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5922,
+          "sha256": "ebd1fc5f90907bc0b603fb518a913c6ff7e6cf15d0ac23f18487daa88335c830",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-cli-workflow.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5540,
+          "sha256": "b7629538c9fdfd2b96e3c3bb9a93adcc302496a2e23ee22db2328e5145fbf815",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-evidence-inspection.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 9740,
+          "sha256": "db49318822d60d50a0f2dfb8c56ff0e8a74c2ec9fe752ae030d71514be4103d2",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-foundation.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "3b24e63b8b81b123fbd50c8166d8ad6d2f81bff2",
+          "bytes": 5637,
+          "sha256": "c9ac9794065e131b62c6d00f1ed597d87dbb452c0a4812289c6d1715d3b1a14b",
+          "population": "open-candidate"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5978,
+          "sha256": "96899b76e9c9c410a3b8e4fde088a0ec6cfd3f3b813563b12569c3291657784e",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-item-workflow.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5500,
+          "sha256": "8638589e0b89f907133ae659b9d6bd79ec3fc880055005207785d51887834c54",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-outbound.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6957,
+          "sha256": "fe587a7afb7605497fbdf29bfeb392d662cba1492989a0fbab98adf1451871f6",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-portfolio.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7500,
+          "sha256": "4e5d97597fb769a6a99f2dd3e9f85160197d2382a539cd97e941b719797ab349",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/review-queues.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 19378,
+          "sha256": "a73df318819a0993b874d2dee31f9e5d8b6e829f2e9b3428e5028dfdbd17add5",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/suggestion-evaluation-preflight.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "5128cfddea65549d7ef8dadd126f3f3d2159d3d5",
+          "bytes": 5204,
+          "sha256": "88b753a06a74369dc6208748f84fea9afcd709a2f34d718024549a45f5b159ca",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-api-v2-hosted-followup.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2107,
+          "sha256": "e9cf94d12ab19ac14e014d1b84f2f5946aae9b1caab1f9768d4da8fbe03f903d",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-bundle-receipts.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 12094,
+          "sha256": "82dde9fd27559fa8597f0d9160863be235c4b72282077327589888f5fdd0c978",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-client-failure-observation.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4783,
+          "sha256": "3eb71b624b73575b7bb42d947a3e0fc770e37325338dbf94fc344773fcc68f16",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-index-bundles.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 14286,
+          "sha256": "68490045be17ee245cba75a7b01f929c5c04ec1c5c1f5a028e511daa5f2e570b",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-lifecycle-impact.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5490,
+          "sha256": "4bb5f1caa068e272440e9457534b29a4ca9a15e65b212fdd5178a165812ee0fe",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-operations.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4517,
+          "sha256": "b6e01d0357c1021b90cea77a78696f53a654ea6c63731fdc47b8e6ea37009db6",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-source-bundles.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 12925,
+          "sha256": "40579c1e564357fd3819f4c2e94702601c3a55feb354b5f580a4ce55785d859e",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-source-confirmation-copy.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5294,
+          "sha256": "d5cb0e069505ec6311450df72d11d751f45405996bf81cc372f1b6b989faf47a",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-staged-source-bundles.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4591,
+          "sha256": "ea0459bbd7cc6d7cee629d5dc51b4b34073ec7e357dc726654ee7f76c4c076f8",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-stdlib-gate-observation.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 8660,
+          "sha256": "5cbc57e294edaf9887f29b43364f7ae99d54b43fd8c40b1a8707db394c0a0412",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-stdlib-link-chain-observation.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "bbb7f00e93ccca2cf876a7fe3a92d03fd11a249d",
+          "bytes": 6329,
+          "sha256": "8d5cf92f3fa611ff5b79ccd53b47e2da0cca0386a616092322cc27babde743c0",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/002-prd-markdown-ingestion.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 18252,
+          "sha256": "15045340c5f77aa2a9d7f9249aad4002c601481efb0ff3512266247db43f6bdc"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 18225,
+          "sha256": "df98275aa1e28d155d5d545cd62ffa36c9dea6baa8a48aa37df41d0c60396da9"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/003-prd-structural-extraction-headings.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 17152,
+          "sha256": "7dc93cf492ec709a10ea252cc0833dc248204394c0e41b1cc7e2713fdc24cf6b"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 17116,
+          "sha256": "9d03da49af91ba5c305c9eb6033d9ec2ec83a3c44e1828d5e2bed0a69daa3210"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/004-prd-structural-extraction-clauses.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 17850,
+          "sha256": "9275867ce0dc927afd52ab1c949a7a4e4c7a0797e3f380626175cb42d2c4dca6"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 17814,
+          "sha256": "08562184816385c11125480046a5f1ac172e2eb151659bf774108115c3b6dd7a"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/005-prd-domain-model.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 20399,
+          "sha256": "4ea4bec8c6a1b71f8b9878788cd8d75766a6ff1cd04540cdbae92daa73008c0d"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 20354,
+          "sha256": "fd81a50c458ed3d6539bf12c2c8d2fa4ebeaf99cab819a6e20dfc2db54844e8f"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/006-prd-requirement-atomization.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 29226,
+          "sha256": "3b873e4adff5faf3694b24b1efb762b6ef2507d812e9f13322523e4e438bdc91"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 29199,
+          "sha256": "f89dbace1740a6e20e645372ede230625b092e2399d28c4e1a3868b3974aa7cb"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/007-prd-uuid-generation.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 28648,
+          "sha256": "47f0f9435dfe1b39880a24c3de5803b5832de74fc1bcdcdd93f665fe4cadaf25"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 28612,
+          "sha256": "0e81242c30880e3ec80b8e7806fb9291aea4a497cb731ba209208bde635c305a"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/008-prd-citation-extraction.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 30175,
+          "sha256": "b28fedef4dd8eee02cc31d12daf07f35812ed16f4cba78e7d43bf0864d4b6eb7"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 30139,
+          "sha256": "32a508f363fdcc81598f9336cb103685bdab81b7238df8a20321b99a7ae1dc9f"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/009-prd-catalog-groups-controls.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 33164,
+          "sha256": "bd96105fd2efa85e9beb0d1cdd035a06d3adffee0edfb68624348919489e2d74"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 33137,
+          "sha256": "adb8c1410cc0e7d330b0ccd6b9cb801eea6027b3a36ab2d2bf50447f73d605d3"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/010-prd-catalog-statement-parts.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 28651,
+          "sha256": "5079581473c1ecff9e43bb31551bd247a0cdd8bd9290754953a0165b1326eed6"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 28633,
+          "sha256": "8fd660bfd8b50c997b66814c980b3c4c4f8bee1a1f74e921cfa05720c0bc0385"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/011-prd-oscal-metadata.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 27427,
+          "sha256": "535a6790b29153bba4d07da2235d8048e83d30561bbf69c21647fea52ffa4e8c"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 27409,
+          "sha256": "d78bca19f94b0384656a4d956e6a71fe5a2e7b8f42e01c630f20ef9c4f6f9962"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/012-prd-back-matter.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 30088,
+          "sha256": "40b07fdbac74a2cec31a530a89609d8baf759eeb391ce7fc8352db82cb5c70fa"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 30043,
+          "sha256": "5cbbe0294e4d2bec71f5dfc9dcb7b489f28078e81b908e8e638caa42e8844e18"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/015-prd-component-implemented-requirements.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 31177,
+          "sha256": "6059d7539f8d06e60f9352cecdc27893235e9cf68ab7f4fa7677372ad145fad3"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 31123,
+          "sha256": "1fe23f9b252c7b730f4023d0b6fd148fa6c7cc48ddd01e55e3d6d5b0a536d919"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/016-prd-traceability-model.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 32900,
+          "sha256": "725cf4bbb6471778b09d18c0bd46eb210f1401b17730fcddfd5dd2d0a9004bca"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 32864,
+          "sha256": "5e200a0b12fca35201a8413a65e623183f6b93ccc5c23155d6d9734ca679a85a"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/019-prd-schema-validation.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 32916,
+          "sha256": "0c5c9242b1aabf1dd6d1bcaeed23da4448a9fcec57c0e4559d379028be845377"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 32907,
+          "sha256": "5416b4f74a2f5077eb823ef2af557f51b3cff90ebec320694f01393a709b2819"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/027-prd-yaml-output.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 31895,
+          "sha256": "1049db793098028282e9a9429c3105782ad4d79f6bf870dae311f99bb163ff72"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 31868,
+          "sha256": "915c09f8352468a1b7bb4b82e12b4e234d4f9206cec03f4efef6fb84b650cbcd"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/028-prd-round-trip-testing.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 34569,
+          "sha256": "6e007af2067e898b07507a84d6b8a63937dde78c0de0973e26fc060d819ab02d"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 34542,
+          "sha256": "89e3103be91cad338d81777a6eadd911580162d1d56dea58653d7e5226157695"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/029-prd-export-subcommand.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 32448,
+          "sha256": "78f0da82289f104cd1e69d40b3bf2f3a585cdefec979b9d1bba61343604a5e2d"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 32412,
+          "sha256": "1798c2a23ca8a0006e5ab4f5b8a934ba9508ee15d6886bd0a62d0108792fb90a"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/030-prd-profile-generation.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 34078,
+          "sha256": "65ae54990c80870e4151e2ba1885accbe4a59f5192d2a5abd01665f710c74c70"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 34060,
+          "sha256": "9fb941aa5da2bf045b29e5fe4c64eeedfb81c702eb5d918f5dc326b8ee1d09a9"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/034-prd-parameter-extraction.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 45795,
+          "sha256": "050858925a5348b19cb46b12d57e09e3ad85560be969df9e2bf948ee6b53adda"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 45777,
+          "sha256": "ff93b67aa92d9a9d7e857e30398a06c9e39e13147de0bd8c72ca8bc7fdaa80eb"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/038-prd-traceability-report.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 29245,
+          "sha256": "e72979e399ccb9a84b240fab7821ca26d755282170f0fcbdabfe817b3c188626"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 29227,
+          "sha256": "ade28ad7dcbbe4ebe6fe6a4e4b0a91c260e3c4f9219c143f26a2a52d4bbcb08e"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/039-prd-traceability-report-excerpts.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 30713,
+          "sha256": "bd02932de75b8ac855fa9682d21fbc7726c052771be76ec3003209e212b59153"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 30704,
+          "sha256": "7722285b7a4048177a281d15415a380fe25873f09bfd06cbf3ef2e97f209d9f8"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/045-prd-ssp-template-structure.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 30738,
+          "sha256": "7e5e8ea8cedc90074a56cb13c399b2fafbd5673a97f4b58875a2c6dd78798d0b"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 30702,
+          "sha256": "c78dcab87639852ab18185d9eaad3b3879548d08cc8d51fe2beed95280834a04"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/046-prd-ssp-template-placeholders.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 32646,
+          "sha256": "e174fa2a46bdfa410abc514c755666d569bf6b768e37c477e52b4a886c7e3bec"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 32610,
+          "sha256": "5fe9d5f1f1d31e7bf48fcc80df58a5079c9f16aa60aebff1ba5b04bc1e9a2a69"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/047-prd-community-examples.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 31741,
+          "sha256": "c9d78565de87dcf1d467104506cd4c428b5bdcc553afdc70c92509d69f70ea6f"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 31687,
+          "sha256": "9fb25a517e6b0127964014c58051bfd4a8fc8014ac9f4aad856f0e0273b127c8"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/055-prd-control-mapping.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 52982,
+          "sha256": "cd64eead070b286280ed232b6c627c5bda4bd74e1d45f0c790aeffd2782eda11"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 52982,
+          "sha256": "cd64eead070b286280ed232b6c627c5bda4bd74e1d45f0c790aeffd2782eda11"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/056-prd-framework-applicability-gap-analysis.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 20924,
+          "sha256": "f65d7e7f051a7aaf5a94eb32d4408bae9b4bc704fe369abeeee24861bef02388"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 20924,
+          "sha256": "f65d7e7f051a7aaf5a94eb32d4408bae9b4bc704fe369abeeee24861bef02388"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/057-prd-framework-change-impact-monitoring.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 24445,
+          "sha256": "f875632ccaa0e49ca96613bb854274e30099fcb543847d21e59d3eb7d83f7e55"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 24445,
+          "sha256": "f875632ccaa0e49ca96613bb854274e30099fcb543847d21e59d3eb7d83f7e55"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/058-prd-policy-lifecycle-management.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 20927,
+          "sha256": "1d0158c1e90c67eaa1b785ef669d0b8047ff6c01b3635c40efef753be5230a54"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 20927,
+          "sha256": "1d0158c1e90c67eaa1b785ef669d0b8047ff6c01b3635c40efef753be5230a54"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/059-prd-reusable-policy-components.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 18238,
+          "sha256": "2a62e22fb88ab8f4c5f91ae9bfb3b30df23329f42ddd85798c6588e9a13e359b"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 18238,
+          "sha256": "2a62e22fb88ab8f4c5f91ae9bfb3b30df23329f42ddd85798c6588e9a13e359b"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/060-implementation-audit.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 8546,
+          "sha256": "8b1359cba9a243f7a0b6a4538ea6c098917780ab9c12e9b8ea6a0180476edb3d"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 8833,
+          "sha256": "4b55fc0d673eba5bdbc1812be7b0c1f14b13ee4ed2489d63e78f1a4ccfc5f880"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/060-prd-evidence-implementation-linking.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 20634,
+          "sha256": "03c6e35c01ffe6d90e2b718ec8c04d23aacfc83907ce4dd0c78156824d2769ac"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 20634,
+          "sha256": "03c6e35c01ffe6d90e2b718ec8c04d23aacfc83907ce4dd0c78156824d2769ac"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/061-prd-framework-guided-policy-authoring.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 24742,
+          "sha256": "db86645e1c15ee2a06b46496eaa91a3de6a689d02ecfbe3b811ba2ffb09c7b6a"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 25584,
+          "sha256": "c35299ff0e3dbea8481f8beed137a00a281ce874435d825617cff4acff1da3b3"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/062-prd-local-web-workspace.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 82237,
+          "sha256": "0dee87ea07626413cfe5795c0e9cd48fe065f7368e1e5a8e02d80caa2d645fe8"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 82237,
+          "sha256": "0dee87ea07626413cfe5795c0e9cd48fe065f7368e1e5a8e02d80caa2d645fe8"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/063-prd-oscal-assessment-results.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 16502,
+          "sha256": "a9776768ff9a19c4f04e6c139a94d4d93ac97eb695797e0961a7eae3a0eb87e9"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 19052,
+          "sha256": "6c847deaf587c658622da54e0b01086cae480e1127b126150f8e86e3a9bbbdd5"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/064-prd-oscal-poam-workflow.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 14623,
+          "sha256": "41c95d792f8f210705faceb964201147267f62837b220398572a375811a40224"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 14623,
+          "sha256": "41c95d792f8f210705faceb964201147267f62837b220398572a375811a40224"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/065-prd-external-workflow-integrations.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 14232,
+          "sha256": "19ad58f1342d2fb24fc42a8d7387d5bb5b116008d8145b0737e2ae8d9d6fc138"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 14232,
+          "sha256": "19ad58f1342d2fb24fc42a8d7387d5bb5b116008d8145b0737e2ae8d9d6fc138"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/066-prd-ai-assisted-suggestions.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 21234,
+          "sha256": "e48d5a2148f4b7bd9e77d92b699a64f1d11f0d4f99735a2f6a9f7cd7ea746923"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 21234,
+          "sha256": "e48d5a2148f4b7bd9e77d92b699a64f1d11f0d4f99735a2f6a9f7cd7ea746923"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/068-prd-collaborative-review-queues.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 15739,
+          "sha256": "f77386cbff22f78f18dff13705386a48a4bfa1a01ed8ed993038b3f29cf34ec0"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 19477,
+          "sha256": "3a6610d9366e9383c9b27fc6e1c053d9f90d13851847693a975a2ebb39bb4460"
+        }
+      ]
+    },
+    {
+      "page": "docs/PRD/069-prd-dependency-security-audit.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 15986,
+          "sha256": "d3f0ffe31da780afa3b0dc29c81b01e2399518343aa6d3ee0f65d6ba67442004"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 15986,
+          "sha256": "d3f0ffe31da780afa3b0dc29c81b01e2399518343aa6d3ee0f65d6ba67442004"
+        }
+      ]
+    },
+    {
+      "page": "docs/TEST_CATALOG.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 209846,
+          "sha256": "95313c840ece75547cba6c8528062f1296d4d38b3fb9889ac6fe2083fce64b80"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 209846,
+          "sha256": "95313c840ece75547cba6c8528062f1296d4d38b3fb9889ac6fe2083fce64b80"
+        }
+      ]
+    },
+    {
+      "page": "docs/AR/059-ar-reusable-policy-components.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 5529,
+          "sha256": "2c2492d8ed1cb90cfc95f59825ddea9aa9e333134b96a58c528e8e0e437771ff",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5529,
+          "sha256": "2c2492d8ed1cb90cfc95f59825ddea9aa9e333134b96a58c528e8e0e437771ff",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/SEC/059-sec-reusable-policy-components.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 3543,
+          "sha256": "1e819e267b9a4f9fd202f4e82dd86eae3c8d77a9cfac4843eca62f89cc77d8b8",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 3543,
+          "sha256": "1e819e267b9a4f9fd202f4e82dd86eae3c8d77a9cfac4843eca62f89cc77d8b8",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/SEC/062-sec-local-web-workspace.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 78820,
+          "sha256": "b3c62b91d05cf27ed8c1012e98637f24fd5dc55fc456749725a16b17fa281c09",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 78820,
+          "sha256": "b3c62b91d05cf27ed8c1012e98637f24fd5dc55fc456749725a16b17fa281c09",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/accessibility/062-accessibility-requirements.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 23756,
+          "sha256": "feb2b20078ddc4e8411a0d03ffd0845d09ecf464fc88c94647315b6a6ff65633",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 23756,
+          "sha256": "feb2b20078ddc4e8411a0d03ffd0845d09ecf464fc88c94647315b6a6ff65633",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/reusable-policy-components.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 5159,
+          "sha256": "c75414a14811362415baa558e601bd804a14522d08c080f799e1e29d08423c19",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5159,
+          "sha256": "c75414a14811362415baa558e601bd804a14522d08c080f799e1e29d08423c19",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": ".github/copilot-instructions.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 7856,
+          "sha256": "b6aa02a1239402042a05b27b4151931d6cfebfc905072c2946b0667e47fc2e60"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7856,
+          "sha256": "f239325651846f03985a47fcf78b25c9fc4313521968a1164d7753038ffdd04f"
+        }
+      ]
+    },
+    {
+      "page": "AGENTS.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 1511,
+          "sha256": "ced5128ce6da91d633a414a5ebf1ca94b931570ed41cee361a4c92b64534602e"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 1511,
+          "sha256": "ced5128ce6da91d633a414a5ebf1ca94b931570ed41cee361a4c92b64534602e"
+        }
+      ]
+    },
+    {
+      "page": "CHANGELOG.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 11075,
+          "sha256": "c3fa38e346bede0ecb23cfd8b29afd2008b8a15b39ef394923fb21ca6f9d0213"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 11117,
+          "sha256": "c9d112ed75aa6793522bbf68e204ae6ac2aa62a76e5d4b8cd07f376f9ee4a963"
+        }
+      ]
+    },
+    {
+      "page": "CLAUDE.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 7602,
+          "sha256": "e476e17bbc0984d726a3ae3b11d783ed19c5ea2e9fe82d1eed72d43d37cd1c1f"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7602,
+          "sha256": "e476e17bbc0984d726a3ae3b11d783ed19c5ea2e9fe82d1eed72d43d37cd1c1f"
+        }
+      ]
+    },
+    {
+      "page": "CONTRIBUTING.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 9502,
+          "sha256": "e93bbd728957ee2700cfb568677db23b2de9b0434d04b72c482a8849ee004d5d"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 10265,
+          "sha256": "5d6bb36784dd3020776f28605fb453db926ae6e0aa2d0b548765a38f1a1de904"
+        }
+      ]
+    },
+    {
+      "page": "README.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 23762,
+          "sha256": "a5e1a2a2cafddb8c8d2fa348987ce795c6af578d05dd69216f5c6fb778176fb1"
+        },
+        {
+          "commit": "5128cfddea65549d7ef8dadd126f3f3d2159d3d5",
+          "bytes": 24003,
+          "sha256": "df570011b8f875ad8967074a50e58a7af7d57bfdd8ff7aea4f227f24e3e3a98f"
+        },
+        {
+          "commit": "3b24e63b8b81b123fbd50c8166d8ad6d2f81bff2",
+          "bytes": 24460,
+          "sha256": "4ccb8cc6afdaaf14995375dd293c5c972a2bb9cb0e3f3cf23c06976ba135236a"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 31556,
+          "sha256": "a336d7dd968db64d8b9a3d22a59b57b5ea73a3d54e48a75b0508ee76c40af07f"
+        }
+      ]
+    },
+    {
+      "page": "ROADMAP.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 15935,
+          "sha256": "871afa57c77e945900658d0acf573a8b1253a461dd9d202b577df2d63fdff95e"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 16482,
+          "sha256": "40295de98b788d5e977c9a48c4e7530b7aa036ea8eed78b75046545d6bb0f296"
+        }
+      ]
+    },
+    {
+      "page": "docs/BENCHMARK_RESULTS.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 2390,
+          "sha256": "b80fdd03e5051d0a66ade5d3361d381bb1a90d630cef2e852d7291f147dfd76a"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2390,
+          "sha256": "b80fdd03e5051d0a66ade5d3361d381bb1a90d630cef2e852d7291f147dfd76a"
+        }
+      ]
+    },
+    {
+      "page": "docs/CODEMAPS.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 6842,
+          "sha256": "a5d39b7217fc6eff5ebe63b2648ada6c2e5990be04c47cbdb3f8978b57252284"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 11767,
+          "sha256": "d4b76268e083196873d7631c01fc3668374b7bc73d2a23128e6598b9532bfc8c"
+        }
+      ]
+    },
+    {
+      "page": "docs/FORGE_PRD.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 42155,
+          "sha256": "7b6d85c27f148d2edc674685b4f9fa997d112bc953484d963b545f254cefa654"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 42155,
+          "sha256": "7b6d85c27f148d2edc674685b4f9fa997d112bc953484d963b545f254cefa654"
+        }
+      ]
+    },
+    {
+      "page": "docs/FORGE_PRODUCT_VISION.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 29928,
+          "sha256": "6d32cfbad6043128c18dfb9a2616174c840a705913798822303e6f7705edb795"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 29928,
+          "sha256": "6d32cfbad6043128c18dfb9a2616174c840a705913798822303e6f7705edb795"
+        }
+      ]
+    },
+    {
+      "page": "docs/OSCAL_COMPATIBILITY.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 7189,
+          "sha256": "b5b47f9a21c2baa8c5f4ba83d8ec054371a7c5326605d5b29cf5c205034f14f1"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7980,
+          "sha256": "e972cfe332fea0a5d1d1442a0af6072f020ba6c871a1948f2f9516c7080d8b3d"
+        }
+      ]
+    },
+    {
+      "page": "docs/RUNBOOK.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 12280,
+          "sha256": "ec65902ff85d3a5c8a915e5a0b0df46eb567566e954d081def64ddc02f062995"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 12280,
+          "sha256": "ec65902ff85d3a5c8a915e5a0b0df46eb567566e954d081def64ddc02f062995"
+        }
+      ]
+    },
+    {
+      "page": "docs/architecture.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 23226,
+          "sha256": "3c7562e0286638c88dd9ae7518efce6b4b184676efa15ba34efd62a93f978e6e"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 29122,
+          "sha256": "297972c0f2fe193ce77b85d9ee5fe41d0e3fd860d8bf8e7d97c7844ce01fe330"
+        }
+      ]
+    },
+    {
+      "page": "docs/project-configuration.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 6535,
+          "sha256": "9b3671e9ec12fdbd8bf1f5a81f44892d120dde145a2c8f1fbd3d7186262523d8"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6535,
+          "sha256": "9b3671e9ec12fdbd8bf1f5a81f44892d120dde145a2c8f1fbd3d7186262523d8"
+        }
+      ]
+    },
+    {
+      "page": "docs/usage-guide.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 36027,
+          "sha256": "19f30dbef69ec00af1a004a632d42781b66277ec9525de6d890942a04e2345c5"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 50257,
+          "sha256": "b05e5b83c69adfce36b76aa614dd9797ee69a745d0eedd10a0a9820d55fa1008"
+        }
+      ]
+    },
+    {
+      "page": "examples/simple-access-control/README.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 4419,
+          "sha256": "1dafde24b9fe215ed68d60395fccd3a13c662f83e8f39ae179d5a47a9e126112"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4538,
+          "sha256": "2e0ab63e255f75fd88e5f43bbd6358298b03772edb31597422cab48d38097a2c"
+        }
+      ]
+    },
+    {
+      "page": "supply-chain/README.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 1051,
+          "sha256": "d4ffd5d6701ae0c431017aefee8a6ee2fcf92a7b50330e38833a2cb6474cbe0d"
+        },
+        {
+          "commit": "ec9cfd2f31eb82b0a4c07399987facf51b68a20b",
+          "bytes": 7891,
+          "sha256": "0d6444d4f3bd4262a9a6e0360e723e796be3f4cd938d40b276dc6354211ac12c"
+        }
+      ]
+    },
+    {
+      "page": "docs/api/capability-matrix-v2.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 16881,
+          "sha256": "518cfebdba61e79b155b2403fe99bf99c86e04e4061490b7f1ec7a7ff80f21b9"
+        }
+      ]
+    },
+    {
+      "page": "docs/api/capability-matrix.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 9547,
+          "sha256": "6349482dc685de82dee8c1c417071c4ab6af7e826eaf3ccc7dc906d56dbb87f4"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 9906,
+          "sha256": "a64272cb081be51b23267c4fac44c9987f550affb941fd7a820ca71a49342538"
+        }
+      ]
+    },
+    {
+      "page": "docs/api/compatibility.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 8241,
+          "sha256": "3462ebc9a4efdf73f37acadfc66097c0eb59e1f8e6db16776b26cfbb5786de06"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 18395,
+          "sha256": "e3c911c593952b21ef10beaf1260a09e5971e294a388069e9185f11abd47f9ce"
+        }
+      ]
+    },
+    {
+      "page": "docs/api/fixtures-v2/README.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2802,
+          "sha256": "f1b58e3edc3478bc468ac6d691695b7332fcdfd3bf7d93ebd261c7c7070a9761"
+        }
+      ]
+    },
+    {
+      "page": "docs/api/fixtures/README.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 3204,
+          "sha256": "9b67b8bc6e0c55d61adb53c2627a8465099a2e9362ac32b807d579df8dcad2e3"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 3204,
+          "sha256": "9b67b8bc6e0c55d61adb53c2627a8465099a2e9362ac32b807d579df8dcad2e3"
+        }
+      ]
+    },
+    {
+      "page": "docs/api/migration-v2.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 10782,
+          "sha256": "53df1c27c35840439fecfde40e1ebd58e0ddbd97de3b863b3f5a84a94712bba8"
+        }
+      ]
+    },
+    {
+      "page": "docs/authoring-api-migration.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 3397,
+          "sha256": "f8bac0fc0d80c98aac9295e18280460b908b2edd1f4a87fa1460b5e2e5864af8",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 3397,
+          "sha256": "f8bac0fc0d80c98aac9295e18280460b908b2edd1f4a87fa1460b5e2e5864af8",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/authoring-gates.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 11489,
+          "sha256": "c1e1cec59961bd93488c5707ae81e166f789784f0e2e6da277d41b737cbc446a",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 12178,
+          "sha256": "9dd5889cd373868c8b78a38a79c6455dfcbd422a5e1f1d3e3e23fbaa97540af7",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/authoring-phase1-plan.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 15958,
+          "sha256": "6f8eb14c3348fe8c96a7b4d914bf6c4be340fd6a4e3f526467bfaff0f3d1d741",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 15958,
+          "sha256": "6f8eb14c3348fe8c96a7b4d914bf6c4be340fd6a4e3f526467bfaff0f3d1d741",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/authoring-phase1-review.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 15128,
+          "sha256": "c29fb0cc4c5d23fb5fd0d23ddb22db64b05c32997554384747c01f5bf64c5935",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 15128,
+          "sha256": "c29fb0cc4c5d23fb5fd0d23ddb22db64b05c32997554384747c01f5bf64c5935",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/authoring-phase2-evidence.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 28154,
+          "sha256": "1f33e8649d3b3df19069292be9f9151afd3f235e5c62d6e460a9a61f524bb57e",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 28555,
+          "sha256": "21b2423d56898b0ca4d7e0e51c9e819e0e13cef8543aa6b6c690910ede550cf6",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/authoring-phase2-plan.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 9517,
+          "sha256": "7c8457ec89aec15583639f31aa4360053d8504914e6ab506f6b0cbe8cefcf89e",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 9517,
+          "sha256": "7c8457ec89aec15583639f31aa4360053d8504914e6ab506f6b0cbe8cefcf89e",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/authoring-phase2-review.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 16715,
+          "sha256": "f5befd5bb566f485cdefb53b6213413fcf3cabf7bb421540b2ecefd3f1d053d9",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 16715,
+          "sha256": "f5befd5bb566f485cdefb53b6213413fcf3cabf7bb421540b2ecefd3f1d053d9",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/authoring-phase2.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 13496,
+          "sha256": "2d79b1bbc4d1352e9f7b30e08d230adb44842ecad24baf7d120be2f3bf6fadda",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 13967,
+          "sha256": "9100e5399bb0ddaf3fcf02e48a78842aa0450507deec7b28fb45411cad64d4bf",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/authoring-review-exchange.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 15545,
+          "sha256": "3a08fe3d882c51c98c744e559e607146d0d85933310d45bb98dc824ef100362f",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/authoring.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 20723,
+          "sha256": "54e23a65e0898a629139565e55c3b700e4f063bc6634f82189fce13180312809",
+          "population": "main"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 21382,
+          "sha256": "895ec826fd34d2b9e43bc399ab4a374ef5f33b7d0a2e437eb45ae4f9193e91d4",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/README.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 6940,
+          "sha256": "a7e4d2953b42db933164471f9c6859731396d0f02148b7e602739a6a07b7b1c1",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr160/README.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 2082,
+          "sha256": "17b9e58ac440fd917062dfa72a4aef9d13fb53e66031484702e5d94e5eb4c28c",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr161/README.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 2146,
+          "sha256": "7fc4032114cb03f4462ec13adab6cce370a043a61ed27acd9d0af4b5c39dc32a",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr162/README.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 2587,
+          "sha256": "c2ceb4d301252a4613d20694c6973cc01954d08d55de4b3166e9c2b4ba35c571",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/README.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 2466,
+          "sha256": "98581b4f1c210e07549d1aeeb55d532f3446008af23939838bdbbad6b86cb4fe",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr164/README.md",
+      "scope": "current-user-reference",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 2377,
+          "sha256": "1f5819fa9a10d982b16b5ef06cb587a31128786d7325d5e333857df202d34388",
+          "population": "open-candidate"
+        }
+      ]
+    },
+    {
+      "page": "docs/CLAUDE_PLAN.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+          "bytes": 6988,
+          "sha256": "e64c23e3090badf18fc4fc98ac90e67aabd7739a38d2c45f91af47cb9b9e4547"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6988,
+          "sha256": "e64c23e3090badf18fc4fc98ac90e67aabd7739a38d2c45f91af47cb9b9e4547"
+        }
+      ]
+    },
+    {
+      "page": "docs/assessment-baseline-integration-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5425,
+          "sha256": "486e6b2d8eb07a2f6fb93b8d2f2a6e9eb05d400b1b708b543d71286c3c00073e"
+        }
+      ]
+    },
+    {
+      "page": "docs/assessment-baseline-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "3b0b5a294810cf5a8b25d9f37c661c31d763b33f",
+          "bytes": 4306,
+          "sha256": "ac11bea4972a85d3dba6e83641fd406ed7fbb187ddae145bc4b1bb4f1c048756"
+        }
+      ]
+    },
+    {
+      "page": "docs/assessment-results-reviewed-risks-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 8578,
+          "sha256": "d391f578b9d63f9887412fa9f3c730587d1b821b422615dfb34a168347997b26"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr162/historical/review-notes.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 5381,
+          "sha256": "91829314f59134a85fb6c1a4018d3d99ea0f3a9604ebae97ab9f84dc3ee84f1d"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/historical/review-notes.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 2737,
+          "sha256": "c18d12950bf21a22579f934625dcef9cf47447e7a93edf9b71b258d844a06c58"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/historical/reviewer-notes.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 7656,
+          "sha256": "d5544483ecdfdc9da27eefef7baaae02f5bad18872c51ba82b29ad8b0dbdeca2"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr164/historical/review-notes.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 4033,
+          "sha256": "e57e7fc58e847d0758f772257ce5eef9359cf2d280b92bea3134592628f8cb62"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/shared/historical-review-notes.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 6089,
+          "sha256": "0ae08e890fe84d00a19b80f0fdddad7ed36a2b33cf31fa443a1e4de74c16c698"
+        }
+      ]
+    },
+    {
+      "page": "docs/evidence-overlays-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7578,
+          "sha256": "80e1be5f2b8960525c2a3e2346af28ee9d7056a32a800800da5f406c94c118e0"
+        }
+      ]
+    },
+    {
+      "page": "docs/export-preservation-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6916,
+          "sha256": "6c41e4479fa841030c6845fb07b853a01d10326811999a423ab5e2e88bc6e5b2"
+        }
+      ]
+    },
+    {
+      "page": "docs/native-export-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "512046e26650088a3d7048facd4a285c915579e7",
+          "bytes": 8092,
+          "sha256": "5e6923af7852f21aca1148a8fa030b993b71e8fe2856c3ed0fdb0b0e53565251"
+        }
+      ]
+    },
+    {
+      "page": "docs/persisted-applicability-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7331,
+          "sha256": "d6babb5fb42eb4ca62de89c7d091b4cfdcfaeb3290197fc1daf822d2c718958d"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-01-roadmap-completion-tranches.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "c2eac677ddbd148dab900a9be4ea7962a61eb04e",
+          "bytes": 16569,
+          "sha256": "a006de3ece213ffbdb89b2004bc874161b7f4bf8684bb03ed8cde2abeeca705b"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 19157,
+          "sha256": "f38288fbee33d94b30dac40957adb88260a833eeee4fb892aec3436b026bd116"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-current-stable-clippy.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 3398,
+          "sha256": "0aa9357f04ea88abccb46a2f5f0c76ff8cc0610521314e6376ddef7392427655"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-current-workspace-clippy-integration.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4134,
+          "sha256": "5ab6a1c1d2938d40379537436a7c72ba738992726d7f2d3d795630cb0afe24b5"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-dependency-inventory-design.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "c2eac677ddbd148dab900a9be4ea7962a61eb04e",
+          "bytes": 14051,
+          "sha256": "876aeca9a732e2fd3dda396a92c9e39f96891dfa1e36931c77a1ec55bf70968c"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f02-implementation-contract.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "ec9cfd2f31eb82b0a4c07399987facf51b68a20b",
+          "bytes": 9324,
+          "sha256": "bbc019b55a073491e9ee5a113e42173fa7b0c385343cf3e9c2e68bf6a00b49b9"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f03-dependency-reviews.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 3784,
+          "sha256": "bd525a4e45d338363c6c358348f10390c577b73f9cf9782f1c30289816968305"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-api-functional-extension.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7633,
+          "sha256": "e766ecb83cd33a26243710867d25d0d15a54503b512feb6c9843747df1036c7c"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-current-api-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7257,
+          "sha256": "0ee466b03e6d4043d5257310bc0b63e8dc0f662ffd743cfeb740e3972b105b42"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-development-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "67d9db84dd7f555cb52f78ca5e89020f799fb077",
+          "bytes": 2996,
+          "sha256": "cf502b2924e6100712af19209c0b9e09d12386076911ad647b621b5d593e6d17"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2996,
+          "sha256": "cf502b2924e6100712af19209c0b9e09d12386076911ad647b621b5d593e6d17"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-hosted-chrome-await-diagnostics.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6795,
+          "sha256": "5c36ae354340a29c05f928d72d61127c31539347d5041af0b0aaae28e0b0e688"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-hosted-chrome-browser-failure-diagnostics.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6736,
+          "sha256": "26829c31afbab6e472a21bf6046af28e10a36ade1ae549bbe3a07f2959771be5"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-hosted-chrome-diagnostics.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5263,
+          "sha256": "140a3bd677bab3f579ba5839c4d88bdccc3e746974827a7f385aa86652f6a4f1"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-hosted-chrome-dualpipe.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5195,
+          "sha256": "2508e6b9e3c9aad5dc5edf9e8d3da16ffe06f0b8c5f86ce62b9881978efc5d50"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-hosted-chrome-prerequisite.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4757,
+          "sha256": "e8dcc2969cc9b8af54dd2e95bcb6e58e449a87947e7ff4094b86c5070c8444ae"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-hosted-chrome-screenshot-diagnostics.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7197,
+          "sha256": "3002e979a4004fbfb6c84d7c3c4ace898d33ff3b57f2dea28e3f93a01fcc901f"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-hosted-chrome-viewport-capture.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7294,
+          "sha256": "6bbb8e1f2f51a1f26b0af6eb0b608a3e68a7f6ee58c37f45f4d51ee907749dea"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-linux-headless-fixed-tools.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6142,
+          "sha256": "324faadc0f531f630f2ab15127d2d930b0bb93a07f2109b37bf78ea1184d4cd1"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-linux-headless-os-denial.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 8112,
+          "sha256": "4d695188c6d8a837ea1779365af5be85e36f9d0926623b2b1b6631b3447a7388"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-linux-headless-tool-diagnostics.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5074,
+          "sha256": "2cb7d4800c2bfff38ec30350c8585d4e469bc618d83cb8b31d6c518bb46e0174"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-stdlib-gate-observation.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4689,
+          "sha256": "15930034803be6cee8b4ef6a980cca6b704e562c00a6012908dba8579dee263c"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f04-workspace-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "67d9db84dd7f555cb52f78ca5e89020f799fb077",
+          "bytes": 9252,
+          "sha256": "0d1641d5b01695f4f8f4a0b2287d54d335a29ef7aa42953f3473539ceb5f99e1"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 9252,
+          "sha256": "0d1641d5b01695f4f8f4a0b2287d54d335a29ef7aa42953f3473539ceb5f99e1"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f05-keyboard-completion.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "04bf2aac1a948c5b1380566d90a5aef04761c175",
+          "bytes": 7434,
+          "sha256": "907ee560ecc5b61a60b7d4164fc1ef7ef7c1bce25cc4fc3ce51eff8babdb7d8f"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7434,
+          "sha256": "907ee560ecc5b61a60b7d4164fc1ef7ef7c1bce25cc4fc3ce51eff8babdb7d8f"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f05-live-state.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "04bf2aac1a948c5b1380566d90a5aef04761c175",
+          "bytes": 10895,
+          "sha256": "44f0f383abd53c84b8ebd01723388d9ad2177a1759decc8379d5ece7ec7cc97a"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 10895,
+          "sha256": "44f0f383abd53c84b8ebd01723388d9ad2177a1759decc8379d5ece7ec7cc97a"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f05-navigation-remediation.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "04bf2aac1a948c5b1380566d90a5aef04761c175",
+          "bytes": 7210,
+          "sha256": "117ba5701f5432cec8f4609dee067ff34632ab3882edbdd1c1d2f2558b650821"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7210,
+          "sha256": "185bcf58a3d0cb2644ab3064f6a233b5bc83ba33b8adffe3405787265e079ab6"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f06-artifact-preflight.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "5128cfddea65549d7ef8dadd126f3f3d2159d3d5",
+          "bytes": 9280,
+          "sha256": "933bf0d0beb99500898df3047f56e54d97363cc11be7756045cf1e938a0f4953"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f07-foundation-preparation.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "3b24e63b8b81b123fbd50c8166d8ad6d2f81bff2",
+          "bytes": 6408,
+          "sha256": "1feafc6f16ac5b520a0d84be61390f190be0a00bd454c9fd333d328dc4d381b1"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f09-lossless-data-export.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "512046e26650088a3d7048facd4a285c915579e7",
+          "bytes": 4885,
+          "sha256": "e209105ebefdbdfea8ab4ec59b14ab66aabb8c8612fe69a4be2b9fcd8d9a98ae"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f10-assessment-baseline-boundary.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "3b0b5a294810cf5a8b25d9f37c661c31d763b33f",
+          "bytes": 1047,
+          "sha256": "e62fdc12945ab272916bd36eed6644f8cf81b26785e571f63af8c9291003544b"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f12-persisted-report-counts.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4719,
+          "sha256": "c4a899723abcc693f85c3501850f9f34cb4847d1d9a49cd742f72aed63921e14"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f19-browser-bundle-metadata.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2172,
+          "sha256": "086718b90fc63c8128f5d580f22abdbb13b04ced109ed687540bd5b8f812e687"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f19-lifecycle-captured-status.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 3990,
+          "sha256": "694f6c584d80ec6c9758419c6d0b61418aedd2f818ab0743a02be830cc0ebb36"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f19-operation-browser-integration.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 3759,
+          "sha256": "73fcb5f6dc2a4ed4b789b356379d5b7788a53ce38f89064669c71442987eaa87"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f19-operation-checkpoints.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 1791,
+          "sha256": "ea4fb16b4b59867ed1f5e33ef564a9a5a7e42d0ec114d1c983aa60f331db1cc1"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-f19-workspace-bundle-queries.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5834,
+          "sha256": "9964c737ef1cfbb6d5ab488149d13ca3412e960d8080707d0015dfd16a69cb44"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-integrated-documentation-corrections.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 8596,
+          "sha256": "bee7e063c1c79bf13d3b209759029b9941e40c786ec1bfc8942881f69f61b99a"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-poam-contract-spike.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "c2eac677ddbd148dab900a9be4ea7962a61eb04e",
+          "bytes": 24558,
+          "sha256": "98629dd872cac9fbe5ed99c6e609dfc781c1e8ec1d5dbfbefd9d9f0f88c88df2"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-roadmap-owner-decisions.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "c2eac677ddbd148dab900a9be4ea7962a61eb04e",
+          "bytes": 8452,
+          "sha256": "f25d72a15b621a3aec2d00fa7feaf2e63eeb1dc348a26410a15085326bb90b7d"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-roadmap-requirement-ledger.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "c2eac677ddbd148dab900a9be4ea7962a61eb04e",
+          "bytes": 48613,
+          "sha256": "7241d3ec620dd0ae61bd5760383a3de232b446413a2b91a4a844d6fd2bf27d7a"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-suggestion-evaluation-design.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "c2eac677ddbd148dab900a9be4ea7962a61eb04e",
+          "bytes": 39421,
+          "sha256": "1421ea8fa05cdb34e32168d70201f1acdf26b63e226232542d082b94c7d17553"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-windows-console-launch-correction.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 3359,
+          "sha256": "43786f89215bf5847d3832548fd8a2c8b059e09254812f1dfaec79608e9ea58d"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-windows-console-startup-diagnostics.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4931,
+          "sha256": "ae6cbf908800e83178c350d22cda881220b9c54a3635c4640f6779d2ecd8cb7d"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-02-windows-console-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7668,
+          "sha256": "33cb2d275c6b7e17dee80653c0b20aa5aa57221f6cec31f1ba0b8a705c289981"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-03-f07-foundation-integration.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6756,
+          "sha256": "0bbb6ab1cb3db81eb63a7ac6953bdf234861185370a24b6b419b800505e540d3"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-03-f08-item-workflow-proposal.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 9440,
+          "sha256": "eab438691a0129175dc000660db7d8e72a6943cfc054d2f6b9f016bd27cb58b1"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-03-f08-workflow-cli-adapter-proposal.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7200,
+          "sha256": "0c8bd900fa8dda68188ab76c255aa0093c64f3ba1a8a78d0d353b7b1f9baa355"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-03-f09-lossless-prerequisite-rebase.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5397,
+          "sha256": "d45336c964c3660374c939503f3df2ee1ed2edeb97a880c1c1b9c5cc8816ea5a"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-03-f10-baseline-guard-integration.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 3863,
+          "sha256": "058ef22e8ed3ed60953eb41b072e3f3461d8b7e7a5bfd67c0f0c6ebc6a6ecc1d"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-03-integrated-documentation-checkpoint.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7012,
+          "sha256": "6aa7407c87a4fb791ef13fe58dbaa10dde9a95193633f52de56a99f43f2766f9"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-03-integrated-documentation-staged-successor.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 9258,
+          "sha256": "dfe20a6e632cad411bdb16ed703dd94b8d431a7bcbbcc18ebc80b1ce874bce65"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f04-fixed-tool-verification-v1.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2275,
+          "sha256": "53d9fe09bc201a2260ebf730e16662a54b9777abd10fdf326fa48986da2eeba1"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f04-hosted-physical-qualification-v1.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 1827,
+          "sha256": "152f4be492b414daf10e1d6613911169d18d2757bb242146153324045ed98737"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f04-leaf-closure-verification-v1.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4155,
+          "sha256": "1697f5d026715e16351f35a8bb7e0c625c5b22af0ed3fbe2c5f2a8e9611e7dad"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f04-observer-fixture-verification-v1.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2049,
+          "sha256": "4b76d077217a9deabf425de081354dd8327cf9bed32979c07a93b185011f6bd9"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f04-rejection-detail-hosted-v1.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 1861,
+          "sha256": "8199d0a3c4422a3e12af60df818bb8d90ce0c99653e0a5e59bb27491e9c55235"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f04-rejection-detail-verification-v1.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2874,
+          "sha256": "f080fb78bfb139f6cfa0409f4b667656af5694dcfc3f3c08beb246386c335453"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f04-target-membership-hosted-v1.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 1674,
+          "sha256": "586d9da94ad2d98c87a842631f3e4f1aadbbd3aa831a046c11e9169c460264f3"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f04-target-membership-verification-v1.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2702,
+          "sha256": "a89d1c03fe9108cb71a79ddb3d0af8ed7db206260ab4b17518169dfcbc7fee94"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f10-epochs-integration-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7258,
+          "sha256": "26d7fa0b4ab1337378234555efb771a3eb45e65c3977583254a7fdd404323425"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f10-epochs-windows-fixture-verification-v1.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6133,
+          "sha256": "1e9730dbe3066d569086da6655eb5d1363a3917aeff93783cb6220bf21fc0b9a"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f11-hosted-source-verification-v2.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2260,
+          "sha256": "b86d28a984c9910ea5c036d4bcd4f40f8a1dcc64f3e46da51258df48a7f760e0"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f11-pre-pr-verification-v1.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2536,
+          "sha256": "f6fd4f623e461a00a5db21c6257cbf0b5b699e4682484a88af30cf00d645e829"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f11-pre-pr-verification-v3.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2776,
+          "sha256": "bf9cb7cd349d1a2021d0c7d6808612fbf7a39c08519344d09c938a8a0b9a20b5"
+        }
+      ]
+    },
+    {
+      "page": "docs/plans/2026-10-04-f12-implementation-design-decision-v1.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 3706,
+          "sha256": "e1acbbae0f350198a1424d28f0d39f924a89d0e0bf860a749b5ab43518b89b74"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-baseline-integration-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4978,
+          "sha256": "2f649b5bd3a70f11193455b5db1e95386413deaab2354d32c1131312cc113a0e"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-evidence-inspection-proof-fixture-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5624,
+          "sha256": "09a991437d872fb246375e74f5ca2f3eac0f91c10553c2445c911ee0eb042ced"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-evidence-inspection-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 14890,
+          "sha256": "f4223a7ce1f0dbb2978e3b162ef0dc2e9ac9c4601d4c531ed8ce48b2c94b8d82"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-evidence-inspection-windows-holder-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7448,
+          "sha256": "01d3bc8164fc1af0bf711f5c566a17cbe99ef36dd97a79b07b2679df1c9d0f4e"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-evidence-inspection-windows-path-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 2508,
+          "sha256": "39d34c3ce2aa3c59d09ab3d06e10d65f9c6000bc7208f097afc657827bd559a2"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-evidence-inspection-windows-raw-fixture-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 1585,
+          "sha256": "74325a59c6fbf38ef6c0cc2f7b4c6e87a560317ede3e94c9ee5217086a241bfd"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-foundation-integration-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5907,
+          "sha256": "ad7f0ce8a7267b0de1efbed5bf2e75b157db599940825dd595298bdea6e2163a"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-foundation-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "3b24e63b8b81b123fbd50c8166d8ad6d2f81bff2",
+          "bytes": 3712,
+          "sha256": "9820c60e7ce539b980edf755b7f89284eb0119ef4b5100006087e50926b1cd87"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-outbound-integration-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6423,
+          "sha256": "b46ae54866a06b0eff8890f482a1798a81afa6634cbbced535f83dcd9a47bfc3"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-portfolio-integration-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5696,
+          "sha256": "22900ff350f8757fbe029e38fee861f65373b03e4fd35cf69a04a761ab9d8e38"
+        }
+      ]
+    },
+    {
+      "page": "docs/poam-workflow-integration-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4837,
+          "sha256": "46d4921c20ec190282d1b2791211d88fc2cd356ec14253dfd276f18b8d8a65c4"
+        }
+      ]
+    },
+    {
+      "page": "docs/suggestion-evaluation-preflight-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "5128cfddea65549d7ef8dadd126f3f3d2159d3d5",
+          "bytes": 4062,
+          "sha256": "3eedd735e2e53a0f6b63f910f7eea98ba992f266ae6d05fbe9004d84077ba7bb"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-api-v2-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7369,
+          "sha256": "1b168ed0aba648865c988817d99722e58d66d5f3727ccaab28b27b15adac2de6"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-bundle-browser-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7562,
+          "sha256": "a3ebf35a7e4bf15d9de22df2095e88ecddcc6492d361e599c7b680e00b6c40b4"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-bundle-receipts-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 9419,
+          "sha256": "881608d886f30be45e02f637f619c23a28f4aba340a730966eaf576094a96118"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-bundle-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 8322,
+          "sha256": "eaf285cb31bb7c652afc495822490958bda2cea3136b46561f1bf6db7218b563"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-client-failure-observation-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6236,
+          "sha256": "367b906bc5fc4012743a1f9ceb9822f6d5a6de13d7fbf2c0ff35494ec7f4c6aa"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-current-api-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 4887,
+          "sha256": "5be0d0f23628a754ad7875780b008f3394ddfa60caec16e3dde42dcb1e9a24c0"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-keyboard-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "04bf2aac1a948c5b1380566d90a5aef04761c175",
+          "bytes": 6649,
+          "sha256": "cfe6baf895a1e106dfc9462b26b815cef9f5ecefd4a1b91337cbcf380f1b89fc"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 6649,
+          "sha256": "cfe6baf895a1e106dfc9462b26b815cef9f5ecefd4a1b91337cbcf380f1b89fc"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-lifecycle-impact-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7039,
+          "sha256": "41728d842f0f95b1335aba9c1da4450dd55fd94c18d9dbd88b818559260ac1d0"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-live-state-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "04bf2aac1a948c5b1380566d90a5aef04761c175",
+          "bytes": 9219,
+          "sha256": "9f0450b3c2d0f07459ea21dc8105dc057bd07a8489d3133f6f84faf75894c1a2"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 9219,
+          "sha256": "9f0450b3c2d0f07459ea21dc8105dc057bd07a8489d3133f6f84faf75894c1a2"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-navigation-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "04bf2aac1a948c5b1380566d90a5aef04761c175",
+          "bytes": 5595,
+          "sha256": "58dc989a7a04f03b4367af364f734f0fa82d5e6721a88fd0df0ac78326f58c0b"
+        },
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 5595,
+          "sha256": "58dc989a7a04f03b4367af364f734f0fa82d5e6721a88fd0df0ac78326f58c0b"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-operation-browser-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 9989,
+          "sha256": "98d0bbdbd58c59fb8f07869eb8795723438dd667a2ea711de66b88258c127b02"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-operation-checkpoint-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 8268,
+          "sha256": "3d7498dc61edc009709784f3a552e9337e6e49fdd24d70eb2f8ff9e2421bba82"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-source-bundle-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 7879,
+          "sha256": "2ba01fdf36c59dd44670c3764a2c7beb3c30eaeb157b607faa6b2333d17f2638"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-staged-source-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "304b31f8ea3913eba4a7d776b833b9b3db4ad3a4",
+          "bytes": 10487,
+          "sha256": "6cdd100a6d3e7ff129aa2ad435b774b365c44efbb95fa02d7734c033bf90c3c6"
+        }
+      ]
+    },
+    {
+      "page": "docs/workspace-stdlib-link-chain-hosted-verification.md",
+      "scope": "dated-historical-evidence",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "bbb7f00e93ccca2cf876a7fe3a92d03fd11a249d",
+          "bytes": 5289,
+          "sha256": "18291243e6cd0cd1809f03352c71df87e08672cfcbd55b13e50520ebbd1dbf08"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr162/advisories/crates/blake2/RUSTSEC-2019-0019.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 875,
+          "sha256": "d1d27e989b4b3f83d76983e2e9c784c55e087693caeba476cdbf7c4507432f00"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr162/advisories/crates/cmov/RUSTSEC-2026-0003.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 1916,
+          "sha256": "a78d8ba6c0ac1de3da9f0b94a771dcb24e0c8f02c8536b89e9f3268e082579d7"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr162/advisories/crates/generic-array/RUSTSEC-2020-0146.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 730,
+          "sha256": "0af29772181b8ef22ee1b23d60953dbf3ff3ea29cb5db13bc065fca2ed0bf6fe"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr162/advisories/crates/rand_core/RUSTSEC-2019-0035.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 692,
+          "sha256": "02530718a407edacea1ce455f90d33c3c7895d0f2c1f80915fbc2b1e6b6cdcb4"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr162/advisories/crates/rand_core/RUSTSEC-2021-0023.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 959,
+          "sha256": "c28e0da8e69d587b9f2d1eea2c919d719eee111e4be4d811ef60aa74508a0d63"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/advisories/crates/chacha20/RUSTSEC-2019-0029.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 1176,
+          "sha256": "f02361318232aa3202c954fd9cde3e2a688b0842f137d16ee22d042fac691c4c"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/advisories/crates/generic-array/RUSTSEC-2020-0146.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 730,
+          "sha256": "0af29772181b8ef22ee1b23d60953dbf3ff3ea29cb5db13bc065fca2ed0bf6fe"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/advisories/crates/hashbrown/RUSTSEC-2024-0402.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 746,
+          "sha256": "0c707950edbfe338e50afdaa6a642bebca5ff5986de423ecba84a89fb8fafc5d"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/advisories/crates/lopdf/RUSTSEC-2026-0187.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 1585,
+          "sha256": "7e7c6b2b70c8f9af0f0b1a6029925a8baafe9b67188e316168ed12d90a9effcc"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/advisories/crates/postscript/RUSTSEC-2021-0017.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 877,
+          "sha256": "4afd956166703cf84109025eaa045209acd4b36b6396ad0cd20cc3cfd5617461"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/advisories/crates/rand/RUSTSEC-2026-0097.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 1874,
+          "sha256": "2d3a02f38b5bf832ee640cf39d6e00c416f0a676881a0712ea792c9323dfbebd"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/advisories/crates/rand_core/RUSTSEC-2019-0035.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 692,
+          "sha256": "02530718a407edacea1ce455f90d33c3c7895d0f2c1f80915fbc2b1e6b6cdcb4"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/advisories/crates/rand_core/RUSTSEC-2021-0023.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 959,
+          "sha256": "c28e0da8e69d587b9f2d1eea2c919d719eee111e4be4d811ef60aa74508a0d63"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/advisories/crates/sha2/RUSTSEC-2021-0100.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 859,
+          "sha256": "a180ded62423efd28eb3ae52e6284957cc1d846399c94fdc7c33b7b918f1442d"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr163/advisories/crates/ttf-parser/RUSTSEC-2026-0192.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 561,
+          "sha256": "37496b74020531fc9e29830bd5aafc65f3861a228d8052dc73e6a75a9576ea4d"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr164/advisories/crates/rand_core/RUSTSEC-2019-0035.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 692,
+          "sha256": "02530718a407edacea1ce455f90d33c3c7895d0f2c1f80915fbc2b1e6b6cdcb4"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/pr164/advisories/crates/rand_core/RUSTSEC-2021-0023.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 959,
+          "sha256": "c28e0da8e69d587b9f2d1eea2c919d719eee111e4be4d811ef60aa74508a0d63"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/shared/advisories/crates/anstream/RUSTSEC-2024-0404.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 895,
+          "sha256": "0069fccb10e42bcf5fec188793cd1c6f17a0653c1c094fa528777b1ca50cbf57"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/shared/advisories/crates/crossbeam-deque/RUSTSEC-2021-0093.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 954,
+          "sha256": "ae9881993d8a9469bc0130a771352c1a8ec291946694a9101d9f97e2a5fba039"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/shared/advisories/crates/crossbeam-epoch/RUSTSEC-2026-0204.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 692,
+          "sha256": "3b03eb5f51571375b8d269873f7e6e33c4944298f50d8fa2474479ec97067bfe"
+        }
+      ]
+    },
+    {
+      "page": "docs/dependency-reviews/2026-10-02/shared/advisories/crates/crossbeam-utils/RUSTSEC-2022-0041.md",
+      "scope": "retained-third-party-advisory",
+      "content_reviewed": true,
+      "variants": [
+        {
+          "commit": "a46b07d579e13746d9c51c919e9149748415c8e8",
+          "bytes": 1706,
+          "sha256": "703acc379eed09346408ffb232a670ab450973cb810a8775e502ff82c3510216"
+        }
+      ]
+    }
+  ],
+  "corrected_pages": [
+    {
+      "path": ".github/copilot-instructions.md",
+      "before": {
+        "bytes": 7856,
+        "sha256": "f239325651846f03985a47fcf78b25c9fc4313521968a1164d7753038ffdd04f",
+        "git_blob": "5b3ff226b8749ea333fcee28acee0843e4b7c4b7"
+      },
+      "candidate": {
+        "bytes": 8646,
+        "sha256": "8f0aad7f583d4854519855b8a2f295da1ac5e860e9694a50beeedfce5993b684",
+        "git_blob": "b4637c94cc45d996afb5716aaf463336768ea75d"
+      }
+    },
+    {
+      "path": "CLAUDE.md",
+      "before": {
+        "bytes": 7602,
+        "sha256": "e476e17bbc0984d726a3ae3b11d783ed19c5ea2e9fe82d1eed72d43d37cd1c1f",
+        "git_blob": "b1566e3e97d51734148b71305350ababaa7f9f99"
+      },
+      "candidate": {
+        "bytes": 7708,
+        "sha256": "44735a164d0ce1780cbb0c5716d364ceb08992ce334970d598bd5d51c9d4a94f",
+        "git_blob": "4daa94cb0b036e1c5b6f6a79ae2e6f2d993478e9"
+      }
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "before": {
+        "bytes": 10265,
+        "sha256": "5d6bb36784dd3020776f28605fb453db926ae6e0aa2d0b548765a38f1a1de904",
+        "git_blob": "dd5502bdb64e30b758b1fe00a21949bd549b028d"
+      },
+      "candidate": {
+        "bytes": 10743,
+        "sha256": "a36571812045d3ec31311181a402f4283e6f52a69a579760857ca4284e83f65f",
+        "git_blob": "e61942d2ec59674abe16c4d469b6f003307067f5"
+      }
+    },
+    {
+      "path": "README.md",
+      "before": {
+        "bytes": 31556,
+        "sha256": "a336d7dd968db64d8b9a3d22a59b57b5ea73a3d54e48a75b0508ee76c40af07f",
+        "git_blob": "b3adc2c3ab606051312076a46090de20f7d8ee05"
+      },
+      "candidate": {
+        "bytes": 31905,
+        "sha256": "0743e13c60b2ca9d8682d591a50da2fdcc9fb57b5044bf8075850502bdb5e5f8",
+        "git_blob": "633bc53b5acdb9bd147d387452dec7f611b64338"
+      }
+    },
+    {
+      "path": "docs/AR/059-ar-reusable-policy-components.md",
+      "before": {
+        "bytes": 5529,
+        "sha256": "2c2492d8ed1cb90cfc95f59825ddea9aa9e333134b96a58c528e8e0e437771ff",
+        "git_blob": "b2e2925a541914eeb6346c1ce0f17b566a8bcddb"
+      },
+      "candidate": {
+        "bytes": 6530,
+        "sha256": "a369c3152bbb10d214a4e32fb2632dc17833f27711defe65d7ca8f1e9468fb4a",
+        "git_blob": "d284899d7add140b80960e6f8b8fa9e573d1ebbe"
+      }
+    },
+    {
+      "path": "docs/BENCHMARK_RESULTS.md",
+      "before": {
+        "bytes": 2390,
+        "sha256": "b80fdd03e5051d0a66ade5d3361d381bb1a90d630cef2e852d7291f147dfd76a",
+        "git_blob": "8f4d0fff3a6d6b09c3c0d0db835532c75ba50017"
+      },
+      "candidate": {
+        "bytes": 2601,
+        "sha256": "8c36d9ec09c356500018297a25f6257f457ba3d1b64f077d5e0a84ff5078000a",
+        "git_blob": "53a448d3e0cc7d03e2c659b4507e4b21fef73f40"
+      }
+    },
+    {
+      "path": "docs/CLAUDE_PLAN.md",
+      "before": {
+        "bytes": 6988,
+        "sha256": "e64c23e3090badf18fc4fc98ac90e67aabd7739a38d2c45f91af47cb9b9e4547",
+        "git_blob": "5ec225a7bd65405ed11655600c370524b081db5e"
+      },
+      "candidate": {
+        "bytes": 7280,
+        "sha256": "1c4be1f1f003bcba574bf5711bf51aed0bd05ed1215ea480e571782d1732ecd2",
+        "git_blob": "8f4699abdae3f76ba725967d70e44a3fa5c6eab6"
+      }
+    },
+    {
+      "path": "docs/CODEMAPS.md",
+      "before": {
+        "bytes": 11767,
+        "sha256": "d4b76268e083196873d7631c01fc3668374b7bc73d2a23128e6598b9532bfc8c",
+        "git_blob": "6ce08b731955b729e82ac8b9c21b1337fd331c6e"
+      },
+      "candidate": {
+        "bytes": 11983,
+        "sha256": "9205ef11ea015d637a3b242f4c284472fcc6d45a59128ce7d6e399bcac235770",
+        "git_blob": "0035271e29cc34738a954acc4f2f6a6a8894f1f3"
+      }
+    },
+    {
+      "path": "docs/FORGE_PRODUCT_ROADMAP.md",
+      "before": {
+        "bytes": 28985,
+        "sha256": "fcafddfd7f8447b6e4e1221b48e9c346fbf5e4d69a6cc28eed2d730db0f8c74c",
+        "git_blob": "639ddb2cc3b3b9bbaec1016ef51d568d84a0da68"
+      },
+      "candidate": {
+        "bytes": 32314,
+        "sha256": "09f7b91d6a1067e7ad53664eb58784b1673cbaa9a5db0c89b6c44e8c5c244bd3",
+        "git_blob": "ce86b044048a0c70db17aaf33fdedac1ee810b62"
+      }
+    },
+    {
+      "path": "docs/PRD/002-prd-markdown-ingestion.md",
+      "before": {
+        "bytes": 18225,
+        "sha256": "df98275aa1e28d155d5d545cd62ffa36c9dea6baa8a48aa37df41d0c60396da9",
+        "git_blob": "e8f597836b0d78afa70648718785e7fadf4ae339"
+      },
+      "candidate": {
+        "bytes": 18998,
+        "sha256": "2200f3126a7bb1c35f829bc86d9e4da72b3c66df1b86cfa612513491a5d35b8b",
+        "git_blob": "280144d22e098670f2a12a0d7ec11c37b9c2ef6d"
+      }
+    },
+    {
+      "path": "docs/PRD/003-prd-structural-extraction-headings.md",
+      "before": {
+        "bytes": 17116,
+        "sha256": "9d03da49af91ba5c305c9eb6033d9ec2ec83a3c44e1828d5e2bed0a69daa3210",
+        "git_blob": "33debebfd7515c5433ff540333155b7b062cd8fe"
+      },
+      "candidate": {
+        "bytes": 17855,
+        "sha256": "92d1af1c8acac457d0ef31eb6cdca0f8529b5ee5086ec9702b68984c9b24644a",
+        "git_blob": "ab62bb1278822bb04463ae340a6773cbe2b9d924"
+      }
+    },
+    {
+      "path": "docs/PRD/004-prd-structural-extraction-clauses.md",
+      "before": {
+        "bytes": 17814,
+        "sha256": "08562184816385c11125480046a5f1ac172e2eb151659bf774108115c3b6dd7a",
+        "git_blob": "82c8992b8a2f0b31d7faa7e061eb47743840f0bd"
+      },
+      "candidate": {
+        "bytes": 18608,
+        "sha256": "041706c70925c772b07f6dbd8c9af92578bcdbd67fe1ea8c6e6ad641a65eb790",
+        "git_blob": "84e50a661a18ec267c4e3c6734c3f17d1ef96ad8"
+      }
+    },
+    {
+      "path": "docs/PRD/005-prd-domain-model.md",
+      "before": {
+        "bytes": 20354,
+        "sha256": "fd81a50c458ed3d6539bf12c2c8d2fa4ebeaf99cab819a6e20dfc2db54844e8f",
+        "git_blob": "7d4281e333f3093569bb0b043b7435e51b809751"
+      },
+      "candidate": {
+        "bytes": 21112,
+        "sha256": "b4062a8836ad8905c4ba801c282b2004dddb5439ce4987a48669541b04c88efa",
+        "git_blob": "55eff6668be61da14a06e4c1c2b2d3dc199096b8"
+      }
+    },
+    {
+      "path": "docs/PRD/006-prd-requirement-atomization.md",
+      "before": {
+        "bytes": 29199,
+        "sha256": "f89dbace1740a6e20e645372ede230625b092e2399d28c4e1a3868b3974aa7cb",
+        "git_blob": "01b2489d058bd8474ca94fefa238be23fbe45639"
+      },
+      "candidate": {
+        "bytes": 29900,
+        "sha256": "c1ed8b273afd84d108feecfbe7e28fae2735aca2045ee25d794877476dc0379d",
+        "git_blob": "2aa47036cc109469cd88f7fd562d3ec04653f86f"
+      }
+    },
+    {
+      "path": "docs/PRD/007-prd-uuid-generation.md",
+      "before": {
+        "bytes": 28612,
+        "sha256": "0e81242c30880e3ec80b8e7806fb9291aea4a497cb731ba209208bde635c305a",
+        "git_blob": "7bcbb26b5bd7af0e8860934675d08ccf713ad819"
+      },
+      "candidate": {
+        "bytes": 29430,
+        "sha256": "5753dacdfdf366be6527f000b6066519342103f9ccb58573f1e112626d2d08be",
+        "git_blob": "370efe3ce864061e893551ff22a22519af97ab9b"
+      }
+    },
+    {
+      "path": "docs/PRD/008-prd-citation-extraction.md",
+      "before": {
+        "bytes": 30139,
+        "sha256": "32a508f363fdcc81598f9336cb103685bdab81b7238df8a20321b99a7ae1dc9f",
+        "git_blob": "c3a2978ce763b7f420a3a6ffd1cbf2c5bfab0e36"
+      },
+      "candidate": {
+        "bytes": 30858,
+        "sha256": "db9e0ec7423ffc23aa721f1d86c35044fa215ade24c15265c54725b883994f79",
+        "git_blob": "0b75a5b1de5da4868ad4660ac793c94fb528800f"
+      }
+    },
+    {
+      "path": "docs/PRD/009-prd-catalog-groups-controls.md",
+      "before": {
+        "bytes": 33137,
+        "sha256": "adb8c1410cc0e7d330b0ccd6b9cb801eea6027b3a36ab2d2bf50447f73d605d3",
+        "git_blob": "ccb64e320b0c0e4757f093427f4a096fa7205379"
+      },
+      "candidate": {
+        "bytes": 33958,
+        "sha256": "aaa899427c73f7d0769d105d2382c537d8c0a8005248679d43df268ca0382ec5",
+        "git_blob": "7008c73cf8dcb2a1d897649323137e0923e0a852"
+      }
+    },
+    {
+      "path": "docs/PRD/010-prd-catalog-statement-parts.md",
+      "before": {
+        "bytes": 28633,
+        "sha256": "8fd660bfd8b50c997b66814c980b3c4c4f8bee1a1f74e921cfa05720c0bc0385",
+        "git_blob": "a59b334439cddec87a612c53fc792a781a8867c1"
+      },
+      "candidate": {
+        "bytes": 29435,
+        "sha256": "ed63130a6cfead8a458230a6861559efb73cced281a66cf12f56d0145fa25fff",
+        "git_blob": "9e40ccaf77ceff1bff17625b6ec989c8c5605be6"
+      }
+    },
+    {
+      "path": "docs/PRD/011-prd-oscal-metadata.md",
+      "before": {
+        "bytes": 27409,
+        "sha256": "d78bca19f94b0384656a4d956e6a71fe5a2e7b8f42e01c630f20ef9c4f6f9962",
+        "git_blob": "7f182e91260d1e2666b77a72613f4c70902536c8"
+      },
+      "candidate": {
+        "bytes": 28098,
+        "sha256": "fe1a3a879c32cbc6c63026f2ac295be5b91eef4c02c115401b415d481fe87584",
+        "git_blob": "a613c88b32bb84f3bbd4ccb0796baf63d2dc56aa"
+      }
+    },
+    {
+      "path": "docs/PRD/012-prd-back-matter.md",
+      "before": {
+        "bytes": 30043,
+        "sha256": "5cbbe0294e4d2bec71f5dfc9dcb7b489f28078e81b908e8e638caa42e8844e18",
+        "git_blob": "e312b8186478990c9558049cb36bbec648c3166c"
+      },
+      "candidate": {
+        "bytes": 30821,
+        "sha256": "959826350cec0df471d5bcd87c1ab389e4b23701163b2c1535951f38da4139c1",
+        "git_blob": "584e58cc13bddc0dbc78d74bcd4eb7c8bd1d519f"
+      }
+    },
+    {
+      "path": "docs/PRD/015-prd-component-implemented-requirements.md",
+      "before": {
+        "bytes": 31123,
+        "sha256": "1fe23f9b252c7b730f4023d0b6fd148fa6c7cc48ddd01e55e3d6d5b0a536d919",
+        "git_blob": "09c834b1c82ca54941ab1a0aa9dbd313dba70fe7"
+      },
+      "candidate": {
+        "bytes": 31983,
+        "sha256": "805ca988494a6d27b8e30dadb91b14d2d7abc1d480efd7eff74838486cbc90df",
+        "git_blob": "49edea0bcfffc7b6a0a355ba82b3f113e2d2cfc6"
+      }
+    },
+    {
+      "path": "docs/PRD/016-prd-traceability-model.md",
+      "before": {
+        "bytes": 32864,
+        "sha256": "5e200a0b12fca35201a8413a65e623183f6b93ccc5c23155d6d9734ca679a85a",
+        "git_blob": "7248f66832df920c05f2d232346c7382bbaed917"
+      },
+      "candidate": {
+        "bytes": 33646,
+        "sha256": "7102d60bc063369784ffcc81f0b286f51db0c77ee6b98743848abc5e9cb64c9e",
+        "git_blob": "67495226259fb529d3f415fdcda93bba3f3abaea"
+      }
+    },
+    {
+      "path": "docs/PRD/019-prd-schema-validation.md",
+      "before": {
+        "bytes": 32907,
+        "sha256": "5416b4f74a2f5077eb823ef2af557f51b3cff90ebec320694f01393a709b2819",
+        "git_blob": "2deb31d07db3d98ebc95ec42a98ae24468393646"
+      },
+      "candidate": {
+        "bytes": 33772,
+        "sha256": "845428ada92276cc00edb651bbaec8033cb4c94ef9c062ca29b748f597e80cfe",
+        "git_blob": "95d924a5a76b6837807c9b31f5fa446d5ce0e4cd"
+      }
+    },
+    {
+      "path": "docs/PRD/027-prd-yaml-output.md",
+      "before": {
+        "bytes": 31868,
+        "sha256": "915c09f8352468a1b7bb4b82e12b4e234d4f9206cec03f4efef6fb84b650cbcd",
+        "git_blob": "ec87480ce8d8c46963054f83f95fc39b9a1c0f21"
+      },
+      "candidate": {
+        "bytes": 32680,
+        "sha256": "c241c72e04013bf61af876f7b8867e0b5fbccc1d515d3edc5a4fb6acaf1fb7ec",
+        "git_blob": "935669b402f23783b18c594d51703cdb464934e6"
+      }
+    },
+    {
+      "path": "docs/PRD/028-prd-round-trip-testing.md",
+      "before": {
+        "bytes": 34542,
+        "sha256": "89e3103be91cad338d81777a6eadd911580162d1d56dea58653d7e5226157695",
+        "git_blob": "7d353ae7fc2837b34a72263829f86a4e5fa6b825"
+      },
+      "candidate": {
+        "bytes": 35411,
+        "sha256": "aaa84020bd41499c6818d95288953be891509a72f3c0e66d923e17fc10594c83",
+        "git_blob": "71f14581ebb68dbae42d2e40a2db6a7595bcf72a"
+      }
+    },
+    {
+      "path": "docs/PRD/029-prd-export-subcommand.md",
+      "before": {
+        "bytes": 32412,
+        "sha256": "1798c2a23ca8a0006e5ab4f5b8a934ba9508ee15d6886bd0a62d0108792fb90a",
+        "git_blob": "f8d8c06c2bea64896b00c7070aecac32f1bf8b9b"
+      },
+      "candidate": {
+        "bytes": 33207,
+        "sha256": "ad4254ec938b024287fa0805cd62f0aa0865d7afb5d7190196155fba25f2fc25",
+        "git_blob": "bca4cee9e9921975c20329818663962e458d95e7"
+      }
+    },
+    {
+      "path": "docs/PRD/030-prd-profile-generation.md",
+      "before": {
+        "bytes": 34060,
+        "sha256": "9fb941aa5da2bf045b29e5fe4c64eeedfb81c702eb5d918f5dc326b8ee1d09a9",
+        "git_blob": "cdd48c83503abaffc49de1e19db0b34949d5f48d"
+      },
+      "candidate": {
+        "bytes": 34953,
+        "sha256": "c7776cf6801d385dac69ba7df0c51ed0b2235ebc4e57a30461c46287fee7c4be",
+        "git_blob": "f613ab70e3401958285a467f2e9b32d8f58b2103"
+      }
+    },
+    {
+      "path": "docs/PRD/034-prd-parameter-extraction.md",
+      "before": {
+        "bytes": 45777,
+        "sha256": "ff93b67aa92d9a9d7e857e30398a06c9e39e13147de0bd8c72ca8bc7fdaa80eb",
+        "git_blob": "bfed5e4767e556c03f89abc2106d9d77de446f8c"
+      },
+      "candidate": {
+        "bytes": 46651,
+        "sha256": "2f4f50cd909a30414e1ce57732d5f3d436fb627b6f30e853620e6a84453d2262",
+        "git_blob": "e921ac5eea46993331c62280b3302467c2f75732"
+      }
+    },
+    {
+      "path": "docs/PRD/038-prd-traceability-report.md",
+      "before": {
+        "bytes": 29227,
+        "sha256": "ade28ad7dcbbe4ebe6fe6a4e4b0a91c260e3c4f9219c143f26a2a52d4bbcb08e",
+        "git_blob": "9a1f917e6bd448efc8fd6e0ec4de7d39a07b659a"
+      },
+      "candidate": {
+        "bytes": 30024,
+        "sha256": "820953c2b05c15308ffa941e05e29bda02b619aa8dca402e435a8729f23b706a",
+        "git_blob": "bbf57968bf7edd67bd10f0396f811f352b597948"
+      }
+    },
+    {
+      "path": "docs/PRD/039-prd-traceability-report-excerpts.md",
+      "before": {
+        "bytes": 30704,
+        "sha256": "7722285b7a4048177a281d15415a380fe25873f09bfd06cbf3ef2e97f209d9f8",
+        "git_blob": "d2998b2fa470923c5c92de773726251ad1a61c53"
+      },
+      "candidate": {
+        "bytes": 31638,
+        "sha256": "02d773b18b53c146e5e9e8cb3faab8a569d85feae888317c8445a41ea7e270be",
+        "git_blob": "a5058c5f63fab5d69a858b76b8cfc82dfaea46ec"
+      }
+    },
+    {
+      "path": "docs/PRD/045-prd-ssp-template-structure.md",
+      "before": {
+        "bytes": 30702,
+        "sha256": "c78dcab87639852ab18185d9eaad3b3879548d08cc8d51fe2beed95280834a04",
+        "git_blob": "6ce70ce1d4b97b042cea11ef80e0106a8c638e0a"
+      },
+      "candidate": {
+        "bytes": 31535,
+        "sha256": "eae1e94425a838c235808a288f3b73ef78bd1e1b7ecbe3d2c698bb4ea424da66",
+        "git_blob": "7bb0fc2f00c523377397df0ded4eb6fc9fe65f9e"
+      }
+    },
+    {
+      "path": "docs/PRD/046-prd-ssp-template-placeholders.md",
+      "before": {
+        "bytes": 32610,
+        "sha256": "5fe9d5f1f1d31e7bf48fcc80df58a5079c9f16aa60aebff1ba5b04bc1e9a2a69",
+        "git_blob": "c8ee2fdd412346d7227e7a355c8e8787d3e6295a"
+      },
+      "candidate": {
+        "bytes": 33445,
+        "sha256": "b40292e8b5cb42259b563368e9fe0e89847b6c816075ec6b83082874a36c1182",
+        "git_blob": "5118fe5764db8b6e205cd599b592f02e44d22397"
+      }
+    },
+    {
+      "path": "docs/PRD/047-prd-community-examples.md",
+      "before": {
+        "bytes": 31687,
+        "sha256": "9fb25a517e6b0127964014c58051bfd4a8fc8014ac9f4aad856f0e0273b127c8",
+        "git_blob": "2be17318eaed310534ced9c128ad6e7f68ab49ec"
+      },
+      "candidate": {
+        "bytes": 32528,
+        "sha256": "3030c5b7a000e71752d2a29ceabcbf2d66b49049d91b9b180f0165e768bbb797",
+        "git_blob": "d98a1fa9141ab20dc189f6705745d9b3a6d6cabb"
+      }
+    },
+    {
+      "path": "docs/PRD/055-prd-control-mapping.md",
+      "before": {
+        "bytes": 52982,
+        "sha256": "cd64eead070b286280ed232b6c627c5bda4bd74e1d45f0c790aeffd2782eda11",
+        "git_blob": "17a7744748fc1ba3516fe33ca9f0bea86ba9d7d7"
+      },
+      "candidate": {
+        "bytes": 53904,
+        "sha256": "c5e21e2ba9f65ee4eb5c29cfe5ad59d2af7b5b85c5bf3dbc953af3e9e5b67cae",
+        "git_blob": "c8a861325876208d92637a379d44c9ab21ce70ac"
+      }
+    },
+    {
+      "path": "docs/PRD/057-prd-framework-change-impact-monitoring.md",
+      "before": {
+        "bytes": 24445,
+        "sha256": "f875632ccaa0e49ca96613bb854274e30099fcb543847d21e59d3eb7d83f7e55",
+        "git_blob": "c9a8671c86acd841b8883ffb2b69bac781058ea3"
+      },
+      "candidate": {
+        "bytes": 25376,
+        "sha256": "10d3343ff55657a11dfa887d66d91ae167ad4cdc59973418ba356e9c949cac72",
+        "git_blob": "16d15a09d8f6a44dcfcd37d647a5f5b1edb0442e"
+      }
+    },
+    {
+      "path": "docs/PRD/058-prd-policy-lifecycle-management.md",
+      "before": {
+        "bytes": 20927,
+        "sha256": "1d0158c1e90c67eaa1b785ef669d0b8047ff6c01b3635c40efef753be5230a54",
+        "git_blob": "16efcbfe54be1aa1202425f8d8131717be3b09af"
+      },
+      "candidate": {
+        "bytes": 21815,
+        "sha256": "b04bf93dca923db35c3ae6175c0bd85086378b4785d722e9ab27a507d743082b",
+        "git_blob": "ccf31403dc896797276a99e2a35dd1885ab1b5ab"
+      }
+    },
+    {
+      "path": "docs/PRD/059-prd-reusable-policy-components.md",
+      "before": {
+        "bytes": 18238,
+        "sha256": "2a62e22fb88ab8f4c5f91ae9bfb3b30df23329f42ddd85798c6588e9a13e359b",
+        "git_blob": "3e7c9769554698aae9f426c295db7a80d549110b"
+      },
+      "candidate": {
+        "bytes": 19129,
+        "sha256": "ef2e8333330058851b74ce8b4a813f85444dd14618d24d2b6812b4b6dab7f7e1",
+        "git_blob": "e4504cfe9078824589e2e73532f404e669520472"
+      }
+    },
+    {
+      "path": "docs/PRD/060-prd-evidence-implementation-linking.md",
+      "before": {
+        "bytes": 20634,
+        "sha256": "03c6e35c01ffe6d90e2b718ec8c04d23aacfc83907ce4dd0c78156824d2769ac",
+        "git_blob": "7835835de1e50387b006bccc4e05ed851cea4cb3"
+      },
+      "candidate": {
+        "bytes": 21450,
+        "sha256": "a40913d2fa9072f3acb4f3635077593f5861bf62310437c4753681cca983f2d6",
+        "git_blob": "dad97fb6b6c001a586aea1000f7dc3e042c9a90b"
+      }
+    },
+    {
+      "path": "docs/PRD/061-prd-framework-guided-policy-authoring.md",
+      "before": {
+        "bytes": 25584,
+        "sha256": "c35299ff0e3dbea8481f8beed137a00a281ce874435d825617cff4acff1da3b3",
+        "git_blob": "0fbdc66af53f0131298d1a8c04bad4a4bd78ac03"
+      },
+      "candidate": {
+        "bytes": 26672,
+        "sha256": "8cb5d1d1e9c63be6a50d55bd9650921995bd25e49d1ab313214d1b499e0b89e9",
+        "git_blob": "17b97a9092835d6d33405344594ab8d02ad9dca6"
+      }
+    },
+    {
+      "path": "docs/PRD/062-prd-local-web-workspace.md",
+      "before": {
+        "bytes": 82237,
+        "sha256": "0dee87ea07626413cfe5795c0e9cd48fe065f7368e1e5a8e02d80caa2d645fe8",
+        "git_blob": "f7195bca04464db60021897ddb56d4b99fc6133d"
+      },
+      "candidate": {
+        "bytes": 83191,
+        "sha256": "546b0a22f609ecb705f2a52a79685fa68c4c55a47e08f95f3163e961a1f26f31",
+        "git_blob": "029858d28a1b759724b1df1546563b56c15ab537"
+      }
+    },
+    {
+      "path": "docs/PRD/063-prd-oscal-assessment-results.md",
+      "before": {
+        "bytes": 19052,
+        "sha256": "6c847deaf587c658622da54e0b01086cae480e1127b126150f8e86e3a9bbbdd5",
+        "git_blob": "e80deb7c3e2188b4ad1c76fb1b65dba219615cf4"
+      },
+      "candidate": {
+        "bytes": 20028,
+        "sha256": "bacc0ac6c21a9a06db4cc778f7461e7aed99a8f030c149a6bfe36ce0a6472a5e",
+        "git_blob": "b2d8b0141c2127dbbcf01e4169227d605b49ae00"
+      }
+    },
+    {
+      "path": "docs/PRD/064-prd-oscal-poam-workflow.md",
+      "before": {
+        "bytes": 14623,
+        "sha256": "41c95d792f8f210705faceb964201147267f62837b220398572a375811a40224",
+        "git_blob": "4ba829e0071e968d8807309ed2c8493d266df82c"
+      },
+      "candidate": {
+        "bytes": 15502,
+        "sha256": "1e87e0675d3828f470103d3f631177a641c44696d2f439d528c4649956037b43",
+        "git_blob": "af12d494b9325b9327c8d2b5741e8f99d5558274"
+      }
+    },
+    {
+      "path": "docs/PRD/065-prd-external-workflow-integrations.md",
+      "before": {
+        "bytes": 14232,
+        "sha256": "19ad58f1342d2fb24fc42a8d7387d5bb5b116008d8145b0737e2ae8d9d6fc138",
+        "git_blob": "62959dceb92aac23f714416a2b8b433feccd437a"
+      },
+      "candidate": {
+        "bytes": 14984,
+        "sha256": "16ceb5823046ec2f9423b49f0593ec4777935433096a81d3b21169a78254fa68",
+        "git_blob": "f3a4bd08e1c9a4d930ab32073d7bbf275e475290"
+      }
+    },
+    {
+      "path": "docs/PRD/066-prd-ai-assisted-suggestions.md",
+      "before": {
+        "bytes": 21234,
+        "sha256": "e48d5a2148f4b7bd9e77d92b699a64f1d11f0d4f99735a2f6a9f7cd7ea746923",
+        "git_blob": "78e7c7e183aa824c43fd977c3a192dc81349fdc8"
+      },
+      "candidate": {
+        "bytes": 22249,
+        "sha256": "3c1ffcf7ff06a9d21c7cf3962461d1d07e6f0b9aa37f8a154aae88f613419597",
+        "git_blob": "fef98c2bdc05435e2eb164a4505892df15f43114"
+      }
+    },
+    {
+      "path": "docs/PRD/068-prd-collaborative-review-queues.md",
+      "before": {
+        "bytes": 19477,
+        "sha256": "3a6610d9366e9383c9b27fc6e1c053d9f90d13851847693a975a2ebb39bb4460",
+        "git_blob": "730b6f178ad1b406f5cfc56fb0d4bd321ac0947e"
+      },
+      "candidate": {
+        "bytes": 20544,
+        "sha256": "8f94bcd4ff415561c36a79f2feb75a1e5511061ca68955fd4484502466bc61c7",
+        "git_blob": "b8c67925c58d2ae922b6c29a881932f56e97def8"
+      }
+    },
+    {
+      "path": "docs/PRD/069-prd-dependency-security-audit.md",
+      "before": {
+        "bytes": 15986,
+        "sha256": "d3f0ffe31da780afa3b0dc29c81b01e2399518343aa6d3ee0f65d6ba67442004",
+        "git_blob": "af35986e81b8591592fb27f459deb050075e9e8d"
+      },
+      "candidate": {
+        "bytes": 16825,
+        "sha256": "fbb2bc175a07ca865da0e79e100b4a97e89189d40ed92b57e475e58220eee8c0",
+        "git_blob": "8f4db7f9811ffea39a77308aed83bec653c36a4b"
+      }
+    },
+    {
+      "path": "docs/RUNBOOK.md",
+      "before": {
+        "bytes": 12280,
+        "sha256": "ec65902ff85d3a5c8a915e5a0b0df46eb567566e954d081def64ddc02f062995",
+        "git_blob": "fa1bfa38542c0fd767bf2b0d0f7c265bbcbd29ae"
+      },
+      "candidate": {
+        "bytes": 12541,
+        "sha256": "2ef244a160094fc9fa8aa207d595cdf769ad2adfdfbb753a7b928cbd76c03ee1",
+        "git_blob": "bcf93f72038b734cad38f83d2cbbc897f442bbf4"
+      }
+    },
+    {
+      "path": "docs/SEC/059-sec-reusable-policy-components.md",
+      "before": {
+        "bytes": 3543,
+        "sha256": "1e819e267b9a4f9fd202f4e82dd86eae3c8d77a9cfac4843eca62f89cc77d8b8",
+        "git_blob": "27163cca73c652a4e6c64f835f65ab1fe555aaca"
+      },
+      "candidate": {
+        "bytes": 4593,
+        "sha256": "fc8068b04eb492bc0d21a2f988b27e4f8dccb0a00c70142fc2600ccc86354429",
+        "git_blob": "8b44b0fdb806bcd042d340a0348ed754c72e8133"
+      }
+    },
+    {
+      "path": "docs/SEC/062-sec-local-web-workspace.md",
+      "before": {
+        "bytes": 78820,
+        "sha256": "b3c62b91d05cf27ed8c1012e98637f24fd5dc55fc456749725a16b17fa281c09",
+        "git_blob": "a31836c27eab8b31e55275346f7c5421503f022d"
+      },
+      "candidate": {
+        "bytes": 80699,
+        "sha256": "fcf065005a5a104a548a156d780e236e3ef14edb4c55129a2367d1d87f5b62aa",
+        "git_blob": "d92eb5006c4f1aa0f34ca93f03ec4ff84abf05bd"
+      }
+    },
+    {
+      "path": "docs/TEST_CATALOG.md",
+      "before": {
+        "bytes": 209846,
+        "sha256": "95313c840ece75547cba6c8528062f1296d4d38b3fb9889ac6fe2083fce64b80",
+        "git_blob": "1bdaa0f7a3ec07c17e90d0e4468dfa00aa6f7e0b"
+      },
+      "candidate": {
+        "bytes": 210274,
+        "sha256": "ecc12868c495ccbea42efa4224c69782f1ebf0811dc0746d3cb3b14bd46ba89b",
+        "git_blob": "17155dc473eb7ed6162719425a774d91fd456f6a"
+      }
+    },
+    {
+      "path": "docs/accessibility/062-accessibility-requirements.md",
+      "before": {
+        "bytes": 23756,
+        "sha256": "feb2b20078ddc4e8411a0d03ffd0845d09ecf464fc88c94647315b6a6ff65633",
+        "git_blob": "bf12e12d594401050cb10111390455d0a4670b33"
+      },
+      "candidate": {
+        "bytes": 25165,
+        "sha256": "ca9473718fadede06886b3a9bcbfd9aaf54ed293a19f06f87379a3add3733656",
+        "git_blob": "d9d1ad6ff7d7a720b54c750555094fdc1b8b3c37"
+      }
+    },
+    {
+      "path": "docs/api/capability-matrix-v2.md",
+      "before": {
+        "bytes": 16881,
+        "sha256": "518cfebdba61e79b155b2403fe99bf99c86e04e4061490b7f1ec7a7ff80f21b9",
+        "git_blob": "6602140218440cdad64a68f68106667ff6545909"
+      },
+      "candidate": {
+        "bytes": 17046,
+        "sha256": "923133a856c009b61e98d8ec48cda16b46a3a180f59bc10b7592b5a7f09b0293",
+        "git_blob": "1a54e2218bf4e0865d1a6254870d10bdc647a4fb"
+      }
+    },
+    {
+      "path": "docs/api/compatibility.md",
+      "before": {
+        "bytes": 18395,
+        "sha256": "e3c911c593952b21ef10beaf1260a09e5971e294a388069e9185f11abd47f9ce",
+        "git_blob": "7d7f6d18f33605bba450a43e61860ee343f08b2b"
+      },
+      "candidate": {
+        "bytes": 18328,
+        "sha256": "7f293ef126af7f60146be425af1e537c70d966bf6e1246cf35f0e9c09523a5ba",
+        "git_blob": "65a7e5ec6e32d934485fe3aa2f259bba52056efa"
+      }
+    },
+    {
+      "path": "docs/api/fixtures-v2/README.md",
+      "before": {
+        "bytes": 2802,
+        "sha256": "f1b58e3edc3478bc468ac6d691695b7332fcdfd3bf7d93ebd261c7c7070a9761",
+        "git_blob": "99af3841c15fa3779456808cd57aa794b8c10d6c"
+      },
+      "candidate": {
+        "bytes": 2874,
+        "sha256": "259191ee80a2f8ea957947068ba5cc91009d1a006eddd05ee2133ac87f77b972",
+        "git_blob": "70de1b5120892fb1fa6dafa2438d450714311c0f"
+      }
+    },
+    {
+      "path": "docs/api/migration-v2.md",
+      "before": {
+        "bytes": 10782,
+        "sha256": "53df1c27c35840439fecfde40e1ebd58e0ddbd97de3b863b3f5a84a94712bba8",
+        "git_blob": "f367b80600c179988d40635bb287f3da32f6a8d8"
+      },
+      "candidate": {
+        "bytes": 10763,
+        "sha256": "7a5a6ba4b96b207dda5a4170cf79b9f88745ae931af3281f1f65fd55ace4a0f2",
+        "git_blob": "59ecce7b88b007a4610bfb48864056f835384226"
+      }
+    },
+    {
+      "path": "docs/architecture.md",
+      "before": {
+        "bytes": 29122,
+        "sha256": "297972c0f2fe193ce77b85d9ee5fe41d0e3fd860d8bf8e7d97c7844ce01fe330",
+        "git_blob": "96e215cf640a7668268c66a08888eeade98d2819"
+      },
+      "candidate": {
+        "bytes": 28952,
+        "sha256": "5a31d64e22f6f5affdf489d63d17d92b52fde61207f3337a1fe9749621ce4377",
+        "git_blob": "301a261b257702215dee54a505fce1dbabb13733"
+      }
+    },
+    {
+      "path": "docs/assessment-results-reviewed-risks.md",
+      "before": {
+        "bytes": 6538,
+        "sha256": "15df735235c7b2f6f937316827faa53cf328afe4ac570cbebfdd2dabb544b96d",
+        "git_blob": "8b59778e94f3d198df56cc02f961b6cf431bcace"
+      },
+      "candidate": {
+        "bytes": 6651,
+        "sha256": "9302f060534c947a3ca4d756a4c07423b37977a7e0ff9bb8657ddc63d26f8412",
+        "git_blob": "ab7a2332cfa1b7b7b644b0fcd8eb34b54a9cacdb"
+      }
+    },
+    {
+      "path": "docs/assessment-results.md",
+      "before": {
+        "bytes": 4928,
+        "sha256": "2a12abf8f3ac5ec471ad1200af1f51d3d3da8bcd0e6aba8824e72544d22c3c43",
+        "git_blob": "b8751f01f9df6986123fb164069b6e225f77008a"
+      },
+      "candidate": {
+        "bytes": 5129,
+        "sha256": "f453e0a55c688bf696af935b4876adda1b9858e6bc844b143f3c11fc0f53fc7d",
+        "git_blob": "5a2860802c30f534ac1d9254dac347a142ff9bbe"
+      }
+    },
+    {
+      "path": "docs/authoring-api-migration.md",
+      "before": {
+        "bytes": 3397,
+        "sha256": "f8bac0fc0d80c98aac9295e18280460b908b2edd1f4a87fa1460b5e2e5864af8",
+        "git_blob": "062d7367c5fbc87484167cfaea8a3f545866da97"
+      },
+      "candidate": {
+        "bytes": 3567,
+        "sha256": "a3fe0220cfd882df1d31a385d2c046ea8432f9cee1130ffecaf6440af4cb5d25",
+        "git_blob": "6a7b1d101a97adb2841dd1f694846a952bab9490"
+      }
+    },
+    {
+      "path": "docs/authoring-gates.md",
+      "before": {
+        "bytes": 12178,
+        "sha256": "9dd5889cd373868c8b78a38a79c6455dfcbd422a5e1f1d3e3e23fbaa97540af7",
+        "git_blob": "44dae80dba23da65d8b3db1d38d127896f2d9e1d"
+      },
+      "candidate": {
+        "bytes": 12258,
+        "sha256": "2dcf3f57398e30345fed0ec8e16e15ebff75f326370626e32ca4d0be815e7e67",
+        "git_blob": "5ed8dcb987bf4c49f8f24a7d870c086df441f074"
+      }
+    },
+    {
+      "path": "docs/authoring-phase1-plan.md",
+      "before": {
+        "bytes": 15958,
+        "sha256": "6f8eb14c3348fe8c96a7b4d914bf6c4be340fd6a4e3f526467bfaff0f3d1d741",
+        "git_blob": "680cf3a2dec87766f0f6e66eabdea8765e58db03"
+      },
+      "candidate": {
+        "bytes": 16387,
+        "sha256": "c2da953b806b3b694d43b47c49eba8c68bc42dad4792ec6341285143bb771e52",
+        "git_blob": "937bb6fd7957799fd335503de79977993162afe3"
+      }
+    },
+    {
+      "path": "docs/authoring-review-exchange.md",
+      "before": {
+        "bytes": 15545,
+        "sha256": "3a08fe3d882c51c98c744e559e607146d0d85933310d45bb98dc824ef100362f",
+        "git_blob": "1815c486776875e6b63ae0fe97a6088113068b36"
+      },
+      "candidate": {
+        "bytes": 17258,
+        "sha256": "f30e28b583fa244a1ba44d82ec169c30c8678dd5b6623acd00b6b9e76e8649fb",
+        "git_blob": "a51c3813e5c92c55161360198f5b28bb2705a109"
+      }
+    },
+    {
+      "path": "docs/authoring.md",
+      "before": {
+        "bytes": 21382,
+        "sha256": "895ec826fd34d2b9e43bc399ab4a374ef5f33b7d0a2e437eb45ae4f9193e91d4",
+        "git_blob": "8db3bad2e15fd539f5673c9b2bf7c3fc4e0e2c3d"
+      },
+      "candidate": {
+        "bytes": 21444,
+        "sha256": "41244971a091fe1b65046a3a0c3e7ac252d597a0dc8edca51c83f7415427518f",
+        "git_blob": "08ecada274b0cecf22e487e361fe9237abf927f9"
+      }
+    },
+    {
+      "path": "docs/development-tools/hosted-chrome.md",
+      "before": {
+        "bytes": 18073,
+        "sha256": "ffc4a144ed695fe01320685c5c9667d7d6c56cffc7d88c7a9e550045d1ee3cee",
+        "git_blob": "4f7d5ccd758515e8d8e72689595f54ee88bd7f74"
+      },
+      "candidate": {
+        "bytes": 18501,
+        "sha256": "7e62eb8fc99556d25f369438acb31d8c0c74e9af208bd33200515eae62b0ef86",
+        "git_blob": "be185911aee607bf3a172c55eafe6521c8615143"
+      }
+    },
+    {
+      "path": "docs/development-tools/linux-headless-os-denial.md",
+      "before": {
+        "bytes": 24674,
+        "sha256": "61bcb47e70b21aeadc2e58cfb5d18ee9c8979f93362c205514d3f15a42fb8e40",
+        "git_blob": "e6f93334678966e95e6ccf9223fb3a2748b98dcb"
+      },
+      "candidate": {
+        "bytes": 25149,
+        "sha256": "2f3c5a11d46913fe031d9ae2d7903b1179b3d935a1c7dfae9710b61b2295a49e",
+        "git_blob": "aec6e20fc9ce9b48448a3022201e0682f73516ab"
+      }
+    },
+    {
+      "path": "docs/development-tools/maintained-client-extension.md",
+      "before": {
+        "bytes": 9105,
+        "sha256": "edab2a5e1d9fceef092acd656f249a2b781ce99d1d75b3e9b9ff1a2a84a006c0",
+        "git_blob": "6a2f8639caee7cc72756de86b8d8284449920bfb"
+      },
+      "candidate": {
+        "bytes": 9643,
+        "sha256": "856e4a9bcd0a2ba7374b518375def94ae10de4ed82f4539a74e94dcc00d3a54f",
+        "git_blob": "291667da5203811561eca0eef0a968dd21292ce3"
+      }
+    },
+    {
+      "path": "docs/lifecycle-captured-status.md",
+      "before": {
+        "bytes": 4161,
+        "sha256": "f578b0a5a3ce5a479e71320c47ff4ad6fd905ebd8516bae46fcc476c88dfc791",
+        "git_blob": "260ceff483cae15d580e0a3c60147f9caa5b7c10"
+      },
+      "candidate": {
+        "bytes": 4328,
+        "sha256": "f37474d4aa9f1a14789fddce36aa7a7433ec60383976ea1cb9c645fd6a7b95c4",
+        "git_blob": "12e9096cf4821e50088439af8cb049b4061635f1"
+      }
+    },
+    {
+      "path": "docs/lifecycle-review-exchange.md",
+      "before": {
+        "bytes": 12253,
+        "sha256": "c8d86f02f8ca6bd68244b34d24d2e093ad679ca7df209c4e4295bfb515ca34d5",
+        "git_blob": "f4a7e42ff53cdc4637e1bd19e04ce215895e6321"
+      },
+      "candidate": {
+        "bytes": 12707,
+        "sha256": "3cc93f6e5091053135178f2165db1afa51f3a9aeae7b7b455acf1774a8cba55b",
+        "git_blob": "95c3a289a355afac4123acd931f8c2472138a862"
+      }
+    },
+    {
+      "path": "docs/local-workspace.md",
+      "before": {
+        "bytes": 23725,
+        "sha256": "8e7758515a7d01c51e7ff14ac7fdf687bb51b4a1a078b1b1b42b4581d65d1787",
+        "git_blob": "087385780f1310bab6026fd33b2ae381091ae35c"
+      },
+      "candidate": {
+        "bytes": 23913,
+        "sha256": "706a1b4a31708fb01979be2866331ce7b42f6a7b2e39ae3e7a0c04b9f14c65b4",
+        "git_blob": "93997df13271602c148f32e201335fab98ff34e9"
+      }
+    },
+    {
+      "path": "docs/poam-baseline-comparison.md",
+      "before": {
+        "bytes": 5922,
+        "sha256": "ebd1fc5f90907bc0b603fb518a913c6ff7e6cf15d0ac23f18487daa88335c830",
+        "git_blob": "4294b3daf194e94b6e0b0ce401bc35fa5f26750f"
+      },
+      "candidate": {
+        "bytes": 6239,
+        "sha256": "39922746083beb736b2c79d84815332633d2569f99be7f10b17ebcbd541f2905",
+        "git_blob": "212a88cb21222f45052ee61c089e95d265b9530c"
+      }
+    },
+    {
+      "path": "docs/poam-cli-workflow.md",
+      "before": {
+        "bytes": 5540,
+        "sha256": "b7629538c9fdfd2b96e3c3bb9a93adcc302496a2e23ee22db2328e5145fbf815",
+        "git_blob": "962a6bf0b7e16e5551fe8b1c64a4a9d4b685a87b"
+      },
+      "candidate": {
+        "bytes": 5905,
+        "sha256": "075706b348afa5fd33199c1a712a82d50bd8824429b04f7ed958725f1277591b",
+        "git_blob": "d9da61a7873309fd98697b476f7bd55fbdc7620a"
+      }
+    },
+    {
+      "path": "docs/poam-foundation.md",
+      "before": {
+        "bytes": 5978,
+        "sha256": "96899b76e9c9c410a3b8e4fde088a0ec6cfd3f3b813563b12569c3291657784e",
+        "git_blob": "f25e9681d729169a2e0ec01ed5f4d4f5926335be"
+      },
+      "candidate": {
+        "bytes": 6262,
+        "sha256": "706125557064e7e50b30e12a7bbd8325405b473e656e554bca2ea1d68d7ac769",
+        "git_blob": "0ed3d7a8580fa2a06740264e4844611d14d8b70d"
+      }
+    },
+    {
+      "path": "docs/poam-item-workflow.md",
+      "before": {
+        "bytes": 5500,
+        "sha256": "8638589e0b89f907133ae659b9d6bd79ec3fc880055005207785d51887834c54",
+        "git_blob": "09af5ed0a9a0a0e4f2efbf79bc3f0f5a0bc758f8"
+      },
+      "candidate": {
+        "bytes": 5762,
+        "sha256": "e501db63f6bf591f2d6270e39fd1d697b7b97cca852e0dcaa564e19963e0cb2b",
+        "git_blob": "e88de95fb3c710754607b477cbf99f3d012f2133"
+      }
+    },
+    {
+      "path": "docs/project-configuration.md",
+      "before": {
+        "bytes": 6535,
+        "sha256": "9b3671e9ec12fdbd8bf1f5a81f44892d120dde145a2c8f1fbd3d7186262523d8",
+        "git_blob": "deff69efa49554dd9ad6a50e2e596ca3339b5a6c"
+      },
+      "candidate": {
+        "bytes": 6521,
+        "sha256": "a63cb9207e908d2b14f2742ccbfc97ab83442099f3e477d55ad1c93de3692280",
+        "git_blob": "9c9a7dfad074550d0e4eb55cdc1921d4d00cc16f"
+      }
+    },
+    {
+      "path": "docs/reusable-policy-components.md",
+      "before": {
+        "bytes": 5159,
+        "sha256": "c75414a14811362415baa558e601bd804a14522d08c080f799e1e29d08423c19",
+        "git_blob": "cefd5778f78e3747c1a8ace700aab3d336fd2eb5"
+      },
+      "candidate": {
+        "bytes": 6089,
+        "sha256": "10ea8a78b5853e212951e9a5709ae628ce361f1ff58d0aecbd052549385790b2",
+        "git_blob": "7105af767db7ada1ee52fe8abfab5be54176f67f"
+      }
+    },
+    {
+      "path": "docs/review-queues.md",
+      "before": {
+        "bytes": 19378,
+        "sha256": "a73df318819a0993b874d2dee31f9e5d8b6e829f2e9b3428e5028dfdbd17add5",
+        "git_blob": "b97eb23c4017fa61c5296642a269b8255970abac"
+      },
+      "candidate": {
+        "bytes": 19432,
+        "sha256": "bf9de31a0e14a48380cec4084f1004d7997ba30591c1939b26e187afa58af442",
+        "git_blob": "975c751e012be410bb4b7fef744f9b56d230aa95"
+      }
+    },
+    {
+      "path": "docs/usage-guide.md",
+      "before": {
+        "bytes": 50257,
+        "sha256": "b05e5b83c69adfce36b76aa614dd9797ee69a745d0eedd10a0a9820d55fa1008",
+        "git_blob": "7d3ee95c965e6549e3f5384e6002f485a7ad6fde"
+      },
+      "candidate": {
+        "bytes": 50203,
+        "sha256": "c22f268fbb5aeed1ca3b92da9d5d95763c3d47f5f41e967a5603eabf58e79a29",
+        "git_blob": "c24be83922554d250b49b5fd13aa943196368c63"
+      }
+    },
+    {
+      "path": "docs/workspace-bundle-receipts.md",
+      "before": {
+        "bytes": 12094,
+        "sha256": "82dde9fd27559fa8597f0d9160863be235c4b72282077327589888f5fdd0c978",
+        "git_blob": "279ad8006a1a8d6fe391cb1b7914b71f199d810d"
+      },
+      "candidate": {
+        "bytes": 12432,
+        "sha256": "7cd3c05f7db0bc0018789769fbd969147eae5907ecce6cf0ee98959865ef3f95",
+        "git_blob": "03694d0d59639206d996f1473e6c6d5fd9998570"
+      }
+    },
+    {
+      "path": "docs/workspace-lifecycle-impact.md",
+      "before": {
+        "bytes": 5490,
+        "sha256": "4bb5f1caa068e272440e9457534b29a4ca9a15e65b212fdd5178a165812ee0fe",
+        "git_blob": "bfaa6f27cf89696e2cf878dab77383498cc1a763"
+      },
+      "candidate": {
+        "bytes": 5682,
+        "sha256": "7fa468da15162c30bf44e7c96f204df98743c37aea5451d1ed4498a8e2d2a47d",
+        "git_blob": "1e66c9abaac9257c0b8e944fe978beb00249f0cc"
+      }
+    },
+    {
+      "path": "docs/workspace-source-bundles.md",
+      "before": {
+        "bytes": 12925,
+        "sha256": "40579c1e564357fd3819f4c2e94702601c3a55feb354b5f580a4ce55785d859e",
+        "git_blob": "fd67016a676c11cd0a94c4931478c33d9698f9ec"
+      },
+      "candidate": {
+        "bytes": 13053,
+        "sha256": "16879d00ca293ea46666181874911d9e7279296a0b13ad78211db524557c4226",
+        "git_blob": "6984d50195e5d4f52cb51b026d159bfb7e748ec6"
+      }
+    },
+    {
+      "path": "docs/workspace-staged-source-bundles.md",
+      "before": {
+        "bytes": 4591,
+        "sha256": "ea0459bbd7cc6d7cee629d5dc51b4b34073ec7e357dc726654ee7f76c4c076f8",
+        "git_blob": "259c49973dc7554e51ba082948f6ed74525df339"
+      },
+      "candidate": {
+        "bytes": 4712,
+        "sha256": "bfd39102478f351118e623f3935c334547468ea2e44e23fb62adef58a19a803c",
+        "git_blob": "be2bb7a513f6a2e8012fa97fa5879ae7da85fae6"
+      }
+    },
+    {
+      "path": "examples/simple-access-control/README.md",
+      "before": {
+        "bytes": 4538,
+        "sha256": "2e0ab63e255f75fd88e5f43bbd6358298b03772edb31597422cab48d38097a2c",
+        "git_blob": "d8cf722c65fcf9c15559883b75dfeb0aa2845d2f"
+      },
+      "candidate": {
+        "bytes": 4661,
+        "sha256": "e2b41f0508c943605bc7c66ee9b9ceb6750f66d3059da828a839a26d4ca07726",
+        "git_blob": "3696d2c318a9aca42f5f1addf643bbd587b6fabb"
+      }
+    }
+  ],
+  "sibling_F20_docs": [
+    {
+      "path": "docs/mcp.md",
+      "head": "855b3347d855b09ef318fb83e6d37166a0b7ea4f",
+      "bytes": 24709,
+      "sha256": "5bb340e6176e1d24f5fbcc905ca43fd7ae549fd67c9d9eba4a56716eac3e6bf4"
+    },
+    {
+      "path": "docs/PRD/067-prd-read-only-mcp-governance-interface.md",
+      "head": "855b3347d855b09ef318fb83e6d37166a0b7ea4f",
+      "bytes": 17772,
+      "sha256": "02bc1038436c466ca2f65eb9939bdd2c738775ea20513618e47007cb96223a4f"
+    }
+  ],
+  "retained_observation_pins": [
+    {
+      "retained_record": "forge-root-job-final-docs-live-main-refresh-v2.log",
+      "bytes": 41,
+      "sha256": "f570cec8c49b06f09cba4a0c2eaf72565f9fd5f88d4ddd7a7fed9dcbfc4e68f7"
+    },
+    {
+      "retained_record": "forge-root-job-final-docs-live-pr-roster-refresh-v2.log",
+      "bytes": 18191,
+      "sha256": "843ce30fcd57da20cc27b1346cbe96bb251b9fd39725691b299ecffa284b91b9"
+    },
+    {
+      "retained_record": "forge-root-job-final-docs-pr146-status-read-v1.log",
+      "bytes": 393,
+      "sha256": "f526d89e50e5303fe26a4bb1afe3dbfa999b81b731d9f71fbdd297aa9c8ec700"
+    },
+    {
+      "retained_record": "forge-root-job-final-docs-pr146-main-ancestry-v1.json",
+      "bytes": 707958,
+      "sha256": "cce180649edb2a22759b7b57b39323f75e191cbdd717b149e84e3551e7464d08"
+    },
+    {
+      "retained_record": "forge-root-job-f20-hosted-windows-test-failure-read-v1.log",
+      "bytes": 1136751,
+      "sha256": "dcf472ef7e9341a7e74daa676ac491d3953aca0018f7ecd1aeaba8349c4cfd8a"
+    },
+    {
+      "retained_record": "forge-root-job-f20-lint-hosted-pr-check-read-v1.log",
+      "bytes": 3418,
+      "sha256": "e98db5b7d2bd4f554f94482f3ce923f50755945e92fe0ba03fd4ecf18ec9d875"
+    }
+  ],
+  "unified_proposal": {
+    "bytes": 199465,
+    "sha256": "cdde815cb62772a5120d8613f7efb425be763bd507a322d4d10117773bff5610"
+  },
+  "source_changes": 0,
+  "acceptance": false,
+  "goal_complete": false,
+  "limits": [
+    "Full-page documentation reading is distinct from targeted source follow-ups and byte identity.",
+    "Historical tests, LLVM coverage, failures and decisions retain their original heads and denominators.",
+    "The 338 baseline variants exclude later two-page F20 checkpoints and final corrected variants.",
+    "External pages, full current upstream advisories, and all Markdown anchors were not verified.",
+    "Historical authorship is disclosed; no historical Rust self-reapproval is inferred."
+  ]
+}

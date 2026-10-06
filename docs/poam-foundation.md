@@ -1,5 +1,10 @@
 # POA&M source foundation
 
+> Integration update — October 6, 2026: the applicable workspace, MCP, assessment
+> and review implementations are now on main. See the [merge reconciliation](plans/2026-10-06-merge-documentation-reconciliation.md)
+> for exact commits and qualification scopes. Earlier draft states and failed
+> receipts below retain their dated meanings; human and release gates remain separate.
+
 The source foundation supplies an explicit `forge.poam/1` scaffold and an exact source integrity
 check. A successful check does not approve remediation, authenticate an actor,
 prove assessment review, or validate ownership, milestones, status history or
@@ -99,8 +104,11 @@ source binding or the planned remediation workflow checks.
 
 ## Remaining gates
 
-D064 editable authority, supported native projections and terminal assertion
-policy; PRD 063 source acceptance; full-date/native milestone projection; F08
-workflow/build/report/baseline features; Windows publication qualification;
-independent OSCAL consumer results and authentic remediation-team evaluation
-remain open. No source check or synthetic fixture supplies those approvals.
+The open implementation stack includes [nonterminal workflow/check/build](poam-cli-workflow.md),
+[baseline comparison](poam-baseline-comparison.md), [portfolio JSON and static HTML](poam-portfolio.md),
+[local outbound handoffs](poam-outbound.md) and [local evidence inspection](poam-evidence-inspection.md).
+These technical commands retain separate admission scopes. D064 editable authority
+and accepted terminal/reopening semantics, PRD 063 source acceptance, evidence
+sufficiency, Windows file publication, independent OSCAL consumer qualification
+and authentic remediation-team evaluation remain open. No source check or synthetic
+fixture supplies those approvals.

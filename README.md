@@ -34,7 +34,7 @@ FORGE supplies structured policy data for separately configured agent workflows:
 
 Content-Derived Identifiers: UUID v5 tags repeat for the same normalized requirement text. Substantive text or duplicate-occurrence changes can change them; these tags establish no compliance state or approval.
 
-Traceability: Source-to-OSCAL mapping ensures every machine rule is linked back to the original policy intent.
+Traceability: Mapped controls carry source links for review against the original policy; a link does not establish security intent or effectiveness.
 
 3. Machine-Readable Interoperability
 
@@ -56,7 +56,7 @@ MCP local queries: [Seven read-only MCP tools](docs/mcp.md) retrieve recorded go
 - **Traceability** — Source-to-OSCAL element mapping embedded as provenance metadata
 - **Evidence linkage** — Deterministic requirement-to-implementation indexes, evidence freshness and baseline checks, plus [Catalog/Component JSON overlays](docs/evidence-overlays.md) preserving original document values
 - **Reusable policy components** — Compose local, hash-pinned Markdown clauses with bounded typed values and span-level provenance
-- **Zero network dependencies** — Reads and writes local files only
+- **Offline conversion and validation** — The local workspace uses an explicitly launched loopback transport; configured external tools have separate boundaries
 
 See [Reusable Policy Components](docs/reusable-policy-components.md) for the
 closed component/composition contracts, safe substitution rules, impact report,
@@ -124,8 +124,8 @@ forge export catalog.yaml --format json --output catalog.json
 
 ### Validate
 
-Validate an OSCAL artifact against FORGE's pinned OSCAL v1.2.3 JSON schema. Auto-detection selects Catalog, Component Definition, Profile, System Security Plan, or Control Mapping from the document root; `metadata.oscal-version` is reported but never selects or downloads a schema.
-The explicit `--schema-type` override supports Catalog, Component Definition, System Security Plan, and Control Mapping; Profile documents currently require auto-detection.
+Validate an OSCAL artifact against FORGE's pinned OSCAL v1.2.3 JSON schema. Auto-detection selects Catalog, Component Definition, Profile, System Security Plan, Control Mapping, or POA&M from the document root; `metadata.oscal-version` is reported but never selects or downloads a schema.
+The explicit `--schema-type` override supports Catalog, Component Definition, System Security Plan, Control Mapping, and POA&M; Profile documents currently require auto-detection.
 
 ```bash
 # Validate with human-readable output
@@ -581,10 +581,13 @@ PDF (`.pdf`) and DOCX (`.docx`) documents are also accepted directly — heading
 
 The [release workflow](.github/workflows/release.yml) is configured to publish SHA-256 checksums and SLSA provenance. Check the evidence attached to the selected published tag for the archive hashes and any verified SLSA level.
 
-## 🏗️ How It Works: The Deterministic Pipeline
+## 🏗️ How It Works: The Conversion Pipeline
 
-FORGE processes governance through a rigorous nine-stage pipeline:
-Ingest → Parse → Extract → Assemble → Atomize → Assign IDs → Map to OSCAL → Serialize → Validate
+Conversion ingests and reconstructs the source, extracts sections and clauses,
+assembles and atomizes the internal document, assigns stable IDs, then enriches
+citations, modalities and parameters. Model mapping is followed by structural
+and semantic validation before final requested-format serialization. See the
+[architecture guide](docs/architecture.md) for the model-specific paths.
 
 These checks validate supported OSCAL structure and references. Review the generated requirements against the source policy; validity alone does not establish security intent, implementation or effectiveness.
 

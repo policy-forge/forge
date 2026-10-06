@@ -141,7 +141,7 @@ Evidence freshness is metadata-only:
 
 - `current`: local hash matches and `valid-through` is after `--as-of`, when supplied;
 - `expiring`: valid-through falls within a configured deterministic window;
-- `expired`: valid-through is before `--as-of`;
+- `expired`: valid-through is on or before `--as-of`;
 - `changed`: local bytes differ from the approved hash;
 - `unavailable`: local path is missing or URI metadata cannot be locally verified;
 - `unverified-uri`: a URI is recorded but never fetched.
@@ -267,3 +267,9 @@ The linkage index contains IDs, hashes, bounded metadata, and reviewer-supplied 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-08-24 | Codex | Initial draft for requirement, implementation, and evidence linkage |
+
+## Source checkpoint — 2026-10-05
+
+Native evidence linkage uses explicit subject and evidence versions, hashes and declared dates. Expiry includes equality with --as-of. The implementation audit distinguishes this native baseline from the separately scoped F09 overlay work; an overlay capability or acceptance result must cite its matching source lane rather than inherit this snapshot.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/linkage/mod.rs](../../src/linkage/mod.rs), [src/linkage/manifest.rs](../../src/linkage/manifest.rs).

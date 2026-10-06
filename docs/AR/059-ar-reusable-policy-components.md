@@ -22,7 +22,7 @@ spans additionally identify the declaration name and value hash. Values never
 appear in locks or provenance.
 
 The three outputs are fully rendered and staged before existing destinations
-move to same-directory backups. Replacement uses atomic renames with rollback
+move to same-directory backups. Replacement uses atomic renames with attempted rollback
 on a failed replacement. This is a coordinated local filesystem transaction,
 not a cross-filesystem or crash-recovery protocol.
 
@@ -75,3 +75,19 @@ coverage claims remain out of scope.
 Engineering must approve the manifest fields, source-base rule, span coordinates,
 escaping/context restriction, typed hash contract, and coordinated-write boundary
 before this proposed architecture is considered accepted.
+
+## Source checkpoint — 2026-10-05 (not architecture approval)
+
+The pinned `main` (`aef0ab24`) and candidate (`304b31f8`) source contain the
+flat component/composition contracts and CLI interfaces described here. The
+requirement-audit executable names are static references; this checkpoint did
+not run them. The Proposed status, six contract choices and approval gate above
+remain unchanged. Component status labels are unauthenticated metadata.
+
+`src/policy/mod.rs::commit_outputs` stages all three outputs, moves existing
+outputs to backups, and attempts rollback on replacement failure. Rollback
+remove/restore errors are discarded, and a late Unix parent-directory sync
+error can be returned after replacements. Inspect the actual output bytes after
+such a failure; the operation does not establish all-or-nothing crash recovery
+or multi-file durability. Raw pins, one-pass escaping and parameter hash-only
+provenance are source properties, not human approval or platform acceptance.

@@ -1,5 +1,12 @@
 # PRD-061 Phase 1 implementation plan
 
+> Historical Phase 1 planning record. The starting status and pending decisions
+> below describe the original tranche. Later technical work is recorded in
+> [Phase 2 evidence](authoring-phase2-evidence.md), and later owner dispositions
+> are in the [dated gate register](authoring-gates.md). Original milestones,
+> receipts and pending statements remain unchanged; this plan is not the current
+> release or acceptance register.
+
 Status: In Progress — Phase 1 technical foundation. Product, compliance, legal,
 security, engineering acceptance, design-partner, pilot, and release gates remain
 pending. Reviewer metadata records assertions, not authenticated identity or

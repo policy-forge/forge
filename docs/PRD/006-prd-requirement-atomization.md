@@ -456,3 +456,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+The present atomize_document interface borrows &PolicyDocument and returns the enriched document. Splitting is a case-sensitive conjunction/modal heuristic with a maximum of 50 splits and bounded section recursion. It is not general linguistic interpretation; the coverage figure remains a target.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/parse/atomize.rs](../../src/parse/atomize.rs).

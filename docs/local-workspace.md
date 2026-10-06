@@ -1,5 +1,10 @@
 # Local web workspace
 
+> Integration update — October 6, 2026: the applicable workspace, MCP, assessment
+> and review implementations are now on main. See the [merge reconciliation](plans/2026-10-06-merge-documentation-reconciliation.md)
+> for exact commits and qualification scopes. Earlier draft states and failed
+> receipts below retain their dated meanings; human and release gates remain separate.
+
 The workspace is a local, single-user review surface over registered project
 files. It does not establish reviewer identity, approval, implementation,
 effectiveness, or compliance. This technical implementation does not complete
@@ -245,10 +250,13 @@ Python cannot guarantee physical zeroization of immutable strings.
 
 The normative contract is [OpenAPI](api/forge-workspace-v1.openapi.yaml), with
 [compatibility policy](api/compatibility.md) and [capability matrix](api/capability-matrix.md).
-Default launches use additive unreleased contract 1.2.0. The captured committed
-checkpoint declares API2.3.0/57; the separately captured working tree declares
-[API2.4.0/65](api/forge-workspace-v2.openapi.yaml) under integration, without a
-compiled, merged or hosted result inferred here. It includes closed initialization,
+Default launches use additive unreleased contract 1.2.0. The earlier captured
+committed checkpoint declared API2.3.0/57. The retained open draft stack at
+`304b31f8ea3913eba4a7d776b833b9b3db4ad3a4` declares
+[API2.4.0/65](api/forge-workspace-v2.openapi.yaml); it is no longer merely an
+uncommitted working-tree proposal. This source availability checkpoint adds no
+new compiled or hosted result to the earlier verification records and grants no
+main-branch merge, release or acceptance. It includes closed initialization,
 optional provenance references, read-only index-bundle queries, and the nine captured lifecycle and framework-impact reads described in [the inspection guide](workspace-lifecycle-impact.md), plus acknowledged metadata export and complete index-replacement previews described in [the receipt guide](workspace-bundle-receipts.md), and opt-in exact-source export, complete batch restore confirmation and known-ID recovery in [the source guide](workspace-source-bundles.md). Existing domain
 `/1` meanings remain unchanged.
 The public Rust `Commands::Workspace` variant extends an exhaustive enum and
@@ -298,8 +306,8 @@ index hashing, limits and errors. These API1 queries prepare no effects. The
 separate API2.2 [metadata receipt workflow](workspace-bundle-receipts.md) supports
 acknowledged server export and confirmed replacement of the complete index.
 API2.3 and 2.4 admit the finite [source restore workflow](workspace-source-bundles.md)
-with explicit source opt-in and complete batch review. API2.4 additionally selects
-the separately captured [staged transfer proposal](workspace-staged-source-bundles.md);
+with explicit source opt-in and complete batch review. API2.4 additionally admits
+the bounded [staged draft-source workflow](workspace-staged-source-bundles.md);
 its logical 10 MiB artifact ceiling does not prove a usable payload or acceptance. Larger capacity, full
 retention/capacity and cross-platform transaction qualification, and full S-6
 acceptance remain open. The read-only metadata queries remain source-excluding.

@@ -42,6 +42,10 @@ and contain no level-one heading. Its adjacent, closed JSON sidecar uses
 }
 ```
 
+The example digest above is illustrative. Replace it with the SHA-256 of the
+exact raw `access-review.md` bytes before checking or composing. The example
+`approved` label is user-authored metadata, not a Lifecycle approval.
+
 Supported parameter types are `string`, `integer`, `boolean`, and
 `string-list`. Constraints are type-checked: strings support length and regex,
 integers support minimum/maximum, lists support item count plus per-item string
@@ -143,3 +147,16 @@ forge trace build/catalog.json --source build/access-policy.md \
 Lifecycle labels are preserved as unauthenticated metadata. Composition does
 not approve language, establish framework applicability or coverage, publish a
 policy, or transition its lifecycle state.
+
+## Publication and review boundary — 2026-10-05
+
+The pinned `main` (`aef0ab24`) and candidate (`304b31f8`) source implement these
+local interfaces. This documentation checkpoint did not execute the examples
+or establish architecture/security approval.
+
+Composition stages the three outputs before replacement and attempts to restore
+backups if a replacement fails. Rollback is best effort, and a late Unix
+parent-directory sync error can follow replacement. Inspect all three output
+files after a publication failure before retrying. This coordinated operation
+does not promise atomic multi-file crash recovery or complete durability.
+Validation and source-pin failures are checked before publication.

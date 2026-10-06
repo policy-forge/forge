@@ -1,9 +1,15 @@
 # Export and restore exact workspace sources
 
+> Integration update — October 6, 2026: the applicable workspace, MCP, assessment
+> and review implementations are now on main. See the [merge reconciliation](plans/2026-10-06-merge-documentation-reconciliation.md)
+> for exact commits and qualification scopes. Earlier draft states and failed
+> receipts below retain their dated meanings; human and release gates remain separate.
+
 This guide describes the bounded inline source workflow introduced by workspace
-API **2.3.0 / 57 operations**, also admitted by the separately captured
-**2.4.0 / 65** working-tree successor under integration. This text supplies no
-compiled, merged or hosted result for that successor. Select `--api-major 2` at launch. API v1 remains
+API **2.3.0 / 57 operations**, also admitted in **2.4.0 / 65**. The retained open
+draft stack at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4` advertises 2.4.0.
+This draft-source checkpoint supplies no new compiled or hosted result and grants
+no merge, release or acceptance. Select `--api-major 2` at launch. API v1 remains
 **1.2.0 / 39 operations**. Contract versions describe the local API, not a product
 release. The metadata-only prerequisite retains its historical **2.2.0 / 51**
 verification records.
@@ -197,11 +203,12 @@ Keep credentials, source bytes and preview tokens out of logs.
 Matching numeric major-2 bootstrap negotiation remains separate from feature
 gates: inspection admits 2.1.0/2.2.0/2.3.0/2.4.0; metadata receipts admit
 2.2.0/2.3.0/2.4.0; inline source routes admit 2.3.0/2.4.0. The separately
-captured staged methods require exactly 2.4.0; see the [staged proposal](workspace-staged-source-bundles.md).
+captured staged methods require exactly 2.4.0; see the [staged draft-source workflow](workspace-staged-source-bundles.md).
 The original API1 surface remains available.
 
-This bounded implementation does not close larger staged transfers, complete
-capacity and cross-platform crash/rollback qualification, security/audit,
+The separate bounded staged workflow is available in the retained 2.4.0 draft
+source. Neither implementation closes complete capacity or cross-platform
+crash/rollback qualification, security/audit,
 accessibility, participant, release or full integrated-documentation gates. Source
 tests, mocked client/DOM controls and source review provide their own scoped
 evidence; this guide supplies none of those execution or acceptance results.
