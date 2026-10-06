@@ -56,62 +56,14 @@ pub struct ValidateArgs<'a> {
 /// payload bytes, or publication failure.
 pub fn execute(args: &ValidateArgs<'_>) -> Result<bool, ForgeError> {
     let inputs = load_inputs(args)?;
-    // Every byte below is untrusted until this decode succeeds.
-    let decoded = SuggestResponse::parse(&inputs.response)?;
-    if decoded.task.kind != inputs.request.task.kind {
-        return Err(shared::error(
-            "the response answers a different task than the request declared",
-        ));
-    }
-    if decoded.task.schema_version != inputs.request.task.schema_version {
-        return Err(shared::error("the response task schema version does not match the request"));
-    }
-    // Output-side refusal: the plan promises that model-emitted secret-shaped
-    // text never reaches a bundle, retained or not.
-    let decoded_json = serde_json::to_value(&decoded)
-        .map_err(|cause| shared::error(format!("cannot inspect decoded response: {cause}")))?;
-    redact::refuse_json_strings(&decoded_json)?;
-    let suggestions = build_suggestions(&decoded, &inputs)?;
-    let counts = count(&suggestions);
-
-    let bundle = SuggestionsBundle {
-        schema_version: BUNDLE_SCHEMA_VERSION.to_string(),
-        bundle_id: identifier(&[
-            "forge.suggestions/1 bundle",
-            &inputs.request.project_key,
-            &inputs.request_sha256,
-            &inputs.record.response_sha256,
-        ]),
-        project_key: inputs.request.project_key.clone(),
-        as_of: inputs.request.as_of.clone(),
-        task: super::task::TaskIdentity {
-            kind: inputs.request.task.kind,
-            schema_version: inputs.request.task.schema_version.clone(),
-        },
-        request: RequestRef {
-            sha256: inputs.request_sha256.clone(),
-            payload_sha256: inputs.request.payload.sha256.clone(),
-        },
-        response: ResponseRef {
-            sha256: inputs.record.response_sha256.clone(),
-            bytes: inputs.record.response_bytes,
-            retained: args.retain_raw,
-            artifact: args.retain_raw.then(|| RETAINED_RESPONSE_ARTIFACT.to_string()),
-        },
-        provenance: Provenance {
-            run_record_sha256: inputs.record_sha256.clone(),
-            mode: inputs.record.mode,
-            adapter_sha256: inputs.record.adapter_executable_sha256.clone(),
-            model_id: inputs.record.model_id.clone(),
-            argv: inputs.record.argv.clone(),
-            elapsed_ms: inputs.record.elapsed_ms,
-            exit_code: inputs.record.exit_code,
-            redactions: inputs.record.redactions.clone(),
-        },
-        suggestions,
-        counts,
-    };
-    publish(&inputs, &bundle, args)?;
+    let bundle = validate_captured(
+        &inputs.request,
+        &inputs.payload,
+        &inputs.record,
+        &inputs.response,
+        args.retain_raw,
+    )?;
+    publish(&inputs.root, &inputs.response, &bundle, args)?;
 
     let stdout = match args.format {
         AuthorReportFormat::Json => serde_json::to_string_pretty(&bundle)
@@ -123,82 +75,161 @@ pub fn execute(args: &ValidateArgs<'_>) -> Result<bool, ForgeError> {
     Ok(bundle.suggestions.is_empty())
 }
 
-/// Everything one validation reads, already checked against its own digest.
-struct Inputs {
-    root: std::path::PathBuf,
-    request: SuggestRequest,
-    request_sha256: String,
-    payload: String,
-    response: Vec<u8>,
-    record: RunRecord,
-    record_sha256: String,
+/// Validate exact captured suggestion artifacts without reading or publishing files.
+///
+/// The caller owns confinement, importer-relative path binding and source stability.
+/// This checks the existing closed contracts, byte identities, selected targets,
+/// citation membership and full-unit quotations, then reconstructs the quarantine
+/// bundle. A run's mode and model identifier remain assertions from its record;
+/// this does not authenticate execution, adjudication or semantic correctness.
+///
+/// # Errors
+/// Returns an authoring error for bounds, malformed contracts, mismatched byte
+/// identities, invalid targets/citations, secret-shaped output or an invalid bundle.
+pub(crate) fn validate_captured(
+    request_bytes: &[u8],
+    payload_bytes: &[u8],
+    record_bytes: &[u8],
+    response_bytes: &[u8],
+    retain_raw: bool,
+) -> Result<SuggestionsBundle, ForgeError> {
+    if payload_bytes.len() as u64 > super::request::MAX_PAYLOAD_BYTES {
+        return Err(shared::error("the captured payload exceeds the suggestion payload limit"));
+    }
+    if response_bytes.len() as u64 > MAX_RESPONSE_BYTES {
+        return Err(shared::error("the captured response exceeds the suggestion response limit"));
+    }
+    let request = SuggestRequest::parse(request_bytes)?;
+    let record = RunRecord::parse(record_bytes)?;
+    let payload_sha256 = crate::hashing::sha256_hex(payload_bytes);
+    if payload_sha256 != request.payload.sha256
+        || payload_bytes.len() as u64 != request.payload.bytes
+    {
+        return Err(shared::error("the payload does not match the request; re-run prepare"));
+    }
+    let payload = std::str::from_utf8(payload_bytes)
+        .map_err(|_| shared::error("the payload artifact is not UTF-8"))?;
+    let request_sha256 = crate::hashing::sha256_hex(request_bytes);
+    let record_sha256 = crate::hashing::sha256_hex(record_bytes);
+    record.authorises(&request_sha256, &request, &payload_sha256, response_bytes)?;
+    // Every byte below is untrusted until this decode succeeds.
+    let decoded = SuggestResponse::parse(response_bytes)?;
+    if decoded.task.kind != request.task.kind {
+        return Err(shared::error(
+            "the response answers a different task than the request declared",
+        ));
+    }
+    if decoded.task.schema_version != request.task.schema_version {
+        return Err(shared::error("the response task schema version does not match the request"));
+    }
+    // Output-side refusal: the plan promises that model-emitted secret-shaped
+    // text never reaches a bundle, retained or not.
+    let decoded_json = serde_json::to_value(&decoded)
+        .map_err(|cause| shared::error(format!("cannot inspect decoded response: {cause}")))?;
+    redact::refuse_json_strings(&decoded_json)?;
+    let suggestions = build_suggestions(&decoded, &request, payload)?;
+    let counts = count(&suggestions);
+
+    let bundle = SuggestionsBundle {
+        schema_version: BUNDLE_SCHEMA_VERSION.to_string(),
+        bundle_id: identifier(&[
+            "forge.suggestions/1 bundle",
+            &request.project_key,
+            &request_sha256,
+            &record.response_sha256,
+        ]),
+        project_key: request.project_key.clone(),
+        as_of: request.as_of.clone(),
+        task: super::task::TaskIdentity {
+            kind: request.task.kind,
+            schema_version: request.task.schema_version.clone(),
+        },
+        request: RequestRef {
+            sha256: request_sha256.clone(),
+            payload_sha256: request.payload.sha256.clone(),
+        },
+        response: ResponseRef {
+            sha256: record.response_sha256.clone(),
+            bytes: record.response_bytes,
+            retained: retain_raw,
+            artifact: retain_raw.then(|| RETAINED_RESPONSE_ARTIFACT.to_string()),
+        },
+        provenance: Provenance {
+            run_record_sha256: record_sha256.clone(),
+            mode: record.mode,
+            adapter_sha256: record.adapter_executable_sha256.clone(),
+            model_id: record.model_id.clone(),
+            argv: record.argv.clone(),
+            elapsed_ms: record.elapsed_ms,
+            exit_code: record.exit_code,
+            redactions: record.redactions.clone(),
+        },
+        suggestions,
+        counts,
+    };
+    let encoded = serde_json::to_vec(&bundle)
+        .map_err(|cause| shared::error(format!("cannot encode the suggestions bundle: {cause}")))?;
+    SuggestionsBundle::parse(&encoded)?;
+    Ok(bundle)
 }
 
-/// Read the request, run record, payload and response, and bind them together.
+/// Paths and bounded bytes read by the existing output-producing command.
+struct Inputs {
+    root: std::path::PathBuf,
+    request: Vec<u8>,
+    payload: Vec<u8>,
+    response: Vec<u8>,
+    record: Vec<u8>,
+}
+
+/// Read the bounded artifacts; pure validation binds and decodes the exact bytes.
 fn load_inputs(args: &ValidateArgs<'_>) -> Result<Inputs, ForgeError> {
     let request_bytes = crate::io::read_bounded(args.request, super::request::MAX_REQUEST_BYTES)?;
     let request = SuggestRequest::parse(&request_bytes)?;
     let record_bytes = crate::io::read_bounded(args.run, super::run_record::MAX_RUN_RECORD_BYTES)?;
     let record = RunRecord::parse(&record_bytes)?;
-
     let root = shared::document_root(args.request, "--request")?;
     let payload = crate::io::read_bounded(
         &root.join(&request.payload.artifact),
         super::request::MAX_PAYLOAD_BYTES,
     )?;
-    let payload_sha256 = crate::hashing::sha256_hex(&payload);
-    if payload_sha256 != request.payload.sha256 || payload.len() as u64 != request.payload.bytes {
-        return Err(shared::error("the payload does not match the request; re-run prepare"));
-    }
-    let payload = String::from_utf8(payload)
-        .map_err(|_| shared::error("the payload artifact is not UTF-8"))?;
-
     let run_dir = shared::document_root(args.run, "--run")?;
     let response =
         crate::io::read_bounded(&run_dir.join(&record.response_artifact), MAX_RESPONSE_BYTES)?;
-    let request_sha256 = crate::hashing::sha256_hex(&request_bytes);
-    record.authorises(&request_sha256, &request, &payload_sha256, &response)?;
-    Ok(Inputs {
-        root,
-        request,
-        request_sha256,
-        payload,
-        response,
-        record,
-        record_sha256: crate::hashing::sha256_hex(&record_bytes),
-    })
+    Ok(Inputs { root, request: request_bytes, payload, response, record: record_bytes })
 }
 
 /// Check every citation of every suggestion against the allowlist and the payload.
 fn build_suggestions(
     decoded: &SuggestResponse,
-    inputs: &Inputs,
+    request: &SuggestRequest,
+    payload: &str,
 ) -> Result<Vec<Suggestion>, ForgeError> {
     let units: BTreeMap<&str, &ContextUnit> =
-        inputs.request.context.units.iter().map(|unit| (unit.unit_id.as_str(), unit)).collect();
+        request.context.units.iter().map(|unit| (unit.unit_id.as_str(), unit)).collect();
     let mut suggestions = Vec::new();
     let mut seen: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
     for candidate in &decoded.task.mapping_candidates {
-        require_subject(&inputs.request, candidate)?;
+        require_subject(request, candidate)?;
         let body = SuggestionBody { mapping: Some(candidate.clone()), drafting: None };
         suggestions.push(checked_suggestion(
             &body,
             &candidate.citations,
             &units,
-            &inputs.payload,
-            &inputs.request,
+            payload,
+            request,
             TaskKind::MappingCandidates,
         )?);
     }
     for clause in &decoded.task.draft_clauses {
-        require_section(&inputs.request, clause)?;
+        require_section(request, clause)?;
         let body = SuggestionBody { mapping: None, drafting: Some(clause.clone()) };
         suggestions.push(checked_suggestion(
             &body,
             &clause.citations,
             &units,
-            &inputs.payload,
-            &inputs.request,
+            payload,
+            request,
             TaskKind::PolicyDrafting,
         )?);
     }
@@ -270,7 +301,8 @@ fn require_subject(
 
 /// Publish the validated bundle, and the raw response only when opted in.
 fn publish(
-    inputs: &Inputs,
+    root: &Path,
+    response: &[u8],
     bundle: &SuggestionsBundle,
     args: &ValidateArgs<'_>,
 ) -> Result<(), ForgeError> {
@@ -285,10 +317,10 @@ fn publish(
     if args.retain_raw {
         artifacts.push(crate::authoring::output::OutputArtifact {
             relative_path: RETAINED_RESPONSE_ARTIFACT.to_string(),
-            bytes: inputs.response.clone(),
+            bytes: response.to_vec(),
         });
     }
-    crate::authoring::output::publish(&inputs.root, args.output_dir, &artifacts)
+    crate::authoring::output::publish(root, args.output_dir, &artifacts)
 }
 
 /// Resolve every citation and build one checked suggestion.
@@ -637,5 +669,81 @@ mod tests {
                 "suggestions": 0, "mapping": 0, "drafting": 0, "high": 0, "medium": 0, "low": 0
             })
         );
+    }
+    fn captured_fixture(response: &serde_json::Value) -> (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>) {
+        let payload = b"Accounts must be reviewed every quarter.".to_vec();
+        let mut request = super::super::request::fixture_request_json();
+        request["payload"]["bytes"] = json!(payload.len());
+        request["payload"]["sha256"] = json!(crate::hashing::sha256_hex(&payload));
+        request["context"]["units"][0]["payload"]["end"] = json!(payload.len());
+        let request_bytes = serde_json::to_vec(&request).unwrap();
+        let response_bytes = serde_json::to_vec(response).unwrap();
+        let mut record = super::super::run_record::fixture_run_json();
+        record["request_sha256"] = json!(crate::hashing::sha256_hex(&request_bytes));
+        record["payload_sha256"] = request["payload"]["sha256"].clone();
+        record["response_sha256"] = json!(crate::hashing::sha256_hex(&response_bytes));
+        record["response_bytes"] = json!(response_bytes.len());
+        record["mode"] = json!("recorded-response");
+        (request_bytes, payload, serde_json::to_vec(&record).unwrap(), response_bytes)
+    }
+
+    #[test]
+    fn captured_validation_reconstructs_identical_bundles_without_paths() {
+        let (request, payload, run, response) =
+            captured_fixture(&super::super::response::fixture_response_json());
+        let first = validate_captured(&request, &payload, &run, &response, false).unwrap();
+        let second = validate_captured(&request, &payload, &run, &response, false).unwrap();
+        assert_eq!(first, second);
+        assert_eq!(first.counts.suggestions, 1);
+        assert_eq!(first.suggestions[0].evidence_support, EvidenceSupport::High);
+        assert!(!first.response.retained);
+        assert_eq!(first.response.artifact, None);
+        assert_eq!(first.provenance.mode, super::super::run_record::RunMode::RecordedResponse);
+        let retained = validate_captured(&request, &payload, &run, &response, true).unwrap();
+        assert_eq!(retained.suggestions, first.suggestions);
+        assert_eq!(retained.bundle_id, first.bundle_id);
+        assert_eq!(retained.response.artifact.as_deref(), Some(RETAINED_RESPONSE_ARTIFACT));
+    }
+
+    #[test]
+    fn captured_validation_rejects_changed_payload_and_run_bindings() {
+        let (request, payload, run, response) =
+            captured_fixture(&super::super::response::fixture_response_json());
+        let mut altered = payload.clone();
+        altered[0] = b'X';
+        assert!(validate_captured(&request, &altered, &run, &response, false).is_err());
+        let mut record: serde_json::Value = serde_json::from_slice(&run).unwrap();
+        for field in ["request_sha256", "payload_sha256", "response_sha256"] {
+            record[field] = json!("b".repeat(64));
+            let encoded = serde_json::to_vec(&record).unwrap();
+            assert!(validate_captured(&request, &payload, &encoded, &response, false).is_err());
+            record = serde_json::from_slice(&run).unwrap();
+        }
+    }
+
+    #[test]
+    fn freshly_bound_invalid_citations_and_targets_still_fail() {
+        for field in ["quote", "unit_id", "policy_key", "topic_key"] {
+            let mut response = super::super::response::fixture_response_json();
+            if matches!(field, "quote" | "unit_id") {
+                response["task"]["draft_clauses"][0]["citations"][0][field] = json!("invented");
+            } else {
+                response["task"]["draft_clauses"][0][field] = json!("invented");
+            }
+            let (request, payload, run, response) = captured_fixture(&response);
+            assert!(
+                validate_captured(&request, &payload, &run, &response, false).is_err(),
+                "{field}"
+            );
+        }
+    }
+
+    #[test]
+    fn captured_validation_enforces_byte_bounds_before_decoding() {
+        let (request, payload, run, response) =
+            captured_fixture(&super::super::response::fixture_response_json());
+        let oversized = vec![b'x'; usize::try_from(MAX_RESPONSE_BYTES).unwrap() + 1];
+        assert!(validate_captured(&request, &payload, &run, &oversized, false).is_err());
+        assert!(validate_captured(&request, &oversized, &run, &response, false).is_err());
     }
 }

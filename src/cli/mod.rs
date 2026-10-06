@@ -1341,6 +1341,12 @@ impl SuggestTask {
 /// Local, offline suggestion pipeline commands.
 #[derive(Debug, Subcommand)]
 pub enum SuggestCommand {
+    /// Inspect a supplied evaluation corpus without executing or accepting a model
+    Eval {
+        /// Mechanical evaluation preparation command
+        #[command(subcommand)]
+        command: SuggestEvalCommand,
+    },
     /// Assemble the exact allowlisted payload, preview it, and record consent
     Prepare {
         /// Versioned forge.author-project/1 JSON manifest
@@ -1461,6 +1467,27 @@ pub enum SuggestCommand {
         #[arg(long)]
         retain_raw: bool,
         /// Print text or versioned JSON to stdout
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+    },
+}
+
+/// Artifact-only suggestion evaluation preparation; all acceptance gates remain open.
+#[derive(Debug, Subcommand)]
+#[deny(missing_docs)]
+pub enum SuggestEvalCommand {
+    /// Check pinned corpus artifacts and report every expected case
+    Preflight {
+        /// Explicit private corpus directory; no inferred project discovery
+        #[arg(long)]
+        root: PathBuf,
+        /// Portable corpus manifest path relative to the selected root
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Portable directory below root for preflight.json; never overwrites
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+        /// Print text or bounded versioned JSON to stdout
         #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
         format: AuthorReportFormat,
     },
@@ -2445,6 +2472,30 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         }
         Commands::Suggest { command } => {
             let action_required = match command {
+                SuggestCommand::Eval { command } => match command {
+                    SuggestEvalCommand::Preflight { root, manifest, output_dir, format } => {
+                        let report = if let Some(output_dir) = output_dir {
+                            crate::suggest::eval::preflight_to(root, manifest, output_dir)?
+                        } else {
+                            crate::suggest::eval::preflight(root, manifest)?
+                        };
+                        let stdout = match format {
+                            AuthorReportFormat::Json => String::from_utf8(report.to_json_bytes()?)
+                                .map_err(|_| ForgeError::Authoring(
+                                    "preflight report encoding is not UTF-8".to_string(),
+                                ))?,
+                            AuthorReportFormat::Text =>
+                                "Suggestion artifact preflight recorded; evaluation and acceptance gates remain open."
+                                    .to_string(),
+                        };
+                        crate::cli::output::write_output(&stdout, None).map_err(|cause| {
+                            ForgeError::Authoring(format!(
+                                "cannot write the preflight summary: {cause}",
+                            ))
+                        })?;
+                        true
+                    }
+                },
                 SuggestCommand::Prepare {
                     manifest,
                     output_dir,
