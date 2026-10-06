@@ -1,0 +1,381 @@
+{
+  "actual_hosted_control_log": {
+    "aggregate_status": "passed",
+    "command": {
+      "line": 400,
+      "text": "##[group]Run python -B scripts/test_observe_workspace_stdlib_link_chain.py",
+      "timestamp": "2026-10-04T10:36:28.6927408Z"
+    },
+    "error_events": 0,
+    "failure_events": 0,
+    "observer_retained_message_line": 1126,
+    "outcome": {
+      "line": 426,
+      "text": "OK",
+      "timestamp": "2026-10-04T10:36:28.9083689Z"
+    },
+    "per_method_named_outcome_log": false,
+    "registered_tests_run": 45,
+    "skip_summary": 0,
+    "summary": {
+      "line": 424,
+      "text": "Ran 45 tests in 0.075s",
+      "timestamp": "2026-10-04T10:36:28.9083138Z"
+    }
+  },
+  "artifacts": [
+    {
+      "api_digest_matches": true,
+      "archive_bytes": 977,
+      "archive_sha256": "2acfd12c075e0b240a82e916d07254d8e4cd8d34cb66a319982ef6d1ad778ad8",
+      "artifact_id": 11301186871,
+      "artifact_name": "workspace-stdlib-link-chain-0af15f43a0fa72fa8f5761eab97175aa42e825b7",
+      "bytes": 1482,
+      "capture_command_exit_code": 0,
+      "member": "stdlib-link-chain-observation.json",
+      "role": "link",
+      "sha256": "33fe8a2a3cd21ab22f9edfb8d58c9a10cf124cbad5045f8f96705e0fadae6702",
+      "single_bounded_exact_member_matches": true
+    },
+    {
+      "api_digest_matches": true,
+      "archive_bytes": 2178,
+      "archive_sha256": "e3d0675186f9be78f135c9de6c2f114e2757eb8d3642912ee0138dda427eee20",
+      "artifact_id": 11301047213,
+      "artifact_name": "workspace-headless-ip-denial-0af15f43a0fa72fa8f5761eab97175aa42e825b7",
+      "bytes": 4234,
+      "capture_command_exit_code": 0,
+      "member": "workspace-os-denial-verification.json",
+      "role": "native",
+      "sha256": "a0919a22ae7397d0a9a1a4e7c66150a487b744fb269b4220c0811c6ee62da654",
+      "single_bounded_exact_member_matches": true
+    },
+    {
+      "api_digest_matches": true,
+      "archive_bytes": 772,
+      "archive_sha256": "804142f4be2a64dbea34c8f55125536a564dd1116267f315556e8749e7d0712c",
+      "artifact_id": 11301316511,
+      "artifact_name": "workspace-stdlib-gate-0af15f43a0fa72fa8f5761eab97175aa42e825b7",
+      "bytes": 1047,
+      "capture_command_exit_code": 0,
+      "member": "stdlib-gate-observation.json",
+      "role": "stat",
+      "sha256": "09ca5d73ea5f1d32132266759a3f3f51550a3875885e93abb3449c5cc3c910f3",
+      "single_bounded_exact_member_matches": true
+    }
+  ],
+  "authentic_step_metadata": [
+    {
+      "completedAt": "2026-10-04T10:36:26Z",
+      "conclusion": "success",
+      "name": "Select Python 3.11",
+      "number": 4,
+      "startedAt": "2026-10-04T10:36:26Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-10-04T10:36:28Z",
+      "conclusion": "success",
+      "name": "Check bounded link-chain observation controls",
+      "number": 7,
+      "startedAt": "2026-10-04T10:36:28Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-10-04T10:39:36Z",
+      "conclusion": "failure",
+      "name": "Verify calibrated headless denial with the unchanged client",
+      "number": 10,
+      "startedAt": "2026-10-04T10:39:36Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-10-04T10:39:37Z",
+      "conclusion": "success",
+      "name": "Retain bounded redacted IP-denial prerequisite receipt",
+      "number": 11,
+      "startedAt": "2026-10-04T10:39:36Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-10-04T10:39:37Z",
+      "conclusion": "success",
+      "name": "Observe one rejected stdlib stat predicate",
+      "number": 12,
+      "startedAt": "2026-10-04T10:39:37Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-10-04T10:39:39Z",
+      "conclusion": "success",
+      "name": "Retain separate bounded stat-predicate sidecar",
+      "number": 13,
+      "startedAt": "2026-10-04T10:39:37Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-10-04T10:39:39Z",
+      "conclusion": "success",
+      "name": "Observe the actual rejected stdlib link chain",
+      "number": 14,
+      "startedAt": "2026-10-04T10:39:39Z",
+      "status": "completed"
+    },
+    {
+      "completedAt": "2026-10-04T10:39:40Z",
+      "conclusion": "success",
+      "name": "Retain newly published bounded link-chain facts",
+      "number": 15,
+      "startedAt": "2026-10-04T10:39:39Z",
+      "status": "completed"
+    }
+  ],
+  "closed_link_facts": {
+    "chain_id": "501c5fc368ded775529a2528bbfb9b7f1327c31185de7990815686afdb7e47db",
+    "cycle_detected": false,
+    "entry_id": "7eb3aaa44ef0cc6bc051d4de44a94510c65214db0c8bc8c49efa0cde0035d0f2",
+    "first_fault": "target-observed",
+    "first_link_form": "relative",
+    "hops_observed": 1,
+    "identity": {
+      "before_after": "unchanged",
+      "inputs": {
+        ".github/workflows/workspace-verification.yml": {
+          "bytes": 22554,
+          "sha256": "a407c08a4dc55da750e9666382476ea59be0f3cd08e9938c6a5be26ff427298d"
+        },
+        "scripts/observe_workspace_stdlib_gate.py": {
+          "bytes": 28184,
+          "sha256": "01b209a586c9399ed5ec48b0023412600d7d2fc3a8771751f4211d8cd5ec8b4a"
+        },
+        "scripts/observe_workspace_stdlib_link_chain.py": {
+          "bytes": 37703,
+          "sha256": "8a5249067debad4f73fd5729bd318bad6ef43ee7b9704bf9a00ea84ebb1012ee"
+        },
+        "scripts/test_workspace_os_denial.py": {
+          "bytes": 68516,
+          "sha256": "b32293bc02c8fa4cff93fabb91798a70b9c51bd57a391c3cdce8cb5754ece86c"
+        },
+        "scripts/verify_workspace_os_denial.py": {
+          "bytes": 44362,
+          "sha256": "5919a15920b60e8dcf4cdb063c1120a4d0b3077ae8099c8de8768651bdf2644d"
+        }
+      },
+      "requested_commit": "df4c024b5d8813e03a798981a237a4b548ecdd46",
+      "tested_commit": "0af15f43a0fa72fa8f5761eab97175aa42e825b7"
+    },
+    "links_root_owned": true,
+    "object_stat_stable": true,
+    "outcome": "observed",
+    "parents_nonwritable": true,
+    "parents_root_owned": true,
+    "root_index": 0,
+    "schema_version": "forge.stdlib-link-chain-observation/1",
+    "target_id": "d0c227ac138e216562fb76e91080430e70b01a8d602050773de9439e5a287857",
+    "target_in_roots": true,
+    "target_kind": "regular",
+    "target_mode_022_bits": 0,
+    "target_uid_is_root": true
+  },
+  "closed_stat_facts": {
+    "identity": {
+      "before_after": "unchanged",
+      "inputs": {
+        ".github/workflows/workspace-verification.yml": {
+          "bytes": 22554,
+          "sha256": "a407c08a4dc55da750e9666382476ea59be0f3cd08e9938c6a5be26ff427298d"
+        },
+        "scripts/observe_workspace_stdlib_gate.py": {
+          "bytes": 28184,
+          "sha256": "01b209a586c9399ed5ec48b0023412600d7d2fc3a8771751f4211d8cd5ec8b4a"
+        },
+        "scripts/test_workspace_os_denial.py": {
+          "bytes": 68516,
+          "sha256": "b32293bc02c8fa4cff93fabb91798a70b9c51bd57a391c3cdce8cb5754ece86c"
+        },
+        "scripts/verify_workspace_os_denial.py": {
+          "bytes": 44362,
+          "sha256": "5919a15920b60e8dcf4cdb063c1120a4d0b3077ae8099c8de8768651bdf2644d"
+        }
+      },
+      "requested_commit": "df4c024b5d8813e03a798981a237a4b548ecdd46",
+      "tested_commit": "0af15f43a0fa72fa8f5761eab97175aa42e825b7"
+    },
+    "mode_022_bits": 18,
+    "object_id": "7eb3aaa44ef0cc6bc051d4de44a94510c65214db0c8bc8c49efa0cde0035d0f2",
+    "object_kind": "symlink",
+    "object_stat_stable": true,
+    "outcome": "rejected",
+    "phase": "stdlib-entry",
+    "reason": "unsupported-link",
+    "root_index": 0,
+    "schema_version": "forge.stdlib-gate-observation/2",
+    "source_predicate": "entry-kind",
+    "uid_is_root": true
+  },
+  "control_denominator": {
+    "exact_hosted_raw_unittest_count_observed": true,
+    "hosted_controls_step": "success",
+    "new_linux_trace_or_body_coverage": false,
+    "per_method_outcome_log_observed": false,
+    "selected_python_step": "Python 3.11",
+    "source_registered_methods": 45,
+    "workflow_command_line": 407
+  },
+  "direct_job_log_history": {
+    "v2": {
+      "bytes": 99,
+      "exit_code": 1,
+      "sha256": "8b6407b2fdbca54bf3d53fb93e79a3560dbe59567fa5044cfee4bed1b5b6e467",
+      "status": "escape-sequence-output-refused"
+    },
+    "v3": {
+      "bytes": 84903,
+      "exit_code": 0,
+      "sha256": "9510aab160f8d0052dc287a9921b1d1672d4f071f3812c2f4a770882eb867b62",
+      "status": "authentic-retained-direct-log",
+      "terminal_escape_bytes_not_rendered": true
+    }
+  },
+  "findings": [],
+  "identity": {
+    "job": 111417533613,
+    "linux_job_conclusion": "failure",
+    "linux_job_status": "completed",
+    "ordered_parents": [
+      "647d0a581674e8456159e9dafad0855d2fd0cb40",
+      "df4c024b5d8813e03a798981a237a4b548ecdd46"
+    ],
+    "overall_run_status_at_metadata_capture": "in_progress",
+    "overall_run_terminal_claim": false,
+    "requested_head": "df4c024b5d8813e03a798981a237a4b548ecdd46",
+    "tested_merge": "0af15f43a0fa72fa8f5761eab97175aa42e825b7",
+    "workflow_run": 37195885203
+  },
+  "native_closed_known_facts": {
+    "acceptance_eligible": false,
+    "attempted_egress": {
+      "count": null,
+      "state": "unmeasured"
+    },
+    "cleanup": {
+      "forced": false,
+      "state": "verified-not-created"
+    },
+    "diagnostic": {
+      "exit_code": null,
+      "phase": "stdlib-entry",
+      "reason": "unsupported-link"
+    },
+    "failure": "tool-untrusted",
+    "input_stability": "unchanged",
+    "pending_gates": [
+      "full-F04-Must-and-Should-acceptance",
+      "runtime-attempted-egress-observation",
+      "browser-and-remaining-platform-matrix",
+      "manual-assistive-technology-and-human-acceptance",
+      "D069-accepted-source-audits",
+      "release-qualification",
+      "final-integrated-documentation-review"
+    ],
+    "producer": {
+      "exit_code": null,
+      "failure": null,
+      "receipt": null,
+      "receipt_pin": null,
+      "status": "not-run"
+    },
+    "schema_version": "forge.workspace-os-denial-verification/2",
+    "scope": "linux-headless-ip-network-denial-prerequisite",
+    "status": "incomplete",
+    "tool_stability": "unverified",
+    "tools": null,
+    "truth_state": "synthetic-development"
+  },
+  "qualification_limits": [
+    "Metadata/link-prefix observations do not admit a symlink or prove effective target authority.",
+    "Opaque entry/chain/target IDs are not target-content hashes, paths or loaded-byte attestations.",
+    "Parent and link facts cover the actually observed held prefix, not all stdlib entries or roots.",
+    "No target bytes were supplied, rehashed or independently read by this reviewer.",
+    "The outer native denial prerequisite remains incomplete and uncreated with egress unmeasured.",
+    "Historical local tracing and original measured record remain unchanged; no new Linux coverage is inferred.",
+    "Historical PR206 target/cause is not identified by this new run.",
+    "No interpreter/bootstrap/native/IP-denial, human/AT/audit/release or full F04 acceptance.",
+    "Review excludes historical authored helper/wrapper/control correctness and original acceptance."
+  ],
+  "raw_job_log_capture": {
+    "bytes": 81,
+    "exit_code": 1,
+    "replacement_or_success_claim": false,
+    "status": "unavailable-while-overall-run-in-progress"
+  },
+  "reader_candidate_helper_test_import_or_execution": false,
+  "same_run_entry_id_equal": true,
+  "schema": "forge.f04-stdlib-link-chain-hosted-readback/1",
+  "source_anchors": {
+    "Inspector.recheck": {
+      "docstring": "Reopen bounded original spellings without file reads and reconcile exact observed generations.",
+      "end_line": 433,
+      "kind": "FunctionDef",
+      "line": 414,
+      "path": "scripts/observe_workspace_stdlib_link_chain.py"
+    },
+    "Inspector.target": {
+      "docstring": "Store only actual held-terminal stat facts; no contents, exact IDs or paths escape.",
+      "end_line": 345,
+      "kind": "FunctionDef",
+      "line": 338,
+      "path": "scripts/observe_workspace_stdlib_link_chain.py"
+    },
+    "Inspector.trace": {
+      "docstring": "Observe the selected chain prefix and fixed first endpoint without admitting it.",
+      "end_line": 412,
+      "kind": "FunctionDef",
+      "line": 347,
+      "path": "scripts/observe_workspace_stdlib_link_chain.py"
+    },
+    "capture_identity": {
+      "docstring": "Bind the five fixed ordinary observer/source inputs before and after metadata work.",
+      "end_line": 474,
+      "kind": "FunctionDef",
+      "line": 465,
+      "path": "scripts/observe_workspace_stdlib_link_chain.py"
+    },
+    "discover": {
+      "docstring": "Capture actual first rejected-object arguments and retain the unchanged original predicate call.",
+      "end_line": 501,
+      "kind": "FunctionDef",
+      "line": 477,
+      "path": "scripts/observe_workspace_stdlib_link_chain.py"
+    },
+    "validate": {
+      "docstring": "Consume closed shape, exact typed nullable facts and endpoint/source pairing before publication.",
+      "end_line": 595,
+      "kind": "FunctionDef",
+      "line": 504,
+      "path": "scripts/observe_workspace_stdlib_link_chain.py"
+    }
+  },
+  "source_inputs_hashes_equal_frozen_buffers": {
+    ".github/workflows/workspace-verification.yml": {
+      "bytes": 22554,
+      "sha256": "a407c08a4dc55da750e9666382476ea59be0f3cd08e9938c6a5be26ff427298d"
+    },
+    "scripts/observe_workspace_stdlib_gate.py": {
+      "bytes": 28184,
+      "sha256": "01b209a586c9399ed5ec48b0023412600d7d2fc3a8771751f4211d8cd5ec8b4a"
+    },
+    "scripts/observe_workspace_stdlib_link_chain.py": {
+      "bytes": 37703,
+      "sha256": "8a5249067debad4f73fd5729bd318bad6ef43ee7b9704bf9a00ea84ebb1012ee"
+    },
+    "scripts/test_workspace_os_denial.py": {
+      "bytes": 68516,
+      "sha256": "b32293bc02c8fa4cff93fabb91798a70b9c51bd57a391c3cdce8cb5754ece86c"
+    },
+    "scripts/verify_workspace_os_denial.py": {
+      "bytes": 44362,
+      "sha256": "5919a15920b60e8dcf4cdb063c1120a4d0b3077ae8099c8de8768651bdf2644d"
+    }
+  }
+}

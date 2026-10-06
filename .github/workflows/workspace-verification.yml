@@ -406,6 +406,9 @@ jobs:
       - name: Check separate stdlib-gate observation controls
         run: python -B scripts/test_observe_workspace_stdlib_gate.py
 
+      - name: Check bounded link-chain observation controls
+        run: python -B scripts/test_observe_workspace_stdlib_link_chain.py
+
       - name: Check protected physical dispatcher receipt controls
         run: python -B scripts/test_run_workspace_stdlib_closure.py
 
@@ -525,5 +528,28 @@ jobs:
         with:
           name: workspace-stdlib-gate-${{ github.sha }}
           path: stdlib-gate-evidence/stdlib-gate-observation.json
+          if-no-files-found: error
+          retention-days: 14
+
+      # Observation only: existing unsupported-link/native refusal remains unchanged.
+      - name: Observe the actual rejected stdlib link chain
+        id: stdlib-link-chain-observation
+        if: ${{ failure() && steps.headless-denial-verification.outcome == 'failure' }}
+        timeout-minutes: 11
+        env:
+          FORGE_TEST_REQUESTED: ${{ github.event.pull_request.head.sha || github.sha }}
+          FORGE_TEST_COMMIT: ${{ github.sha }}
+        shell: bash
+        run: |
+          python -B scripts/observe_workspace_stdlib_link_chain.py \
+            --output-dir stdlib-link-chain-evidence \
+            --requested-commit "$FORGE_TEST_REQUESTED" --tested-commit "$FORGE_TEST_COMMIT"
+
+      - name: Retain newly published bounded link-chain facts
+        if: ${{ failure() && steps.headless-denial-verification.outcome == 'failure' && steps.stdlib-link-chain-observation.outputs.stdlib_link_chain_published == 'true' && hashFiles('stdlib-link-chain-evidence/stdlib-link-chain-observation.json') != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-stdlib-link-chain-${{ github.sha }}
+          path: stdlib-link-chain-evidence/stdlib-link-chain-observation.json
           if-no-files-found: error
           retention-days: 14

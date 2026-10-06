@@ -24,8 +24,8 @@ BUDGET_SECONDS = 600
 INPUT_KEYS = ("scripts/observe_workspace_stdlib_gate.py", "scripts/verify_workspace_os_denial.py",
               "scripts/test_workspace_os_denial.py", ".github/workflows/workspace-verification.yml")
 EXPECTED_PROTECTED = {
-    "scripts/verify_workspace_os_denial.py": {"bytes": 44362, "sha256": "5919a15920b60e8dcf4cdb063c1120a4d0b3077ae8099c8de8768651bdf2644d"},
-    "scripts/test_workspace_os_denial.py": {"bytes": 68516, "sha256": "b32293bc02c8fa4cff93fabb91798a70b9c51bd57a391c3cdce8cb5754ece86c"},
+    "scripts/verify_workspace_os_denial.py": {"bytes": 94727, "sha256": "649275b1a78500b480b7c19f3579888faf2267b94c42dc1cc93517109128b1a5"},
+    "scripts/test_workspace_os_denial.py": {"bytes": 112060, "sha256": "26dbf51d45f053225307e53650243db13f62152da12a73f2e4c8d29b4a85b864"},
 }
 ADMINISTRATIVE_PATHS = {"python": "/usr/bin/python3", "ip": "/usr/bin/ip", "sudo": "/usr/bin/sudo"}
 PATH_REASONS = ("missing", "not-absolute", "not-root-owned", "worker-writable", "unsupported-link",
