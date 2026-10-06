@@ -1,0 +1,114 @@
+{
+  "format": "forge.rustsec-source-index/1",
+  "tree_sha": "117edb3bed98e9be112f277b7615eea3252e7c43",
+  "truncated": false,
+  "baseline_graph_inputs": {
+    "lock_sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+    "manifests": {
+      "Cargo.toml": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+    },
+    "release_workflow_sha256": "74691647253997c7080ac6bf4c9041f034d1d3fa8bc0a3977add9a5a1c1ca6c5"
+  },
+  "baseline_closures": [
+    {
+      "target": "aarch64-apple-darwin",
+      "packages": [
+        [
+          "cfg-if",
+          "1.0.4"
+        ],
+        [
+          "getrandom",
+          "0.4.2"
+        ],
+        [
+          "libc",
+          "0.2.183"
+        ],
+        [
+          "rand_core",
+          "0.10.1"
+        ]
+      ]
+    },
+    {
+      "target": "x86_64-apple-darwin",
+      "packages": [
+        [
+          "cfg-if",
+          "1.0.4"
+        ],
+        [
+          "getrandom",
+          "0.4.2"
+        ],
+        [
+          "libc",
+          "0.2.183"
+        ],
+        [
+          "rand_core",
+          "0.10.1"
+        ]
+      ]
+    },
+    {
+      "target": "x86_64-pc-windows-msvc",
+      "packages": [
+        [
+          "cfg-if",
+          "1.0.4"
+        ],
+        [
+          "getrandom",
+          "0.4.2"
+        ],
+        [
+          "rand_core",
+          "0.10.1"
+        ]
+      ]
+    },
+    {
+      "target": "x86_64-unknown-linux-gnu",
+      "packages": [
+        [
+          "cfg-if",
+          "1.0.4"
+        ],
+        [
+          "getrandom",
+          "0.4.2"
+        ],
+        [
+          "libc",
+          "0.2.183"
+        ],
+        [
+          "rand_core",
+          "0.10.1"
+        ]
+      ]
+    }
+  ],
+  "head_added_packages": [
+    {
+      "name": "getrandom",
+      "version": "0.4.3",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "checksum": "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099",
+      "dependencies": [
+        "cfg-if",
+        "js-sys",
+        "libc",
+        "r-efi 6.0.0",
+        "rand_core 0.10.1",
+        "wasm-bindgen"
+      ]
+    }
+  ],
+  "matching_paths": [
+    "crates/rand_core/RUSTSEC-2019-0035.md",
+    "crates/rand_core/RUSTSEC-2021-0023.md"
+  ]
+}

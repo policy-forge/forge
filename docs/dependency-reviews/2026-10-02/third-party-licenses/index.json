@@ -1,0 +1,472 @@
+{
+  "format": "forge.dependency-review-source-licenses/1",
+  "notice": "License texts copied byte-for-byte from verified source packages where present. Missing standalone texts and declared license metadata are explicit below. This records source provenance, not an approved dependency decision.",
+  "archives": [
+    {
+      "package": "anstyle",
+      "version": "1.0.13",
+      "license_files": [
+        {
+          "archive_member": "anstyle-1.0.13/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08.txt",
+          "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+          "bytes": 11358
+        },
+        {
+          "archive_member": "anstyle-1.0.13/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6.txt",
+          "sha256": "6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6",
+          "bytes": 1062
+        }
+      ]
+    },
+    {
+      "package": "anstyle",
+      "version": "1.0.14",
+      "license_files": [
+        {
+          "archive_member": "anstyle-1.0.14/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08.txt",
+          "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+          "bytes": 11358
+        },
+        {
+          "archive_member": "anstyle-1.0.14/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6.txt",
+          "sha256": "6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6",
+          "bytes": 1062
+        }
+      ]
+    },
+    {
+      "package": "clap",
+      "version": "4.6.1",
+      "license_files": [
+        {
+          "archive_member": "clap-4.6.1/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08.txt",
+          "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+          "bytes": 11358
+        },
+        {
+          "archive_member": "clap-4.6.1/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6.txt",
+          "sha256": "6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6",
+          "bytes": 1062
+        }
+      ]
+    },
+    {
+      "package": "clap",
+      "version": "4.6.7",
+      "license_files": [
+        {
+          "archive_member": "clap-4.6.7/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/249fdb6694467dd615b259f7ddde07be3f8ae5a72cecebb0e24f6629af4215fe.txt",
+          "sha256": "249fdb6694467dd615b259f7ddde07be3f8ae5a72cecebb0e24f6629af4215fe",
+          "bytes": 11349
+        },
+        {
+          "archive_member": "clap-4.6.7/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6.txt",
+          "sha256": "6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6",
+          "bytes": 1062
+        }
+      ]
+    },
+    {
+      "package": "clap_builder",
+      "version": "4.6.0",
+      "license_files": [
+        {
+          "archive_member": "clap_builder-4.6.0/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08.txt",
+          "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+          "bytes": 11358
+        },
+        {
+          "archive_member": "clap_builder-4.6.0/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6.txt",
+          "sha256": "6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6",
+          "bytes": 1062
+        }
+      ]
+    },
+    {
+      "package": "clap_builder",
+      "version": "4.6.7",
+      "license_files": [
+        {
+          "archive_member": "clap_builder-4.6.7/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/249fdb6694467dd615b259f7ddde07be3f8ae5a72cecebb0e24f6629af4215fe.txt",
+          "sha256": "249fdb6694467dd615b259f7ddde07be3f8ae5a72cecebb0e24f6629af4215fe",
+          "bytes": 11349
+        },
+        {
+          "archive_member": "clap_builder-4.6.7/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6.txt",
+          "sha256": "6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6",
+          "bytes": 1062
+        }
+      ]
+    },
+    {
+      "package": "clap_derive",
+      "version": "4.6.1",
+      "license_files": [
+        {
+          "archive_member": "clap_derive-4.6.1/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08.txt",
+          "sha256": "c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08",
+          "bytes": 11358
+        },
+        {
+          "archive_member": "clap_derive-4.6.1/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6.txt",
+          "sha256": "6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6",
+          "bytes": 1062
+        }
+      ]
+    },
+    {
+      "package": "clap_derive",
+      "version": "4.6.7",
+      "license_files": [
+        {
+          "archive_member": "clap_derive-4.6.7/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/249fdb6694467dd615b259f7ddde07be3f8ae5a72cecebb0e24f6629af4215fe.txt",
+          "sha256": "249fdb6694467dd615b259f7ddde07be3f8ae5a72cecebb0e24f6629af4215fe",
+          "bytes": 11349
+        },
+        {
+          "archive_member": "clap_derive-4.6.7/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6.txt",
+          "sha256": "6efb0476a1cc085077ed49357026d8c173bf33017278ef440f222fb9cbcb66e6",
+          "bytes": 1062
+        }
+      ]
+    },
+    {
+      "package": "rayon",
+      "version": "1.11.0",
+      "license_files": [
+        {
+          "archive_member": "rayon-1.11.0/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2.txt",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847
+        },
+        {
+          "archive_member": "rayon-1.11.0/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/0621878e61f0d0fda054bcbe02df75192c28bde1ecc8289cbd86aeba2dd72720.txt",
+          "sha256": "0621878e61f0d0fda054bcbe02df75192c28bde1ecc8289cbd86aeba2dd72720",
+          "bytes": 1071
+        }
+      ]
+    },
+    {
+      "package": "rayon",
+      "version": "1.12.0",
+      "license_files": [
+        {
+          "archive_member": "rayon-1.12.0/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2.txt",
+          "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+          "bytes": 10847
+        },
+        {
+          "archive_member": "rayon-1.12.0/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/0621878e61f0d0fda054bcbe02df75192c28bde1ecc8289cbd86aeba2dd72720.txt",
+          "sha256": "0621878e61f0d0fda054bcbe02df75192c28bde1ecc8289cbd86aeba2dd72720",
+          "bytes": 1071
+        }
+      ]
+    },
+    {
+      "package": "argon2",
+      "version": "0.5.3",
+      "license_files": [
+        {
+          "archive_member": "argon2-0.5.3/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5.txt",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "argon2-0.5.3/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/33f702959c0ea91c08b21b65cf1f08b6c122ec9e6db0b5db784a7b367d942330.txt",
+          "sha256": "33f702959c0ea91c08b21b65cf1f08b6c122ec9e6db0b5db784a7b367d942330",
+          "bytes": 1082
+        }
+      ]
+    },
+    {
+      "package": "argon2",
+      "version": "0.6.0",
+      "license_files": [
+        {
+          "archive_member": "argon2-0.6.0/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5.txt",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "argon2-0.6.0/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88.txt",
+          "sha256": "57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88",
+          "bytes": 1082
+        }
+      ]
+    },
+    {
+      "package": "blake2",
+      "version": "0.10.6",
+      "license_files": [
+        {
+          "archive_member": "blake2-0.10.6/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5.txt",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "blake2-0.10.6/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/9c768944eb4a0422ca2efc25ea9fb2fb9e7fbd3fdb04e86b87366339cb7466db.txt",
+          "sha256": "9c768944eb4a0422ca2efc25ea9fb2fb9e7fbd3fdb04e86b87366339cb7466db",
+          "bytes": 1121
+        }
+      ]
+    },
+    {
+      "package": "blake2",
+      "version": "0.11.0",
+      "license_files": [
+        {
+          "archive_member": "blake2-0.11.0/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5.txt",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "blake2-0.11.0/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/3721e5764ca384059a3521d84c0fb40373894a099d8246fe76bf0d7418041846.txt",
+          "sha256": "3721e5764ca384059a3521d84c0fb40373894a099d8246fe76bf0d7418041846",
+          "bytes": 1179
+        }
+      ]
+    },
+    {
+      "package": "cmov",
+      "version": "0.5.4",
+      "license_files": [
+        {
+          "archive_member": "cmov-0.5.4/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358
+        },
+        {
+          "archive_member": "cmov-0.5.4/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/70c9d40f1f9545c3f133b8a67206e89da850f6468eed072281bb3701514114a9.txt",
+          "sha256": "70c9d40f1f9545c3f133b8a67206e89da850f6468eed072281bb3701514114a9",
+          "bytes": 1082
+        }
+      ]
+    },
+    {
+      "package": "cpufeatures",
+      "version": "0.2.17",
+      "license_files": [
+        {
+          "archive_member": "cpufeatures-0.2.17/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5.txt",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "cpufeatures-0.2.17/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/ae9baa7beea910273c2f384c2a6b721fb7bd02bda3436074a1072e4ee689f985.txt",
+          "sha256": "ae9baa7beea910273c2f384c2a6b721fb7bd02bda3436074a1072e4ee689f985",
+          "bytes": 1082
+        }
+      ]
+    },
+    {
+      "package": "cpufeatures",
+      "version": "0.3.0",
+      "license_files": [
+        {
+          "archive_member": "cpufeatures-0.3.0/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5.txt",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "cpufeatures-0.3.0/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/ae9baa7beea910273c2f384c2a6b721fb7bd02bda3436074a1072e4ee689f985.txt",
+          "sha256": "ae9baa7beea910273c2f384c2a6b721fb7bd02bda3436074a1072e4ee689f985",
+          "bytes": 1082
+        }
+      ]
+    },
+    {
+      "package": "ctutils",
+      "version": "0.4.2",
+      "license_files": [
+        {
+          "archive_member": "ctutils-0.4.2/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "bytes": 11358
+        },
+        {
+          "archive_member": "ctutils-0.4.2/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/91585c36e4fb9ab4ca0d3dfac5d66d3c0c62cc51f640a0e1196542daf2267eae.txt",
+          "sha256": "91585c36e4fb9ab4ca0d3dfac5d66d3c0c62cc51f640a0e1196542daf2267eae",
+          "bytes": 1082
+        }
+      ]
+    },
+    {
+      "package": "digest",
+      "version": "0.10.7",
+      "license_files": [
+        {
+          "archive_member": "digest-0.10.7/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5.txt",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "digest-0.10.7/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/9e0dfd2dd4173a530e238cb6adb37aa78c34c6bc7444e0e10c1ab5d8881f63ba.txt",
+          "sha256": "9e0dfd2dd4173a530e238cb6adb37aa78c34c6bc7444e0e10c1ab5d8881f63ba",
+          "bytes": 1057
+        }
+      ]
+    },
+    {
+      "package": "digest",
+      "version": "0.11.3",
+      "license_files": [
+        {
+          "archive_member": "digest-0.11.3/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5.txt",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "digest-0.11.3/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/af59cea35d7f5e2777a713b8d155d65efa2c339eb43f3c14e868c6ac8506edad.txt",
+          "sha256": "af59cea35d7f5e2777a713b8d155d65efa2c339eb43f3c14e868c6ac8506edad",
+          "bytes": 1103
+        }
+      ]
+    },
+    {
+      "package": "password-hash",
+      "version": "0.5.0",
+      "license_files": [
+        {
+          "archive_member": "password-hash-0.5.0/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5.txt",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "password-hash-0.5.0/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/233b95ccbf90dc67e32f3e8995c489f6312d9191ebd141a931c3b684f1e3be6d.txt",
+          "sha256": "233b95ccbf90dc67e32f3e8995c489f6312d9191ebd141a931c3b684f1e3be6d",
+          "bytes": 1070
+        }
+      ]
+    },
+    {
+      "package": "password-hash",
+      "version": "0.6.1",
+      "license_files": [
+        {
+          "archive_member": "password-hash-0.6.1/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5.txt",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "password-hash-0.6.1/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/d8c4ab431f20da8452c9a217084163822e5fd9d134e1343903c929f2859fc8fd.txt",
+          "sha256": "d8c4ab431f20da8452c9a217084163822e5fd9d134e1343903c929f2859fc8fd",
+          "bytes": 1070
+        }
+      ]
+    },
+    {
+      "package": "phc",
+      "version": "0.6.1",
+      "license_files": [
+        {
+          "archive_member": "phc-0.6.1/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5.txt",
+          "sha256": "a9040321c3712d8fd0b09cf52b17445de04a23a10165049ae187cd39e5c86be5",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "phc-0.6.1/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88.txt",
+          "sha256": "57a4d75c1d095bb94754a478f3cd15e60ac66a5c5627d844be01a918eea5fe88",
+          "bytes": 1082
+        }
+      ]
+    },
+    {
+      "package": "getrandom",
+      "version": "0.4.2",
+      "license_files": [
+        {
+          "archive_member": "getrandom-0.4.2/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/aaff376532ea30a0cd5330b9502ad4a4c8bf769c539c87ffe78819d188a18ebf.txt",
+          "sha256": "aaff376532ea30a0cd5330b9502ad4a4c8bf769c539c87ffe78819d188a18ebf",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "getrandom-0.4.2/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/523a42c25d245dde9c015f882cec7f4555aad883382a6cf19b4b7d9b2cd5419b.txt",
+          "sha256": "523a42c25d245dde9c015f882cec7f4555aad883382a6cf19b4b7d9b2cd5419b",
+          "bytes": 1130
+        }
+      ]
+    },
+    {
+      "package": "getrandom",
+      "version": "0.4.3",
+      "license_files": [
+        {
+          "archive_member": "getrandom-0.4.3/LICENSE-APACHE",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/aaff376532ea30a0cd5330b9502ad4a4c8bf769c539c87ffe78819d188a18ebf.txt",
+          "sha256": "aaff376532ea30a0cd5330b9502ad4a4c8bf769c539c87ffe78819d188a18ebf",
+          "bytes": 10849
+        },
+        {
+          "archive_member": "getrandom-0.4.3/LICENSE-MIT",
+          "retained_path": "docs/dependency-reviews/2026-10-02/third-party-licenses/523a42c25d245dde9c015f882cec7f4555aad883382a6cf19b4b7d9b2cd5419b.txt",
+          "sha256": "523a42c25d245dde9c015f882cec7f4555aad883382a6cf19b4b7d9b2cd5419b",
+          "bytes": 1130
+        }
+      ]
+    }
+  ],
+  "missing_standalone_license_text": [
+    {
+      "package": "pdf-extract",
+      "version": "0.12.0",
+      "declared_license": "MIT",
+      "evidence": "Verified published archive manifest plus new-version upstream tree receipt in pr163/historical/upstream-license-tree.json",
+      "accepted_license_disposition": null
+    },
+    {
+      "package": "pdf-extract",
+      "version": "0.12.1",
+      "declared_license": "MIT",
+      "evidence": "Verified published archive manifest plus new-version upstream tree receipt in pr163/historical/upstream-license-tree.json",
+      "accepted_license_disposition": null
+    }
+  ]
+}

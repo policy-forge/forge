@@ -6,8 +6,7 @@ import io
 from pathlib import Path
 import sys
 import tempfile
-import unittest
-from unittest import mock
+import unittest.mock
 
 sys.dont_write_bytecode = True
 import verify_workspace as verifier
@@ -69,9 +68,9 @@ class ReceiptTests(unittest.TestCase):
                     path.write_bytes(verifier.canonical_bytes(client_receipt(self.declared)))
             return result or {"exit_code": 0, "failure": None, "output": SUMMARY}
         output = self.directory / "evidence"
-        with mock.patch.object(verifier, "capture_identity", side_effect=[identity, after]), \
-             mock.patch.object(verifier, "tool_versions", return_value=versions), \
-             mock.patch.object(verifier, "run_command", side_effect=command):
+        with unittest.mock.patch.object(verifier, "capture_identity", side_effect=[identity, after]), \
+             unittest.mock.patch.object(verifier, "tool_versions", return_value=versions), \
+             unittest.mock.patch.object(verifier, "run_command", side_effect=command):
             receipt = verifier.verify(ROOT, self.directory / "synthetic-binary", output,
                                       selected, expected_commit=expected_commit, build_outcome=build)
         return receipt, calls, output
@@ -151,9 +150,9 @@ class ReceiptTests(unittest.TestCase):
 
     def test_contract_read_is_bounded_before_utf8_decode(self):
         stream = io.BytesIO(b"\xff" * 4096)
-        with mock.patch.object(verifier, "MAX_CAPTURE", 64), \
-             mock.patch.object(Path, "open", return_value=stream), \
-             mock.patch.object(Path, "read_text", side_effect=AssertionError("Unbounded text read")):
+        with unittest.mock.patch.object(verifier, "MAX_CAPTURE", 64), \
+             unittest.mock.patch.object(Path, "open", return_value=stream), \
+             unittest.mock.patch.object(Path, "read_text", side_effect=AssertionError("Unbounded text read")):
             with self.assertRaisesRegex(ValueError, "exceeds its bound"):
                 verifier.contract_routes(ROOT)
         root = self.directory / "repo"
@@ -295,7 +294,7 @@ class ReceiptTests(unittest.TestCase):
         )
         self.assertEqual(success["exit_code"], 0)
         self.assertEqual(success["output"], b"synthetic tool output\n")
-        with mock.patch.object(verifier, "MAX_CAPTURE", 1024):
+        with unittest.mock.patch.object(verifier, "MAX_CAPTURE", 1024):
             overflow = verifier.run_command([sys.executable, "-c", "print('x' * 4096)"], ROOT, 5)
         self.assertEqual(overflow["failure"], "output-bound-exceeded")
         self.assertEqual(overflow["output"], b"")
@@ -304,7 +303,7 @@ class ReceiptTests(unittest.TestCase):
         self.assertEqual(timed["output"], b"")
 
     def test_tool_versions_do_not_copy_untrusted_banners(self):
-        with mock.patch.object(verifier, "run_command", return_value={"exit_code": 0, "failure": None,
+        with unittest.mock.patch.object(verifier, "run_command", return_value={"exit_code": 0, "failure": None,
                                                                      "output": b"/private/path SECRET CAPABILITY"}):
             versions = verifier.tool_versions(ROOT, 1)
         self.assertIsNone(versions["cargo"])
@@ -316,7 +315,7 @@ class ReceiptTests(unittest.TestCase):
         instance = object.__new__(client_test.RecordingWorkspace)
         instance.routes = verifier.contract_routes(ROOT)
         instance.outcomes = {}
-        with mock.patch.object(client_test.Workspace, "request", return_value={"private": "response"}):
+        with unittest.mock.patch.object(client_test.Workspace, "request", return_value={"private": "response"}):
             self.assertEqual(instance.request("GET", "/api/v1/operations/op_private?secret=private"), {"private": "response"})
         self.assertEqual(instance.outcomes, {"getOperation": {"succeeded": 1, "rejected": 0, "transport_failed": 0}})
         self.assertNotIn("private", json.dumps(instance.outcomes))
@@ -325,8 +324,8 @@ class ReceiptTests(unittest.TestCase):
 
     def test_client_failure_receipt_excludes_exception_payload(self):
         path = self.directory / "failure.json"
-        with mock.patch.object(sys, "argv", ["test_workspace_client.py", "--forge", "/private/binary", "--receipt", str(path)]), \
-             mock.patch.object(client_test, "run", side_effect=AssertionError("SECRET CAPABILITY PRIVATE PROSE")):
+        with unittest.mock.patch.object(sys, "argv", ["test_workspace_client.py", "--forge", "/private/binary", "--receipt", str(path)]), \
+             unittest.mock.patch.object(client_test, "run", side_effect=AssertionError("SECRET CAPABILITY PRIVATE PROSE")):
             self.assertEqual(client_test.main(), 1)
         value = json.loads(path.read_bytes())
         self.assertEqual(value["status"], "failed")

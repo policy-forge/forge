@@ -1,0 +1,40 @@
+{
+  "format": "forge.rustsec-source-index/1",
+  "tree_sha": "117edb3bed98e9be112f277b7615eea3252e7c43",
+  "truncated": false,
+  "checked_package_names": [
+    "anstream",
+    "anstyle",
+    "anstyle-parse",
+    "anstyle-query",
+    "anstyle-wincon",
+    "clap",
+    "clap_builder",
+    "clap_derive",
+    "clap_lex",
+    "colorchoice",
+    "crossbeam-deque",
+    "crossbeam-epoch",
+    "crossbeam-utils",
+    "either",
+    "heck",
+    "is_terminal_polyfill",
+    "once_cell_polyfill",
+    "proc-macro2",
+    "quote",
+    "rayon",
+    "rayon-core",
+    "strsim",
+    "syn",
+    "unicode-ident",
+    "utf8parse",
+    "windows-link",
+    "windows-sys"
+  ],
+  "matching_paths": [
+    "crates/anstream/RUSTSEC-2024-0404.md",
+    "crates/crossbeam-deque/RUSTSEC-2021-0093.md",
+    "crates/crossbeam-epoch/RUSTSEC-2026-0204.md",
+    "crates/crossbeam-utils/RUSTSEC-2022-0041.md"
+  ]
+}

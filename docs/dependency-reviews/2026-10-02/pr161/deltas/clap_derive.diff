@@ -1,0 +1,633 @@
+--- clap_derive-4.6.1/Cargo.toml
++++ clap_derive-4.6.7/Cargo.toml
+@@ -13,15 +13,16 @@
+ edition = "2024"
+ rust-version = "1.85"
+ name = "clap_derive"
+-version = "4.6.1"
++version = "4.6.7"
+ build = false
+ include = [
+-    "build.rs",
+-    "src/**/*",
+-    "Cargo.toml",
+-    "LICENSE*",
+-    "README.md",
+-    "examples/**/*",
++    "/build.rs",
++    "/src/**/*",
++    "/Cargo.toml",
++    "/Cargo.lock",
++    "/LICENSE*",
++    "/README.md",
++    "/examples/**/*",
+ ]
+ autolib = false
+ autobins = false
+@@ -90,7 +91,7 @@
+ version = "1.0.45"
+ 
+ [dependencies.syn]
+-version = "2.0.117"
++version = "3.0.2"
+ features = ["full"]
+ 
+ [lints.clippy]
+@@ -98,8 +99,11 @@
+ blocks_in_conditions = "allow"
+ bool_assert_comparison = "allow"
+ branches_sharing_code = "allow"
++byte_char_slices = "allow"
+ checked_conversions = "warn"
+ collapsible_else_if = "allow"
++collapsible_match = "allow"
++collection_is_never_read = "warn"
+ create_dir = "warn"
+ dbg_macro = "warn"
+ debug_assert_with_mut_call = "warn"
+@@ -112,9 +116,10 @@
+ fallible_impl_from = "warn"
+ filter_map_next = "warn"
+ flat_map_option = "warn"
++float_cmp = "warn"
+ float_cmp_const = "warn"
+ fn_params_excessive_bools = "warn"
+-from_iter_instead_of_collect = "warn"
++fn_to_numeric_cast_any = "warn"
+ if_same_then_else = "allow"
+ implicit_clone = "warn"
+ imprecise_flops = "warn"
+@@ -130,11 +135,13 @@
+ lossy_float_literal = "warn"
+ macro_use_imports = "warn"
+ mem_forget = "warn"
++mismatching_type_param_order = "warn"
+ multiple_bound_locations = "allow"
+ mutex_integer = "warn"
+ needless_continue = "allow"
+ needless_for_each = "warn"
+ negative_feature_names = "warn"
++partial_pub_fields = "warn"
+ path_buf_push_overwrite = "warn"
+ ptr_as_ptr = "warn"
+ rc_mutex = "warn"
+@@ -145,16 +152,23 @@
+ same_functions_in_if_condition = "warn"
+ self_named_module_files = "warn"
+ semicolon_if_nothing_returned = "warn"
++str_to_string = "warn"
++string_add = "warn"
+ string_add_assign = "warn"
+ string_lit_as_bytes = "warn"
+ todo = "warn"
+ trait_duplication_in_bounds = "warn"
+ uninlined_format_args = "warn"
++unnecessary_safety_comment = "warn"
++unnecessary_safety_doc = "warn"
++unseparated_literal_suffix = "warn"
++use_self = "warn"
+ verbose_file_reads = "warn"
+ zero_sized_map_values = "warn"
+ 
+ [lints.rust]
+-unnameable_types = "allow"
++non_ascii_idents = "warn"
++trivial_numeric_casts = "warn"
+ unreachable_pub = "warn"
+ unsafe_op_in_unsafe_fn = "warn"
+ unused_lifetimes = "warn"
+--- clap_derive-4.6.1/Cargo.toml.orig
++++ clap_derive-4.6.7/Cargo.toml.orig
+@@ -1,6 +1,6 @@
+ [package]
+ name = "clap_derive"
+-version = "4.6.1"
++version = "4.6.7"
+ description = "Parse command line argument by defining a struct, derive crate."
+ categories = ["command-line-interface", "development-tools::procedural-macro-helpers"]
+ keywords = [
+@@ -30,7 +30,7 @@
+ bench = false
+ 
+ [dependencies]
+-syn = { version = "2.0.117", features = ["full"] }
++syn = { version = "3.0.2", features = ["full"] }
+ quote = "1.0.45"
+ proc-macro2 = "1.0.106"
+ heck = "0.5.0"
+--- clap_derive-4.6.1/src/attr.rs
++++ clap_derive-4.6.7/src/attr.rs
+@@ -39,9 +39,7 @@
+             } else {
+                 continue;
+             };
+-            for mut attr in
+-                attr.parse_args_with(Punctuated::<ClapAttr, Token![,]>::parse_terminated)?
+-            {
++            for mut attr in attr.parse_args_with(Punctuated::<Self, Token![,]>::parse_terminated)? {
+                 attr.kind = kind;
+                 parsed.push(attr);
+             }
+@@ -58,14 +56,45 @@
+     pub(crate) fn lit_str_or_abort(&self) -> Result<&LitStr, syn::Error> {
+         let value = self.value_or_abort()?;
+         match value {
+-            AttrValue::LitStr(tokens) => Ok(tokens),
+-            AttrValue::Expr(_) | AttrValue::Call(_) => {
++            AttrValue::Expr(Expr::Lit(expr)) => match &expr.lit {
++                syn::Lit::Str(lit) => Ok(lit),
++                _ => {
++                    abort!(
++                        expr,
++                        "attribute `{}` can only accept string literals",
++                        self.name
++                    )
++                }
++            },
++            AttrValue::Expr(expr) => {
++                abort!(
++                    expr,
++                    "attribute `{}` can only accept string literals",
++                    self.name
++                )
++            }
++            AttrValue::Call(_) => {
+                 abort!(
+                     self.name,
+                     "attribute `{}` can only accept string literals",
+                     self.name
+                 )
+             }
++        }
++    }
++
++    pub(crate) fn lit_bool_or_abort(&self) -> Result<bool, syn::Error> {
++        let value = self.value_or_abort()?;
++        match value {
++            AttrValue::Expr(Expr::Lit(syn::ExprLit {
++                lit: syn::Lit::Bool(lit),
++                ..
++            })) => Ok(lit.value()),
++            _ => abort!(
++                self.name,
++                "attribute `{}` can only accept bool literals",
++                self.name
++            ),
+         }
+     }
+ }
+@@ -101,24 +130,20 @@
+             "long_help" => Some(MagicAttrName::LongHelp),
+             "author" => Some(MagicAttrName::Author),
+             "version" => Some(MagicAttrName::Version),
++            "defer" => Some(MagicAttrName::Defer),
+             _ => None,
+         };
+ 
+         let value = if input.peek(Token![=]) {
+             // `name = value` attributes.
+             let assign_token = input.parse::<Token![=]>()?; // skip '='
+-            if input.peek(LitStr) {
+-                let lit: LitStr = input.parse()?;
+-                Some(AttrValue::LitStr(lit))
+-            } else {
+-                match input.parse::<Expr>() {
+-                    Ok(expr) => Some(AttrValue::Expr(expr)),
+-
+-                    Err(_) => abort! {
+-                        assign_token,
+-                        "expected `string literal` or `expression` after `=`"
+-                    },
+-                }
++            match input.parse::<Expr>() {
++                Ok(expr) => Some(AttrValue::Expr(expr)),
++
++                Err(_) => abort! {
++                    assign_token,
++                    "expected `string literal` or `expression` after `=`"
++                },
+             }
+         } else if input.peek(syn::token::Paren) {
+             // `name(...)` attributes.
+@@ -167,12 +192,12 @@
+     DefaultValuesOsT,
+     NextDisplayOrder,
+     NextHelpHeading,
++    Defer,
+ }
+ 
+ #[derive(Clone)]
+ #[allow(clippy::large_enum_variant)]
+ pub(crate) enum AttrValue {
+-    LitStr(LitStr),
+     Expr(Expr),
+     Call(Vec<Expr>),
+ }
+@@ -180,7 +205,6 @@
+ impl ToTokens for AttrValue {
+     fn to_tokens(&self, tokens: &mut TokenStream) {
+         match self {
+-            Self::LitStr(t) => t.to_tokens(tokens),
+             Self::Expr(t) => t.to_tokens(tokens),
+             Self::Call(t) => {
+                 let t = quote!(#(#t),*);
+--- clap_derive-4.6.1/src/derives/args.rs
++++ clap_derive-4.6.7/src/derives/args.rs
+@@ -77,6 +77,8 @@
+     let app_var = Ident::new("__clap_app", Span::call_site());
+     let augmentation = gen_augment(fields, &app_var, item, false)?;
+     let augmentation_update = gen_augment(fields, &app_var, item, true)?;
++    let initial_app_methods = item.initial_top_level_methods();
++    let final_app_methods = item.final_top_level_methods();
+ 
+     let group_id = if item.skip_group() {
+         quote!(None)
+@@ -155,10 +157,14 @@
+                 #group_id
+             }
+             fn augment_args<'b>(#app_var: clap::Command) -> clap::Command {
+-                #augmentation
++                let #app_var = #app_var #initial_app_methods;
++                let #app_var = #augmentation;
++                #app_var #final_app_methods
+             }
+             fn augment_args_for_update<'b>(#app_var: clap::Command) -> clap::Command {
+-                #augmentation_update
++                let #app_var = #app_var #initial_app_methods;
++                let #app_var = #augmentation_update;
++                #app_var #final_app_methods
+             }
+         }
+     })
+@@ -380,8 +386,6 @@
+     } else {
+         quote!()
+     };
+-    let initial_app_methods = parent_item.initial_top_level_methods();
+-    let final_app_methods = parent_item.final_top_level_methods();
+     let group_app_methods = if parent_item.skip_group() {
+         quote!()
+     } else {
+@@ -432,11 +436,10 @@
+     Ok(quote! {{
+         #deprecations
+         let #app_var = #app_var
+-            #initial_app_methods
+             #group_app_methods
+             ;
+         #( #args )*
+-        #app_var #final_app_methods
++        #app_var
+     }})
+ }
+ 
+--- clap_derive-4.6.1/src/derives/subcommand.rs
++++ clap_derive-4.6.7/src/derives/subcommand.rs
+@@ -64,6 +64,8 @@
+     let augmentation = gen_augment(variants, item, false)?;
+     let augmentation_update = gen_augment(variants, item, true)?;
+     let has_subcommand = gen_has_subcommand(variants)?;
++    let initial_app_methods = item.initial_top_level_methods();
++    let final_app_methods = item.final_top_level_methods();
+ 
+     Ok(quote! {
+         #[allow(
+@@ -123,10 +125,14 @@
+         #[automatically_derived]
+         impl #impl_generics clap::Subcommand for #item_name #ty_generics #where_clause {
+             fn augment_subcommands <'b>(__clap_app: clap::Command) -> clap::Command {
+-                #augmentation
++                let __clap_app = __clap_app #initial_app_methods;
++                let __clap_app = #augmentation;
++                __clap_app #final_app_methods
+             }
+             fn augment_subcommands_for_update <'b>(__clap_app: clap::Command) -> clap::Command {
+-                #augmentation_update
++                let __clap_app = __clap_app #initial_app_methods;
++                let __clap_app = #augmentation_update;
++                __clap_app #final_app_methods
+             }
+             fn has_subcommand(__clap_name: &str) -> bool {
+                 #has_subcommand
+@@ -281,22 +287,22 @@
+ 
+             Kind::Command(_) => {
+                 let subcommand_var = Ident::new("__clap_subcommand", Span::call_site());
+-                let sub_augment = match variant.fields {
++                let (sub_augment, initial_app_methods, final_from_attrs) = match variant.fields {
+                     Named(ref fields) => {
+-                        // Defer to `gen_augment` for adding cmd methods
+                         let fields = collect_args_fields(item, fields)?;
+-                        args::gen_augment(&fields, &subcommand_var, item, override_required)?
+-                    }
+-                    Unit => {
+-                        let arg_block = quote!( #subcommand_var );
+-                        let initial_app_methods = item.initial_top_level_methods();
+-                        let final_from_attrs = item.final_top_level_methods();
+-                        quote! {
+-                            let #subcommand_var = #subcommand_var #initial_app_methods;
+-                            let #subcommand_var = #arg_block;
+-                            #subcommand_var #final_from_attrs
+-                        }
+-                    }
++                        let sub_augment =
++                            args::gen_augment(&fields, &subcommand_var, item, override_required)?;
++                        (
++                            sub_augment,
++                            item.initial_top_level_methods(),
++                            item.final_top_level_methods(),
++                        )
++                    }
++                    Unit => (
++                        quote! { #subcommand_var },
++                        item.initial_top_level_methods(),
++                        item.final_top_level_methods(),
++                    ),
+                     Unnamed(FieldsUnnamed { ref unnamed, .. }) if unnamed.len() == 1 => {
+                         let ty = &unnamed[0].ty;
+                         let arg_block = if override_required {
+@@ -312,13 +318,11 @@
+                                 }
+                             }
+                         };
+-                        let initial_app_methods = item.initial_top_level_methods();
+-                        let final_from_attrs = item.final_top_level_methods();
+-                        quote! {
+-                            let #subcommand_var = #subcommand_var #initial_app_methods;
+-                            let #subcommand_var = #arg_block;
+-                            #subcommand_var #final_from_attrs
+-                        }
++                        (
++                            arg_block,
++                            item.initial_top_level_methods(),
++                            item.final_top_level_methods(),
++                        )
+                     }
+                     Unnamed(..) => {
+                         abort!(
+@@ -328,6 +332,14 @@
+                     }
+                 };
+ 
++                let sub_augment = if parent_item.defer() {
++                    quote! {
++                        #subcommand_var.defer(|#subcommand_var| { #sub_augment })
++                    }
++                } else {
++                    sub_augment
++                };
++
+                 let deprecations = if !override_required {
+                     item.deprecations()
+                 } else {
+@@ -337,8 +349,10 @@
+                 let subcommand = quote! {
+                     let #app_var = #app_var.subcommand({
+                         #deprecations
+-                        let #subcommand_var = clap::Command::new(#name);
+-                        #sub_augment
++                        let #subcommand_var = clap::Command::new(#name)
++                            #initial_app_methods;
++                        let #subcommand_var = #sub_augment;
++                        #subcommand_var #final_from_attrs
+                     });
+                 };
+                 Some(subcommand)
+@@ -352,14 +366,11 @@
+     } else {
+         quote!()
+     };
+-    let initial_app_methods = parent_item.initial_top_level_methods();
+-    let final_app_methods = parent_item.final_top_level_methods();
+-    Ok(quote! {
++    Ok(quote! {{
+         #deprecations;
+-        let #app_var = #app_var #initial_app_methods;
+         #( #subcommands )*;
+-        #app_var #final_app_methods
+-    })
++        #app_var
++    }})
+ }
+ 
+ fn gen_has_subcommand(variants: &[(&Variant, Item)]) -> Result<TokenStream, syn::Error> {
+--- clap_derive-4.6.1/src/item.rs
++++ clap_derive-4.6.7/src/item.rs
+@@ -50,6 +50,7 @@
+     group_id: Name,
+     group_methods: Vec<Method>,
+     kind: Sp<Kind>,
++    defer: Option<Sp<bool>>,
+ }
+ 
+ impl Item {
+@@ -65,6 +66,7 @@
+         let parsed_attrs = ClapAttr::parse_all(attrs)?;
+         res.infer_kind(&parsed_attrs)?;
+         res.push_attrs(&parsed_attrs)?;
++        res.assert_no_defer()?;
+         res.push_doc_comment(attrs, "about", Some("long_about"));
+ 
+         Ok(res)
+@@ -102,6 +104,7 @@
+         let parsed_attrs = ClapAttr::parse_all(attrs)?;
+         res.infer_kind(&parsed_attrs)?;
+         res.push_attrs(&parsed_attrs)?;
++        res.assert_no_defer()?;
+         // Ignoring `push_doc_comment` as there is no top-level clap builder to add documentation
+         // to
+ 
+@@ -144,6 +147,7 @@
+         let parsed_attrs = ClapAttr::parse_all(&variant.attrs)?;
+         res.infer_kind(&parsed_attrs)?;
+         res.push_attrs(&parsed_attrs)?;
++        res.assert_no_defer()?;
+         if matches!(&*res.kind, Kind::Command(_) | Kind::Subcommand(_)) {
+             res.push_doc_comment(&variant.attrs, "about", Some("long_about"));
+         }
+@@ -189,6 +193,7 @@
+         let parsed_attrs = ClapAttr::parse_all(&variant.attrs)?;
+         res.infer_kind(&parsed_attrs)?;
+         res.push_attrs(&parsed_attrs)?;
++        res.assert_no_defer()?;
+         if matches!(&*res.kind, Kind::Value) {
+             res.push_doc_comment(&variant.attrs, "help", None);
+         }
+@@ -217,6 +222,7 @@
+         let parsed_attrs = ClapAttr::parse_all(&field.attrs)?;
+         res.infer_kind(&parsed_attrs)?;
+         res.push_attrs(&parsed_attrs)?;
++        res.assert_no_defer()?;
+         if matches!(&*res.kind, Kind::Arg(_)) {
+             res.push_doc_comment(&field.attrs, "help", Some("long_help"));
+         }
+@@ -279,6 +285,7 @@
+             group_id,
+             group_methods: vec![],
+             kind,
++            defer: None,
+         }
+     }
+ 
+@@ -833,6 +840,11 @@
+ 
+                 Some(MagicAttrName::Skip) if actual_attr_kind == AttrKind::Group => {
+                     self.skip_group = true;
++                }
++
++                Some(MagicAttrName::Defer) => {
++                    assert_attr_kind(attr, &[AttrKind::Command])?;
++                    self.defer = Some(Sp::new(attr.lit_bool_or_abort()?, attr.name.span()));
+                 }
+ 
+                 None
+@@ -1090,6 +1102,23 @@
+     pub(crate) fn skip_group(&self) -> bool {
+         self.skip_group
+     }
++
++    pub(crate) fn defer(&self) -> bool {
++        self.defer
++            .as_ref()
++            .map(|defer| **defer)
++            .unwrap_or(cfg!(feature = "unstable-v5"))
++    }
++
++    fn assert_no_defer(&self) -> Result<(), syn::Error> {
++        if let Some(defer) = &self.defer {
++            abort!(
++                defer.span(),
++                "`defer` is only supported on `Parser` and `Subcommand` enums"
++            );
++        }
++        Ok(())
++    }
+ }
+ 
+ #[derive(Clone)]
+@@ -1236,7 +1265,7 @@
+ 
+ impl Method {
+     pub(crate) fn new(name: Ident, args: TokenStream) -> Self {
+-        Method { name, args }
++        Self { name, args }
+     }
+ 
+     fn from_env(ident: Ident, env_var: &str) -> Result<Option<Self>, syn::Error> {
+@@ -1264,7 +1293,7 @@
+         }
+ 
+         let env_var_lit = LitStr::new(env_var, ident.span());
+-        Ok(Some(Method::new(
++        Ok(Some(Self::new(
+             ident,
+             quote!({
+                 let _ = ::core::env!(#env_var_lit);
+@@ -1280,7 +1309,7 @@
+ 
+ impl ToTokens for Method {
+     fn to_tokens(&self, ts: &mut TokenStream) {
+-        let Method { name, args } = self;
++        let Self { name, args } = self;
+ 
+         let tokens = quote!( .#name(#args) );
+ 
+@@ -1314,7 +1343,7 @@
+ impl ToTokens for Deprecation {
+     fn to_tokens(&self, ts: &mut TokenStream) {
+         let tokens = if cfg!(feature = "deprecated") {
+-            let Deprecation {
++            let Self {
+                 span,
+                 id,
+                 version,
+@@ -1361,7 +1390,7 @@
+ /// `"author1 <http://website1.com>:author2" => "author1 <http://website1.com>, author2"`
+ fn process_author_str(author: &str) -> String {
+     let mut res = String::with_capacity(author.len());
+-    let mut inside_angle_braces = 0usize;
++    let mut inside_angle_braces = 0_usize;
+ 
+     for ch in author.chars() {
+         if inside_angle_braces > 0 && ch == '>' {
+@@ -1436,8 +1465,8 @@
+         use CasingStyle::{Camel, Kebab, Lower, Pascal, ScreamingSnake, Snake, Upper, Verbatim};
+ 
+         match self {
+-            Name::Assigned(tokens) => tokens,
+-            Name::Derived(ident) => {
++            Self::Assigned(tokens) => tokens,
++            Self::Derived(ident) => {
+                 let s = ident.unraw().to_string();
+                 let s = match style {
+                     Pascal => s.to_upper_camel_case(),
+@@ -1458,8 +1487,8 @@
+         use CasingStyle::{Camel, Kebab, Lower, Pascal, ScreamingSnake, Snake, Upper, Verbatim};
+ 
+         match self {
+-            Name::Assigned(tokens) => quote!( (#tokens).chars().next().unwrap() ),
+-            Name::Derived(ident) => {
++            Self::Assigned(tokens) => quote!( (#tokens).chars().next().unwrap() ),
++            Self::Derived(ident) => {
+                 let s = ident.unraw().to_string();
+                 let s = match style {
+                     Pascal => s.to_upper_camel_case(),
+@@ -1482,8 +1511,8 @@
+ impl ToTokens for Name {
+     fn to_tokens(&self, tokens: &mut TokenStream) {
+         match self {
+-            Name::Assigned(t) => t.to_tokens(tokens),
+-            Name::Derived(ident) => {
++            Self::Assigned(t) => t.to_tokens(tokens),
++            Self::Derived(ident) => {
+                 let s = ident.unraw().to_string();
+                 quote_spanned!(ident.span()=> #s).to_tokens(tokens);
+             }
+--- clap_derive-4.6.1/src/utils/spanned.rs
++++ clap_derive-4.6.7/src/utils/spanned.rs
+@@ -13,7 +13,7 @@
+ 
+ impl<T> Sp<T> {
+     pub(crate) fn new(val: T, span: Span) -> Self {
+-        Sp { val, span }
++        Self { val, span }
+     }
+ 
+     pub(crate) fn get(&self) -> &T {
+@@ -41,7 +41,7 @@
+ 
+ impl From<Ident> for Sp<String> {
+     fn from(ident: Ident) -> Self {
+-        Sp {
++        Self {
+             val: ident.to_string(),
+             span: ident.span(),
+         }
+@@ -50,7 +50,7 @@
+ 
+ impl From<LitStr> for Sp<String> {
+     fn from(lit: LitStr) -> Self {
+-        Sp {
++        Self {
+             val: lit.value(),
+             span: lit.span(),
+         }
+@@ -59,7 +59,7 @@
+ 
+ impl<'a> From<Sp<&'a str>> for Sp<String> {
+     fn from(sp: Sp<&'a str>) -> Self {
+-        Sp::new(sp.val.into(), sp.span)
++        Self::new(sp.val.into(), sp.span)
+     }
+ }
+ 
+--- clap_derive-4.6.1/src/utils/ty.rs
++++ clap_derive-4.6.7/src/utils/ty.rs
+@@ -86,6 +86,7 @@
+                     leading_colon: None,
+                     segments,
+                 },
++            attrs: _,
+         }) => only_one(segments.iter()),
+ 
+         _ => None,

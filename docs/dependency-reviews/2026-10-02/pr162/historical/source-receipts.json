@@ -1,0 +1,412 @@
+{
+  "format": "forge.agent-assisted-source-review/1",
+  "authority": "No human audit, accepted cargo-vet certification or owner signoff is asserted.",
+  "receipts": [
+    {
+      "pr": 162,
+      "name": "argon2",
+      "version": "0.5.3",
+      "checksum": "3c3610892ee6e0cbce8ae2700349fcf8f98adb0dbfbee85aec3c9179d29cc072",
+      "compressed_bytes": 28795,
+      "source_files": 16,
+      "source_bytes": 113912,
+      "rust_version": "1.65",
+      "build": null,
+      "features": {
+        "alloc": [
+          "password-hash/alloc"
+        ],
+        "default": [
+          "alloc",
+          "password-hash",
+          "rand"
+        ],
+        "rand": [
+          "password-hash/rand_core"
+        ],
+        "simple": [
+          "password-hash"
+        ],
+        "std": [
+          "alloc",
+          "password-hash/std"
+        ]
+      },
+      "vcs": {
+        "git": {
+          "sha1": "5b6a74e0799955b21c9d3854de1674a78a472648"
+        },
+        "path_in_vcs": "argon2"
+      }
+    },
+    {
+      "pr": 162,
+      "name": "argon2",
+      "version": "0.6.0",
+      "checksum": "134c52ddac6d63c576bef8168db10c83c49c26444ecbc68060fef078925a901c",
+      "compressed_bytes": 34538,
+      "source_files": 18,
+      "source_bytes": 136955,
+      "rust_version": "1.85",
+      "build": false,
+      "features": {
+        "alloc": [
+          "password-hash?/alloc"
+        ],
+        "default": [
+          "alloc",
+          "getrandom",
+          "password-hash"
+        ],
+        "getrandom": [
+          "password-hash/getrandom"
+        ],
+        "kdf": [
+          "alloc",
+          "dep:kdf"
+        ],
+        "parallel": [
+          "dep:rayon"
+        ],
+        "password-hash": [
+          "dep:password-hash"
+        ],
+        "rand_core": [
+          "password-hash/rand_core"
+        ],
+        "zeroize": [
+          "dep:zeroize"
+        ]
+      },
+      "vcs": {
+        "git": {
+          "sha1": "b1e0ad6fe229b1ba74e4696c7359ab45d7e931f0"
+        },
+        "path_in_vcs": "argon2"
+      }
+    },
+    {
+      "pr": 162,
+      "name": "blake2",
+      "version": "0.10.6",
+      "checksum": "46502ad458c9a52b69d4d4d32775c788b7a1b85e8bc9d482d92250fc0e3f8efe",
+      "compressed_bytes": 47234,
+      "source_files": 27,
+      "source_bytes": 156491,
+      "rust_version": null,
+      "build": null,
+      "features": {
+        "default": [
+          "std"
+        ],
+        "reset": [],
+        "simd": [],
+        "simd_asm": [
+          "simd_opt"
+        ],
+        "simd_opt": [
+          "simd"
+        ],
+        "size_opt": [],
+        "std": [
+          "digest/std"
+        ]
+      },
+      "vcs": {
+        "git": {
+          "sha1": "1f727ce37ff40fa0cce84eb8543a45bdd3ca4a4e"
+        },
+        "path_in_vcs": "blake2"
+      }
+    },
+    {
+      "pr": 162,
+      "name": "blake2",
+      "version": "0.11.0",
+      "checksum": "5b5d4d889834ee8ecfc0f8426ad30faf7cdcb10f741a8e6d7224d95325479f6f",
+      "compressed_bytes": 46491,
+      "source_files": 22,
+      "source_bytes": 147755,
+      "rust_version": "1.85",
+      "build": false,
+      "features": {
+        "alloc": [
+          "digest/alloc"
+        ],
+        "default": [
+          "alloc"
+        ],
+        "reset": [],
+        "size_opt": [],
+        "zeroize": [
+          "digest/zeroize"
+        ]
+      },
+      "vcs": {
+        "git": {
+          "sha1": "fa3084083d946ac12436567d5a59c0935d5db1fa"
+        },
+        "path_in_vcs": "blake2"
+      }
+    },
+    {
+      "pr": 162,
+      "name": "cmov",
+      "version": "0.5.4",
+      "checksum": "0c9ea0ac24bc397ab3c98583a3c9ba74fa56b09a4449bbe172b9b1ddb016027a",
+      "compressed_bytes": 27367,
+      "source_files": 19,
+      "source_bytes": 114258,
+      "rust_version": "1.85",
+      "build": false,
+      "features": {},
+      "vcs": {
+        "git": {
+          "sha1": "5c7e4f9bb31af81bf766360e836b6d633b84dbff"
+        },
+        "path_in_vcs": "cmov"
+      }
+    },
+    {
+      "pr": 162,
+      "name": "cpufeatures",
+      "version": "0.2.17",
+      "checksum": "59ed5838eebb26a2bb2e58f6d5b5316989ae9d08bab10e0e6d103e656d1b0280",
+      "compressed_bytes": 13466,
+      "source_files": 16,
+      "source_bytes": 44343,
+      "rust_version": null,
+      "build": false,
+      "features": {},
+      "vcs": {
+        "git": {
+          "sha1": "9d92d5e95ab4c07c5d8bfd024bf2a17e96d20feb"
+        },
+        "path_in_vcs": "cpufeatures"
+      }
+    },
+    {
+      "pr": 162,
+      "name": "cpufeatures",
+      "version": "0.3.0",
+      "checksum": "8b2a41393f66f16b0823bb79094d54ac5fbd34ab292ddafb9a0456ac9f87d201",
+      "compressed_bytes": 14156,
+      "source_files": 16,
+      "source_bytes": 46443,
+      "rust_version": "1.85",
+      "build": false,
+      "features": {},
+      "vcs": {
+        "git": {
+          "sha1": "31e6ec3727f11f9f5e0c106e282014653a4d7bb7"
+        },
+        "path_in_vcs": "cpufeatures"
+      }
+    },
+    {
+      "pr": 162,
+      "name": "ctutils",
+      "version": "0.4.2",
+      "checksum": "7d5515a3834141de9eafb9717ad39eea8247b5674e6066c404e8c4b365d2a29e",
+      "compressed_bytes": 32739,
+      "source_files": 21,
+      "source_bytes": 146497,
+      "rust_version": "1.85",
+      "build": false,
+      "features": {
+        "alloc": [],
+        "subtle": [
+          "dep:subtle"
+        ]
+      },
+      "vcs": {
+        "git": {
+          "sha1": "53f7fc3fa806e6d4e9650675e7b97d3621cff340"
+        },
+        "path_in_vcs": "ctutils"
+      }
+    },
+    {
+      "pr": 162,
+      "name": "digest",
+      "version": "0.10.7",
+      "checksum": "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292",
+      "compressed_bytes": 19557,
+      "source_files": 21,
+      "source_bytes": 87395,
+      "rust_version": null,
+      "build": null,
+      "features": {
+        "alloc": [],
+        "core-api": [
+          "block-buffer"
+        ],
+        "default": [
+          "core-api"
+        ],
+        "dev": [
+          "blobby"
+        ],
+        "mac": [
+          "subtle"
+        ],
+        "oid": [
+          "const-oid"
+        ],
+        "rand_core": [
+          "crypto-common/rand_core"
+        ],
+        "std": [
+          "alloc",
+          "crypto-common/std"
+        ]
+      },
+      "vcs": {
+        "git": {
+          "sha1": "344389411fd9718a0742435152e933a9e71461ee"
+        },
+        "path_in_vcs": "digest"
+      }
+    },
+    {
+      "pr": 162,
+      "name": "digest",
+      "version": "0.11.3",
+      "checksum": "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2",
+      "compressed_bytes": 28955,
+      "source_files": 26,
+      "source_bytes": 137727,
+      "rust_version": "1.85",
+      "build": false,
+      "features": {
+        "alloc": [],
+        "block-api": [
+          "dep:block-buffer"
+        ],
+        "default": [
+          "block-api"
+        ],
+        "dev": [
+          "blobby"
+        ],
+        "getrandom": [
+          "common/getrandom",
+          "rand_core"
+        ],
+        "mac": [
+          "dep:ctutils"
+        ],
+        "oid": [
+          "dep:const-oid"
+        ],
+        "rand_core": [
+          "common/rand_core"
+        ],
+        "zeroize": [
+          "dep:zeroize",
+          "block-buffer?/zeroize"
+        ]
+      },
+      "vcs": {
+        "git": {
+          "sha1": "2fb9ed8922e244117040bb037a7d141a6a2b8228"
+        },
+        "path_in_vcs": "digest"
+      }
+    },
+    {
+      "pr": 162,
+      "name": "password-hash",
+      "version": "0.5.0",
+      "checksum": "346f04948ba92c43e8469c1ee6736c7563d71012b17d40745260fe106aac2166",
+      "compressed_bytes": 26884,
+      "source_files": 20,
+      "source_bytes": 106372,
+      "rust_version": "1.60",
+      "build": null,
+      "features": {
+        "alloc": [
+          "base64ct/alloc"
+        ],
+        "default": [
+          "rand_core"
+        ],
+        "getrandom": [
+          "rand_core/getrandom"
+        ],
+        "std": [
+          "alloc",
+          "base64ct/std",
+          "rand_core/std"
+        ]
+      },
+      "vcs": {
+        "git": {
+          "sha1": "d80228437165f30bb20a2136d39e4c2de9cae5a5"
+        },
+        "path_in_vcs": "password-hash"
+      }
+    },
+    {
+      "pr": 162,
+      "name": "password-hash",
+      "version": "0.6.1",
+      "checksum": "aab41826031698d6ffcd9cff78ef56ef998e39dc7e5067cdfebe373842d4723b",
+      "compressed_bytes": 16195,
+      "source_files": 11,
+      "source_bytes": 51058,
+      "rust_version": "1.85",
+      "build": false,
+      "features": {
+        "alloc": [
+          "phc?/alloc"
+        ],
+        "getrandom": [
+          "dep:getrandom",
+          "phc?/getrandom"
+        ],
+        "rand_core": [
+          "dep:rand_core",
+          "phc?/rand_core"
+        ]
+      },
+      "vcs": {
+        "git": {
+          "sha1": "d1954d88cbde6b6ee839d3a2f78e5b03fd4eaa1d"
+        },
+        "path_in_vcs": "password-hash"
+      }
+    },
+    {
+      "pr": 162,
+      "name": "phc",
+      "version": "0.6.1",
+      "checksum": "44dc769b75f93afdddd8c7fa12d685292ddeff1e66f7f0f3a234cf1818afe892",
+      "compressed_bytes": 26154,
+      "source_files": 19,
+      "source_bytes": 100213,
+      "rust_version": "1.85",
+      "build": false,
+      "features": {
+        "alloc": [
+          "base64ct/alloc"
+        ],
+        "default": [
+          "rand_core"
+        ],
+        "getrandom": [
+          "dep:getrandom"
+        ],
+        "rand_core": [
+          "dep:rand_core"
+        ]
+      },
+      "vcs": {
+        "git": {
+          "sha1": "02a43929d75c8f7a515dcc240648c26d2fe4ee5f"
+        },
+        "path_in_vcs": "phc"
+      }
+    }
+  ]
+}

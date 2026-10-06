@@ -1,0 +1,265 @@
+{
+  "format": "forge.read-only-review-artifacts/1",
+  "artifacts": [
+    {
+      "path": "Cargo.lock",
+      "bytes": 74338,
+      "sha256": "fd483e330e292cd81131d59b30b3f89771206365470d3da03e713610ab561703"
+    },
+    {
+      "path": "Cargo.lock.diff",
+      "bytes": 487,
+      "sha256": "79dacedf5e75227d2e554c835bf3c7a346b1feb8d76c62026b55af6b1816539d"
+    },
+    {
+      "path": "Cargo.toml",
+      "bytes": 2344,
+      "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+    },
+    {
+      "path": "Cargo.toml.diff",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "advisories/crates/chacha20/RUSTSEC-2019-0029.md",
+      "bytes": 1176,
+      "sha256": "f02361318232aa3202c954fd9cde3e2a688b0842f137d16ee22d042fac691c4c"
+    },
+    {
+      "path": "advisories/crates/generic-array/RUSTSEC-2020-0146.md",
+      "bytes": 730,
+      "sha256": "0af29772181b8ef22ee1b23d60953dbf3ff3ea29cb5db13bc065fca2ed0bf6fe"
+    },
+    {
+      "path": "advisories/crates/hashbrown/RUSTSEC-2024-0402.md",
+      "bytes": 746,
+      "sha256": "0c707950edbfe338e50afdaa6a642bebca5ff5986de423ecba84a89fb8fafc5d"
+    },
+    {
+      "path": "advisories/crates/lopdf/RUSTSEC-2026-0187.md",
+      "bytes": 1585,
+      "sha256": "7e7c6b2b70c8f9af0f0b1a6029925a8baafe9b67188e316168ed12d90a9effcc"
+    },
+    {
+      "path": "advisories/crates/postscript/RUSTSEC-2021-0017.md",
+      "bytes": 877,
+      "sha256": "4afd956166703cf84109025eaa045209acd4b36b6396ad0cd20cc3cfd5617461"
+    },
+    {
+      "path": "advisories/crates/rand/RUSTSEC-2026-0097.md",
+      "bytes": 1874,
+      "sha256": "2d3a02f38b5bf832ee640cf39d6e00c416f0a676881a0712ea792c9323dfbebd"
+    },
+    {
+      "path": "advisories/crates/rand_core/RUSTSEC-2019-0035.md",
+      "bytes": 692,
+      "sha256": "02530718a407edacea1ce455f90d33c3c7895d0f2c1f80915fbc2b1e6b6cdcb4"
+    },
+    {
+      "path": "advisories/crates/rand_core/RUSTSEC-2021-0023.md",
+      "bytes": 959,
+      "sha256": "c28e0da8e69d587b9f2d1eea2c919d719eee111e4be4d811ef60aa74508a0d63"
+    },
+    {
+      "path": "advisories/crates/sha2/RUSTSEC-2021-0100.md",
+      "bytes": 859,
+      "sha256": "a180ded62423efd28eb3ae52e6284957cc1d846399c94fdc7c33b7b918f1442d"
+    },
+    {
+      "path": "advisories/crates/ttf-parser/RUSTSEC-2026-0192.md",
+      "bytes": 561,
+      "sha256": "37496b74020531fc9e29830bd5aafc65f3861a228d8052dc73e6a75a9576ea4d"
+    },
+    {
+      "path": "advisory-index-receipt.json",
+      "bytes": 17359,
+      "sha256": "81400620adb944912a5e91a82c21d9c5238f9f1a8a92e69f9c2e54ababba15eb"
+    },
+    {
+      "path": "advisory-summaries.json",
+      "bytes": 3329,
+      "sha256": "7013b7996ff787b5f93271c568a0c46630536a91e743fe7f413041c6a451b2ea"
+    },
+    {
+      "path": "ci-run.json",
+      "bytes": 683,
+      "sha256": "9d939c1e97fa20163c61dcaa889917dbf87741f798752e1dda3228dcaaaab63e"
+    },
+    {
+      "path": "final-state.json",
+      "bytes": 1768,
+      "sha256": "6b8a34cdd6e97cf793e60475e6d782c12fd377a6313d0dd3ff61d71a310afe46"
+    },
+    {
+      "path": "lock-transitions.json",
+      "bytes": 1007,
+      "sha256": "ac7415cf37cb855f0f766e45e0bbb7096561a27f35669de2e24b5d2ffad38f38"
+    },
+    {
+      "path": "pdf-extract-source.diff",
+      "bytes": 1758,
+      "sha256": "cdaaa2fc7485c967ff83648333008271da9e49e2dc1895591d80176090595ce9"
+    },
+    {
+      "path": "review-notes.md",
+      "bytes": 2737,
+      "sha256": "c18d12950bf21a22579f934625dcef9cf47447e7a93edf9b71b258d844a06c58"
+    },
+    {
+      "path": "review-summary.json",
+      "bytes": 680,
+      "sha256": "3b5a43a572423b920b515fcc9226f507acbf4a3393d094be0775268a41fd0ecf"
+    },
+    {
+      "path": "reviewer-notes.md",
+      "bytes": 7656,
+      "sha256": "d5544483ecdfdc9da27eefef7baaae02f5bad18872c51ba82b29ad8b0dbdeca2"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0/.cargo_vcs_info.json",
+      "bytes": 94,
+      "sha256": "eb2ac672a53e883d38ed4f58cdae7e9124ba1b5b1fbb094b902574ea77597bae"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0/Cargo.lock",
+      "bytes": 32089,
+      "sha256": "c3950b78b9549172c905e3797412c8e13629177283eadb2dacfd666bc27eaf0a"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0/Cargo.toml",
+      "bytes": 1742,
+      "sha256": "f280428a2f7027f9424a310d03f18aaa8084ebd04ce64c05b340a9c7483119c6"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0/Cargo.toml.orig",
+      "bytes": 851,
+      "sha256": "20d0372f5d621a3eafc3fb2a839741b7d1fc39f8ebf06ad17321b7e061e3f6b9"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0/README.md",
+      "bytes": 1043,
+      "sha256": "3235d1c7543386ba27420db454f2d50cbaf964d278e2e08fd19af24a11c36041"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0/src/core_fonts.rs",
+      "bytes": 99895,
+      "sha256": "13dbc1b13e3f716317ed299a73126c8675fddce3b5a40daba1b8157236ae7a9b"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0/src/encodings.rs",
+      "bytes": 28990,
+      "sha256": "6c4a417812b2d9c5d61db6b719c590e0d9349996342701ee117ea832d1059fd7"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0/src/glyphlist-export.py",
+      "bytes": 1577,
+      "sha256": "98c07dbe958eaebecaa056b698ad5b2f3989a292c0c7a09ad5182b4aa460cd93"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0/src/glyphlist-extended.txt",
+      "bytes": 82046,
+      "sha256": "a6d243b6f4d8c6812278a590e2c7a68a3b27379d307fbbd5f12d060b747440c6"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0/src/glyphnames.rs",
+      "bytes": 121379,
+      "sha256": "941e2d0d792ff2aac7b77a6d723ab59e2668f5ba72ca00543803a98a73673878"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0/src/lib.rs",
+      "bytes": 97998,
+      "sha256": "90037ccde8781e158a0e60470467682975f81e0c8f3e17ac43d53596c2faab84"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0/src/zapfglyphnames.rs",
+      "bytes": 5357,
+      "sha256": "85e41d1e618371c4f507efa30612116c66826f11eab8e98e4e4475989537be78"
+    },
+    {
+      "path": "source/pdf-extract-0.12.0.crate",
+      "bytes": 97844,
+      "sha256": "417e8fdc940f1d5bc62c5f89864c3a2255f74f69aa353c98509213d67df61e73"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1/.cargo_vcs_info.json",
+      "bytes": 94,
+      "sha256": "a66d233e8fc3f68414061dd23ad0554a901f638cc5222314ce65bdc34da30074"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1/Cargo.lock",
+      "bytes": 32089,
+      "sha256": "75a93a7735c43b8392e3f23c90cff2eb7c89553a9af49ecbc298f4026adb0604"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1/Cargo.toml",
+      "bytes": 1742,
+      "sha256": "599882faaf5e74ee033d10c8a6f7a50bf49eb2c855631c1097074ff58000a016"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1/Cargo.toml.orig",
+      "bytes": 851,
+      "sha256": "58c439e4f241594ee5318cac623f17d28ed41ec6e7d67eaae1a84703691cd1d0"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1/README.md",
+      "bytes": 1043,
+      "sha256": "3235d1c7543386ba27420db454f2d50cbaf964d278e2e08fd19af24a11c36041"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1/src/core_fonts.rs",
+      "bytes": 99895,
+      "sha256": "13dbc1b13e3f716317ed299a73126c8675fddce3b5a40daba1b8157236ae7a9b"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1/src/encodings.rs",
+      "bytes": 28990,
+      "sha256": "6c4a417812b2d9c5d61db6b719c590e0d9349996342701ee117ea832d1059fd7"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1/src/glyphlist-export.py",
+      "bytes": 1577,
+      "sha256": "98c07dbe958eaebecaa056b698ad5b2f3989a292c0c7a09ad5182b4aa460cd93"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1/src/glyphlist-extended.txt",
+      "bytes": 82046,
+      "sha256": "a6d243b6f4d8c6812278a590e2c7a68a3b27379d307fbbd5f12d060b747440c6"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1/src/glyphnames.rs",
+      "bytes": 121379,
+      "sha256": "941e2d0d792ff2aac7b77a6d723ab59e2668f5ba72ca00543803a98a73673878"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1/src/lib.rs",
+      "bytes": 98340,
+      "sha256": "c5ac8a5ab57745eb12ba44615d036b45f2545ab6fc47ebdedc0c32149b301f35"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1/src/zapfglyphnames.rs",
+      "bytes": 5357,
+      "sha256": "85e41d1e618371c4f507efa30612116c66826f11eab8e98e4e4475989537be78"
+    },
+    {
+      "path": "source/pdf-extract-0.12.1.crate",
+      "bytes": 98019,
+      "sha256": "e5c4820f5811e424ce037d08493ac87752ecc54339e0f1e40c3d17da93278861"
+    },
+    {
+      "path": "source-receipts.json",
+      "bytes": 1114,
+      "sha256": "628995cd28ab307fe60a67152bc3cb6345d73f0f23d264acec17ce92a5cbdce1"
+    },
+    {
+      "path": "supply-chain-job.json",
+      "bytes": 3073,
+      "sha256": "874ed14064206049903885943143d78c8312931b442993bf849970db3d40f8fa"
+    },
+    {
+      "path": "supply-chain.log",
+      "bytes": 237767,
+      "sha256": "8ff3535207c77529d341ea080de119da86bc37619ea0787b5a5be6848a537084"
+    }
+  ]
+}

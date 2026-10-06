@@ -1,0 +1,84 @@
+[
+  {
+    "id": "RUSTSEC-2019-0019",
+    "package": "blake2",
+    "locked_versions": [
+      "0.11.0"
+    ],
+    "patched": [
+      ">= 0.8.1"
+    ],
+    "unaffected": [],
+    "informational": null,
+    "withdrawn": null,
+    "url": "https://github.com/RustCrypto/MACs/issues/19"
+  },
+  {
+    "id": "RUSTSEC-2026-0003",
+    "package": "cmov",
+    "locked_versions": [
+      "0.5.4"
+    ],
+    "patched": [
+      ">= 0.4.4"
+    ],
+    "unaffected": [],
+    "informational": null,
+    "withdrawn": null,
+    "url": "https://github.com/RustCrypto/utils/security/advisories/GHSA-2gqc-6j2q-83qp"
+  },
+  {
+    "id": "RUSTSEC-2020-0146",
+    "package": "generic-array",
+    "locked_versions": [
+      "0.14.7"
+    ],
+    "patched": [
+      ">= 0.8.4, < 0.9.0",
+      ">= 0.9.1, < 0.10.0",
+      ">= 0.10.1, < 0.11.0",
+      ">= 0.11.2, < 0.12.0",
+      ">= 0.12.4, < 0.13.0",
+      ">= 0.13.3"
+    ],
+    "unaffected": [
+      "< 0.8.0"
+    ],
+    "informational": null,
+    "withdrawn": null,
+    "url": "https://github.com/fizyk20/generic-array/issues/98"
+  },
+  {
+    "id": "RUSTSEC-2019-0035",
+    "package": "rand_core",
+    "locked_versions": [
+      "0.10.1",
+      "0.9.5"
+    ],
+    "patched": [
+      "^ 0.3.1",
+      ">= 0.4.2"
+    ],
+    "unaffected": [],
+    "informational": "unsound",
+    "withdrawn": null,
+    "url": "https://github.com/rust-random/rand/blob/master/rand_core/CHANGELOG.md#050---2019-06-06"
+  },
+  {
+    "id": "RUSTSEC-2021-0023",
+    "package": "rand_core",
+    "locked_versions": [
+      "0.10.1",
+      "0.9.5"
+    ],
+    "patched": [
+      ">= 0.6.2"
+    ],
+    "unaffected": [
+      "< 0.6.0"
+    ],
+    "informational": null,
+    "withdrawn": null,
+    "url": "https://github.com/rust-random/rand/pull/1096"
+  }
+]
