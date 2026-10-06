@@ -73,7 +73,9 @@ TOOL_REASONS = frozenset(reason for reasons in TOOL_PHASE_REASONS.values() for r
 PROBE_ORDER = tuple((phase, family, role) for phase in ("before", "after")
     for family in ("ipv4", "ipv6") for role in ("calibration-external", "dut-external", "dut-loopback"))
 PYTHON_PROBE = ("import json,sys;print(json.dumps({'version':'.'.join(map(str,sys.version_info[:3])),"
-                "'paths':sys.path+['/etc/python'+'.'.join(map(str,sys.version_info[:2]))]},sort_keys=True,separators=(',',':')))")
+                "'paths':sys.path+['/etc/python'+'.'.join(map(str,sys.version_info[:2]))]+"
+                "['/usr/lib/'+sys.implementation._multiarch+'/libpython'+'.'.join(map(str,sys.version_info[:2]))+suffix "
+                "for suffix in ('.so.1','.so.1.0')]},sort_keys=True,separators=(',',':')))")
 # This fixed bootstrap does not import checkout modules and executes only the single hash-verified buffer.
 BOOTSTRAP = """import hashlib,os,stat,sys
 p,h=sys.argv[1:];f=os.open(p,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
@@ -424,7 +426,7 @@ def command(argv, root, deadline, input_bytes=None, privileged=False):
 LINK_DETAIL_SCHEMA = "forge.stdlib-unsupported-link-diagnostic/2"
 LINK_DETAIL_OUTPUT = "stdlib-unsupported-link-diagnostic-v2.json"
 LINK_DETAIL_LIMIT = 2048
-LINK_DETAIL_ENGINE_PIN = {"bytes": 34284, "sha256": "88c46e18be0299e297c9484b84ffdeb15fc24f864d01a24dfe262ee3c0232305"}
+LINK_DETAIL_ENGINE_PIN = {'bytes': 37968, 'sha256': '233b237c83a1e06a9c6abb13a3b7d136b0e88f0580b958c8fc9de70e945c3232'}
 LINK_DETAIL_INPUTS = ("scripts/verify_workspace_os_denial.py", "scripts/test_workspace_os_denial.py",
                       "scripts/test_workspace_stdlib_link_diagnostic.py", ".github/workflows/workspace-verification.yml")
 # Offsets are relative to the actual maintained method's def line, not its filename or a caller label.
@@ -793,6 +795,12 @@ class LeafDirectoryStream:
         return False
 
 
+def leaf_support_path(raw, paths):
+    """Admit only two fixed versioned distro runtime names beside a matching stdlib root."""
+    match = re.fullmatch(rb"/usr/lib/(?:x86_64-linux-gnu|aarch64-linux-gnu)/libpython(3\.[0-9]{1,2})\.so\.1(?:\.0)?", raw)
+    return match is not None and b"/usr/lib/python" + match[1] in paths
+
+
 class LeafClosure:
     """Build a complete private stdlib proof using held no-follow directories, leaves and link text."""
 
@@ -814,6 +822,8 @@ class LeafClosure:
             self.paths.append(raw)
         if not any(p.rsplit(b"/", 1)[-1] == b"lib-dynload" for p in self.paths):
             raise LeafClosureError("dynload-missing", "stdlib-roots")
+        self.support_paths = {raw for raw in self.paths if leaf_support_path(raw, self.paths)}
+        self.support_roots = []
         self.budget = LeafBudget(deadline)
         self.slash = None
         self.slash_generation = None
@@ -889,9 +899,19 @@ class LeafClosure:
                 try:
                     info = os.stat(name, dir_fd=parent, follow_symlinks=False)
                 except FileNotFoundError:
-                    if not name.endswith(b".zip"):
+                    if not name.endswith(b".zip") and raw not in self.support_paths:
                         raise LeafClosureError("missing-root", "stdlib-roots") from None
                     self.row(rows, [raw.hex(), "absent", ancestry])
+                    continue
+                if raw in self.support_paths:
+                    kind = "link" if stat.S_ISLNK(info.st_mode) else "file"
+                    self.trusted(info, kind)
+                    identity = leaf_identity(info)
+                    fd = self.budget.open(name, os.O_PATH | os.O_NOFOLLOW | os.O_CLOEXEC, parent)
+                    self.verify(parent, name, fd, identity)
+                    target = self.read_link(parent, name, identity) if kind == "link" else None
+                    self.support_roots.append((raw, fd, identity, ancestry, kind, target))
+                    self.row(rows, [raw.hex(), kind, identity, ancestry, target.hex() if target is not None else ""])
                     continue
                 self.trusted(info, "directory")
                 fd, identity = self.directory(parent, name)
@@ -1204,6 +1224,39 @@ class LeafClosure:
                         self.budget.close(origin_parent)
         raise LeafClosureError("unsupported-link")
 
+    def scan_support(self, rows, files, links):
+        """Pin the complete fixed auxiliary leaf set with held ancestry and bounded link text."""
+        for raw, held, identity, ancestry, kind, target in self.support_roots:
+            self.budget.charge("entries", 1, LEAF_ENTRY_LIMIT * 2, "entry-bound")
+            self.scan_entries += 1
+            if self.scan_entries > LEAF_ENTRY_LIMIT:
+                raise LeafClosureError("entry-bound")
+            parent_raw, name = raw.rsplit(b"/", 1)
+            parent, fresh_ancestry = self.absolute_directory(parent_raw)
+            try:
+                if fresh_ancestry != ancestry:
+                    raise LeafClosureError("entry-observation-unverified")
+                self.verify(parent, name, held, identity)
+                if kind == "file":
+                    pin = self.hash_leaf(parent, name, identity)
+                    if raw in files and files[raw] != (identity, pin):
+                        raise LeafClosureError("entry-observation-unverified")
+                    self.budget.charge("state", len(raw), LEAF_STATE_LIMIT, "byte-bound")
+                    files[raw] = (identity, pin)
+                    self.row(rows, [-1, raw.hex(), "support-file", identity, pin, ancestry])
+                else:
+                    if self.read_link(parent, name, identity) != target:
+                        raise LeafClosureError("entry-observation-unverified")
+                    if raw in links and links[raw] != (identity, target):
+                        raise LeafClosureError("entry-observation-unverified")
+                    self.budget.charge("state", len(raw), LEAF_STATE_LIMIT, "byte-bound")
+                    links[raw] = (identity, target)
+                    self.row(rows, [-1, raw.hex(), "support-link", identity, hashlib.sha256(target).hexdigest(), ancestry])
+                self.verify(parent, name, held, identity)
+            finally:
+                if parent != self.slash:
+                    self.budget.close(parent)
+
     def scan(self, root_rows):
         """Create one complete canonical proof; link targets must already be independent regular members."""
         rows, files, links = [], {}, {}
@@ -1213,6 +1266,7 @@ class LeafClosure:
             if leaf_identity(os.fstat(fd)) != expected:
                 raise LeafClosureError("entry-observation-unverified")
             self.visit(index, raw, fd, b"", 0, rows, files, links)
+        self.scan_support(rows, files, links)
         count = self.budget.entries - count_before
         if (not 1 <= count <= LEAF_ENTRY_LIMIT
                 or not any(raw + b"/os.py" in files or raw + b"/os.py" in links
@@ -1220,8 +1274,9 @@ class LeafClosure:
             raise LeafClosureError("entry-observation-unverified")
         # Resolve each logical alias row, even when overlapping roots share its spelling.
         for row in tuple(rows):
-            if row[2] == "link":
-                original = self.roots[row[0]][0] + b"/" + bytes.fromhex(row[1])
+            if row[2] in ("link", "support-link"):
+                original = (bytes.fromhex(row[1]) if row[2] == "support-link" else
+                            self.roots[row[0]][0] + b"/" + bytes.fromhex(row[1]))
                 self.row(rows, [row[0], row[1], "resolution", self.resolve(original, files, links, rows)])
         proof = [LEAF_PROOF_FORMAT, root_rows, sorted(rows)]
         if leaf_encoded_size(proof) + 1 > LEAF_STATE_LIMIT:
@@ -1247,8 +1302,8 @@ class LeafClosure:
             roots = self.qualified_roots()
             first, count, files = self.scan(roots)
             # Every root/absence spelling is independently reopened from held slash.
-            old_roots = self.roots
-            self.roots = []
+            old_roots, old_support = self.roots, self.support_roots
+            self.roots, self.support_roots = [], []
             again = self.qualified_roots()
             if roots != again:
                 raise LeafClosureError("entry-observation-unverified")
@@ -1257,14 +1312,17 @@ class LeafClosure:
                 raise LeafClosureError("entry-observation-unverified")
             # Reconcile root ancestors/absence after the second full pass; closing an
             # ancestor during traversal does not make a replaced spelling continuous.
-            middle_roots = self.roots
-            self.roots = []
+            middle_roots, middle_support = self.roots, self.support_roots
+            self.roots, self.support_roots = [], []
             final_roots = self.qualified_roots()
             if roots != final_roots:
                 raise LeafClosureError("entry-observation-unverified")
             # Retained original and second-pass roots remain independent owned witnesses.
             if any(leaf_identity(os.fstat(fd)) != identity
                    for _, fd, identity, _ in (*old_roots, *middle_roots)):
+                raise LeafClosureError("entry-observation-unverified")
+            if any(leaf_identity(os.fstat(fd)) != identity
+                   for _, fd, identity, *_ in (*old_support, *middle_support)):
                 raise LeafClosureError("entry-observation-unverified")
             self.verify_slash()
             summary = {"format": LEAF_PROOF_FORMAT,

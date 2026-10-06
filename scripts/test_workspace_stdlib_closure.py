@@ -71,6 +71,91 @@ class PhysicalLeafClosureControls(unittest.TestCase):
             if reason is not None:
                 self.assertEqual(caught.exception.reason, reason)
 
+    def support_fixture(self):
+        """Mirror the fixed distro spellings inside an explicitly synthetic root-owned tree."""
+        library = self.base / "usr/lib/x86_64-linux-gnu"
+        library.mkdir(parents=True, mode=0o700)
+        stdlib = self.base / "usr/lib/python3.12"
+        stdlib.mkdir(mode=0o700)
+        dynamic = stdlib / "lib-dynload"
+        dynamic.mkdir(mode=0o700)
+        (stdlib / "os.py").write_bytes(b"OS")
+        regular = library / "libpython3.12.so.1.0"
+        regular.write_bytes(b"RUNTIME")
+        alias = library / "libpython3.12.so.1"
+        alias.symlink_to(regular.name)
+        (stdlib / "runtime.so").symlink_to("../x86_64-linux-gnu/" + alias.name)
+        paths = list(map(str, (stdlib, dynamic, alias, regular)))
+        return paths, regular, alias
+
+    def support_proof(self, engine, paths):
+        """Map only the fixture prefix for profile selection; all trust I/O uses actual synthetic objects."""
+        original = engine.leaf_support_path
+        prefix = os.fsencode(self.base)
+        def mirror(raw, roots):
+            return original(raw.removeprefix(prefix), [value.removeprefix(prefix) for value in roots])
+        with mock.patch.object(engine, "leaf_support_path", mirror):
+            return self.proof(engine, paths)
+
+    def test_fixed_support_leaves_complete_chain_and_no_adjacent_credit(self):
+        """Both engines prove every fixed runtime alias hop and refuse an adjacent unselected target."""
+        paths, regular, alias = self.support_fixture()
+        proofs = [self.support_proof(engine, paths) for engine in ENGINES]
+        self.assertEqual(proofs[0], proofs[1])
+        self.assertEqual(proofs[0][1][os.fsencode(regular)][1]["bytes"], 7)
+        self.assertEqual(proofs[0][0]["entries"], 5)
+        self.assertEqual(proofs[0][0]["link_hops"], 6)
+        outsider = regular.parent / "unselected.so"
+        outsider.write_bytes(b"PRIVATE OUTSIDE BYTES")
+        alias.unlink()
+        alias.symlink_to(outsider.name)
+        for engine in ENGINES:
+            original, opened = engine.LeafClosure.hash_leaf, []
+            def record(instance, parent, name, expected):
+                opened.append(name)
+                return original(instance, parent, name, expected)
+            with mock.patch.object(engine.LeafClosure, "hash_leaf", record), self.assertRaises(engine.LeafClosureError):
+                self.support_proof(engine, paths)
+            self.assertNotIn(os.fsencode(outsider.name), opened)
+
+    def test_fixed_support_ownership_mutation_absence_and_budget_refuse(self):
+        """Auxiliary regular bytes, held identities and absences use the same whole-proof refusal rules."""
+        paths, regular, alias = self.support_fixture()
+        for engine in ENGINES:
+            regular.chmod(0o666)
+            with self.assertRaises(engine.LeafClosureError): self.support_proof(engine, paths)
+            regular.chmod(0o644)
+            os.chown(regular, 65534, 65534)
+            with self.assertRaises(engine.LeafClosureError): self.support_proof(engine, paths)
+            os.chown(regular, 0, 0)
+            original, changed = engine.LeafClosure.scan, [False]
+            def mutate(instance, rows):
+                result = original(instance, rows)
+                if not changed[0]:
+                    regular.write_bytes(b"CHANGED")
+                    changed[0] = True
+                return result
+            with mock.patch.object(engine.LeafClosure, "scan", mutate), self.assertRaises(engine.LeafClosureError):
+                self.support_proof(engine, paths)
+            regular.write_bytes(b"RUNTIME")
+            with mock.patch.object(engine, "LEAF_BYTE_LIMIT", 7), self.assertRaises(engine.LeafClosureError):
+                self.support_proof(engine, paths)
+        (self.base / "usr/lib/python3.12/runtime.so").unlink()
+        alias.unlink()
+        regular.unlink()
+        for engine in ENGINES:
+            self.support_proof(engine, paths)
+            original, changed = engine.LeafClosure.scan, [False]
+            def materialize(instance, rows):
+                result = original(instance, rows)
+                if not changed[0]:
+                    regular.write_bytes(b"NEW")
+                    changed[0] = True
+                return result
+            with mock.patch.object(engine.LeafClosure, "scan", materialize), self.assertRaises(engine.LeafClosureError):
+                self.support_proof(engine, paths)
+            regular.unlink()
+
     def test_regular_inventory_and_binary_leaf_alias_agree(self):
         """0777 symlink bits cannot reject a fully qualified binary regular member or erase its alias charges."""
         raw = b"BIN\0\xff" * 8193

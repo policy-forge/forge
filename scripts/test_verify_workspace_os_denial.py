@@ -2135,7 +2135,8 @@ class DistroSupportRootTests(unittest.TestCase):
             exec(wrapper.PYTHON_PROBE, {})
         result = json.loads(output.getvalue())
         support = "/etc/python" + ".".join(map(str, sys.version_info[:2]))
-        self.assertEqual(result["paths"], [*before, support])
+        library = "/usr/lib/" + sys.implementation._multiarch + "/libpython" + ".".join(map(str, sys.version_info[:2]))
+        self.assertEqual(result["paths"], [*before, support, library + ".so.1", library + ".so.1.0"])
         self.assertEqual(sys.path, before)
 
     def test_native_derives_same_roots_without_accepting_supplied_paths(self):
@@ -2143,10 +2144,31 @@ class DistroSupportRootTests(unittest.TestCase):
         import test_workspace_os_denial as native
         before = list(native.sys.path)
         support = "/etc/python" + ".".join(map(str, native.sys.version_info[:2]))
-        with mock.patch.object(native, "leaf_closure", return_value=({}, {})) as capture:
+        with mock.patch.object(native.sys.implementation, "_multiarch", "x86_64-linux-gnu"), mock.patch.object(native, "leaf_closure", return_value=({}, {})) as capture:
             self.assertEqual(native.trusted_stdlib(123), ({}, {}))
-        capture.assert_called_once_with([*before, support], 123)
+        library = "/usr/lib/x86_64-linux-gnu/libpython" + ".".join(map(str, native.sys.version_info[:2]))
+        capture.assert_called_once_with([*before, support, library + ".so.1", library + ".so.1.0"], 123)
         self.assertEqual(native.sys.path, before)
+
+
+    def test_support_profile_requires_exact_runtime_names_and_matching_version(self):
+        """No adjacent library, unrelated file or version mismatch becomes a support member."""
+        for arch in ("x86_64-linux-gnu", "aarch64-linux-gnu"):
+            prefix = ("/usr/lib/" + arch + "/libpython3.12").encode()
+            for suffix in (b".so.1", b".so.1.0"):
+                self.assertTrue(wrapper.leaf_support_path(prefix + suffix, [b"/usr/lib/python3.12"]))
+                self.assertFalse(wrapper.leaf_support_path(prefix + suffix, [b"/usr/lib/python3.11"]))
+            for suffix in (b".a", b".so", b".so.2", b".so.1.0/private"):
+                self.assertFalse(wrapper.leaf_support_path(prefix + suffix, [b"/usr/lib/python3.12"]))
+        self.assertFalse(wrapper.leaf_support_path(b"/PRIVATE/libpython3.12.so.1.0", [b"/usr/lib/python3.12"]))
+
+    def test_native_unsupported_architecture_never_dispatches_closure(self):
+        """The fixed profile has no architecture fallback or caller-selected library root."""
+        import test_workspace_os_denial as native
+        with mock.patch.object(native.sys.implementation, "_multiarch", "unqualified"), mock.patch.object(native, "leaf_closure") as capture:
+            with self.assertRaises(native.Failure):
+                native.trusted_stdlib(123)
+        capture.assert_not_called()
 
 
 if __name__ == "__main__":

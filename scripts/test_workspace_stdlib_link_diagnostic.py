@@ -456,6 +456,7 @@ class LinkDiagnosticControls(unittest.TestCase):
                 instance.row(rows, [index, name.hex(), "file", regular, digest])
                 files[raw + b"/" + name] = (regular, digest)
             instance.visit = visit
+            instance.support_roots = []
             with mock.patch.object(engine.time, "monotonic", return_value=0), \
                  mock.patch.object(engine.os, "fstat", return_value=self.info(mode=stat.S_IFDIR | 0o755)):
                 raw, count, files = instance.scan([])

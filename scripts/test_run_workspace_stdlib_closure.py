@@ -30,10 +30,10 @@ class DispatcherControls(unittest.TestCase):
             "source_unchanged": True, "protected_directory_removed": True, "fault": None,
             "process": {"exit_code": 0, "reaped": True, "started": True, "ownership_verified": True, "forced": False, "deadline": False,
                         "output_closed": True, "output_bound": False, "close_fault": False},
-            "execution": {"schema_version": "forge.stdlib-closure-case-run/1", "discovered": 22,
-                          "ran": 22, "passed": 22, "failures": 0, "errors": 0, "skips": 0,
+            "execution": {"schema_version": "forge.stdlib-closure-case-run/1", "discovered": 24,
+                          "ran": 24, "passed": 24, "failures": 0, "errors": 0, "skips": 0,
                           "unexpected_successes": 0, "expected_failures": 0, "exact_ids": True,
-                          "fixture_checks": 22, "fixture_absent": 22, "protocol_valid": True},
+                          "fixture_checks": 24, "fixture_absent": 24, "protocol_valid": True},
         }
 
     def transport(self, value=None, **changes):
@@ -77,8 +77,8 @@ class DispatcherControls(unittest.TestCase):
                 self.assertFalse(self.admitted(value)[1])
 
     def test_float_and_boolean_denominators_are_invalid(self):
-        """JSON numeric equality cannot let 22.0 or booleans masquerade as exact count observations."""
-        for number in (22.0, True):
+        """JSON numeric equality cannot let 24.0 or booleans masquerade as exact count observations."""
+        for number in (24.0, True):
             with self.subTest(number=number):
                 value = copy.deepcopy(self.value)
                 value["execution"]["ran"] = number

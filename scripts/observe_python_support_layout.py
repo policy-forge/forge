@@ -55,6 +55,8 @@ def main():
         ("../../" + architecture + "/libpython" + version + ".a").encode(): "development-static-library",
         ("../../" + architecture + "/libpython" + version + ".so").encode(): "development-shared-library",
         ("../../" + architecture + "/libpython" + version + ".so.1.0").encode(): "development-shared-library",
+        ("../../" + architecture + "/libpython" + version + ".so.1").encode(): "development-shared-library",
+        ("_sysconfigdata__" + architecture + ".py").encode(): "distro-sysconfig",
     }
     paths = {
         "license": root / "LICENSE.txt",
