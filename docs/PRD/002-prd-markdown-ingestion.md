@@ -292,8 +292,8 @@ graph LR
     end
 ```
 
-- **Requires:** [001-prd-project-scaffolding](docs/PRD/001-prd-project-scaffolding.md) (project structure and error types)
-- **Blocks:** [003-prd-structural-extraction-headings](docs/PRD/003-prd-structural-extraction-headings.md), [004-prd-structural-extraction-clauses](docs/PRD/004-prd-structural-extraction-clauses.md)
+- **Requires:** [001-prd-project-scaffolding](001-prd-project-scaffolding.md) (project structure and error types)
+- **Blocks:** [003-prd-structural-extraction-headings](003-prd-structural-extraction-headings.md), [004-prd-structural-extraction-clauses](004-prd-structural-extraction-clauses.md)
 - **External:** None
 
 ---

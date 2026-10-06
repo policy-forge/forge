@@ -1,0 +1,1635 @@
+{
+  "format": "forge.workspace-api-v2-development-verification/1",
+  "base_commit": "80aa2869ea8823e85638f42345b8ca8e491029ae",
+  "scope": "Unreleased explicit API2 registration and metadata foundation. No full S3/S6, human, native accessibility, platform or release acceptance.",
+  "source_before_verification_documents": [
+    {
+      "repository_path": ".github/workflows/release.yml",
+      "sha256": "62575dc6668ad676acd0d191585035d89fb727b13187ee64cfeef1be1be67c2d",
+      "bytes": 8699
+    },
+    {
+      "repository_path": "docs/api/capability-matrix-v2.json",
+      "sha256": "e37b6ab8e42bc504a1604478d35efe3984b140c325c11ea0d3fbefb584951dd9",
+      "bytes": 20072
+    },
+    {
+      "repository_path": "docs/api/capability-matrix-v2.md",
+      "sha256": "bc8136fcda9f0539ed89e25103c70432ff924a8b813e92af89ce108bab39454f",
+      "bytes": 10146
+    },
+    {
+      "repository_path": "docs/api/compatibility.md",
+      "sha256": "d9273923c555f7b6302068fc1f58c91f5863d2aa6911073fe2ce0ff1df552e7e",
+      "bytes": 10731
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/README.md",
+      "sha256": "f77dbca8c0a2eec706bc3b398793ec181d813a7309ce7dafe7d481d04b77106d",
+      "bytes": 464
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/applicability/initialization-invalid.json",
+      "sha256": "f0c69ff6bce718dd09d26e7e01e2bbe9e9eeb99e93530d30026448d0959156f7",
+      "bytes": 99
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/applicability/initialization-valid.json",
+      "sha256": "5834d1968e175112bd7a1a909774e05f7abaabe0477fa03fe7e7a7d4f75b9316",
+      "bytes": 81
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/applicability/report-response-valid.json",
+      "sha256": "f335dfac78e135be7cc96b0954d1d0b7054fe1856e5b9df59fd8de7a9020b1b9",
+      "bytes": 960
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/bundle-valid.json",
+      "sha256": "3a74fbe75693d579aea430d6b6387a745e356ba0571d5c9924992c6eb4f4d9cd",
+      "bytes": 572
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/empty-bundle-valid.json",
+      "sha256": "c552fdb82640ffe0c05702faf14eb3fa7030f206e3c124626227ecbe0022a866",
+      "bytes": 317
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/oversize-pin-invalid.json",
+      "sha256": "f94cb1840dc36a660e799f3795a9c2f2ed6bbbd8cd0b379878c1208df3a9ba45",
+      "bytes": 638
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/preview-valid.json",
+      "sha256": "77700e6641c8c49d2a873bec7d17a5a19d4125b5d475a6439e4e7034711b8a42",
+      "bytes": 957
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/unknown-approval-invalid.json",
+      "sha256": "c46625ac28a240b8f6e2ba41e282cbf44bfe81bb146ab1382b05e78f902f65a3",
+      "bytes": 668
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/unknown-content-invalid.json",
+      "sha256": "9e52648d68f37578ad8befec18f21ea42603398b9455ba1f865abe0c4e357fc0",
+      "bytes": 674
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/unknown-role-invalid.json",
+      "sha256": "2fbcb219d284c72bd97b494a7096c2ac033359b1f66104016b34a6ce076e9b85",
+      "bytes": 637
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/upper-hash-invalid.json",
+      "sha256": "3447e1c96776261cb187c9349e625a65129914cd571ed53f29d4b939b5b4b675",
+      "bytes": 632
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/verification-matched-valid.json",
+      "sha256": "138fef95cdd005d4da8d8854250648afda89d4914a160bb2ec1142c4be11e7ab",
+      "bytes": 596
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/verification-missing-index-valid.json",
+      "sha256": "be01ca30f4048fb48b3749f958c5151f22c93e03d5b425b4734a473d1fbda5ad",
+      "bytes": 660
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/verification-request-valid.json",
+      "sha256": "f1e710352e2c5de5a5ebff46014505bb7ee1bfed547385681fb9d62b9c834a4f",
+      "bytes": 632
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/wrong-profile-invalid.json",
+      "sha256": "e4ff066747a7d2ebaa167805b7e51616ba2cb443dc2e490929477fee325c6bfc",
+      "bytes": 632
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/bundle/wrong-version-invalid.json",
+      "sha256": "8c4729524ed97616d4ec6d8a7ab6a898b239964d053493e6a5bbefc0055113b2",
+      "bytes": 632
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/conversions/conversion-request-valid.json",
+      "sha256": "f44eaa3c9a028f121193b85cf91b1a095cf594e4117c9eab0e05d8c44b1012e9",
+      "bytes": 151
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/conversions/result-valid.json",
+      "sha256": "cb2b9cf3e50154b4c36a0e526b0234d316f5ed09db0d3bbc7203c17d1a5a02eb",
+      "bytes": 1281
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/effects/commit-request-valid.json",
+      "sha256": "8c05c1414d62ff916acc028457a00ac449e31e7568cb6706b1556b63675cbeb7",
+      "bytes": 108
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/effects/preview-valid.json",
+      "sha256": "47d95213d0e43d878fad8c9a93700398db2966121656b63dd01b7694dc514510",
+      "bytes": 1743
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/error/read-only-session-403.json",
+      "sha256": "c028d394ee34498e3ce05bb06f689e42383fdc1e211f9c9173020d4a80bf1487",
+      "bytes": 172
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/error/receipt-expired-410.json",
+      "sha256": "7459122b77f91fb16e5ee0c633fc863486523aecf3bdb14797f7d5961541119f",
+      "bytes": 195
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/error/unauthorized-401.json",
+      "sha256": "d05914ad71f11181658b8bb54116238125f955e4263b9aaa666e3764780b427d",
+      "bytes": 85
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/error/unlock-failed-401.json",
+      "sha256": "d18b41098126d2fbf16219f6557ca4a120b3583a1c2c862560ce3d7fcdfd167d",
+      "bytes": 82
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/error/validation-failed-422.json",
+      "sha256": "1f1cc44bd35654c5f0d0d90d57732f270d20575d045324a49425a89ce4b6a548",
+      "bytes": 283
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/error/version-conflict-409.json",
+      "sha256": "d3a2240216a99762454ba58e451e8eb40966cd0da47707ed35875d4a11d1fae9",
+      "bytes": 301
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/exports/export-request-valid.json",
+      "sha256": "ed42c5f3b5e8ed8e90f9d0e77231ba98db408069fcc021a680e37202f66b26bc",
+      "bytes": 160
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/exports/trace-envelope-invalid.json",
+      "sha256": "55817256cd27b1b5461e1ca732ab603badfd816ff032f3fb16d1bc6657be7a49",
+      "bytes": 275
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/exports/trace-envelope-valid.json",
+      "sha256": "388a1cf2e9eea5c23adcb5669358315b1d304adecf22bd9f0f3b3d69d068bb43",
+      "bytes": 236
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/index.json",
+      "sha256": "35b2f5eec3f9a1ed9f39f73c62920f00f3ce5a4689e416ca176b7d4e0cfeb416",
+      "bytes": 15569
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/mapping/initialization-invalid.json",
+      "sha256": "81ffb14467f31e74eedf9fb132eb205635b1f47658414ab25250cca109165cd9",
+      "bytes": 1224
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/mapping/initialization-valid.json",
+      "sha256": "4c24f422d8ccd802375a769ea734c25a379e34acbb9485facbcd1704db6ded6a",
+      "bytes": 1206
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/operation/analysis-running-valid.json",
+      "sha256": "beadf7233071513dcec95b785b6f2ff8e44a830005c7abe50c50765e737d1b52",
+      "bytes": 283
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/operation/commit-succeeded-valid.json",
+      "sha256": "8426525eabafa7b5360d892302cda100ec0c6fa6272b32a7ce65687626adefeb",
+      "bytes": 426
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/operation/conversion-failed-valid.json",
+      "sha256": "4478c54b22c7a4fd778f978c5d5db45caba76ec28e31c5f42072851439436abc",
+      "bytes": 452
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/pagination/review-queue-page-valid.json",
+      "sha256": "569226e6d4d399dadee104cfc93a1a31d089390b35b2ef6f1371a0e997968ac4",
+      "bytes": 903
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project/summary-response-valid.json",
+      "sha256": "107c6f5a6b999a53ef8eb62cf8eb2207bf20af64cfbde6973158c0488dfd13c4",
+      "bytes": 347
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/queue/counts-response-valid.json",
+      "sha256": "e5e95f20c7d01520993e3c19803c19c01e8a8b7b74e4a8862d16e30689b8ae60",
+      "bytes": 362
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/resources/page-valid.json",
+      "sha256": "f8a678ec9370057731e2bd2215d30a4d7d149989534deab0b35f799a3f990323",
+      "bytes": 586
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/resources/register-request-valid.json",
+      "sha256": "6fbb30969738875b043c8a0bf9eaee8aeb440f0bfe99720d2a07b26cf56bca58",
+      "bytes": 112
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/resources/upload-request-invalid-absolute-target.json",
+      "sha256": "bbb19211800f4e60ba16af063c59f87a584a7b4bca25d8e49e29599fe95a0725",
+      "bytes": 174
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/session/get-session-response-valid.json",
+      "sha256": "5b3e09ebf217eb8ef81273c38a16e90d2611c025770d722a3841c69ef1abe563",
+      "bytes": 213
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/session/unlock-request-invalid-short.json",
+      "sha256": "1f4ab63ddda95c00e6ade17f14690afe134ff996be1aa75e7fecc15f45081a76",
+      "bytes": 28
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/session/unlock-request-valid.json",
+      "sha256": "1c1192473c797eb557e7e5e403ae328a182487deb4cf3ffc0ffaf62db07895ea",
+      "bytes": 54
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/session/unlock-response-valid.json",
+      "sha256": "b453491687a9a67efb98721b8c9dc241baa7768895f57b3f25255e2db0fee410",
+      "bytes": 334
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/workspace/invalid-absolute-path.json",
+      "sha256": "12a2c5a8d883dcd1b0f254a527292195021a1c342de8f6e3ac9946c738d5e01a",
+      "bytes": 196
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/workspace/invalid-backslash-path.json",
+      "sha256": "85e7be4805859aca292abc7d991e7395515c6732e628fc3113ff26bb2cfeea6d",
+      "bytes": 229
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/workspace/invalid-extra-property.json",
+      "sha256": "449b4fc3bf6735e41a462ae962858d99b94d403d142d081c4c0067f3b3b6ccd8",
+      "bytes": 269
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/workspace/invalid-parent-traversal.json",
+      "sha256": "4ee48f069710c03cb55d50a3cde6adb8907cc38db2decd2f5873b094ffefcaf1",
+      "bytes": 217
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/workspace/invalid-schema-version.json",
+      "sha256": "e1f16423812cf61e0ebf12b63b6f39ff3f47cfb6f66883f95c07ab03732c9e43",
+      "bytes": 233
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/workspace/invalid-unknown-role.json",
+      "sha256": "9eb4c2818ecce3b039860ac585c321aa87dbb1b06550aaef0040444eee0367da",
+      "bytes": 235
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/workspace/invalid-windows-drive.json",
+      "sha256": "a370cb9d3a5e2fb773fd9d2eec2a1a2046ac2cfca910506bf2fd524716472df6",
+      "bytes": 227
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/workspace/valid-full-roles.json",
+      "sha256": "5340af1b76801c66c25c5f4d3b9170847b3fd5cbc08cc7e8529fbcf3bd586039",
+      "bytes": 1027
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/workspace/valid-minimal.json",
+      "sha256": "1694cebd61ddaab6d36a789139056eb70e307ea057f84eb4e13d10d5318ee7e6",
+      "bytes": 233
+    },
+    {
+      "repository_path": "docs/api/forge-workspace-v2.openapi.yaml",
+      "sha256": "5e42168cc3a583393ddee88d75a709acb327247afe12e3811fb52ca0923ffa83",
+      "bytes": 168498
+    },
+    {
+      "repository_path": "docs/api/migration-v2.md",
+      "sha256": "254bef3845f24d404d5d4bfc9eceb78245dc41f9c269cf96465d0f92f48a4cd1",
+      "bytes": 7308
+    },
+    {
+      "repository_path": "docs/api/release-artifacts.json",
+      "sha256": "f51089297ea1d1c1b3ce2b990c255c4faeb363e247dc92f30ebc19ee2b62882e",
+      "bytes": 1366
+    },
+    {
+      "repository_path": "docs/local-workspace.md",
+      "sha256": "7d3fd4f87020f486b5493e8132168c94405be81c5d9a6316ccc30cfa3e79ad2d",
+      "bytes": 21951
+    },
+    {
+      "repository_path": "docs/workspace-index-bundles.md",
+      "sha256": "4f5c4f6a479f3fe3e8fe73d7902e297812048cca1d3222fa56ebe8b7fa9e8072",
+      "bytes": 13515
+    },
+    {
+      "repository_path": "schemas/forge.workspace-2.schema.json",
+      "sha256": "687ee02906c9b5f812f210b124f04967ae4cd3e49c269a0a5328f9a032f51679",
+      "bytes": 4171
+    },
+    {
+      "repository_path": "scripts/test_workspace_client_extension.py",
+      "sha256": "159287db67d914d2393a676e45363638d7de9e34ab3c1cdc6827f34773c0780c",
+      "bytes": 69549
+    },
+    {
+      "repository_path": "scripts/test_workspace_client_versions.py",
+      "sha256": "087b7cd9b07d40a0cf7c217e497f875b3404c797f8aee7782f7829586e078a88",
+      "bytes": 27868
+    },
+    {
+      "repository_path": "scripts/workspace_client.py",
+      "sha256": "2c5da6e34070f07d7eaabcc9cdfcc9bf2fc2474a76bc910c7bc39eea691c9692",
+      "bytes": 10118
+    },
+    {
+      "repository_path": "src/cli/mod.rs",
+      "sha256": "c69092d224b416bb38af988675d6d5917a5bd87cd719c2a92d49fe4cc7d0bd30",
+      "bytes": 103322
+    },
+    {
+      "repository_path": "src/framework/analysis.rs",
+      "sha256": "b7babf659aaf92a2a1ed96e4d3dd8b70dc7fd82958f4a862c21ec5adbc04bffd",
+      "bytes": 69730
+    },
+    {
+      "repository_path": "src/framework/disposition.rs",
+      "sha256": "450e9ae0443189f2b5b322b09b974233f44034315b352b8df8488e74018cfed8",
+      "bytes": 12159
+    },
+    {
+      "repository_path": "src/migration/mod.rs",
+      "sha256": "13417e0d282c561d60f25eba5b789c7fd99cbce430e541b3421cf878181bc4f0",
+      "bytes": 2738
+    },
+    {
+      "repository_path": "src/workspace/actions.rs",
+      "sha256": "280659047ad5bc050b29e8fc5d1b826ac6f6a8e5cda5c83c79503cb965b474d5",
+      "bytes": 48418
+    },
+    {
+      "repository_path": "src/workspace/assets.rs",
+      "sha256": "2cb4805490cb2f6cf6dd333894fa0afa3424897c0c1e169568e10d909aed5f90",
+      "bytes": 2928
+    },
+    {
+      "repository_path": "src/workspace/bundles.rs",
+      "sha256": "6709c8f50150f22e5d20fcbac16efa99c6e8c60c2720ce0519ccf6367b030641",
+      "bytes": 38740
+    },
+    {
+      "repository_path": "src/workspace/contract.rs",
+      "sha256": "acb957ca2fcdea2d58438fec8455d1d3ce72f11a5afdd935e88cad86e60ff990",
+      "bytes": 22628
+    },
+    {
+      "repository_path": "src/workspace/effects.rs",
+      "sha256": "80fa3206c91a3bfe13735466bfecf06040bafd98bb4472dcaf0ec1037d88e34c",
+      "bytes": 52283
+    },
+    {
+      "repository_path": "src/workspace/http.rs",
+      "sha256": "daac522321f190ed2124f5170c0960c6e3b455e90268391ea9c07fbba339e8da",
+      "bytes": 50281
+    },
+    {
+      "repository_path": "src/workspace/index.rs",
+      "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+      "bytes": 9787
+    },
+    {
+      "repository_path": "src/workspace/mod.rs",
+      "sha256": "8ce8802b70074e4ce072939918f2cbc651f3ae17b5772e7bc4dd0b75cc8ed099",
+      "bytes": 1056
+    },
+    {
+      "repository_path": "src/workspace/reports.rs",
+      "sha256": "19cb812973503f5cc81737b2e3f812626119bcb2fd9c4b0780ea29ea0261a1ed",
+      "bytes": 9459
+    },
+    {
+      "repository_path": "src/workspace/services.rs",
+      "sha256": "906aa7b2776233b1e1dceb0b4a09e5060e103c7ce4847f3bb87b5964f45b67cf",
+      "bytes": 62397
+    },
+    {
+      "repository_path": "tests/api_contract_validation.rs",
+      "sha256": "0e0e9ba62834a6f66e1d10a0a3d03785c3dc7a7a527d1e80588db71bb65ab5be",
+      "bytes": 70904
+    },
+    {
+      "repository_path": "tests/workspace_cli_test.rs",
+      "sha256": "19ab0860b7c98905665968b37ac15e8a769760ca4406e6d9e607cf1e21945a63",
+      "bytes": 143247
+    },
+    {
+      "repository_path": "ui/tests/workspace-navigation.cjs",
+      "sha256": "430c5edaa19f2004d1dff173227f7e18fcc3744124844916d392805485fcae8d",
+      "bytes": 167493
+    },
+    {
+      "repository_path": "ui/workspace.js",
+      "sha256": "d619d5b4872bf147a17aa171a25929a1a48e0e86896e897acd9502057ec67bdb",
+      "bytes": 90792
+    }
+  ],
+  "tests": {
+    "library_in_instrumented_run": 1886,
+    "contract_in_instrumented_run": 19,
+    "framework_impact_cli_in_instrumented_run": 21,
+    "http_in_instrumented_run": 32,
+    "current_contract": 19,
+    "maintained_client_controls": 59,
+    "browser_source_controls": 150,
+    "actual_cli_cases": 2,
+    "reported_failures_in_final_selected_jobs": 0
+  },
+  "rust_llvm": {
+    "raw_export": {
+      "path": "/private/tmp/forge-f19-api2-llvm-report-v2.json",
+      "sha256": "2e6d6e9f0dbe7989fd5115d76ef9ec2bf3de6ab37b17e8fc4fed76c1a655fc8c",
+      "bytes": 13649273
+    },
+    "file_records": 169,
+    "function_records": 11501,
+    "reported_totals": {
+      "branches": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "functions": {
+        "count": 6395,
+        "covered": 4922,
+        "percent": 76.96637998436279
+      },
+      "instantiations": {
+        "count": 10853,
+        "covered": 5696,
+        "percent": 52.483184372984425
+      },
+      "lines": {
+        "count": 65648,
+        "covered": 51762,
+        "percent": 78.84779429685595
+      },
+      "mcdc": {
+        "count": 0,
+        "covered": 0,
+        "notcovered": 0,
+        "percent": 0
+      },
+      "regions": {
+        "count": 111107,
+        "covered": 88571,
+        "notcovered": 22536,
+        "percent": 79.71684952343236
+      }
+    },
+    "current_exact_src_pins": [
+      {
+        "repository_path": "src/applicability/mod.rs",
+        "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+        "bytes": 75602
+      },
+      {
+        "repository_path": "src/cli/mod.rs",
+        "sha256": "c69092d224b416bb38af988675d6d5917a5bd87cd719c2a92d49fe4cc7d0bd30",
+        "bytes": 103322
+      },
+      {
+        "repository_path": "src/framework/analysis.rs",
+        "sha256": "b7babf659aaf92a2a1ed96e4d3dd8b70dc7fd82958f4a862c21ec5adbc04bffd",
+        "bytes": 69730
+      },
+      {
+        "repository_path": "src/framework/disposition.rs",
+        "sha256": "450e9ae0443189f2b5b322b09b974233f44034315b352b8df8488e74018cfed8",
+        "bytes": 12159
+      },
+      {
+        "repository_path": "src/migration/mod.rs",
+        "sha256": "13417e0d282c561d60f25eba5b789c7fd99cbce430e541b3421cf878181bc4f0",
+        "bytes": 2738
+      },
+      {
+        "repository_path": "src/workspace/actions.rs",
+        "sha256": "280659047ad5bc050b29e8fc5d1b826ac6f6a8e5cda5c83c79503cb965b474d5",
+        "bytes": 48418
+      },
+      {
+        "repository_path": "src/workspace/assets.rs",
+        "sha256": "2cb4805490cb2f6cf6dd333894fa0afa3424897c0c1e169568e10d909aed5f90",
+        "bytes": 2928
+      },
+      {
+        "repository_path": "src/workspace/bundles.rs",
+        "sha256": "6709c8f50150f22e5d20fcbac16efa99c6e8c60c2720ce0519ccf6367b030641",
+        "bytes": 38740
+      },
+      {
+        "repository_path": "src/workspace/contract.rs",
+        "sha256": "acb957ca2fcdea2d58438fec8455d1d3ce72f11a5afdd935e88cad86e60ff990",
+        "bytes": 22628
+      },
+      {
+        "repository_path": "src/workspace/effects.rs",
+        "sha256": "80fa3206c91a3bfe13735466bfecf06040bafd98bb4472dcaf0ec1037d88e34c",
+        "bytes": 52283
+      },
+      {
+        "repository_path": "src/workspace/http.rs",
+        "sha256": "daac522321f190ed2124f5170c0960c6e3b455e90268391ea9c07fbba339e8da",
+        "bytes": 50281
+      },
+      {
+        "repository_path": "src/workspace/index.rs",
+        "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+        "bytes": 9787
+      },
+      {
+        "repository_path": "src/workspace/mod.rs",
+        "sha256": "8ce8802b70074e4ce072939918f2cbc651f3ae17b5772e7bc4dd0b75cc8ed099",
+        "bytes": 1056
+      },
+      {
+        "repository_path": "src/workspace/reports.rs",
+        "sha256": "19cb812973503f5cc81737b2e3f812626119bcb2fd9c4b0780ea29ea0261a1ed",
+        "bytes": 9459
+      },
+      {
+        "repository_path": "src/workspace/root.rs",
+        "sha256": "aa34052dda2b7c7f52ff6e2a7651fcf5f9135ce41f04a46def63f598fd9a4e01",
+        "bytes": 29123
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "sha256": "906aa7b2776233b1e1dceb0b4a09e5060e103c7ce4847f3bb87b5964f45b67cf",
+        "bytes": 62397
+      }
+    ],
+    "qualification": "16 src files remain byte-identical to the instrumented run. The current 19-test contract file, new bootstrap unit and 21 existing framework-impact CLI tests are in this successor run. Reported functions/lines differ from raw physical segment projections. Branch and MC/DC instrumentation was not requested.",
+    "selected_files": [
+      {
+        "repository_path": "src/workspace/actions.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 59,
+            "covered": 50,
+            "percent": 84.7457627118644
+          },
+          "instantiations": {
+            "count": 91,
+            "covered": 66,
+            "percent": 72.52747252747253
+          },
+          "lines": {
+            "count": 876,
+            "covered": 759,
+            "percent": 86.64383561643835
+          },
+          "regions": {
+            "count": 1805,
+            "covered": 1526,
+            "notcovered": 279,
+            "percent": 84.54293628808864
+          }
+        }
+      },
+      {
+        "repository_path": "src/workspace/bundles.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 46,
+            "covered": 45,
+            "percent": 97.82608695652173
+          },
+          "instantiations": {
+            "count": 65,
+            "covered": 45,
+            "percent": 69.23076923076923
+          },
+          "lines": {
+            "count": 633,
+            "covered": 630,
+            "percent": 99.52606635071089
+          },
+          "regions": {
+            "count": 1381,
+            "covered": 1358,
+            "notcovered": 23,
+            "percent": 98.33454018826937
+          }
+        }
+      },
+      {
+        "repository_path": "src/workspace/contract.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 54,
+            "covered": 51,
+            "percent": 94.44444444444444
+          },
+          "instantiations": {
+            "count": 116,
+            "covered": 86,
+            "percent": 74.13793103448276
+          },
+          "lines": {
+            "count": 398,
+            "covered": 377,
+            "percent": 94.72361809045226
+          },
+          "regions": {
+            "count": 666,
+            "covered": 631,
+            "notcovered": 35,
+            "percent": 94.74474474474476
+          }
+        }
+      },
+      {
+        "repository_path": "src/workspace/http.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 88,
+            "covered": 52,
+            "percent": 59.09090909090909
+          },
+          "instantiations": {
+            "count": 166,
+            "covered": 59,
+            "percent": 35.54216867469879
+          },
+          "lines": {
+            "count": 951,
+            "covered": 717,
+            "percent": 75.39432176656152
+          },
+          "regions": {
+            "count": 1895,
+            "covered": 1449,
+            "notcovered": 446,
+            "percent": 76.46437994722956
+          }
+        }
+      },
+      {
+        "repository_path": "src/workspace/index.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 13,
+            "covered": 12,
+            "percent": 92.3076923076923
+          },
+          "instantiations": {
+            "count": 23,
+            "covered": 21,
+            "percent": 91.30434782608695
+          },
+          "lines": {
+            "count": 134,
+            "covered": 125,
+            "percent": 93.28358208955224
+          },
+          "regions": {
+            "count": 239,
+            "covered": 226,
+            "notcovered": 13,
+            "percent": 94.56066945606695
+          }
+        }
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "summary": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 117,
+            "covered": 93,
+            "percent": 79.48717948717949
+          },
+          "instantiations": {
+            "count": 211,
+            "covered": 124,
+            "percent": 58.767772511848335
+          },
+          "lines": {
+            "count": 1064,
+            "covered": 879,
+            "percent": 82.61278195488721
+          },
+          "regions": {
+            "count": 2253,
+            "covered": 1844,
+            "notcovered": 409,
+            "percent": 81.84642698624057
+          }
+        }
+      }
+    ]
+  },
+  "python_trace": {
+    "source": {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/workspace_client.py",
+      "sha256": "2c5da6e34070f07d7eaabcc9cdfcc9bf2fc2474a76bc910c7bc39eea691c9692",
+      "bytes": 10118
+    },
+    "observations": [
+      {
+        "artifact": {
+          "path": "/private/tmp/forge-f19-api2-python-trace-v1/workspace_client.cover",
+          "sha256": "fa6cb950d3955ef7a9640d5968e4335d5b6cebc973eaec07f2afc1b683666876",
+          "bytes": 11449
+        },
+        "positive_lines": 131,
+        "zero_lines": [
+          162,
+          163,
+          176,
+          180,
+          184,
+          185,
+          186,
+          187,
+          188,
+          189,
+          190
+        ]
+      },
+      {
+        "artifact": {
+          "path": "/private/tmp/forge-f19-api2-cli-default-trace-v1/scripts.workspace_client.cover",
+          "sha256": "dbb8fccc80c71256e34336e95db5ed05d2e9fc7f08692ddff79e3fbc38f9bf52",
+          "bytes": 11448
+        },
+        "positive_lines": 95,
+        "zero_lines": [
+          25,
+          26,
+          34,
+          39,
+          53,
+          59,
+          61,
+          62,
+          63,
+          64,
+          65,
+          66,
+          67,
+          71,
+          72,
+          73,
+          74,
+          75,
+          76,
+          77,
+          78,
+          84,
+          90,
+          94,
+          102,
+          104,
+          111,
+          113,
+          125,
+          137,
+          141,
+          142,
+          143,
+          144,
+          145,
+          146,
+          147,
+          151,
+          152,
+          153,
+          154,
+          155,
+          162,
+          163,
+          168,
+          169,
+          170
+        ]
+      },
+      {
+        "artifact": {
+          "path": "/private/tmp/forge-f19-api2-cli-selected-trace-v1/scripts.workspace_client.cover",
+          "sha256": "ce770d1fd53aea8daa2cb9c31bd1ba42fe17ba82274b2968e6641e86d44fb467",
+          "bytes": 11448
+        },
+        "positive_lines": 107,
+        "zero_lines": [
+          25,
+          26,
+          34,
+          53,
+          59,
+          67,
+          75,
+          76,
+          77,
+          78,
+          84,
+          90,
+          102,
+          104,
+          111,
+          113,
+          125,
+          137,
+          141,
+          142,
+          143,
+          144,
+          145,
+          146,
+          147,
+          151,
+          152,
+          153,
+          154,
+          155,
+          162,
+          163,
+          168,
+          169,
+          170
+        ]
+      }
+    ],
+    "union_positive_lines": 140,
+    "executable_lines": 142,
+    "zero_lines": [
+      162,
+      163
+    ],
+    "qualification": "Distinct observed executable source lines across 59 synchronous controls and two real CLI cases. Shutdown exception handling remains zero. Standard-library tracing is not branch coverage, OS/network confinement or native descriptor-thread coverage; the test thread adapter executes synchronously. Earlier accidental test-file glob query is excluded."
+  },
+  "node_v8": {
+    "raw_export": {
+      "path": "/private/tmp/forge-f19-api2-node-v8-v1/coverage-92082-1791003458966-0.json",
+      "sha256": "3189137b64da1d29a249d8c59f0effb8b411e5fb64b534d8b52bc1425ccb289b",
+      "bytes": 438547
+    },
+    "source": {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/ui/workspace.js",
+      "sha256": "d619d5b4872bf147a17aa171a25929a1a48e0e86896e897acd9502057ec67bdb",
+      "bytes": 90792
+    },
+    "function_records": 152,
+    "positive_function_records": 128,
+    "zero_function_records": [
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 4349,
+            "endOffset": 4381,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 8987,
+            "endOffset": 9035,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 12327,
+            "endOffset": 12358,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 15242,
+            "endOffset": 15278,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 21415,
+            "endOffset": 21453,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 21591,
+            "endOffset": 21627,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 47111,
+            "endOffset": 47139,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 50422,
+            "endOffset": 50597,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 52167,
+            "endOffset": 52196,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 52508,
+            "endOffset": 52969,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 53111,
+            "endOffset": 53140,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 53985,
+            "endOffset": 54014,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "draftEditor",
+        "ranges": [
+          {
+            "startOffset": 54075,
+            "endOffset": 55803,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "applicabilityDecisionForm",
+        "ranges": [
+          {
+            "startOffset": 55804,
+            "endOffset": 57883,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "mappingDecisionForm",
+        "ranges": [
+          {
+            "startOffset": 57885,
+            "endOffset": 60113,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "mappingCreationForm",
+        "ranges": [
+          {
+            "startOffset": 60115,
+            "endOffset": 62204,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "relativeProjectReference",
+        "ranges": [
+          {
+            "startOffset": 62205,
+            "endOffset": 62538,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "applicabilityMappingForm",
+        "ranges": [
+          {
+            "startOffset": 62539,
+            "endOffset": 63919,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 65175,
+            "endOffset": 65207,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 65315,
+            "endOffset": 65839,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 72794,
+            "endOffset": 72909,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 86001,
+            "endOffset": 86030,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 86086,
+            "endOffset": 86150,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "initializeForm",
+        "ranges": [
+          {
+            "startOffset": 86154,
+            "endOffset": 90761,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      }
+    ],
+    "qualification": "Whole production asset executed in the source harness. 128/152 outer function records are positive, including callbacks; 24 zero records retained. This is not source-line/branch completion or native DOM, layout, keyboard, assistive technology, OS confinement or human acceptance."
+  },
+  "docstrings": {
+    "root_rust_census": {
+      "path": "/private/tmp/forge-f19-api2-root-rustdoc-inventory-v3/inventory.json",
+      "sha256": "8a152b49d913c3dce74f08f923a2b7c309aa1a07dde565ef1b21c2948c0b994d",
+      "bytes": 15846
+    },
+    "root_rust_counts_before_bootstrap_unit": {
+      "authored_append_docs": "29/29",
+      "changed_type_docs": "2/2",
+      "changed_variant_docs": "1/1",
+      "current_integration_docs": "37/37",
+      "current_integration_helpers": 17,
+      "current_integration_registered_tests": 20,
+      "distinct_selected_current_function_docs": "67/67",
+      "new_field_docs": "4/4",
+      "new_type_docs": "2/2",
+      "new_variant_docs": "2/2",
+      "root_cfg_test_helper_docs": "2/2",
+      "root_only_changed_authored_functions_docs": "2/2",
+      "root_only_integration_new_docs": "8/8",
+      "root_production_docs": "28/28"
+    },
+    "root_rust_counts_current": {
+      "distinct_functions": 68,
+      "documented": 68,
+      "production": 28,
+      "cfg_helpers": 2,
+      "integration_functions": 37,
+      "registered_bootstrap_unit": 1
+    },
+    "python_complete_module": {
+      "module": [
+        1,
+        1
+      ],
+      "classes": [
+        2,
+        2
+      ],
+      "functions": [
+        12,
+        12
+      ]
+    },
+    "qualification": "Lexical adjacent Rustdoc/AST Python docs, not semantic or runtime approval. Root Rust cohort is 68 distinct functions (28 production, 2 cfg helpers, 37 integrations, 1 registered bootstrap unit). Exact removal of the documented unit reconstructs the prior HTTP source; the prior root census remains unchanged. Producer and root cohorts overlap and are not summed. Unchanged legacy doc gaps remain outside this change cohort."
+  },
+  "packaging": {
+    "receipt": {
+      "path": "/private/tmp/forge-f19-api2-package-rehearsal-v1/receipt.json",
+      "sha256": "90ac72d63d2a0f6abe4e8be048f454439df746e896455a7d29630a9bd382c5be",
+      "bytes": 22430
+    },
+    "archive": {
+      "path": "/private/tmp/forge-f19-api2-package-rehearsal-v1/source/forge-membership-rehearsal-development-membership-rehearsal.tar.gz",
+      "sha256": "0408c16a59f453456f1faabb56f5ccf5843858dab81275e58008148dae5ecc04",
+      "bytes": 14548494
+    },
+    "regular_members": 122,
+    "stale_cache_excluded": true,
+    "unrelated_runner_sibling_preserved": true,
+    "qualification": "Exact Unix workflow packaging block against current asset bytes and a development binary. No release build, signature, reproducibility, Windows execution or publication claim.",
+    "windows": {
+      "executed": false,
+      "reason": "PowerShell is not installed; source review only"
+    }
+  },
+  "jobs": [
+    {
+      "label": "llvm-api2-v2",
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-llvm-api2-v2.json",
+        "sha256": "9527a565d14c855076315f0496036befd485ecd592aa4e8fad010362979c0225",
+        "bytes": 35947
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-llvm-api2-v2.log",
+        "sha256": "0be526f52ad4c29a69253e39d53c10844a2d0769e95853c8beca60cde4f241b2",
+        "bytes": 164257
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "CARGO_LLVM_COV_TARGET_DIR=/private/tmp/forge-f19-api2-llvm-v2",
+        "CARGO_PROFILE_DEV_DEBUG=0",
+        "CARGO_PROFILE_TEST_DEBUG=0",
+        "CARGO_INCREMENTAL=0",
+        "CARGO_BUILD_JOBS=2",
+        "cargo",
+        "llvm-cov",
+        "--locked",
+        "--offline",
+        "--lib",
+        "--test",
+        "api_contract_validation",
+        "--test",
+        "workspace_cli_test",
+        "--test",
+        "framework_impact_cli_test",
+        "--json",
+        "--output-path",
+        "/private/tmp/forge-f19-api2-llvm-report-v2.json"
+      ],
+      "exit_code": 0,
+      "rust_summaries_only": {
+        "summaries": 4,
+        "passed": 1958,
+        "failed": 0,
+        "ignored": 0
+      },
+      "source_unchanged_during_command": true
+    },
+    {
+      "label": "api2-contract-v6",
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-api2-contract-v6.json",
+        "sha256": "3362b247eb9adbb9ce2bf473056a8fbba8b740dafef91fb22bdcf7e4c9177294",
+        "bytes": 35557
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-api2-contract-v6.log",
+        "sha256": "3dc509c99e1a749525c6b21ced944f3c6fb42770f2fe0521a7844c9cc51e4c79",
+        "bytes": 1854
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--test",
+        "api_contract_validation"
+      ],
+      "exit_code": 0,
+      "rust_summaries_only": {
+        "summaries": 1,
+        "passed": 19,
+        "failed": 0,
+        "ignored": 0
+      },
+      "source_unchanged_during_command": true
+    },
+    {
+      "label": "api2-http-v2",
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-api2-http-v2.json",
+        "sha256": "6b50803df35d5c1fd5a2e0f0efaedf2605f7f552c3302ae5c0516810eb600588",
+        "bytes": 33458
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-api2-http-v2.log",
+        "sha256": "8acd0b16575d12745cc14a773c8e345970b04869b8bca8774f747046ee9a69f9",
+        "bytes": 3272
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--test",
+        "workspace_cli_test"
+      ],
+      "exit_code": 0,
+      "rust_summaries_only": {
+        "summaries": 1,
+        "passed": 32,
+        "failed": 0,
+        "ignored": 0
+      },
+      "source_unchanged_during_command": true
+    },
+    {
+      "label": "api2-python-trace-v1",
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-api2-python-trace-v1.json",
+        "sha256": "bfb70cddde6c4878fdbcddf73266cf83e5d43001e1beaa429b64a21150ed432d",
+        "bytes": 35755
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-api2-python-trace-v1.log",
+        "sha256": "da369ae0771261cc1f2fd2a06ced221ac6eb98e69e8441cccf8b5a82a6c1095d",
+        "bytes": 34930
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "-m",
+        "trace",
+        "--count",
+        "--coverdir",
+        "/private/tmp/forge-f19-api2-python-trace-v1",
+        "--missing",
+        "--summary",
+        "--module",
+        "unittest",
+        "discover",
+        "-s",
+        "scripts",
+        "-p",
+        "test_workspace_client_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "rust_summaries_only": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "source_unchanged_during_command": true
+    },
+    {
+      "label": "api2-node-v8-v1",
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-api2-node-v8-v1.json",
+        "sha256": "4d628c361ea76bcf0a889e2a7b464d42a5d5af52564f26b92e4f63dc0873aa2b",
+        "bytes": 35699
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-api2-node-v8-v1.log",
+        "sha256": "654bdd08fe154a1957e51af40c0a34b623a7c317d6742f1cea2791f8c2e5314f",
+        "bytes": 15901
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "NODE_V8_COVERAGE=/private/tmp/forge-f19-api2-node-v8-v1",
+        "/private/tmp/forge-f04-approved-node-runtime-v2/node-v24.19.0-darwin-arm64/bin/node",
+        "--test",
+        "--test-timeout=5000",
+        "ui/tests/workspace-navigation.cjs"
+      ],
+      "exit_code": 0,
+      "rust_summaries_only": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "source_unchanged_during_command": true
+    },
+    {
+      "label": "api2-cli-default-trace-v1",
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-api2-cli-default-trace-v1.json",
+        "sha256": "0188ae30ddfd30a0ddb23a98ba895027f6fab768ef002b8241368d348af65c4a",
+        "bytes": 35842
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-api2-cli-default-trace-v1.log",
+        "sha256": "74491bef74ebdfc19f5d910f4f14e54a8f2435b94f251e5b0ed9b159769bd815",
+        "bytes": 8598
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "-m",
+        "trace",
+        "--count",
+        "--coverdir",
+        "/private/tmp/forge-f19-api2-cli-default-trace-v1",
+        "--missing",
+        "--summary",
+        "--module",
+        "scripts.workspace_client",
+        "--forge",
+        "/private/tmp/forge-f03-hook-target-1.98.1/debug/forge",
+        "--project",
+        "/private/tmp/forge-f19-api2-cli-trace-fixtures-v1/1"
+      ],
+      "exit_code": 0,
+      "rust_summaries_only": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "source_unchanged_during_command": true
+    },
+    {
+      "label": "api2-cli-selected-trace-v1",
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-api2-cli-selected-trace-v1.json",
+        "sha256": "056a2990e6bc4cc7911faca02c48fb7b9975b90d3dceca7bbba12ff2c81e3add",
+        "bytes": 35873
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-api2-cli-selected-trace-v1.log",
+        "sha256": "e7bae3ab3c58633bd553bb499198b7693a2d591f376791615042ba4acd76d648",
+        "bytes": 8598
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "-m",
+        "trace",
+        "--count",
+        "--coverdir",
+        "/private/tmp/forge-f19-api2-cli-selected-trace-v1",
+        "--missing",
+        "--summary",
+        "--module",
+        "scripts.workspace_client",
+        "--forge",
+        "/private/tmp/forge-f03-hook-target-1.98.1/debug/forge",
+        "--project",
+        "/private/tmp/forge-f19-api2-cli-trace-fixtures-v1/2",
+        "--api-major",
+        "2"
+      ],
+      "exit_code": 0,
+      "rust_summaries_only": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "source_unchanged_during_command": true
+    },
+    {
+      "label": "api2-all-features-clippy-v1",
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-api2-all-features-clippy-v1.json",
+        "sha256": "d1dde2e649e0df4671aae7d34e638b504d2fa903c0198197d7413bec7ed4e773",
+        "bytes": 35613
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-api2-all-features-clippy-v1.log",
+        "sha256": "c0470881a79e556b34d4524478a7dec85ad8948bf39cb904173a58d4f45e61e4",
+        "bytes": 159
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--locked",
+        "--offline",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "rust_summaries_only": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "source_unchanged_during_command": true
+    },
+    {
+      "label": "api2-bootstrap-v1",
+      "receipt": {
+        "path": "/private/tmp/forge-f19-browser-api2-bootstrap-v1.json",
+        "sha256": "bd71d95fb07d68388e4862fd6e40f76732dafb6ce0c3e09c35cbc64c43f11be6",
+        "bytes": 35582
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-api2-bootstrap-v1.log",
+        "sha256": "c8203b0383d1df1551eaaef609971f3a07f68af5e6cbe96737904509a75bf24d",
+        "bytes": 474
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--locked",
+        "--offline",
+        "--lib",
+        "selected_bootstrap_metadata_assets_and_rejections"
+      ],
+      "exit_code": 0,
+      "rust_summaries_only": {
+        "summaries": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      },
+      "source_unchanged_during_command": true
+    }
+  ],
+  "history": [
+    "Failed initial compile/type, contract-helper, lint and browser-focus attempts remain in versioned private receipts.",
+    "Original v1 normative/matrix/fixture/index schema bytes are retained.",
+    "Diagnostic browser assertions are superseded by clean assertions plus the root busy/focus regression.",
+    "Earlier coverage/doc/proposal receipts remain unchanged."
+  ],
+  "remaining_gates": [
+    "Enabled commit hook and exact-head delivery readback",
+    "Hosted current-head CI and platform outcomes",
+    "Nine captured lifecycle/impact queries and full S3",
+    "Full S6 export/import",
+    "Manual native accessibility, security, product/pilot and human decisions",
+    "Dependency audit/owner decisions and full roadmap acceptance",
+    "Final integrated documentation review and verified 2.0.0 candidate provenance/publication authorization"
+  ]
+}

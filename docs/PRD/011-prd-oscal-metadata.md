@@ -353,7 +353,7 @@ graph LR
     end
 ```
 
-- **Requires:** [001-prd-project-scaffolding](docs/PRD/001-prd-project-scaffolding.md) (project structure), [005-prd-domain-model](docs/PRD/005-prd-domain-model.md) (DocumentMetadata struct), WI-9 (catalog structure exists to add metadata to)
+- **Requires:** [001-prd-project-scaffolding](001-prd-project-scaffolding.md) (project structure), [005-prd-domain-model](005-prd-domain-model.md) (DocumentMetadata struct), WI-9 (catalog structure exists to add metadata to)
 - **Blocks:** [013-prd-end-to-end-catalog](docs/PRD/013-prd-end-to-end-catalog.md) (end-to-end catalog pipeline needs metadata)
 - **Parallel With:** WI-9 (Catalog groups/controls), WI-10 (statement parts/prose), WI-12 (back matter)
 - **External:** None

@@ -334,9 +334,9 @@ graph LR
     end
 ```
 
-- **Requires:** [005-prd-domain-model](docs/PRD/005-prd-domain-model.md) — provides `PolicyDocument`, `PolicySection`, `PolicyRequirement` structs
-- **Blocks:** [007-prd-uuid-generation](docs/PRD/007-prd-uuid-generation.md) — UUID generation depends on atomized requirements being available
-- **Parallel:** [008-prd-citation-extraction](docs/PRD/008-prd-citation-extraction.md) — citation extraction can proceed concurrently
+- **Requires:** [005-prd-domain-model](005-prd-domain-model.md) — provides `PolicyDocument`, `PolicySection`, `PolicyRequirement` structs
+- **Blocks:** [007-prd-uuid-generation](007-prd-uuid-generation.md) — UUID generation depends on atomized requirements being available
+- **Parallel:** [008-prd-citation-extraction](008-prd-citation-extraction.md) — citation extraction can proceed concurrently
 - **External:** None
 
 ---

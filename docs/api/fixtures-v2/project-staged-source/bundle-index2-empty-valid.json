@@ -1,0 +1,13 @@
+{
+  "schema_version": "forge.workspace-index-bundle/4",
+  "profile": "index-and-source-hex-staged",
+  "source_content_included": true,
+  "index": {
+    "schema_version": "forge.workspace/2",
+    "label": "Synthetic staged source fixture",
+    "resources": []
+  },
+  "index_sha256": "9c5610aa0d5cc189c67d5c303c714b7e7afb5969e2140292708081f2de01dcae",
+  "pins": [],
+  "contents": []
+}

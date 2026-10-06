@@ -338,8 +338,8 @@ graph LR
     end
 ```
 
-- **Requires:** [001-prd-project-scaffolding](docs/PRD/001-prd-project-scaffolding.md), [003-prd-structural-extraction-headings](docs/PRD/003-prd-structural-extraction-headings.md), [004-prd-structural-extraction-clauses](docs/PRD/004-prd-structural-extraction-clauses.md)
-- **Blocks:** [006-prd-requirement-atomization](docs/PRD/006-prd-requirement-atomization.md), [008-prd-citation-extraction](docs/PRD/008-prd-citation-extraction.md), and all OSCAL generation WIs
+- **Requires:** [001-prd-project-scaffolding](001-prd-project-scaffolding.md), [003-prd-structural-extraction-headings](003-prd-structural-extraction-headings.md), [004-prd-structural-extraction-clauses](004-prd-structural-extraction-clauses.md)
+- **Blocks:** [006-prd-requirement-atomization](006-prd-requirement-atomization.md), [008-prd-citation-extraction](008-prd-citation-extraction.md), and all OSCAL generation WIs
 - **External:** None
 
 ---

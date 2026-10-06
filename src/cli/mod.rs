@@ -33,8 +33,8 @@ use crate::config::{self, ConvertCliValues};
     name = "forge",
     about = "FORGE — Framework for OSCAL Risk & Governance Execution",
     long_about = "FORGE — Framework for OSCAL Risk & Governance Execution\n\n\
-        Converts security policy documents (Markdown) into machine-readable OSCAL\n\
-        (Open Security Controls Assessment Language) JSON artifacts.\n\n\
+        Converts policy documents (Markdown, PDF or DOCX) to OSCAL Catalog or\n\
+        Component Definition artifacts in JSON, XML or YAML.\n\n\
         Pipeline: Ingest → Parse → Atomize → Map → Serialize → Validate\n\n\
         Supported output strategies:\n\
          catalog     OSCAL Catalog (groups, controls, statements)\n\
@@ -67,7 +67,7 @@ pub struct Cli {
 pub enum Commands {
     /// Convert a policy document to OSCAL format
     Convert {
-        /// Path(s) to the input Markdown policy document(s) (.md)
+        /// Path(s) to policy documents (.md, .markdown, .pdf, or .docx)
         #[arg(num_args = 1.., required = true)]
         input: Vec<PathBuf>,
 
@@ -128,9 +128,9 @@ pub enum Commands {
         no_summary: bool,
     },
 
-    /// Export an OSCAL artifact to a different format
+    /// Export a Catalog or Component Definition to a different format
     Export {
-        /// Path to the input OSCAL artifact (JSON, XML, or YAML)
+        /// Path to a Catalog or Component Definition (JSON, XML, or YAML)
         input: PathBuf,
 
         /// Target output format
@@ -335,6 +335,9 @@ pub enum Commands {
         machine_session: bool,
         #[arg(long)]
         no_open: bool,
+        /// Select one API major; v2 is explicit and never migrates project files on launch
+        #[arg(long, default_value_t = 1, value_parser = clap::value_parser!(u8).range(1..=2))]
+        api_major: u8,
     },
 
     /// Inspect and validate project configuration (.forge.toml)
@@ -637,7 +640,7 @@ pub enum LifecycleCommand {
         /// Owner party key; repeat for multiple owners
         #[arg(long = "owner", required = true)]
         owners: Vec<String>,
-        /// Party declaration in KEY=ROLE[,ROLE] form
+        /// Party declaration in `KEY=ROLE[,ROLE]` form
         #[arg(long = "party")]
         parties: Vec<String>,
         /// Explicit next review date (YYYY-MM-DD)
@@ -1515,8 +1518,8 @@ fn run_migrate(
 pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
     reject_unsupported_config_selector(cli)?;
     match &cli.command {
-        Commands::Workspace { project, read_only, machine_session, no_open } => {
-            crate::workspace::launch(project, *read_only, *machine_session, *no_open)
+        Commands::Workspace { project, read_only, machine_session, no_open, api_major } => {
+            crate::workspace::launch(project, *read_only, *machine_session, *no_open, *api_major)
         }
         Commands::Convert {
             input,

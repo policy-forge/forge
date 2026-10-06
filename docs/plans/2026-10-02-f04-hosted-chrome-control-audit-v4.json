@@ -1,0 +1,1369 @@
+{
+  "schema": "forge.f04-hosted-chrome-control-audit/4",
+  "snapshot": "precommit TEMP source; exact bytes must match managed application before PR update",
+  "immutable_base": "ad149144b98fadd22f32c7db84cdf839644f890e",
+  "producer_schema": "forge.hosted-chrome-smoke/2",
+  "wrapper_schema": "forge.workspace-hosted-chrome-verification/3",
+  "shared_api_schema": "forge.workspace-verification/2",
+  "native_browser_or_product_execution": false,
+  "acceptance_eligible": false,
+  "source_inputs": {
+    "ui/tests/workspace.cjs": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/candidate/ui/tests/workspace.cjs",
+      "bytes": 55613,
+      "sha256": "f3dd93a753d0f81231d9d8c7d58c4979e109ec206c74d66be0b7c8fdd1958085"
+    },
+    "ui/tests/workspace_failure.cjs": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/candidate/ui/tests/workspace_failure.cjs",
+      "bytes": 3892,
+      "sha256": "d517f02a36609bd58c9166dca0a527f2955e687da96973156ee268dfb661774e"
+    },
+    "ui/tests/workspace_failure.test.cjs": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/candidate/ui/tests/workspace_failure.test.cjs",
+      "bytes": 10908,
+      "sha256": "e3b87c87f628973139643c42abf86c4c8b9923c25700254064e9b1cac1fdfcde"
+    },
+    "scripts/test_workspace_hosted_chrome.py": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/candidate/scripts/test_workspace_hosted_chrome.py",
+      "bytes": 38006,
+      "sha256": "21d823ebce4db5da60da83008fa2fb69bf8286697df75023fe5650d9b689a9cd"
+    },
+    "scripts/verify_workspace_hosted_chrome.py": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/candidate/scripts/verify_workspace_hosted_chrome.py",
+      "bytes": 14558,
+      "sha256": "dd4e17d6e22444a052a62655eae91ff1323f0c0dd87b035e85ffca10b89d807a"
+    },
+    "scripts/test_verify_workspace_hosted_chrome.py": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/candidate/scripts/test_verify_workspace_hosted_chrome.py",
+      "bytes": 66172,
+      "sha256": "30a035c0380337187d8ad6398d5ab8d5e0ec8041cace47ae7558a18feb777f9d"
+    },
+    ".github/workflows/workspace-verification.yml": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/candidate/.github/workflows/workspace-verification.yml",
+      "bytes": 10652,
+      "sha256": "ed6c1bc2e42c925d752623aa8ace4840561941547d1b4ed307f99d95e0090145"
+    },
+    "docs/development-tools/hosted-chrome.md": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/candidate/docs/development-tools/hosted-chrome.md",
+      "bytes": 10140,
+      "sha256": "19543b589da8bd4c844fb60882c07ed74649a10df1dc0507dcb077708a820922"
+    },
+    "docs/plans/2026-10-02-f04-hosted-chrome-browser-failure-diagnostics.md": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/candidate/docs/plans/2026-10-02-f04-hosted-chrome-browser-failure-diagnostics.md",
+      "bytes": 6736,
+      "sha256": "26829c31afbab6e472a21bf6046af28e10a36ade1ae549bbe3a07f2959771be5"
+    }
+  },
+  "python": {
+    "receipt": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-python-root-controls-v1/coverage.json",
+      "bytes": 82309,
+      "sha256": "6ed57fb574e0bcf32f21a30069cd3b8fc55d2a2103bd6ea1d27a3a440870ac9a"
+    },
+    "raw_controls": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-python-root-controls-v1/raw-unittest.log",
+      "bytes": 15118,
+      "sha256": "aa4c54a24ba1904835638cfabee16c61eb12bd1930db6bae470ad73061bbbb81"
+    },
+    "tests": {
+      "run": 54,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "totals": {
+      "functions": 128,
+      "function_docs": 128,
+      "functions_with_primary_thread_calls": 126,
+      "classes": 3,
+      "class_docs": 3,
+      "modules": 4,
+      "module_docs": 4,
+      "positive_lines": 950,
+      "zero_lines": 230
+    },
+    "physical_mapped_lines": 1180,
+    "selected_changed_or_new_functions": [
+      {
+        "repository_path": "scripts/test_workspace_hosted_chrome.py",
+        "name": "validate_browser_failure",
+        "kind": "function",
+        "line": 36,
+        "end_line": 46,
+        "code_start": 36,
+        "documented": true,
+        "actual_primary_thread_calls": 53
+      },
+      {
+        "repository_path": "scripts/test_workspace_hosted_chrome.py",
+        "name": "decode_browser_failure",
+        "kind": "function",
+        "line": 49,
+        "end_line": 56,
+        "code_start": 49,
+        "documented": true,
+        "actual_primary_thread_calls": 55
+      },
+      {
+        "repository_path": "scripts/test_workspace_hosted_chrome.py",
+        "name": "campaign",
+        "kind": "function",
+        "line": 480,
+        "end_line": 561,
+        "code_start": 480,
+        "documented": true,
+        "actual_primary_thread_calls": 5
+      },
+      {
+        "repository_path": "scripts/test_workspace_hosted_chrome.py",
+        "name": "produce",
+        "kind": "function",
+        "line": 564,
+        "end_line": 581,
+        "code_start": 564,
+        "documented": true,
+        "actual_primary_thread_calls": 4
+      },
+      {
+        "repository_path": "scripts/verify_workspace_hosted_chrome.py",
+        "name": "read_receipt",
+        "kind": "function",
+        "line": 37,
+        "end_line": 86,
+        "code_start": 37,
+        "documented": true,
+        "actual_primary_thread_calls": 62
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.campaign_fixture",
+        "kind": "function",
+        "line": 39,
+        "end_line": 42,
+        "code_start": 39,
+        "documented": true,
+        "actual_primary_thread_calls": 249
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.test_wrapper_v2_preflight_diagnostic_never_starts_producer",
+        "kind": "function",
+        "line": 451,
+        "end_line": 461,
+        "code_start": 451,
+        "documented": true,
+        "actual_primary_thread_calls": 1
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.browser_failure_fixture",
+        "kind": "function",
+        "line": 568,
+        "end_line": 570,
+        "code_start": 568,
+        "documented": true,
+        "actual_primary_thread_calls": 17
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.failed_browser_receipt",
+        "kind": "function",
+        "line": 572,
+        "end_line": 577,
+        "code_start": 572,
+        "documented": true,
+        "actual_primary_thread_calls": 18
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.test_browser_failure_decoder_binds_actual_exit_and_fixed_operators",
+        "kind": "function",
+        "line": 579,
+        "end_line": 594,
+        "code_start": 579,
+        "documented": true,
+        "actual_primary_thread_calls": 1
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.test_browser_failure_decoder_rejects_open_unknown_and_ambiguous_stdout",
+        "kind": "function",
+        "line": 596,
+        "end_line": 607,
+        "code_start": 596,
+        "documented": true,
+        "actual_primary_thread_calls": 1
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.test_failed_browser_receipt_retains_safe_diagnostic_without_pass_credit",
+        "kind": "function",
+        "line": 609,
+        "end_line": 617,
+        "code_start": 609,
+        "documented": true,
+        "actual_primary_thread_calls": 1
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.test_browser_failure_reader_refuses_contradictory_closed_facts",
+        "kind": "function",
+        "line": 619,
+        "end_line": 639,
+        "code_start": 619,
+        "documented": true,
+        "actual_primary_thread_calls": 1
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.exercise_failed_browser_campaign",
+        "kind": "function",
+        "line": 641,
+        "end_line": 666,
+        "code_start": 641,
+        "documented": true,
+        "actual_primary_thread_calls": 5
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.exercise_failed_browser_campaign.monotonic",
+        "kind": "function",
+        "line": 650,
+        "end_line": 652,
+        "code_start": 650,
+        "documented": true,
+        "actual_primary_thread_calls": 55
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.exercise_failed_browser_campaign.terminal_block",
+        "kind": "function",
+        "line": 653,
+        "end_line": 655,
+        "code_start": 653,
+        "documented": true,
+        "actual_primary_thread_calls": 15
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.exercise_failed_browser_campaign.ready",
+        "kind": "function",
+        "line": 656,
+        "end_line": 658,
+        "code_start": 656,
+        "documented": true,
+        "actual_primary_thread_calls": 25
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.exercise_failed_browser_campaign.read_pipe",
+        "kind": "function",
+        "line": 659,
+        "end_line": 663,
+        "code_start": 659,
+        "documented": true,
+        "actual_primary_thread_calls": 20
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.test_actual_failed_campaign_attaches_only_closed_stdout_and_actual_exit",
+        "kind": "function",
+        "line": 668,
+        "end_line": 677,
+        "code_start": 668,
+        "documented": true,
+        "actual_primary_thread_calls": 1
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.test_actual_failed_campaign_keeps_primary_failure_when_diagnostic_unavailable",
+        "kind": "function",
+        "line": 679,
+        "end_line": 687,
+        "code_start": 679,
+        "documented": true,
+        "actual_primary_thread_calls": 1
+      },
+      {
+        "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+        "name": "HostedChromeControls.test_failure_helper_protocol_mirrors_and_input_pins_are_consumed",
+        "kind": "function",
+        "line": 689,
+        "end_line": 704,
+        "code_start": 689,
+        "documented": true,
+        "actual_primary_thread_calls": 1
+      }
+    ],
+    "uncalled": [
+      {
+        "repository_path": "scripts/test_workspace_hosted_chrome.py",
+        "name": "OwnedTree.settle"
+      },
+      {
+        "repository_path": "scripts/test_workspace_hosted_chrome.py",
+        "name": "file_limits"
+      }
+    ],
+    "qualification": "Imports precede trace; primary thread only; no native/subprocess/background/branch/full-body/whole-repository coverage"
+  },
+  "node": {
+    "receipt": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-node-controls-v1/coverage.json",
+      "bytes": 117835,
+      "sha256": "205aad013c5cc667bc47ba1f3c2d2610cf1effb2a47ae982f28a9a4e222f097d"
+    },
+    "execution_receipt": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-node-controls-v1/receipt.json",
+      "bytes": 88748,
+      "sha256": "f7dc8bbe201a5ea3e6beedcbba25daaec31bb09974f3045fa98f0270480199d5"
+    },
+    "raw_controls": {
+      "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-node-controls-v1/controls.stdout.log",
+      "bytes": 1982,
+      "sha256": "bdc74a67482bc8f815484165d3c3b6c3d033800ce493494fc5fadb1e21d16ce7"
+    },
+    "tests": {
+      "run": 17,
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0
+    },
+    "selected_named_declarations": 29,
+    "documented": 29,
+    "actual_positive_primary_range": 29,
+    "all_callable_inventories": [
+      {
+        "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/candidate/ui/tests/workspace_failure.cjs",
+        "sha256": "d517f02a36609bd58c9166dca0a527f2955e687da96973156ee268dfb661774e",
+        "bytes": 3892,
+        "all_ast_callable_nodes": 9,
+        "v8_callable_records": 9,
+        "v8_positive_primary_records": 9,
+        "v8_zero_primary_records": [],
+        "v8_block_ranges": 35,
+        "v8_zero_block_ranges": [
+          {
+            "startOffset": 935,
+            "endOffset": 966,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/candidate/ui/tests/workspace_failure.test.cjs",
+        "sha256": "e3b87c87f628973139643c42abf86c4c8b9923c25700254064e9b1cac1fdfcde",
+        "bytes": 10908,
+        "all_ast_callable_nodes": 55,
+        "v8_callable_records": 55,
+        "v8_positive_primary_records": 52,
+        "v8_zero_primary_records": [
+          {
+            "functionName": "get",
+            "ranges": [
+              {
+                "startOffset": 2857,
+                "endOffset": 2908,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "getPrototypeOf",
+            "ranges": [
+              {
+                "startOffset": 5041,
+                "endOffset": 5107,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "launch",
+            "ranges": [
+              {
+                "startOffset": 9555,
+                "endOffset": 9600,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          }
+        ],
+        "v8_block_ranges": 65,
+        "v8_zero_block_ranges": [
+          {
+            "startOffset": 643,
+            "endOffset": 702,
+            "count": 0
+          },
+          {
+            "startOffset": 2857,
+            "endOffset": 2908,
+            "count": 0
+          },
+          {
+            "startOffset": 5041,
+            "endOffset": 5107,
+            "count": 0
+          },
+          {
+            "startOffset": 9555,
+            "endOffset": 9600,
+            "count": 0
+          }
+        ]
+      },
+      {
+        "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/candidate/ui/tests/workspace.cjs",
+        "sha256": "f3dd93a753d0f81231d9d8c7d58c4979e109ec206c74d66be0b7c8fdd1958085",
+        "bytes": 55613,
+        "all_ast_callable_nodes": 86,
+        "v8_callable_records": 56,
+        "v8_positive_primary_records": 2,
+        "v8_zero_primary_records": [
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 1496,
+                "endOffset": 1805,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 2329,
+                "endOffset": 2996,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "observeMeasuredOperation",
+            "ranges": [
+              {
+                "startOffset": 3098,
+                "endOffset": 3933,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "queueMeasuredOperation",
+            "ranges": [
+              {
+                "startOffset": 4023,
+                "endOffset": 4296,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 4363,
+                "endOffset": 4396,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 4488,
+                "endOffset": 4567,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 4614,
+                "endOffset": 4694,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 5437,
+                "endOffset": 6652,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 6878,
+                "endOffset": 7332,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "luminance",
+            "ranges": [
+              {
+                "startOffset": 7430,
+                "endOffset": 7797,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "contrast",
+            "ranges": [
+              {
+                "startOffset": 7900,
+                "endOffset": 8060,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "activate",
+            "ranges": [
+              {
+                "startOffset": 8572,
+                "endOffset": 8640,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "focused",
+            "ranges": [
+              {
+                "startOffset": 8759,
+                "endOffset": 8952,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 9578,
+                "endOffset": 9613,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "delayThrottle",
+            "ranges": [
+              {
+                "startOffset": 9734,
+                "endOffset": 9919,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 10112,
+                "endOffset": 10206,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 10295,
+                "endOffset": 10369,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 10702,
+                "endOffset": 10770,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 11203,
+                "endOffset": 11267,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 12110,
+                "endOffset": 12297,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "navigate",
+            "ranges": [
+              {
+                "startOffset": 12500,
+                "endOffset": 13144,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "discard",
+            "ranges": [
+              {
+                "startOffset": 13248,
+                "endOffset": 13411,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "controlResults",
+            "ranges": [
+              {
+                "startOffset": 13527,
+                "endOffset": 13608,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "controlSection",
+            "ranges": [
+              {
+                "startOffset": 13726,
+                "endOffset": 13792,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "controlPage",
+            "ranges": [
+              {
+                "startOffset": 13910,
+                "endOffset": 14702,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "controlsResponse",
+            "ranges": [
+              {
+                "startOffset": 14823,
+                "endOffset": 15188,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "filterControls",
+            "ranges": [
+              {
+                "startOffset": 15308,
+                "endOffset": 16205,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "page.route.times",
+            "ranges": [
+              {
+                "startOffset": 16396,
+                "endOffset": 16561,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "confirm",
+            "ranges": [
+              {
+                "startOffset": 16992,
+                "endOffset": 17664,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "register",
+            "ranges": [
+              {
+                "startOffset": 17892,
+                "endOffset": 18227,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "page.route.times",
+            "ranges": [
+              {
+                "startOffset": 19868,
+                "endOffset": 20033,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "page.route.times",
+            "ranges": [
+              {
+                "startOffset": 21280,
+                "endOffset": 21461,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 21749,
+                "endOffset": 21784,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "page.route.times",
+            "ranges": [
+              {
+                "startOffset": 22306,
+                "endOffset": 22468,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 22733,
+                "endOffset": 22768,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 23285,
+                "endOffset": 23404,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "failOperationRead",
+            "ranges": [
+              {
+                "startOffset": 23531,
+                "endOffset": 23889,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 25536,
+                "endOffset": 25568,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 25688,
+                "endOffset": 25744,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 25896,
+                "endOffset": 26135,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 28963,
+                "endOffset": 28995,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 29091,
+                "endOffset": 29123,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "failNext",
+            "ranges": [
+              {
+                "startOffset": 29557,
+                "endOffset": 30008,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 31295,
+                "endOffset": 31383,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "verifyMetadataConsumer",
+            "ranges": [
+              {
+                "startOffset": 39329,
+                "endOffset": 51142,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 51506,
+                "endOffset": 51972,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 52450,
+                "endOffset": 52497,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 52950,
+                "endOffset": 53082,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 53147,
+                "endOffset": 53201,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 53242,
+                "endOffset": 53315,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 53462,
+                "endOffset": 53516,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 53757,
+                "endOffset": 53831,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 54776,
+                "endOffset": 55004,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          },
+          {
+            "functionName": "",
+            "ranges": [
+              {
+                "startOffset": 55434,
+                "endOffset": 55596,
+                "count": 0
+              }
+            ],
+            "isBlockCoverage": false
+          }
+        ],
+        "v8_block_ranges": 64,
+        "v8_zero_block_ranges": [
+          {
+            "startOffset": 874,
+            "endOffset": 939,
+            "count": 0
+          },
+          {
+            "startOffset": 1105,
+            "endOffset": 53985,
+            "count": 0
+          },
+          {
+            "startOffset": 54132,
+            "endOffset": 54155,
+            "count": 0
+          },
+          {
+            "startOffset": 54543,
+            "endOffset": 54559,
+            "count": 0
+          },
+          {
+            "startOffset": 54656,
+            "endOffset": 55149,
+            "count": 0
+          },
+          {
+            "startOffset": 1496,
+            "endOffset": 1805,
+            "count": 0
+          },
+          {
+            "startOffset": 2329,
+            "endOffset": 2996,
+            "count": 0
+          },
+          {
+            "startOffset": 3098,
+            "endOffset": 3933,
+            "count": 0
+          },
+          {
+            "startOffset": 4023,
+            "endOffset": 4296,
+            "count": 0
+          },
+          {
+            "startOffset": 4363,
+            "endOffset": 4396,
+            "count": 0
+          },
+          {
+            "startOffset": 4488,
+            "endOffset": 4567,
+            "count": 0
+          },
+          {
+            "startOffset": 4614,
+            "endOffset": 4694,
+            "count": 0
+          },
+          {
+            "startOffset": 5437,
+            "endOffset": 6652,
+            "count": 0
+          },
+          {
+            "startOffset": 6878,
+            "endOffset": 7332,
+            "count": 0
+          },
+          {
+            "startOffset": 7430,
+            "endOffset": 7797,
+            "count": 0
+          },
+          {
+            "startOffset": 7900,
+            "endOffset": 8060,
+            "count": 0
+          },
+          {
+            "startOffset": 8572,
+            "endOffset": 8640,
+            "count": 0
+          },
+          {
+            "startOffset": 8759,
+            "endOffset": 8952,
+            "count": 0
+          },
+          {
+            "startOffset": 9578,
+            "endOffset": 9613,
+            "count": 0
+          },
+          {
+            "startOffset": 9734,
+            "endOffset": 9919,
+            "count": 0
+          },
+          {
+            "startOffset": 10112,
+            "endOffset": 10206,
+            "count": 0
+          },
+          {
+            "startOffset": 10295,
+            "endOffset": 10369,
+            "count": 0
+          },
+          {
+            "startOffset": 10702,
+            "endOffset": 10770,
+            "count": 0
+          },
+          {
+            "startOffset": 11203,
+            "endOffset": 11267,
+            "count": 0
+          },
+          {
+            "startOffset": 12110,
+            "endOffset": 12297,
+            "count": 0
+          },
+          {
+            "startOffset": 12500,
+            "endOffset": 13144,
+            "count": 0
+          },
+          {
+            "startOffset": 13248,
+            "endOffset": 13411,
+            "count": 0
+          },
+          {
+            "startOffset": 13527,
+            "endOffset": 13608,
+            "count": 0
+          },
+          {
+            "startOffset": 13726,
+            "endOffset": 13792,
+            "count": 0
+          },
+          {
+            "startOffset": 13910,
+            "endOffset": 14702,
+            "count": 0
+          },
+          {
+            "startOffset": 14823,
+            "endOffset": 15188,
+            "count": 0
+          },
+          {
+            "startOffset": 15308,
+            "endOffset": 16205,
+            "count": 0
+          },
+          {
+            "startOffset": 16396,
+            "endOffset": 16561,
+            "count": 0
+          },
+          {
+            "startOffset": 16992,
+            "endOffset": 17664,
+            "count": 0
+          },
+          {
+            "startOffset": 17892,
+            "endOffset": 18227,
+            "count": 0
+          },
+          {
+            "startOffset": 19868,
+            "endOffset": 20033,
+            "count": 0
+          },
+          {
+            "startOffset": 21280,
+            "endOffset": 21461,
+            "count": 0
+          },
+          {
+            "startOffset": 21749,
+            "endOffset": 21784,
+            "count": 0
+          },
+          {
+            "startOffset": 22306,
+            "endOffset": 22468,
+            "count": 0
+          },
+          {
+            "startOffset": 22733,
+            "endOffset": 22768,
+            "count": 0
+          },
+          {
+            "startOffset": 23285,
+            "endOffset": 23404,
+            "count": 0
+          },
+          {
+            "startOffset": 23531,
+            "endOffset": 23889,
+            "count": 0
+          },
+          {
+            "startOffset": 25536,
+            "endOffset": 25568,
+            "count": 0
+          },
+          {
+            "startOffset": 25688,
+            "endOffset": 25744,
+            "count": 0
+          },
+          {
+            "startOffset": 25896,
+            "endOffset": 26135,
+            "count": 0
+          },
+          {
+            "startOffset": 28963,
+            "endOffset": 28995,
+            "count": 0
+          },
+          {
+            "startOffset": 29091,
+            "endOffset": 29123,
+            "count": 0
+          },
+          {
+            "startOffset": 29557,
+            "endOffset": 30008,
+            "count": 0
+          },
+          {
+            "startOffset": 31295,
+            "endOffset": 31383,
+            "count": 0
+          },
+          {
+            "startOffset": 39329,
+            "endOffset": 51142,
+            "count": 0
+          },
+          {
+            "startOffset": 51506,
+            "endOffset": 51972,
+            "count": 0
+          },
+          {
+            "startOffset": 52450,
+            "endOffset": 52497,
+            "count": 0
+          },
+          {
+            "startOffset": 52950,
+            "endOffset": 53082,
+            "count": 0
+          },
+          {
+            "startOffset": 53147,
+            "endOffset": 53201,
+            "count": 0
+          },
+          {
+            "startOffset": 53242,
+            "endOffset": 53315,
+            "count": 0
+          },
+          {
+            "startOffset": 53462,
+            "endOffset": 53516,
+            "count": 0
+          },
+          {
+            "startOffset": 53757,
+            "endOffset": 53831,
+            "count": 0
+          },
+          {
+            "startOffset": 54776,
+            "endOffset": 55004,
+            "count": 0
+          },
+          {
+            "startOffset": 55434,
+            "endOffset": 55596,
+            "count": 0
+          }
+        ]
+      }
+    ],
+    "qualification": "Actual approved Node V8 mock process; full ranges/zeros retained; three CJS startup mocks only; no UI/native/product/branch/full-body credit"
+  },
+  "assertions": {
+    "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/cjs-assertion-ast-comparison-v1.json",
+    "bytes": 452523,
+    "sha256": "1d2a46b891b8556fe302da2fa8c6d8985037983e681a920f655b75880ed0efbd"
+  },
+  "workflow": {
+    "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-candidate-v4/workflow-root-change-v1.json",
+    "bytes": 374,
+    "sha256": "b250877613234dd591dfead8053ad8b956947a0948436dcf5697f664948005e6"
+  },
+  "independent_js_source_review": {
+    "path": "/private/tmp/forge-f04-chrome-browser-diagnostic-js-independent-review-v1/index.json",
+    "bytes": 4105,
+    "sha256": "28c31e9eddc4ec232bcb10d050e80ed66f2a37617c7bf46aba4896eb981f6cf0"
+  },
+  "historical_hosted_indexes_preserved": [
+    {
+      "path": "/private/tmp/forge-f04-chrome-hosted-verification-v1/index.json",
+      "bytes": 6157,
+      "sha256": "bc2b922bd5b49b236fd6d86e770d854b60d88302fb1be1f102bf743d85497659"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-successor-hosted-readback-v1/index.json",
+      "bytes": 15133,
+      "sha256": "21ca31014c72382bdc5cfeffc6f50cb37212333ee4a3362702ba7e1a8a8fef3e"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-dualpipe-hosted-readback-v1/index.json",
+      "bytes": 17414,
+      "sha256": "4d0540fb7111b4af688dcd34089ace5a9afa053d407682564d9ba95d029cc7a3"
+    }
+  ],
+  "mandatory_enabled_hook": null,
+  "fresh_hosted_outcome": null,
+  "pending_gates": [
+    "fresh complete four-campaign installed-Chrome prerequisite",
+    "normative browser/platform matrix",
+    "full API functional exercise",
+    "OS IPv4/IPv6 denial and attempted-egress measurement",
+    "AT/accessibility/human/security acceptance",
+    "accepted dependency source audits",
+    "release provenance",
+    "full integrated docs review/update after all roadmap work"
+  ]
+}

@@ -382,8 +382,8 @@ graph LR
     end
 ```
 
-- **Requires:** [WI-17: Traceability Embedding](docs/PRD/017-prd-traceability-embedding.md) (trace metadata in OSCAL artifacts)
-- **Blocks:** [WI-39: Traceability Report — Excerpts](docs/PRD/039-prd-traceability-report-excerpts.md) (extends this report with source excerpts)
+- **Requires:** [WI-17: Traceability Embedding](017-prd-traceability-embedding.md) (trace metadata in OSCAL artifacts)
+- **Blocks:** [WI-39: Traceability Report — Excerpts](039-prd-traceability-report-excerpts.md) (extends this report with source excerpts)
 - **Parallel With:** [WI-36: oscal-cli Integration], [WI-40: Batch Conversion], [WI-44: Summary Dashboard]
 - **External:** None
 

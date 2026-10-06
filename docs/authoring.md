@@ -6,15 +6,18 @@ builds write no substantive text beyond supplied human clause files and never
 interpolate answer values. Opt-in Phase 2 components substitute only explicitly
 bound public/internal values into Markdown; reports never copy raw values.
 
-This is a technical foundation. PRD-061 readiness, human review, legal content
-decisions, design-partner exercises, time-savings studies, and release gates
-remain pending. Authoring states do not change PRD-058 lifecycle state.
+This is a technical foundation. The [dated owner gate register](authoring-gates.md)
+records readiness and contract/content-boundary dispositions. Those assertions
+do not authenticate rights or independent review. Actual design-partner exercises,
+measured pilot outcomes and release approval remain open. Authoring states do not
+change PRD-058 lifecycle state.
 
-Rust library release compatibility also remains a gate: this feature extends
-the public exhaustive `ForgeError` and CLI command enums. Downstream exhaustive
-matches may require new arms. A release must review the public API, document
-migration, and select a semver-compatible version before publication; this
-technical tranche does not claim source compatibility for those matches.
+Rust library migration remains a release gate: this feature extends the public
+exhaustive `ForgeError` and CLI command enums, so downstream matches may need new
+arms. The recorded release target is `2.0.0`; see the
+[API migration guidance](authoring-api-migration.md). Publication still requires
+the recorded release approval and downstream review. This technical tranche does
+not claim source compatibility for those exhaustive matches.
 
 ## Commands
 

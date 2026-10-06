@@ -11,6 +11,7 @@ release gates.
 ```sh
 forge workspace --project ./example
 forge workspace --project ./example --read-only --no-open
+forge workspace --project ./example --api-major 2 --read-only --no-open
 ```
 
 Choose and confirm a 15–128 character passphrase in the terminal. Input is not
@@ -32,7 +33,9 @@ terminal. Moving focus elsewhere while waiting does not authorize a late
 throttling response to move it back.
 
 Use **Stop workspace** or Ctrl-C. Stopping discards unconfirmed work and
-invalidates session capabilities. Completed files remain saved. Reloading the
+invalidates session capabilities. Completed files remain saved. For a confirmed
+source restore, retain its public outcome ID and inspect the recorded outcome
+after settlement or restart; stopping is not proof that no files changed. Reloading the
 page loses its capability and unsaved forms; unlock again. Restarting the
 process requires a new passphrase. The workspace never recovers a password or
 persists a verifier. Machine sessions cannot unlock the browser.
@@ -45,6 +48,14 @@ contains a project label and stable key, typed role, and portable relative path
 for each resource. See [the schema](../schemas/forge.workspace-1.schema.json).
 No applicability or mapping decisions belong in the index.
 
+Explicit `--api-major 2` additionally accepts the independently closed
+`forge.workspace/2` index with lifecycle and framework-impact roles. Choose the
+index2 selector or migration-only action in **Policies & Artifacts**, inspect
+the exact index-update preview and confirm it. Launch never migrates files.
+API v1 stays the default and rejects index2 before registered reads. Admission
+profiles express structure or bounded fingerprints, not current domain freshness
+or human approval. See [API v2 migration](api/migration-v2.md).
+
 **Policies & Artifacts** can register an existing file, upload a local file, or
 convert a registered Markdown policy using the existing conversion engine.
 Upload and registration are separate confirmed writes. Conversion does not
@@ -56,8 +67,9 @@ secondary multi-file generation is excluded from this workspace tranche.
 Paths use `/` on every platform, even Windows. Paths must stay under the chosen
 root and use the index's portable ASCII segment grammar. Symlinks, reparse
 points, hard links, aliases, special files, absolute paths, `..`, Windows device
-names, and leading-dot segments are rejected. Destination parent directories
-must already exist. No arbitrary file read, directory listing, or shell route
+names, and leading-dot segments are rejected. Ordinary single-file destination parent directories
+must already exist. The separate source-restore preview explicitly lists any
+new directory intentions before batch confirmation; no hidden mkdir is granted. No arbitrary file read, directory listing, or shell route
 exists. A missing or unsafe registered file fails the snapshot closed; repair
 that explicit file or its index entry outside the workspace before continuing.
 
@@ -110,9 +122,10 @@ Every material write presents its target, create/overwrite status, validation,
 semantic summary, exact proposed hash, current hash/version, bound input hashes,
 and text diff before confirmation. Diffs are bounded and explicitly marked when
 truncated; the hash still binds the complete bytes. No autosave occurs.
-Receipts expire after ten minutes and are single-use, including failed commit
-attempts. Re-preview after an expired receipt, stale version, changed input,
-changed target, or failed confirmation.
+Receipts expire after ten minutes and are single-use once a matching commit
+attempt reaches receipt consumption. Capacity and request-mismatch rejections
+before that point preserve the receipt. Re-preview after an expired receipt,
+stale version, changed input, changed target, or consumed failed confirmation.
 
 For a current preview, a verified confirmed write refreshes its view and closes
 the preview before focus moves to the view heading. A failed refresh keeps the
@@ -174,8 +187,11 @@ process-interruption atomicity.
 Do not run another writer against the same destination during confirmation.
 Ordinary filesystems do not provide a portable compare-and-swap rename against
 an arbitrary uncooperating writer; a final recheck-to-rename race remains for
-external writers. This implementation does not claim isolation against a
-malicious same-user process or interruption-safe multi-file transactions.
+external writers. The ordinary single-file workflow does not claim isolation against a
+malicious same-user process or supply a multi-file transaction. The separate
+[source restore](workspace-source-bundles.md) stages owned generations, publishes
+the index last and records conditional rollback/recovery, with workspace-only IO
+fencing and explicit external-reader limitations.
 Windows runtime behavior must pass hosted Windows tests before platform support
 is claimed; cross-compilation alone is insufficient evidence.
 
@@ -229,8 +245,11 @@ Python cannot guarantee physical zeroization of immutable strings.
 
 The normative contract is [OpenAPI](api/forge-workspace-v1.openapi.yaml), with
 [compatibility policy](api/compatibility.md) and [capability matrix](api/capability-matrix.md).
-The additive unreleased contract is 1.2.0. It includes closed initialization,
-optional provenance references and read-only index-bundle queries. Existing domain
+Default launches use additive unreleased contract 1.2.0. The captured committed
+checkpoint declares API2.3.0/57; the separately captured working tree declares
+[API2.4.0/65](api/forge-workspace-v2.openapi.yaml) under integration, without a
+compiled, merged or hosted result inferred here. It includes closed initialization,
+optional provenance references, read-only index-bundle queries, and the nine captured lifecycle and framework-impact reads described in [the inspection guide](workspace-lifecycle-impact.md), plus acknowledged metadata export and complete index-replacement previews described in [the receipt guide](workspace-bundle-receipts.md), and opt-in exact-source export, complete batch restore confirmation and known-ID recovery in [the source guide](workspace-source-bundles.md). Existing domain
 `/1` meanings remain unchanged.
 The public Rust `Commands::Workspace` variant extends an exhaustive enum and
 requires a release compatibility decision for downstream matches. No release
@@ -275,26 +294,33 @@ establish neither domain approval nor import readiness or later byte stability.
 The maintained Python client still exposes `bundle_preview()` and
 `verify_bundle(bundle)` for the same read-only queries. See
 [Workspace index bundles](workspace-index-bundles.md) for its example, normalized
-index hashing, limits and errors. Receipt-backed server export/publication,
-source-content opt-in, confirmed writable import, reviewed batch binding,
-retention/capacity qualification and full S-6 acceptance remain open.
+index hashing, limits and errors. These API1 queries prepare no effects. The
+separate API2.2 [metadata receipt workflow](workspace-bundle-receipts.md) supports
+acknowledged server export and confirmed replacement of the complete index.
+API2.3 and 2.4 admit the finite [source restore workflow](workspace-source-bundles.md)
+with explicit source opt-in and complete batch review. API2.4 additionally selects
+the separately captured [staged transfer proposal](workspace-staged-source-bundles.md);
+its logical 10 MiB artifact ceiling does not prove a usable payload or acceptance. Larger capacity, full
+retention/capacity and cross-platform transaction qualification, and full S-6
+acceptance remain open. The read-only metadata queries remain source-excluding.
 
 ## Verification and remaining gates
 
 Rust contract, domain, security, transaction, and headless workflow tests run
 through `cargo test --locked`. Browser tests in `ui/tests/workspace.cjs` exercise
 the embedded assets through the published API; the POSIX harness is
-`scripts/test_workspace_browser.py`. Playwright is development-only. The browser
-harness runs locally only: it is not executed by CI, and installing the browser
-test dependencies in CI remains pending. These tests check request coverage,
+`scripts/test_workspace_browser.py`. Playwright is development-only. The original POSIX browser harness remains local. A separate hosted Chrome
+verification job uses the approved development tools and runner-installed Chrome;
+see [hosted verification](plans/2026-10-02-f04-workspace-verification.md) and
+[approved tooling](development-tools/hosted-chrome.md). These tests check request coverage,
 blocked non-loopback page traffic, storage absence, workflow behavior, and
 narrow-viewport reflow. This is not proof that all browser background traffic or
 all OS processes are network-denied.
 
 Current API/client verification is configured separately on Linux, macOS and
 Windows, including ordinary PRs with stacked bases. Versioned `/2` receipts
-retain the current 16 client assertion groups and complete 39-operation
-inventory, exact inputs, requested head/base and tested Git parents. A passed
+retain the current 16 client assertion groups and complete API1/1.2.0
+39-operation inventory, exact inputs, requested head/base and tested Git parents. A passed
 receipt covers the declared three-suite slice only. See the
 [current verification guide](plans/2026-10-02-f04-current-api-verification.md)
 and [development record](workspace-current-api-verification.md) for status,

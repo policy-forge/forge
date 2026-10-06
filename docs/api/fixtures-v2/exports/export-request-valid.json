@@ -1,0 +1,6 @@
+{
+  "report_kind": "applicability-gap",
+  "target_path": "reports/gap-report-static.html",
+  "redaction_profile": "strict-default",
+  "format": "static-html"
+}

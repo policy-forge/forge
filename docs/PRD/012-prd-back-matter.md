@@ -406,8 +406,8 @@ graph LR
     end
 ```
 
-- **Requires:** [008-prd-citation-extraction](docs/PRD/008-prd-citation-extraction.md) (provides extracted Citation objects), [009-prd-catalog-groups-controls](docs/PRD/009-prd-catalog-groups-controls.md) (provides catalog control skeleton for link insertion)
-- **Parallel With:** [009-prd-catalog-groups-controls](docs/PRD/009-prd-catalog-groups-controls.md), [010-prd-catalog-statement-parts](docs/PRD/010-prd-catalog-statement-parts.md), [011-prd-oscal-metadata](docs/PRD/011-prd-oscal-metadata.md)
+- **Requires:** [008-prd-citation-extraction](008-prd-citation-extraction.md) (provides extracted Citation objects), [009-prd-catalog-groups-controls](009-prd-catalog-groups-controls.md) (provides catalog control skeleton for link insertion)
+- **Parallel With:** [009-prd-catalog-groups-controls](009-prd-catalog-groups-controls.md), [010-prd-catalog-statement-parts](010-prd-catalog-statement-parts.md), [011-prd-oscal-metadata](011-prd-oscal-metadata.md)
 - **Blocks:** [013-prd-end-to-end-catalog](docs/PRD/013-prd-end-to-end-catalog.md) (end-to-end catalog pipeline)
 - **External:** OSCAL v1.2.0 JSON schema (back matter section)
 

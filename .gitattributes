@@ -47,3 +47,6 @@ tests/fixtures/xsd/*.xsd -text
 *.dll binary
 *.so binary
 *.dylib binary
+
+# Bind this metadata file itself to LF on every checkout.
+.gitattributes text eol=lf

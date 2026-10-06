@@ -1,0 +1,10 @@
+{
+  "schema_version": "forge.workspace-index-bundle/4",
+  "profile": "index-and-source-hex-staged",
+  "artifact_sha256": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "artifact_size_bytes": 744,
+  "chunk_size_bytes": 32768,
+  "chunk_count": 1,
+  "acknowledge_sensitive_metadata": true,
+  "acknowledge_source_content": true
+}

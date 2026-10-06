@@ -1,0 +1,1454 @@
+{
+  "fixture_format": "forge.api-fixtures/1",
+  "fixtures": [
+    {
+      "file": "workspace/valid-minimal.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "valid",
+      "description": "Minimal valid forge.workspace.json index with one policy-source resource."
+    },
+    {
+      "file": "workspace/valid-full-roles.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "valid",
+      "description": "Valid index exercising every supported role exactly once."
+    },
+    {
+      "file": "workspace/invalid-absolute-path.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because the resource path is absolute (leading slash)."
+    },
+    {
+      "file": "workspace/invalid-parent-traversal.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because a path segment is the parent-directory traversal '..'."
+    },
+    {
+      "file": "workspace/invalid-backslash-path.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because the path contains a backslash (Windows separator)."
+    },
+    {
+      "file": "workspace/invalid-windows-drive.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because the path carries a Windows drive prefix 'C:'."
+    },
+    {
+      "file": "workspace/invalid-schema-version.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because schema_version is 'forge.workspace/2' instead of the const 'forge.workspace/1'."
+    },
+    {
+      "file": "workspace/invalid-unknown-role.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because the role 'policy-artifact' is outside the closed role enum."
+    },
+    {
+      "file": "workspace/invalid-extra-property.json",
+      "kind": "workspace",
+      "schema": "workspace:forge.workspace/1",
+      "expectation": "invalid",
+      "description": "Rejected because of the unknown property 'approval_state'; the index is closed and must not admit approval state."
+    },
+    {
+      "file": "session/unlock-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SessionUnlockRequest",
+      "expectation": "valid",
+      "description": "Minimal valid unlock request for unlockSession."
+    },
+    {
+      "file": "session/unlock-request-invalid-short.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SessionUnlockRequest",
+      "expectation": "invalid",
+      "description": "Rejected because the passphrase is shorter than the 15-character minimum for unlockSession."
+    },
+    {
+      "file": "session/get-session-response-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/Session",
+      "expectation": "valid",
+      "description": "Valid 200 getSession body: writable browser session with API major and contract version discovery."
+    },
+    {
+      "file": "session/unlock-response-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SessionUnlockResponse",
+      "expectation": "valid",
+      "description": "Valid 200 unlockSession body returning the one-time memory-only browser capability and session metadata."
+    },
+    {
+      "file": "project/summary-response-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectSummary",
+      "expectation": "valid",
+      "description": "Valid 200 getProjectSummary body: needs-attention health, reconciled resource and review counts, next human action."
+    },
+    {
+      "file": "resources/register-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/RegisterResourceRequest",
+      "expectation": "valid",
+      "description": "Valid registerResource body referencing an existing root-contained Markdown policy."
+    },
+    {
+      "file": "resources/upload-request-invalid-absolute-target.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/UploadResourceRequest",
+      "expectation": "invalid",
+      "description": "Rejected because the upload target_path is absolute; uploads must target a confirmed root-contained path."
+    },
+    {
+      "file": "resources/page-valid.json",
+      "kind": "pagination",
+      "schema": "openapi:components/schemas/ResourcePage",
+      "expectation": "valid",
+      "description": "Valid listResources page envelope: one item, null next_cursor (last page), total_matching denominator."
+    },
+    {
+      "file": "conversions/conversion-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ConversionRequest",
+      "expectation": "valid",
+      "description": "Valid preparePolicyConversion body for an OSCAL Catalog output."
+    },
+    {
+      "file": "conversions/result-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ConversionResult",
+      "expectation": "valid",
+      "description": "Valid getConversion 200 body: derived product summary, validation diagnostics, and the bound EffectPreview with create status and one-time receipt."
+    },
+    {
+      "file": "effects/preview-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/EffectPreview",
+      "expectation": "valid",
+      "description": "Valid getEffectPreview 200 body: overwrite target, base/target hashes, input hashes, warning diagnostic, escaped diff, and receipt with expiry."
+    },
+    {
+      "file": "effects/commit-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CommitEffectRequest",
+      "expectation": "valid",
+      "description": "Valid commitEffectPreview body: one-time receipt token, observed version, and literal confirmation intent."
+    },
+    {
+      "file": "applicability/report-response-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ApplicabilityReportView",
+      "expectation": "valid",
+      "description": "Valid getApplicabilityReport 200 body: current input fingerprints, all six classification counts, and the 263-control denominator."
+    },
+    {
+      "file": "queue/counts-response-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ReviewQueueCounts",
+      "expectation": "valid",
+      "description": "Valid getReviewQueueCounts 200 body whose by_reason counts sum to total_open (12)."
+    },
+    {
+      "file": "pagination/review-queue-page-valid.json",
+      "kind": "pagination",
+      "schema": "openapi:components/schemas/QueueItemPage",
+      "expectation": "valid",
+      "description": "Valid listReviewQueueItems page envelope: two stable reason-code items, non-null next_cursor, total_matching denominator."
+    },
+    {
+      "file": "error/version-conflict-409.json",
+      "kind": "version-conflict",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Valid 409 error envelope exercising the stable code 'version-conflict' with the current resource_version; documents AC-21."
+    },
+    {
+      "file": "error/read-only-session-403.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Valid 403 error envelope exercising the stable code 'read-only-session' returned by every mutation operation in a read-only session."
+    },
+    {
+      "file": "error/receipt-expired-410.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Valid 410 error envelope exercising the stable code 'receipt-expired' with a retryable safe recovery message."
+    },
+    {
+      "file": "error/validation-failed-422.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Valid 422 error envelope exercising the stable code 'validation-failed' with a safe field pointer and no source excerpt."
+    },
+    {
+      "file": "error/unauthorized-401.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Valid generic 401 error envelope exercising the stable code 'unauthorized' with no project-state or credential disclosure."
+    },
+    {
+      "file": "error/unlock-failed-401.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Valid generic unlock failure envelope exercising the stable code 'unlock-failed'; indistinguishable for any wrong passphrase."
+    },
+    {
+      "file": "operation/commit-succeeded-valid.json",
+      "kind": "operation",
+      "schema": "openapi:components/schemas/Operation",
+      "expectation": "valid",
+      "description": "Valid succeeded commit operation lifecycle: typed CommitResult with write_committed true and the committed hash (AC-22 response-loss recovery)."
+    },
+    {
+      "file": "operation/analysis-running-valid.json",
+      "kind": "operation",
+      "schema": "openapi:components/schemas/Operation",
+      "expectation": "valid",
+      "description": "Valid running applicability-analysis operation with bounded progress facts and cancellation not yet requested."
+    },
+    {
+      "file": "operation/conversion-failed-valid.json",
+      "kind": "operation",
+      "schema": "openapi:components/schemas/Operation",
+      "expectation": "valid",
+      "description": "Valid failed conversion operation carrying a safe terminal error and stating that no output was written."
+    },
+    {
+      "file": "exports/export-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ExportRequest",
+      "expectation": "valid",
+      "description": "Valid prepareReportExport body: applicability-gap report, strict-default redaction profile, static HTML format."
+    },
+    {
+      "file": "applicability/initialization-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ApplicabilityInitializationRequest",
+      "expectation": "valid",
+      "description": "Explicit initialization request."
+    },
+    {
+      "file": "applicability/initialization-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ApplicabilityInitializationRequest",
+      "expectation": "invalid",
+      "description": "Reject unknown future fields."
+    },
+    {
+      "file": "mapping/initialization-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/MappingInitializationRequest",
+      "expectation": "valid",
+      "description": "Explicit initialization request."
+    },
+    {
+      "file": "mapping/initialization-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/MappingInitializationRequest",
+      "expectation": "invalid",
+      "description": "Reject unknown future fields."
+    },
+    {
+      "file": "exports/trace-envelope-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceReportEnvelope",
+      "expectation": "valid",
+      "description": "Closed inert trace export envelope; reject arbitrary private fields."
+    },
+    {
+      "file": "exports/trace-envelope-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceReportEnvelope",
+      "expectation": "invalid",
+      "description": "Closed inert trace export envelope; reject arbitrary private fields."
+    },
+    {
+      "file": "bundle/bundle-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceIndexBundle",
+      "expectation": "valid",
+      "description": "Closed complete metadata bundle; normalized index hash and resource hash bind synthetic bytes."
+    },
+    {
+      "file": "bundle/preview-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundlePreview",
+      "expectation": "valid",
+      "description": "Authorized metadata preview, every declared category, no source content or receipt."
+    },
+    {
+      "file": "bundle/verification-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "valid",
+      "description": "Closed registered-only comparison request."
+    },
+    {
+      "file": "bundle/verification-matched-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleVerification",
+      "expectation": "valid",
+      "description": "Complete single-entry fingerprint match; validation state remains separate."
+    },
+    {
+      "file": "bundle/empty-bundle-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceIndexBundle",
+      "expectation": "valid",
+      "description": "An explicitly present empty index is a valid complete zero-entry bundle."
+    },
+    {
+      "file": "bundle/verification-missing-index-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleVerification",
+      "expectation": "valid",
+      "description": "Absent destination index is explicit; all expected entries remain unregistered."
+    },
+    {
+      "file": "bundle/unknown-content-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "Unknown source-content field is prohibited."
+    },
+    {
+      "file": "bundle/unknown-approval-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "The nested index remains closed to approval fields."
+    },
+    {
+      "file": "bundle/wrong-version-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "Unsupported narrow bundle version."
+    },
+    {
+      "file": "bundle/wrong-profile-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "The metadata-only profile is closed."
+    },
+    {
+      "file": "bundle/upper-hash-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "Digest format is lowercase SHA256."
+    },
+    {
+      "file": "bundle/oversize-pin-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "One-over declared resource byte bound."
+    },
+    {
+      "file": "bundle/unknown-role-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "Existing index roles are unchanged and closed."
+    },
+    {
+      "file": "lifecycle/getLifecycleRecords-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleRecordPage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "lifecycle/getLifecycleRecords-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleRecordPage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "lifecycle/getLifecycleRecords-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleRecordPage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "lifecycle/getLifecycleRecord-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleRecordDetail",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "lifecycle/getLifecycleRecord-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleRecordDetail",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "lifecycle/getLifecycleRecord-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleRecordDetail",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "lifecycle/getLifecycleHistory-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleHistoryPage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "lifecycle/getLifecycleHistory-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleHistoryPage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "lifecycle/getLifecycleHistory-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleHistoryPage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "lifecycle/getLifecycleQueue-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleQueuePage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "lifecycle/getLifecycleQueue-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleQueuePage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "lifecycle/getLifecycleQueue-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/LifecycleQueuePage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactComparisons-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactComparisonPage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactComparisons-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactComparisonPage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactComparisons-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactComparisonPage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactComparison-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactComparisonDetail",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactComparison-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactComparisonDetail",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactComparison-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactComparisonDetail",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactChanges-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactChangePage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactChanges-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactChangePage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactChanges-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactChangePage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactFindings-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactFindingPage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactFindings-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactFindingPage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactFindings-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactFindingPage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactPriorDispositions-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactPriorDispositionPage",
+      "expectation": "valid",
+      "description": "Synthetic finite wire-shape example; not an executed response or authenticated approval."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactPriorDispositions-missing-snapshot-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactPriorDispositionPage",
+      "expectation": "invalid",
+      "description": "Every captured read requires its immutable snapshot identity."
+    },
+    {
+      "file": "framework-impact/getFrameworkImpactPriorDispositions-unknown-property-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/FrameworkImpactPriorDispositionPage",
+      "expectation": "invalid",
+      "description": "The complete response is closed and admits no inferred approval property."
+    },
+    {
+      "file": "project-bundle-effects/export-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleExportRequest",
+      "expectation": "valid",
+      "description": "Synthetic acknowledged portable target; runtime exclusion is separate."
+    },
+    {
+      "file": "project-bundle-effects/export-missing-ack-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleExportRequest",
+      "expectation": "invalid",
+      "description": "Acknowledgment is required."
+    },
+    {
+      "file": "project-bundle-effects/export-false-ack-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleExportRequest",
+      "expectation": "invalid",
+      "description": "Acknowledgment must be true."
+    },
+    {
+      "file": "project-bundle-effects/export-extra-property-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleExportRequest",
+      "expectation": "invalid",
+      "description": "No source-content opt-in exists in this closed request."
+    },
+    {
+      "file": "project-bundle-effects/export-traversal-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleExportRequest",
+      "expectation": "invalid",
+      "description": "Portable path syntax excludes traversal."
+    },
+    {
+      "file": "project-bundle-effects/import-v1-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "valid",
+      "description": "Synthetic closed request; no captured file/domain eligibility claim."
+    },
+    {
+      "file": "project-bundle-effects/import-v2-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "valid",
+      "description": "Synthetic closed request; no captured file/domain eligibility claim."
+    },
+    {
+      "file": "project-bundle-effects/import-upgrade-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "valid",
+      "description": "Synthetic closed request; no captured file/domain eligibility claim."
+    },
+    {
+      "file": "project-bundle-effects/import-missing-ack-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Replacement acknowledgment is required."
+    },
+    {
+      "file": "project-bundle-effects/import-false-ack-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Replacement acknowledgment must be true."
+    },
+    {
+      "file": "project-bundle-effects/import-string-selector-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Historical string selector is not the accepted numeric wire."
+    },
+    {
+      "file": "project-bundle-effects/import-bool-selector-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Boolean is not an integer selector."
+    },
+    {
+      "file": "project-bundle-effects/import-unsupported-selector-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Only1 or2 are selected."
+    },
+    {
+      "file": "project-bundle-effects/import-extra-property-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "No merge property is admitted."
+    },
+    {
+      "file": "project-bundle-effects/import-wrong-profile-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Existing metadata profile remains fixed."
+    },
+    {
+      "file": "project-bundle-effects/import-extra-bundle-property-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Existing metadata bundle remains closed."
+    },
+    {
+      "file": "project-bundle-effects/import-paired-index-version-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Bundle1/index2 is not a valid pair."
+    },
+    {
+      "file": "project-bundle-effects/import-index1-new-role-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Index1 retains its original seven-role authority."
+    },
+    {
+      "file": "project-bundle-effects/import-downgrade-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/ProjectBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Bundle2 cannot select target1 in preadmission."
+    },
+    {
+      "file": "project-bundle-effects/import-preview-v2-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "valid",
+      "description": "Synthetic complete nonempty memberships and ordered removal; no actual receipt."
+    },
+    {
+      "file": "project-bundle-effects/import-preview-absent-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "valid",
+      "description": "Absent previous index is explicit null, not an invented empty current index."
+    },
+    {
+      "file": "project-bundle-effects/import-preview-upgrade-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "valid",
+      "description": "Explicit1-to-2 has separate supplied/proposed normalized hashes and complete versions."
+    },
+    {
+      "file": "project-bundle-effects/preview-missing-replacement-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "A bare legacy preview does not carry complete replacement disclosure."
+    },
+    {
+      "file": "project-bundle-effects/preview-missing-previous-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Absent previous membership requires explicit null, never omission."
+    },
+    {
+      "file": "project-bundle-effects/preview-extra-replacement-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Replacement has no inferred approval field."
+    },
+    {
+      "file": "project-bundle-effects/preview-extra-envelope-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Direct preparation has no synthetic operation field."
+    },
+    {
+      "file": "project-bundle-effects/preview-bool-count-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Observed count must be exact integer."
+    },
+    {
+      "file": "project-bundle-effects/preview-over-count-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Whole consumed-file count cannot exceed100."
+    },
+    {
+      "file": "project-bundle-effects/preview-negative-count-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Consumed-file count is nonnegative."
+    },
+    {
+      "file": "project-bundle-effects/preview-duplicate-removal-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Removed keys are unique, not duplicated observations."
+    },
+    {
+      "file": "project-bundle-effects/preview-invalid-removed-key-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Removed keys retain intrinsic index key grammar."
+    },
+    {
+      "file": "project-bundle-effects/preview-upper-hash-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Supplied normalized hash is lowercase hex."
+    },
+    {
+      "file": "project-bundle-effects/preview-proposed-version-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Only the complete existing index1 or index2 shape is admitted."
+    },
+    {
+      "file": "project-bundle-effects/preview-missing-validation-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Both wrapped validation and existing preview are required."
+    },
+    {
+      "file": "project-bundle-effects/preview-index-extra-field-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Previous index remains intrinsically closed."
+    },
+    {
+      "file": "project-bundle-effects/preview-previous-bundle-not-index-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Previous member is an index object, not a bundle envelope."
+    },
+    {
+      "file": "project-bundle-effects/preview-bare-effect-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleImportPreview",
+      "expectation": "invalid",
+      "description": "Old EffectPreview is not the new wrapped response."
+    },
+    {
+      "file": "project-bundle-effects/error-bundle-preparation-in-progress-valid.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Fixed new safe code; HTTP status pairing is a runtime control obligation."
+    },
+    {
+      "file": "project-bundle-effects/error-bundle-preparation-budget-exceeded-valid.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Fixed new safe code; HTTP status pairing is a runtime control obligation."
+    },
+    {
+      "file": "project-bundle-effects/error-bundle-preparation-interrupted-valid.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Fixed new safe code; HTTP status pairing is a runtime control obligation."
+    },
+    {
+      "file": "project-bundle-effects/error-unknown-code-invalid.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "invalid",
+      "description": "API2 errors remain closed; no arbitrary diagnostic code."
+    },
+    {
+      "file": "project-bundle-effects/metadata-export-result-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ExportResult",
+      "expectation": "valid",
+      "description": "Existing export result shape and source-excerpts category; private artifact family is not a public enum."
+    },
+    {
+      "file": "project-source-bundle/bundle-empty-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "valid",
+      "description": "Finite empty grammar example; standalone synthetic schema fixture, not captured or domain-authorized bytes."
+    },
+    {
+      "file": "project-source-bundle/bundle-opaque-grammar-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "valid",
+      "description": "Exact opaque bytes grammar; export does not infer valid Markdown/domain admission from it. Import domain refusal remains native."
+    },
+    {
+      "file": "project-source-bundle/bundle-profile-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "invalid",
+      "description": "Closed fixed source-profile property rejects this valid JSON document."
+    },
+    {
+      "file": "project-source-bundle/bundle-source-flag-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "invalid",
+      "description": "Closed fixed source-profile property rejects this valid JSON document."
+    },
+    {
+      "file": "project-source-bundle/bundle-unknown-field-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "invalid",
+      "description": "Closed fixed source-profile property rejects this valid JSON document."
+    },
+    {
+      "file": "project-source-bundle/bundle-uppercase-hex-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "invalid",
+      "description": "Only lowercase canonical even-length hex is allowed."
+    },
+    {
+      "file": "project-source-bundle/bundle-wrong-hash-native-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle3",
+      "expectation": "valid",
+      "description": "Schema-shaped but intrinsically invalid exact decoded fingerprint; actual strict decoder must reject. No schema-only validity is native admission."
+    },
+    {
+      "file": "project-source-bundle/import-explicit-upgrade-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareProjectSourceBundleImportRequest",
+      "expectation": "valid",
+      "description": "Explicit incoming1 to target2 selection; current index no-downgrade is separately checked natively."
+    },
+    {
+      "file": "project-source-bundle/import-index2-downgrade-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareProjectSourceBundleImportRequest",
+      "expectation": "invalid",
+      "description": "Closed conditional refuses incoming2 selector1; current2 selector1 remains native refusal."
+    },
+    {
+      "file": "project-source-bundle/export-acknowledgments-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareProjectSourceBundleExportRequest",
+      "expectation": "valid",
+      "description": "Explicit writable source export acknowledgment, not a download or committed export."
+    },
+    {
+      "file": "project-source-bundle/restore-preview-preknown-id-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceRestorePreview",
+      "expectation": "valid",
+      "description": "Preknown lookup ID exists before confirmation; synthetic token/versions never authorize a real write."
+    },
+    {
+      "file": "project-source-bundle/restore-preview-missing-lookup-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceRestorePreview",
+      "expectation": "invalid",
+      "description": "Required preknown ID prevents losing lookup authority merely because202 was lost."
+    },
+    {
+      "file": "project-source-bundle/import-response-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectSourceBundleImportPreview",
+      "expectation": "valid",
+      "description": "Complete wrapped source preparation; native renderer checks all exact preview/index/binding cross-relations."
+    },
+    {
+      "file": "project-source-bundle/restore-commit-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CommitSourceRestoreRequest",
+      "expectation": "valid",
+      "description": "One-time same-session confirmation request, synthetic fixture only."
+    },
+    {
+      "file": "project-source-bundle/restore-pending-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceRestoreOperation",
+      "expectation": "valid",
+      "description": "Pending accepted outcome has no committed result, progress or cleanup assertion."
+    },
+    {
+      "file": "project-source-bundle/restore-succeeded-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceRestoreOperation",
+      "expectation": "valid",
+      "description": "Durable committed decision is distinct from exact native journal/cleanup proof, which actual runtime must establish."
+    },
+    {
+      "file": "project-source-bundle/restore-recovery-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceRestoreOperation",
+      "expectation": "valid",
+      "description": "Unknown outcome and unverified cleanup must remain explicit, without pretending no write."
+    },
+    {
+      "file": "project-source-bundle/restore-legacy-kind-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceRestoreOperation",
+      "expectation": "invalid",
+      "description": "Separate batch kind leaves old Operation enum unchanged."
+    },
+    {
+      "file": "project-source-bundle/error-bundle-restore-unavailable.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Additive safe source-restore code; actual route/status pairing remains runtime-owned."
+    },
+    {
+      "file": "project-source-bundle/error-bundle-restore-in-progress.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Additive safe source-restore code; actual route/status pairing remains runtime-owned."
+    },
+    {
+      "file": "project-source-bundle/error-bundle-restore-budget-exceeded.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Additive safe source-restore code; actual route/status pairing remains runtime-owned."
+    },
+    {
+      "file": "project-source-bundle/error-bundle-restore-recovery-required.json",
+      "kind": "error",
+      "schema": "openapi:components/schemas/Error",
+      "expectation": "valid",
+      "description": "Additive safe source-restore code; actual route/status pairing remains runtime-owned."
+    },
+    {
+      "file": "project-staged-source/bundle-index1-empty-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-index2-empty-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-opaque-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-tag3-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-profile3-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-no-source-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-extra-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-upperhex-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-oddhex-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-index1-new-role-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-pin-extra-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-content-extra-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/bundle-pin-sha-native-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: exact decoded content hash differs"
+    },
+    {
+      "file": "project-staged-source/bundle-index-sha-native-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: ordered normalized index hash differs"
+    },
+    {
+      "file": "project-staged-source/bundle-missing-content-native-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: index/pin/content key bijection differs"
+    },
+    {
+      "file": "project-staged-source/bundle-short-nonfinal-native-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: nonfinal content chunk is not32768 bytes"
+    },
+    {
+      "file": "project-staged-source/create-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-logical-max-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-extra-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-ack-false-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-size-bool-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-size-over-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-part-size-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-count-over-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-hash-upper-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/create-ceil-native-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/CreateSourceTransferStageRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: chunk_count differs from ceil(actual declared length/32768)"
+    },
+    {
+      "file": "project-staged-source/chunk-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-inclusive-max-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-extra-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-empty-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-upper-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-over-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-odd-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/chunk-sha-native-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/SourceTransferChunkRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: decoded part SHA differs"
+    },
+    {
+      "file": "project-staged-source/stage-receiving-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-ready-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-preparing-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-prepared-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-discarded-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-unknown-state-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-id-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-bool-counter-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stage-extra-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferStage",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/ack-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferChunkAck",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/ack-ordinal-over-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferChunkAck",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/prepare-index1-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareStagedSourceRestoreRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/prepare-index2-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareStagedSourceRestoreRequest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/prepare-selector-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareStagedSourceRestoreRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/prepare-ack-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareStagedSourceRestoreRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/prepare-bundle-field-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/PrepareStagedSourceRestoreRequest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/discard-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferDiscarded",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/discard-false-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceTransferDiscarded",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/manifest-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamManifest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/manifest-tag-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamManifest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/manifest-source-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamManifest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/manifest-empty-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamManifest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/manifest-count-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamManifest",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/manifest-ceil-native-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamManifest",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: declared ceil relationship differs"
+    },
+    {
+      "file": "project-staged-source/stream-chunk-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamChunk",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stream-chunk-id-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamChunk",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stream-chunk-odd-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamChunk",
+      "expectation": "invalid",
+      "description": "Synthetic schema-invalid shape; compiler execution pending."
+    },
+    {
+      "file": "project-staged-source/stream-chunk-sha-native-invalid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/SourceStreamChunk",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: decoded returned part SHA differs"
+    },
+    {
+      "file": "project-staged-source/prepare-response-shape-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectSourceBundleImportPreview",
+      "expectation": "valid",
+      "description": "Synthetic schema-valid shape; compiler execution pending."
+    }
+  ]
+}

@@ -1,10 +1,11 @@
 # Components, impact, HTML and draft handoff
 
 This technical extension builds drafting artifacts from explicitly supplied
-local inputs. PRD-061 as a whole, human readiness, legal/content review,
-design-partner packs, measured authoring exercises, pilot metrics and release
-approval remain pending. Reviewer and component-status metadata are assertions,
-not authenticated identities or independent review evidence.
+local inputs. The [dated owner gate register](authoring-gates.md) records readiness
+and contract/content-boundary dispositions; it does not authenticate rights or
+independent review. Actual design-partner exercises, measured pilot outcomes and
+release approval remain open. Reviewer and component-status metadata are
+assertions, not authenticated identities or independent review evidence.
 
 ## Compatibility and contracts
 

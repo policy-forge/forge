@@ -377,8 +377,8 @@ graph LR
     end
 ```
 
-- **Requires:** [026-prd-xml-output](docs/PRD/026-prd-xml-output.md) (WI-26: XML serialization must be functional), [027-prd-yaml-output](docs/PRD/027-prd-yaml-output.md) (WI-27: YAML serialization must be functional)
-- **Blocks:** [029-prd-export-subcommand](docs/PRD/029-prd-export-subcommand.md) (WI-29: export subcommand needs verified formats)
+- **Requires:** [026-prd-xml-output](026-prd-xml-output.md) (WI-26: XML serialization must be functional), [027-prd-yaml-output](027-prd-yaml-output.md) (WI-27: YAML serialization must be functional)
+- **Blocks:** [029-prd-export-subcommand](029-prd-export-subcommand.md) (WI-29: export subcommand needs verified formats)
 - **Parallel With:** WI-29 (export subcommand development can proceed in parallel, but verification gate requires WI-28 results)
 - **External:** None
 

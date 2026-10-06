@@ -956,3 +956,1320 @@ fn bundle_index_components_are_composed_from_the_unchanged_index_schema() {
     }
     assert_eq!(document["info"]["version"], "1.2.0");
 }
+/// Validate the separately published API2 contracts without renumbering or weakening original API1 checks.
+mod s3_api2_contracts {
+    use super::{
+        bundle_index_api_mirror, component_validator, load_openapi, load_yaml_as_json, operations,
+        read_json_strict, repo_path, workspace_schema,
+    };
+    use serde_json::{Value, json};
+    use std::fs;
+
+    /// Load the selected major's own normative document rather than rewriting API1 at test time.
+    fn s3_api2_document() -> Value {
+        load_yaml_as_json(&repo_path("docs/api/forge-workspace-v2.openapi.yaml"))
+    }
+
+    /// Parse the separate closed index2 artifact using the existing duplicate-safe fixture decoder.
+    fn s3_index2_schema() -> Value {
+        let relative = "schemas/forge.workspace-2.schema.json";
+        read_json_strict(&fs::read(repo_path(relative)).unwrap(), relative).unwrap()
+    }
+
+    /// Mirror only local index2 references into its explicit API2 component siblings.
+    fn s3_index2_mirror(value: &Value) -> Value {
+        match value {
+            Value::Object(map) => Value::Object(
+                map.iter()
+                    .map(|(key, child)| {
+                        let rewritten = if key == "$ref" {
+                            match child.as_str() {
+                                Some("#/$defs/resource") => {
+                                    json!("#/components/schemas/WorkspaceBundleIndexResourceV2")
+                                }
+                                Some("#/$defs/role") => {
+                                    json!("#/components/schemas/WorkspaceBundleIndexRoleV2")
+                                }
+                                _ => child.clone(),
+                            }
+                        } else {
+                            s3_index2_mirror(child)
+                        };
+                        (key.clone(), rewritten)
+                    })
+                    .collect(),
+            ),
+            Value::Array(items) => Value::Array(items.iter().map(s3_index2_mirror).collect()),
+            _ => value.clone(),
+        }
+    }
+
+    /// Construct schema-only metadata bundles; zero pins and arbitrary digest are not native capture or hash proof.
+    fn s3_schema_bundle(version: u8) -> Value {
+        json!({"schema_version":format!("forge.workspace-index-bundle/{version}"),"content_profile":"index-and-hashes",
+            "index":{"schema_version":format!("forge.workspace/{version}"),"label":"Schema-only empty index","resources":[]},
+            "index_sha256":"a".repeat(64),"pins":[]})
+    }
+
+    /// Preserve API1 and API2 namespaces, bootstrap versions and operation identities as separate documents.
+    #[test]
+    fn s3_api2_document_namespace_and_bootstrap_do_not_change_api1() {
+        let one = load_openapi();
+        let two = s3_api2_document();
+        assert_eq!(one["info"]["version"], "1.2.0");
+        assert_eq!(two["info"]["version"], "2.4.0");
+        let first = operations(&one);
+        let second = operations(&two);
+        assert_eq!(first.len(), 39);
+        assert_eq!(second.len(), 65);
+        let mut left: Vec<_> = first
+            .iter()
+            .map(|operation| {
+                (
+                    operation.method,
+                    operation.path.strip_prefix("/api/v1").unwrap(),
+                    operation.id.as_str(),
+                )
+            })
+            .collect();
+        let mut right: Vec<_> = second
+            .iter()
+            .filter(|operation| first.iter().any(|original| original.id == operation.id))
+            .map(|operation| {
+                (
+                    operation.method,
+                    operation.path.strip_prefix("/api/v2").unwrap(),
+                    operation.id.as_str(),
+                )
+            })
+            .collect();
+        left.sort_unstable();
+        right.sort_unstable();
+        assert_eq!(left, right);
+        assert_eq!(two["components"]["schemas"]["Session"]["properties"]["api_major"]["const"], 2);
+        assert_eq!(one["components"]["schemas"]["Session"]["properties"]["api_major"]["const"], 1);
+        // The additive contract retains all39 original operations; execution and full parity are separate evidence.
+        assert!(second.iter().all(|operation| !operation.path.starts_with("/api/v1/")));
+    }
+
+    /// Old nullable keys remain valid; version/migration alternatives are closed and confined to API2.
+    #[test]
+    fn s3_api2_register_schema_keeps_null_key_compatibility_and_closed_alternatives() {
+        let one = load_openapi();
+        let two = s3_api2_document();
+        let old = component_validator(&one, "RegisterResourceRequest");
+        let new = component_validator(&two, "RegisterResourceRequest");
+        let legacy = json!({"path":"policy.md","role":"policy-source","key":null});
+        assert!(old.is_valid(&legacy));
+        assert!(new.is_valid(&legacy));
+        let selected = json!({"path":"opaque.bin","role":"lifecycle-source","key":null,"index_schema_version":"forge.workspace/2"});
+        let migration = json!({"migration":{"from":"forge.workspace/1","to":"forge.workspace/2"}});
+        assert!(new.is_valid(&selected));
+        assert!(new.is_valid(&migration));
+        assert!(!old.is_valid(&selected));
+        assert!(!old.is_valid(&migration));
+        let current_two = json!({"path":"opaque.bin","role":"lifecycle-source"});
+        assert!(new.is_valid(&current_two));
+        assert!(!old.is_valid(&current_two));
+        for invalid in [
+            json!({"path":"policy.md","role":"policy-source","index_schema_version":null}),
+            json!({"path":"policy.md","role":"policy-source","index_schema_version":"forge.workspace/1"}),
+            json!({"path":"policy.md","role":"policy-source","index_schema_version":"forge.workspace/3"}),
+            json!({"path":"policy.md","role":"policy-source","unknown":true}),
+            json!({"migration":{"from":"forge.workspace/1","to":"forge.workspace/2"},"path":"policy.md","role":"policy-source"}),
+            json!({"migration":null}),
+            json!({"migration":{"from":null,"to":"forge.workspace/2"}}),
+            json!({"migration":{"from":"forge.workspace/2","to":"forge.workspace/2"}}),
+            json!({"migration":{"from":"forge.workspace/1","to":"forge.workspace/2","approval":true}}),
+            json!({"path":"policy.md","role":"unsupported-role"}),
+        ] {
+            assert!(!new.is_valid(&invalid), "invalid API2 alternative: {invalid}");
+        }
+    }
+
+    /// Separate index mirrors preserve original seven roles and /2's full fifteen-role and 1000-entry shape.
+    #[test]
+    fn s3_api2_index_mirrors_keep_version_roles_and_closed_bounds() {
+        let document = s3_api2_document();
+        let one = workspace_schema();
+        let two = s3_index2_schema();
+        let old = jsonschema::validator_for(&one).unwrap();
+        let new = jsonschema::validator_for(&two).unwrap();
+        let roles_one = one["$defs"]["role"]["enum"].as_array().unwrap();
+        let roles_two = two["$defs"]["role"]["enum"].as_array().unwrap();
+        assert_eq!(roles_one.len(), 7);
+        assert_eq!(roles_two.len(), 15);
+        assert_eq!(&roles_two[..7], roles_one);
+        for (schema, names, mirror) in [
+            (
+                &one,
+                [
+                    "WorkspaceBundleIndex",
+                    "WorkspaceBundleIndexResource",
+                    "WorkspaceBundleIndexRole",
+                ],
+                bundle_index_api_mirror as fn(&Value) -> Value,
+            ),
+            (
+                &two,
+                [
+                    "WorkspaceBundleIndexV2",
+                    "WorkspaceBundleIndexResourceV2",
+                    "WorkspaceBundleIndexRoleV2",
+                ],
+                s3_index2_mirror as fn(&Value) -> Value,
+            ),
+        ] {
+            let mut index = schema.clone();
+            for field in ["$schema", "$id", "$defs"] {
+                index.as_object_mut().unwrap().remove(field);
+            }
+            for (name, value) in names.into_iter().zip([
+                &index,
+                &schema["$defs"]["resource"],
+                &schema["$defs"]["role"],
+            ]) {
+                assert_eq!(document["components"]["schemas"][name], mirror(value), "{name}");
+            }
+        }
+        for (number, role) in roles_two.iter().enumerate() {
+            let mut index = json!({"schema_version":"forge.workspace/2","label":"Role admission","resources":[{"key":"resource","role":role,"path":"source.bin"}]});
+            assert!(new.is_valid(&index), "index2 role {role}");
+            index["schema_version"] = json!("forge.workspace/1");
+            assert_eq!(old.is_valid(&index), number < 7, "index1 role {role}");
+        }
+        let mut empty =
+            json!({"schema_version":"forge.workspace/2","label":"Bounds","resources":[]});
+        assert!(new.is_valid(&empty));
+        empty["resources"] = json!((0..1000).map(|number| json!({"key":format!("resource-{number}"),"role":"lifecycle-source","path":format!("source-{number}.bin")})).collect::<Vec<_>>());
+        assert!(new.is_valid(&empty));
+        empty["resources"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"key":"excess","role":"lifecycle-source","path":"excess.bin"}));
+        assert!(!new.is_valid(&empty));
+        empty["resources"] = json!([]);
+        for (field, value) in [
+            ("schema_version", json!("forge.workspace/3")),
+            ("label", json!("")),
+            ("unknown", json!(true)),
+        ] {
+            let mut invalid = empty.clone();
+            invalid[field] = value;
+            assert!(!new.is_valid(&invalid));
+        }
+    }
+
+    /// Schema-only bundle pairing stays closed; actual pin bijection/hash/IO controls remain in real HTTP tests.
+    #[test]
+    fn s3_api2_bundle_components_pair_only_matching_index_versions() {
+        let one = load_openapi();
+        let two = s3_api2_document();
+        let old = component_validator(&one, "WorkspaceBundleVerificationRequest");
+        let new = component_validator(&two, "WorkspaceBundleVerificationRequest");
+        let first = json!({"bundle":s3_schema_bundle(1)});
+        let second = json!({"bundle":s3_schema_bundle(2)});
+        assert!(old.is_valid(&first));
+        assert!(!old.is_valid(&second));
+        assert!(new.is_valid(&first));
+        assert!(new.is_valid(&second));
+        for (pointer, value) in [
+            ("/bundle/schema_version", json!("forge.workspace-index-bundle/1")),
+            ("/bundle/index/schema_version", json!("forge.workspace/1")),
+            ("/bundle/content_profile", json!("source-inclusive")),
+            ("/bundle/schema_version", json!("forge.workspace-index-bundle/3")),
+        ] {
+            let mut invalid = second.clone();
+            *invalid.pointer_mut(pointer).unwrap() = value;
+            assert!(!new.is_valid(&invalid));
+        }
+        let mut unknown = second;
+        unknown["bundle"]["approval"] = json!(true);
+        assert!(!new.is_valid(&unknown));
+        let mut mixed = first;
+        mixed["content"] = json!("PRIVATE REJECTED VALUE");
+        assert!(!new.is_valid(&mixed));
+    }
+
+    /// Optional validation profiles are paired to the exact new role and remain absent from legacy metadata.
+    #[test]
+    fn s3_api2_resource_profiles_are_closed_and_role_specific() {
+        let one = load_openapi();
+        let two = s3_api2_document();
+        let old = component_validator(&one, "Resource");
+        let new = component_validator(&two, "Resource");
+        let base = json!({"resource_id":"res_abcdefghijkl","key":"resource","role":"policy-source","path":"source.bin","sha256":"a".repeat(64),"size_bytes":0,"validation_state":"valid","stale":false,"version":"a".repeat(64)});
+        assert!(old.is_valid(&base));
+        assert!(new.is_valid(&base));
+        for (role, profile) in [
+            ("lifecycle-record", "lifecycle-record-structure"),
+            ("lifecycle-source", "opaque-fingerprint-bytes"),
+            ("oscal-profile-artifact", "native-oscal-schema"),
+            ("oscal-ssp-artifact", "native-oscal-schema"),
+            ("framework-impact-manifest", "framework-impact-manifest"),
+            ("successor-map", "successor-map"),
+            ("framework-impact-report", "framework-impact-prior-admission"),
+            ("framework-impact-dispositions", "framework-impact-dispositions"),
+        ] {
+            let mut resource = base.clone();
+            resource["role"] = json!(role);
+            assert!(new.is_valid(&resource));
+            assert!(!old.is_valid(&resource));
+            resource["validation_profile"] = json!(profile);
+            assert!(new.is_valid(&resource));
+            let mut wrong = resource.clone();
+            wrong["validation_profile"] = json!(if profile == "opaque-fingerprint-bytes" {
+                "lifecycle-record-structure"
+            } else {
+                "opaque-fingerprint-bytes"
+            });
+            assert!(!new.is_valid(&wrong));
+            resource["validation_profile"] = json!(null);
+            assert!(!new.is_valid(&resource));
+        }
+        let mut legacy = base;
+        legacy["validation_profile"] = json!("opaque-fingerprint-bytes");
+        assert!(!new.is_valid(&legacy));
+        assert!(!old.is_valid(&legacy));
+    }
+}
+
+/// Apply the original artifact drift gates to the independently committed API2 family.
+mod api2_artifact_drift {
+    use super::*;
+
+    const FIXTURES_REL: &str = "docs/api/fixtures-v2";
+    const FIXTURE_INDEX_REL: &str = "docs/api/fixtures-v2/index.json";
+    const MATRIX_JSON_REL: &str = "docs/api/capability-matrix-v2.json";
+    const MATRIX_MD_REL: &str = "docs/api/capability-matrix-v2.md";
+
+    /// Resolve the sole unauthenticated operation within this v2 artifact family.
+    fn unlock_operation_id(document: &Value) -> String {
+        document["paths"]["/api/v2/session/unlock"]["post"]["operationId"]
+            .as_str()
+            .expect("v2 unlock operation identifier")
+            .to_owned()
+    }
+
+    /// Load the committed v2 document directly; preserve the original v1 helper.
+    fn load_openapi() -> Value {
+        load_yaml_as_json(&repo_path("docs/api/forge-workspace-v2.openapi.yaml"))
+    }
+
+    /// Validate the entire v2 document against the pinned official meta-schema offline.
+    #[test]
+    fn openapi_document_is_valid_openapi_3_1() {
+        let document = load_openapi();
+        assert!(
+            document
+                .get("openapi")
+                .and_then(Value::as_str)
+                .is_some_and(|version| version.starts_with("3.1.")),
+            "contract must declare OpenAPI 3.1.x"
+        );
+        assert_eq!(
+            document.get("jsonSchemaDialect").and_then(Value::as_str),
+            Some(JSON_SCHEMA_DIALECT),
+            "contract must pin the draft 2020-12 JSON Schema dialect"
+        );
+        for field in ["title", "version"] {
+            assert!(
+                document
+                    .pointer(&format!("/info/{field}"))
+                    .and_then(Value::as_str)
+                    .is_some_and(|value| !value.is_empty()),
+                "info.{field} must be a non-empty string"
+            );
+        }
+        let meta_bytes = fs::read(repo_path(META_SCHEMA_REL)).expect("vendored meta-schema exists");
+        let meta = read_json_strict(&meta_bytes, META_SCHEMA_REL).expect("meta-schema parses");
+        let validator = jsonschema::validator_for(&meta).expect("meta-schema compiles");
+        validator
+            .validate(&document)
+            .expect("normative document validates against the official OpenAPI 3.1 schema");
+    }
+
+    /// Resolve every v2 reference and compile every component rather than sampling five schemas.
+    #[test]
+    fn openapi_internal_refs_resolve_and_every_component_schema_compiles() {
+        let document = load_openapi();
+        let mut errors = collect_internal_ref_errors(&document, &document, "$");
+
+        if let Some(schemas) = document.pointer("/components/schemas").and_then(Value::as_object) {
+            for name in schemas.keys() {
+                // Compilation itself rejects malformed 2020-12 schemas.
+                if let Err(error) = jsonschema::validator_for(&serde_json::json!({
+                    "$schema": JSON_SCHEMA_DIALECT,
+                    "$ref": format!("#/$defs/{name}"),
+                    "$defs": rewrite_component_refs(document.pointer("/components/schemas").unwrap_or(&Value::Null)),
+                })) {
+                    errors.push(format!("components/schemas/{name} does not compile: {error}"));
+                }
+            }
+        } else {
+            errors.push("document has no components/schemas".into());
+        }
+
+        assert!(
+            errors.is_empty(),
+            "OpenAPI reference/schema integrity violations:\n{}",
+            errors.join("\n")
+        );
+    }
+
+    /// Validate every separate v2 fixture and its exact declared family/expectation.
+    #[test]
+    #[allow(clippy::too_many_lines)] // One complete artifact drift check, matching the existing v1 harness.
+    fn fixtures_validate_against_the_live_contract() {
+        let document = load_openapi();
+        let workspace = workspace_schema();
+        let workspace_validator =
+            jsonschema::validator_for(&workspace).expect("workspace schema compiles");
+
+        let index_bytes = fs::read(repo_path(FIXTURE_INDEX_REL)).expect("fixture index exists");
+        let index = read_json_strict(&index_bytes, FIXTURE_INDEX_REL)
+            .unwrap_or_else(|error| panic!("{FIXTURE_INDEX_REL}: {error}"));
+        assert_eq!(
+            index.get("fixture_format").and_then(Value::as_str),
+            Some(FIXTURE_FORMAT),
+            "fixture index must declare {FIXTURE_FORMAT}"
+        );
+        let entries =
+            index.get("fixtures").and_then(Value::as_array).expect("fixture index lists fixtures");
+        assert!(
+            entries.len() >= 25,
+            "representative fixture coverage expected (found {})",
+            entries.len()
+        );
+
+        let mut errors: Vec<String> = Vec::new();
+        let mut kinds: BTreeMap<String, usize> = BTreeMap::new();
+        let mut listed_files: BTreeSet<String> = BTreeSet::new();
+        let mut workspace_valid = 0;
+        let mut workspace_invalid = 0;
+
+        for entry in entries {
+            let label = entry
+                .get("file")
+                .and_then(Value::as_str)
+                .unwrap_or("<missing file field>")
+                .to_string();
+            let Some(file) = entry.get("file").and_then(Value::as_str) else {
+                errors.push(format!("fixture entry without file: {entry}"));
+                continue;
+            };
+            if file.is_empty()
+                || file.starts_with('/')
+                || file.contains("..")
+                || file.contains('\\')
+                || file.starts_with('.')
+            {
+                errors.push(format!("fixture path {file} must be a safe relative path"));
+                continue;
+            }
+            let kind = entry.get("kind").and_then(Value::as_str).unwrap_or_default();
+            if !REQUIRED_FIXTURE_KINDS.contains(&kind) {
+                errors.push(format!("{label}: unknown kind {kind}"));
+                continue;
+            }
+            let expectation = entry.get("expectation").and_then(Value::as_str).unwrap_or_default();
+            if !matches!(expectation, "valid" | "invalid") {
+                errors.push(format!("{label}: expectation must be valid|invalid"));
+                continue;
+            }
+            let schema_ref =
+                entry.get("schema").and_then(Value::as_str).unwrap_or_default().to_string();
+            if entry.get("description").and_then(Value::as_str).is_none_or(str::is_empty) {
+                errors.push(format!("{label}: description is required"));
+            }
+
+            let path = repo_path(FIXTURES_REL).join(file);
+            let bytes = match fs::read(&path) {
+                Ok(bytes) => bytes,
+                Err(error) => {
+                    errors.push(format!("{label}: missing fixture file: {error}"));
+                    continue;
+                }
+            };
+            let instance = match read_json_strict(&bytes, &label) {
+                Ok(value) => value,
+                Err(error) => {
+                    // Every fixture must be complete, well-formed strict JSON
+                    // (fixtures README rule 3: an invalid fixture fails schema
+                    // validation for its single documented reason, not parsing).
+                    errors.push(error);
+                    continue;
+                }
+            };
+
+            let outcome = if schema_ref == "workspace:forge.workspace/1" {
+                workspace_validator.validate(&instance).map_err(|error| error.to_string())
+            } else if let Some(name) = schema_ref.strip_prefix("openapi:components/schemas/") {
+                component_validator(&document, name)
+                    .validate(&instance)
+                    .map_err(|error| error.to_string())
+            } else {
+                errors.push(format!("{label}: unsupported schema reference {schema_ref}"));
+                continue;
+            };
+
+            match (expectation, outcome) {
+                ("valid", Err(reason)) => {
+                    errors.push(format!("{label}: expected valid, got: {reason}"));
+                }
+                ("invalid", Ok(())) => {
+                    errors.push(format!("{label}: expected invalid, but it validates"));
+                }
+                ("valid", Ok(())) | ("invalid", Err(_)) => {}
+                _ => unreachable!("expectation is constrained above"),
+            }
+
+            match kinds.entry(kind.to_string()) {
+                std::collections::btree_map::Entry::Occupied(mut slot) => {
+                    *slot.get_mut() += 1;
+                }
+                std::collections::btree_map::Entry::Vacant(slot) => {
+                    slot.insert(1);
+                }
+            }
+            if !listed_files.insert(file.to_string()) {
+                errors.push(format!("{label}: fixture listed more than once"));
+            }
+            if kind == "workspace" {
+                if expectation == "valid" {
+                    workspace_valid += 1;
+                } else {
+                    workspace_invalid += 1;
+                }
+            }
+        }
+
+        for kind in REQUIRED_FIXTURE_KINDS {
+            if !kinds.contains_key(kind) {
+                errors.push(format!("fixture suite lacks required kind {kind}"));
+            }
+        }
+        assert!(workspace_valid >= 1, "at least one valid workspace fixture is required");
+        assert!(workspace_invalid >= 2, "at least two invalid workspace fixtures are required");
+
+        // Drift check: every fixture file on disk must be listed in the index.
+        let mut on_disk = Vec::new();
+        let fixtures_root = repo_path(FIXTURES_REL);
+        collect_files(&fixtures_root, &fixtures_root, &mut on_disk);
+        for file in on_disk {
+            if file != "index.json" && file != "README.md" && !listed_files.contains(&file) {
+                errors.push(format!("orphan fixture file not listed in index.json: {file}"));
+            }
+        }
+
+        assert!(errors.is_empty(), "fixture validation failures:\n{}", errors.join("\n"));
+    }
+
+    /// Require the v2 capability matrix to cover every normative operation and match its readable companion.
+    #[test]
+    #[allow(clippy::too_many_lines)] // One complete artifact drift check, matching the existing v1 harness.
+    fn capability_matrix_covers_the_contract_in_both_directions() {
+        let document = load_openapi();
+        let matrix_bytes =
+            fs::read(repo_path(MATRIX_JSON_REL)).expect("capability matrix JSON exists");
+        let matrix = read_json_strict(&matrix_bytes, MATRIX_JSON_REL)
+            .unwrap_or_else(|error| panic!("{MATRIX_JSON_REL}: {error}"));
+        let entries = matrix
+            .get("entries")
+            .and_then(Value::as_array)
+            .or_else(|| matrix.as_array())
+            .expect("capability matrix lists entries");
+        assert!(
+            entries.len() >= 15,
+            "capability matrix must cover the golden path and cross-cutting actions (found {})",
+            entries.len()
+        );
+
+        let openapi_ids: BTreeSet<String> = operations(&document)
+            .into_iter()
+            .map(|operation| operation.id)
+            .filter(|id| !id.is_empty())
+            .collect();
+        let unlock_id = unlock_operation_id(&document);
+        let mut errors: Vec<String> = Vec::new();
+        let mut ids: BTreeSet<String> = BTreeSet::new();
+        let mut covered: BTreeSet<String> = BTreeSet::new();
+        let mut steps: BTreeSet<u32> = BTreeSet::new();
+
+        for entry in entries {
+            let id = entry.get("id").and_then(Value::as_str).unwrap_or_default();
+            if id.len() != 5
+                || !id.starts_with("CM-")
+                || !id[3..].chars().all(|c| c.is_ascii_digit())
+            {
+                errors.push(format!("capability id {id} must match CM-NN"));
+                continue;
+            }
+            if !ids.insert(id.to_string()) {
+                errors.push(format!("duplicate capability id {id}"));
+            }
+            if entry.get("action").and_then(Value::as_str).is_none_or(str::is_empty) {
+                errors.push(format!("{id}: action is required"));
+            }
+            match entry.get("golden_path_step") {
+                Some(Value::Number(number)) => match number.as_u64() {
+                    Some(step) if (1..=8).contains(&step) => {
+                        steps.insert(u32::try_from(step).expect("bounded by the range check"));
+                    }
+                    _ => errors.push(format!(
+                        "{id}: golden_path_step must be 1-8 or cross-cutting, got {number}"
+                    )),
+                },
+                Some(Value::String(step)) if step == "cross-cutting" => {}
+                other => errors.push(format!(
+                    "{id}: golden_path_step must be 1-8 or cross-cutting, got {other:?}"
+                )),
+            }
+            for story in entry.get("user_stories").and_then(Value::as_array).unwrap_or(&Vec::new())
+            {
+                let story = story.as_str().unwrap_or_default();
+                if !(story.starts_with("US-")
+                    && story[3..].chars().all(|c| c.is_ascii_digit())
+                    && story.len() >= 4)
+                {
+                    errors.push(format!("{id}: invalid user story {story}"));
+                }
+            }
+            let authorization =
+                entry.get("authorization").and_then(Value::as_str).unwrap_or_default();
+            if !ALLOWED_AUTHORIZATIONS.contains(&authorization) {
+                errors.push(format!(
+                    "{id}: authorization {authorization} must be one of {ALLOWED_AUTHORIZATIONS:?}"
+                ));
+            }
+            let operations_list =
+                entry.get("operations").and_then(Value::as_array).cloned().unwrap_or_default();
+            if operations_list.is_empty() {
+                errors.push(format!("{id}: at least one operation is required"));
+            }
+            for operation in &operations_list {
+                let operation = operation.as_str().unwrap_or_default().to_string();
+                if !openapi_ids.contains(&operation) {
+                    errors.push(format!(
+                        "{id}: references operationId {operation} missing from the contract"
+                    ));
+                }
+                if authorization == "unlock" && operation != unlock_id {
+                    errors.push(format!(
+                        "{id}: unlock-authorized entries may only use the unlock operation"
+                    ));
+                }
+                covered.insert(operation);
+            }
+        }
+
+        for step in GOLDEN_PATH_STEPS {
+            if !steps.contains(&step) {
+                errors.push(format!("golden path step {step} has no capability matrix entry"));
+            }
+        }
+        let orphans: Vec<_> = openapi_ids.difference(&covered).collect();
+        if !orphans.is_empty() {
+            errors.push(format!(
+                "contract operations without any capability matrix entry: {orphans:?}"
+            ));
+        }
+
+        // The human-readable matrix must stay in sync with the machine-readable one.
+        let markdown = fs::read_to_string(repo_path(MATRIX_MD_REL))
+            .unwrap_or_else(|error| panic!("read {MATRIX_MD_REL}: {error}"));
+        for id in &ids {
+            if !markdown.contains(id) {
+                errors.push(format!("{MATRIX_MD_REL} does not mention capability {id}"));
+            }
+        }
+        for operation in &covered {
+            if !markdown.contains(operation) {
+                errors.push(format!("{MATRIX_MD_REL} does not mention operationId {operation}"));
+            }
+        }
+
+        assert!(errors.is_empty(), "capability matrix coverage failures:\n{}", errors.join("\n"));
+    }
+}
+
+/// Bind release inventory declarations to the independently versioned normative families.
+#[test]
+fn release_inventory_contains_both_current_api_families() {
+    let inventory = load_yaml_as_json(&repo_path("docs/api/release-artifacts.json"));
+    assert_eq!(inventory["schema_version"], "forge.workspace-api-release-artifacts/1");
+    let families = inventory["api_majors"].as_array().expect("API families");
+    assert_eq!(families.len(), 2);
+    let package_paths: Vec<&str> = inventory["package_paths"]
+        .as_array()
+        .expect("package paths")
+        .iter()
+        .map(|path| path.as_str().expect("relative package path"))
+        .collect();
+    assert_eq!(
+        package_paths,
+        [
+            "docs/api",
+            "schemas/forge.workspace-1.schema.json",
+            "schemas/forge.workspace-2.schema.json",
+            "schemas/forge.workspace-source-bundle-3.schema.json",
+            "schemas/forge.workspace-source-bundle-4.schema.json"
+        ]
+    );
+    for (family, (major, version, index_version)) in
+        families.iter().zip([(1, "1.2.0", "forge.workspace/1"), (2, "2.4.0", "forge.workspace/2")])
+    {
+        assert_eq!(family["api_major"], major);
+        assert_eq!(family["contract_version"], version);
+        let document_path = family["document"].as_str().expect("document path");
+        assert_eq!(document_path, format!("docs/api/forge-workspace-v{major}.openapi.yaml"));
+        let document = load_yaml_as_json(&repo_path(document_path));
+        assert_eq!(document["info"]["version"], version);
+        let declared_operations = operations(&document);
+        assert_eq!(declared_operations.len(), if major == 1 { 39 } else { 65 });
+        assert!(
+            declared_operations
+                .iter()
+                .all(|operation| operation.path.starts_with(&format!("/api/v{major}/")))
+        );
+        let fixture_path = family["fixtures"].as_str().expect("fixture directory");
+        let suffix = if major == 1 { "" } else { "-v2" };
+        assert_eq!(fixture_path, format!("docs/api/fixtures{suffix}"));
+        assert_eq!(
+            family["capability_matrix"],
+            json!([
+                format!("docs/api/capability-matrix{suffix}.json"),
+                format!("docs/api/capability-matrix{suffix}.md"),
+            ])
+        );
+        let expected_schemas: Vec<String> = (1..=major)
+            .map(|version| format!("schemas/forge.workspace-{version}.schema.json"))
+            .collect();
+        assert_eq!(family["index_schemas"], json!(expected_schemas));
+        assert!(repo_path(fixture_path).join("index.json").is_file());
+        let schemas = family["index_schemas"].as_array().expect("paired index schemas");
+        let current_schema =
+            schemas.last().expect("current index schema").as_str().expect("schema path");
+        assert_eq!(
+            load_yaml_as_json(&repo_path(current_schema))["properties"]["schema_version"]["const"],
+            index_version
+        );
+        let mut assets = vec![document_path, fixture_path];
+        assets.extend(
+            family["capability_matrix"]
+                .as_array()
+                .expect("matrix artifacts")
+                .iter()
+                .map(|path| path.as_str().expect("matrix path")),
+        );
+        assets.extend(schemas.iter().map(|path| path.as_str().expect("index schema path")));
+        if major == 2 {
+            assert_eq!(
+                family["source_bundle_schemas"],
+                json!([
+                    "schemas/forge.workspace-source-bundle-3.schema.json",
+                    "schemas/forge.workspace-source-bundle-4.schema.json"
+                ])
+            );
+            assets.extend(
+                family["source_bundle_schemas"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|path| path.as_str().unwrap()),
+            );
+        } else {
+            assert!(family.get("source_bundle_schemas").is_none());
+        }
+        for asset in assets {
+            assert!(repo_path(asset).exists(), "declared release asset missing: {asset}");
+            assert!(
+                package_paths
+                    .iter()
+                    .any(|parent| asset == *parent || asset.starts_with(&format!("{parent}/"))),
+                "declared asset outside package inventory: {asset}"
+            );
+        }
+    }
+}
+
+/// Keep the nine captured reads authenticated, finite and confined to the API2 successor.
+#[test]
+fn lifecycle_impact_routes_have_exact_dates_queries_and_safe_stops() {
+    let one = load_openapi();
+    let two = load_yaml_as_json(&repo_path("docs/api/forge-workspace-v2.openapi.yaml"));
+    let routes: [(&str, &str, &[&str], bool); 9] = [
+        (
+            "/lifecycle/records",
+            "LifecycleRecordPage",
+            &["as_of", "owner", "state", "page_size", "cursor"],
+            false,
+        ),
+        ("/lifecycle/records/{record_id}", "LifecycleRecordDetail", &["as_of"], true),
+        (
+            "/lifecycle/records/{record_id}/history",
+            "LifecycleHistoryPage",
+            &["page_size", "cursor"],
+            false,
+        ),
+        (
+            "/lifecycle/queue",
+            "LifecycleQueuePage",
+            &["as_of", "owner", "page_size", "cursor"],
+            true,
+        ),
+        (
+            "/framework-impact/comparisons",
+            "FrameworkImpactComparisonPage",
+            &["page_size", "cursor"],
+            false,
+        ),
+        (
+            "/framework-impact/comparisons/{comparison_id}",
+            "FrameworkImpactComparisonDetail",
+            &[],
+            false,
+        ),
+        (
+            "/framework-impact/comparisons/{comparison_id}/changes",
+            "FrameworkImpactChangePage",
+            &["change_class", "page_size", "cursor"],
+            false,
+        ),
+        (
+            "/framework-impact/comparisons/{comparison_id}/findings",
+            "FrameworkImpactFindingPage",
+            &[
+                "group",
+                "decision_state",
+                "policy_source",
+                "priority",
+                "owner",
+                "page_size",
+                "cursor",
+            ],
+            false,
+        ),
+        (
+            "/framework-impact/comparisons/{comparison_id}/prior-dispositions",
+            "FrameworkImpactPriorDispositionPage",
+            &["page_size", "cursor"],
+            false,
+        ),
+    ];
+    for (suffix, schema, keys, required_date) in routes {
+        assert!(one["paths"].get(format!("/api/v1{suffix}")).is_none());
+        let operation = &two["paths"][format!("/api/v2{suffix}")]["get"];
+        assert_eq!(operation["security"], json!([{"capabilityBearer": []}]));
+        assert_eq!(
+            operation["responses"]["200"]["content"]["application/json"]["schema"]["$ref"],
+            format!("#/components/schemas/{schema}")
+        );
+        assert!(operation["responses"].get("503").is_some());
+        let parameters = operation["parameters"].as_array().unwrap();
+        let resolved: Vec<&Value> = parameters
+            .iter()
+            .map(|value| {
+                value.get("$ref").map_or(value, |reference| {
+                    let name = reference
+                        .as_str()
+                        .unwrap()
+                        .strip_prefix("#/components/parameters/")
+                        .unwrap();
+                    &two["components"]["parameters"][name]
+                })
+            })
+            .filter(|value| value["in"] == "query")
+            .collect();
+        let actual: Vec<&str> =
+            resolved.iter().map(|value| value["name"].as_str().unwrap()).collect();
+        assert_eq!(actual, keys);
+        if let Some(date) = resolved.iter().find(|value| value["name"] == "as_of") {
+            assert_eq!(date["required"], required_date);
+            assert_eq!(date["schema"]["maxLength"], 10);
+        }
+        let dto = &two["components"]["schemas"][schema];
+        assert_eq!(dto["additionalProperties"], false);
+        assert!(dto["required"].as_array().unwrap().contains(&json!("snapshot_version")));
+        let _compiled = component_validator(&two, schema);
+    }
+}
+
+/// Admit the retryable inspection stop envelope only in the selected API2 contract.
+#[test]
+fn lifecycle_impact_stop_errors_preserve_the_api1_boundary() {
+    let one = load_openapi();
+    let two = load_yaml_as_json(&repo_path("docs/api/forge-workspace-v2.openapi.yaml"));
+    let old_error = component_validator(&one, "Error");
+    let new_error = component_validator(&two, "Error");
+    let mut sample =
+        load_yaml_as_json(&repo_path("docs/api/fixtures-v2/error/unauthorized-401.json"));
+    for code in ["query-budget-exceeded", "query-interrupted"] {
+        sample["code"] = json!(code);
+        sample["retryable"] = json!(true);
+        assert!(new_error.is_valid(&sample));
+        assert!(!old_error.is_valid(&sample));
+    }
+}
+
+/// Preserve actual native recorded dates while explicit query dates retain their narrower grammar.
+#[test]
+fn lifecycle_recorded_date_schema_accepts_native_negative_and_expanded_years() {
+    let two = load_yaml_as_json(&repo_path("docs/api/forge-workspace-v2.openapi.yaml"));
+    let recorded = component_validator(&two, "S3RecordedDate");
+    let query = component_validator(&two, "S3Date");
+    for year in [-10_000, -1, 1, 10_000] {
+        let actual = chrono::NaiveDate::from_ymd_opt(year, 1, 1).unwrap();
+        let value = serde_json::to_value(actual).unwrap();
+        assert!(recorded.is_valid(&value), "native recorded date excluded: {value}");
+        if !(0..=9999).contains(&year) {
+            assert!(!query.is_valid(&value), "expanded recorded year became a query date");
+        }
+    }
+    assert!(!recorded.is_valid(&json!("-000001-01-01-extra")));
+}
+
+/// Validate the newly packaged source schema separately from native byte/authority admission.
+mod standalone_source_bundle_schema {
+    use super::{component_validator, load_yaml_as_json, read_json_strict, repo_path};
+    use serde_json::{Value, json};
+    use std::fs;
+
+    /// Parse the shipping schema with the existing duplicate-safe decoder, not a generated mirror.
+    fn shipping_source_schema() -> Value {
+        let bytes =
+            fs::read(repo_path("schemas/forge.workspace-source-bundle-3.schema.json")).unwrap();
+        read_json_strict(&bytes, "shipping source bundle schema").unwrap()
+    }
+
+    /// Compile both actual shipping and embedded schemas with the existing offline validator dependency.
+    fn source_validators() -> (jsonschema::Validator, jsonschema::Validator) {
+        let shipping = jsonschema::validator_for(&shipping_source_schema()).unwrap();
+        let api = load_yaml_as_json(&repo_path("docs/api/forge-workspace-v2.openapi.yaml"));
+        (shipping, component_validator(&api, "WorkspaceSourceBundle3"))
+    }
+
+    /// Load a preserved JSON fixture without changing its raw bytes, fingerprints or native expectation.
+    fn source_fixture(name: &str) -> Value {
+        let path = format!("docs/api/fixtures-v2/project-source-bundle/{name}");
+        read_json_strict(&fs::read(repo_path(&path)).unwrap(), &path).unwrap()
+    }
+
+    /// Rewrite only the four source-root references; unknown siblings fail the exact parity check.
+    fn source_root_api_refs(value: &Value) -> Value {
+        match value {
+            Value::Object(entries) => Value::Object(
+                entries
+                    .iter()
+                    .map(|(key, child)| {
+                        if key == "$ref" {
+                            let replacement = match child.as_str().unwrap() {
+                                "#/$defs/WorkspaceIndex1" => {
+                                    "#/components/schemas/WorkspaceBundleIndex"
+                                }
+                                "#/$defs/WorkspaceIndex2" => {
+                                    "#/components/schemas/WorkspaceBundleIndexV2"
+                                }
+                                "#/$defs/SourcePin" => "#/components/schemas/SourceBundlePin",
+                                "#/$defs/SourceContent" => {
+                                    "#/components/schemas/SourceBundleContent"
+                                }
+                                other => panic!("unmapped shipping source reference: {other}"),
+                            };
+                            (key.clone(), json!(replacement))
+                        } else {
+                            (key.clone(), source_root_api_refs(child))
+                        }
+                    })
+                    .collect(),
+            ),
+            Value::Array(items) => Value::Array(items.iter().map(source_root_api_refs).collect()),
+            other => other.clone(),
+        }
+    }
+
+    /// Relocate unchanged index-local definitions into their explicit standalone source-schema namespace.
+    fn nested_index_refs(value: &Value, alias: &str) -> Value {
+        match value {
+            Value::Object(entries) => Value::Object(
+                entries
+                    .iter()
+                    .map(|(key, child)| {
+                        if key == "$ref" {
+                            let suffix = child.as_str().unwrap().strip_prefix("#/$defs/").unwrap();
+                            (key.clone(), json!(format!("#/$defs/{alias}/$defs/{suffix}")))
+                        } else {
+                            (key.clone(), nested_index_refs(child, alias))
+                        }
+                    })
+                    .collect(),
+            ),
+            Value::Array(items) => {
+                Value::Array(items.iter().map(|item| nested_index_refs(item, alias)).collect())
+            }
+            other => other.clone(),
+        }
+    }
+
+    /// Require both live validators to agree with an explicit expectation, rather than merely with each other.
+    fn assert_source_pair(
+        validators: &(jsonschema::Validator, jsonschema::Validator),
+        value: &Value,
+        expected: bool,
+        label: &str,
+    ) {
+        assert_eq!(validators.0.is_valid(value), expected, "shipping schema: {label}");
+        assert_eq!(validators.1.is_valid(value), expected, "embedded schema: {label}");
+    }
+
+    /// Build lexical-only cardinality controls; these invented hashes are not native decode/authority fixtures.
+    fn grammar_bundle(count: usize) -> Value {
+        let mut bundle = source_fixture("bundle-opaque-grammar-valid.json");
+        let resource = bundle["index"]["resources"][0].clone();
+        let pin = bundle["pins"][0].clone();
+        let content = bundle["contents"][0].clone();
+        let mut resources = Vec::new();
+        let mut pins = Vec::new();
+        let mut contents = Vec::new();
+        for position in 0..count {
+            let key = format!("policy-{position}");
+            let mut row = resource.clone();
+            row["key"] = json!(&key);
+            row["path"] = json!(format!("policy-{position}.md"));
+            resources.push(row);
+            let mut row = pin.clone();
+            row["key"] = json!(&key);
+            pins.push(row);
+            let mut row = content.clone();
+            row["key"] = json!(key);
+            contents.push(row);
+        }
+        bundle["index"]["resources"] = json!(resources);
+        bundle["pins"] = json!(pins);
+        bundle["contents"] = json!(contents);
+        bundle
+    }
+
+    /// Freeze all shared validation keywords and unchanged index composition, with only declared packaging/ref adaptations.
+    #[test]
+    fn shipping_source_schema_matches_embedded_constraints_and_original_indices() {
+        let standalone = shipping_source_schema();
+        let api = load_yaml_as_json(&repo_path("docs/api/forge-workspace-v2.openapi.yaml"));
+        assert_eq!(standalone["$schema"], "https://json-schema.org/draft/2020-12/schema");
+        assert_eq!(standalone["$id"], "urn:forge:workspace-source-bundle:3");
+        let mut root = standalone.clone();
+        let object = root.as_object_mut().unwrap();
+        for key in ["$schema", "$id", "$defs"] {
+            assert!(object.remove(key).is_some());
+        }
+        let mut embedded = api["components"]["schemas"]["WorkspaceSourceBundle3"].clone();
+        assert!(embedded.as_object_mut().unwrap().remove("description").is_some());
+        assert_eq!(source_root_api_refs(&root), embedded);
+        for (local, component) in
+            [("SourcePin", "SourceBundlePin"), ("SourceContent", "SourceBundleContent")]
+        {
+            assert_eq!(standalone["$defs"][local], api["components"]["schemas"][component]);
+        }
+        let definitions = standalone["$defs"].as_object().unwrap();
+        assert_eq!(definitions.len(), 4);
+        for version in [1, 2] {
+            let path = format!("schemas/forge.workspace-{version}.schema.json");
+            let mut index = read_json_strict(&fs::read(repo_path(&path)).unwrap(), &path).unwrap();
+            let object = index.as_object_mut().unwrap();
+            assert!(object.remove("$schema").is_some());
+            assert!(object.remove("$id").is_some());
+            let alias = format!("WorkspaceIndex{version}");
+            assert_eq!(nested_index_refs(&index, &alias), standalone["$defs"][&alias]);
+        }
+        let validators = source_validators();
+        assert_source_pair(
+            &validators,
+            &source_fixture("bundle-empty-valid.json"),
+            true,
+            "empty grammar",
+        );
+    }
+
+    /// Exercise every direct Bundle3 fixture against the shipped artifact, retaining native-invalid as schema-valid.
+    #[test]
+    fn shipping_source_schema_validates_the_exact_existing_fixture_partition() {
+        let validators = source_validators();
+        let index = load_yaml_as_json(&repo_path("docs/api/fixtures-v2/index.json"));
+        let entries: Vec<&Value> = index["fixtures"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|entry| entry["schema"] == "openapi:components/schemas/WorkspaceSourceBundle3")
+            .collect();
+        let expected = [
+            ("bundle-empty-valid.json", true),
+            ("bundle-opaque-grammar-valid.json", true),
+            ("bundle-profile-invalid.json", false),
+            ("bundle-source-flag-invalid.json", false),
+            ("bundle-unknown-field-invalid.json", false),
+            ("bundle-uppercase-hex-invalid.json", false),
+            ("bundle-wrong-hash-native-invalid.json", true),
+        ];
+        assert_eq!(entries.len(), expected.len());
+        for (name, valid) in expected {
+            let file = format!("project-source-bundle/{name}");
+            let matching: Vec<&&Value> =
+                entries.iter().filter(|entry| entry["file"] == file).collect();
+            assert_eq!(matching.len(), 1, "exact indexed fixture: {name}");
+            assert_eq!(matching[0]["expectation"], if valid { "valid" } else { "invalid" });
+            assert_source_pair(&validators, &source_fixture(name), valid, name);
+        }
+    }
+
+    /// Reject closed nested fields, missing members and scalar grammar defects in both shipping and API schemas.
+    #[test]
+    fn shipping_source_schema_preserves_closed_objects_and_scalar_constraints() {
+        let validators = source_validators();
+        let base = source_fixture("bundle-opaque-grammar-valid.json");
+        for pointer in ["", "/index", "/index/resources/0", "/pins/0", "/contents/0"] {
+            let mut value = base.clone();
+            value
+                .pointer_mut(pointer)
+                .unwrap()
+                .as_object_mut()
+                .unwrap()
+                .insert("extra".into(), json!(true));
+            assert_source_pair(&validators, &value, false, &format!("unknown member at {pointer}"));
+        }
+        for pointer in ["", "/pins/0", "/contents/0"] {
+            for key in base.pointer(pointer).unwrap().as_object().unwrap().keys() {
+                let mut value = base.clone();
+                value.pointer_mut(pointer).unwrap().as_object_mut().unwrap().remove(key);
+                assert_source_pair(&validators, &value, false, &format!("missing {pointer}/{key}"));
+            }
+        }
+        for (pointer, replacement) in [
+            ("/schema_version", json!("forge.workspace-index-bundle/2")),
+            ("/profile", json!("index-and-hashes")),
+            ("/source_content_included", json!(false)),
+            ("/index/schema_version", json!("forge.workspace/3")),
+            ("/index/resources/0/role", json!("unregistered-authority")),
+            ("/pins/0/key", json!("Bad-Key")),
+            ("/pins/0/sha256", json!("A".repeat(64))),
+            ("/index_sha256", json!("0".repeat(63))),
+            ("/pins/0/size", json!(-1)),
+            ("/pins/0/size", json!(1.5)),
+            ("/pins/0/size", json!(10 * 1024 * 1024 + 1)),
+            ("/contents/0/encoding", json!("base64")),
+            ("/contents/0/chunks", json!(["0"])),
+            ("/contents/0/chunks", json!(["AA"])),
+            ("/contents/0/chunks", json!([""])),
+        ] {
+            let mut value = base.clone();
+            *value.pointer_mut(pointer).unwrap() = replacement;
+            assert_source_pair(&validators, &value, false, pointer);
+        }
+        let mut two = base.clone();
+        two["index"]["resources"][0]["role"] = json!("lifecycle-record");
+        assert_source_pair(&validators, &two, false, "new role cannot enter index1");
+        two["index"]["schema_version"] = json!("forge.workspace/2");
+        assert_source_pair(&validators, &two, true, "explicit index2 grammar admits its role");
+    }
+
+    /// Prove inclusive finite list/chunk limits without mistaking lexical synthetic rows for captured resources.
+    #[test]
+    fn shipping_source_schema_keeps_inclusive_cardinality_and_chunk_bounds() {
+        let validators = source_validators();
+        let base = source_fixture("bundle-opaque-grammar-valid.json");
+        for count in [0, 1, 99, 100] {
+            assert_source_pair(
+                &validators,
+                &grammar_bundle(count),
+                count <= 99,
+                &format!("resources: {count}"),
+            );
+        }
+        for pointer in ["/pins", "/contents"] {
+            for count in [99, 100] {
+                let mut value = base.clone();
+                let row = value.pointer(pointer).unwrap()[0].clone();
+                *value.pointer_mut(pointer).unwrap() = json!(vec![row; count]);
+                assert_source_pair(
+                    &validators,
+                    &value,
+                    count <= 99,
+                    &format!("{pointer}: {count}"),
+                );
+            }
+        }
+        for count in [0, 320, 321] {
+            let mut value = base.clone();
+            value["contents"][0]["chunks"] = json!(vec!["00"; count]);
+            assert_source_pair(&validators, &value, count <= 320, &format!("chunks: {count}"));
+        }
+        for chars in [2, 65_536, 65_538] {
+            let mut value = base.clone();
+            value["contents"][0]["chunks"] = json!(["0".repeat(chars)]);
+            assert_source_pair(
+                &validators,
+                &value,
+                chars <= 65_536,
+                &format!("chunk chars: {chars}"),
+            );
+        }
+        for size in [0, 10 * 1024 * 1024, 10 * 1024 * 1024 + 1] {
+            let mut value = base.clone();
+            value["pins"][0]["size"] = json!(size);
+            assert_source_pair(
+                &validators,
+                &value,
+                size <= 10 * 1024 * 1024,
+                &format!("declared size: {size}"),
+            );
+        }
+    }
+
+    /// Keep hash, key/length correspondence, canonical splitting and raw transport outside schema-only approval.
+    #[test]
+    fn shipping_source_schema_does_not_approve_native_cross_field_admission() {
+        let validators = source_validators();
+        let base = source_fixture("bundle-opaque-grammar-valid.json");
+        assert_source_pair(
+            &validators,
+            &source_fixture("bundle-wrong-hash-native-invalid.json"),
+            true,
+            "wrong native fingerprint remains schema-shaped",
+        );
+        for (pointer, replacement) in [
+            ("/index_sha256", json!("0".repeat(64))),
+            ("/pins/0/size", json!(7)),
+            ("/pins/0/key", json!("other-key")),
+            ("/contents/0/chunks", json!(["00", "ff0d0a"])),
+            ("/contents", json!([])),
+        ] {
+            let mut value = base.clone();
+            *value.pointer_mut(pointer).unwrap() = replacement;
+            assert_source_pair(&validators, &value, true, pointer);
+        }
+        let raw = fs::read(repo_path(
+            "docs/api/fixtures-v2/project-source-bundle/bundle-empty-valid.json",
+        ))
+        .unwrap();
+        let mut duplicate = raw.clone();
+        let text = std::str::from_utf8(&duplicate).unwrap();
+        duplicate = text
+            .replacen("\"profile\":", "\"profile\":\"index-and-source-hex\",\"profile\":", 1)
+            .into_bytes();
+        assert!(read_json_strict(&duplicate, "decoded duplicate profile").is_err());
+        let mut trailing = raw;
+        trailing.extend_from_slice(b"\n{}");
+        assert!(read_json_strict(&trailing, "second raw document").is_err());
+    }
+}
+
+/// Compile the separately packaged Bundle4 and every new closed staged wire fixture offline.
+mod staged_source_schema_contract {
+    use super::{
+        component_validator, load_yaml_as_json, read_json_strict, repo_path, rewrite_component_refs,
+    };
+    use serde_json::Value;
+    use std::fs;
+
+    /// Read one actual shipping proposal asset through the duplicate-safe fixture parser.
+    fn staged_json(relative: &str) -> Value {
+        read_json_strict(&fs::read(repo_path(relative)).unwrap(), relative).unwrap()
+    }
+
+    /// Compile the shipped staged bundle schema independently from the embedded API component.
+    fn staged_schema_pair() -> (Value, Value, jsonschema::Validator, jsonschema::Validator) {
+        let standalone = staged_json("schemas/forge.workspace-source-bundle-4.schema.json");
+        let api = load_yaml_as_json(&repo_path("docs/api/forge-workspace-v2.openapi.yaml"));
+        let shipping = jsonschema::validator_for(&standalone).unwrap();
+        let embedded = component_validator(&api, "WorkspaceSourceBundle4");
+        (standalone, api, shipping, embedded)
+    }
+
+    /// Require exact root and reachable-definition parity, retaining original component constraints.
+    #[test]
+    fn shipping_staged_source_schema_matches_exact_embedded_graph() {
+        let (standalone, api, _, _) = staged_schema_pair();
+        assert_eq!(standalone["$id"], "urn:forge:workspace-source-bundle:4");
+        let mut root = standalone.clone();
+        for key in ["$schema", "$id", "$defs"] {
+            assert!(root.as_object_mut().unwrap().remove(key).is_some());
+        }
+        assert_eq!(
+            root,
+            rewrite_component_refs(&api["components"]["schemas"]["WorkspaceSourceBundle4"])
+        );
+        for (name, schema) in standalone["$defs"].as_object().unwrap() {
+            assert_eq!(
+                *schema,
+                rewrite_component_refs(&api["components"]["schemas"][name]),
+                "{name}"
+            );
+        }
+        assert_eq!(
+            api["components"]["schemas"]["WorkspaceSourceBundle3"]["properties"]["schema_version"]
+                ["const"],
+            "forge.workspace-index-bundle/3"
+        );
+        assert_eq!(
+            api["components"]["schemas"]["WorkspaceSourceBundle4"]["properties"]["profile"]["const"],
+            "index-and-source-hex-staged"
+        );
+    }
+
+    /// Exercise the whole new parser-valid fixture partition without conflating native hash admission.
+    #[test]
+    fn staged_wire_and_shipping_schema_keep_exact_fixture_partition() {
+        let (_, api, shipping, embedded) = staged_schema_pair();
+        let index = staged_json("docs/api/fixtures-v2/index.json");
+        let rows: Vec<_> = index["fixtures"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|row| row["file"].as_str().unwrap().starts_with("project-staged-source/"))
+            .collect();
+        assert_eq!(rows.len(), 63);
+        let mut bundle_count = 0;
+        for row in rows {
+            let name = row["file"].as_str().unwrap();
+            let schema = row["schema"]
+                .as_str()
+                .unwrap()
+                .strip_prefix("openapi:components/schemas/")
+                .unwrap();
+            let fixture = staged_json(&format!("docs/api/fixtures-v2/{name}"));
+            let expected = row["expectation"] == "valid";
+            assert_eq!(component_validator(&api, schema).is_valid(&fixture), expected, "{name}");
+            if schema == "WorkspaceSourceBundle4" {
+                bundle_count += 1;
+                assert_eq!(shipping.is_valid(&fixture), expected, "shipping {name}");
+                assert_eq!(embedded.is_valid(&fixture), expected, "embedded {name}");
+            }
+        }
+        assert_eq!(bundle_count, 16);
+    }
+
+    /// Keep schema-valid wrong-hash/ceil/bijection examples valid until actual native admission.
+    #[test]
+    fn staged_schema_does_not_approve_native_relationships() {
+        let (_, api, shipping, _) = staged_schema_pair();
+        for name in [
+            "bundle-pin-sha-native-invalid",
+            "bundle-index-sha-native-invalid",
+            "bundle-missing-content-native-invalid",
+            "bundle-short-nonfinal-native-invalid",
+        ] {
+            let value =
+                staged_json(&format!("docs/api/fixtures-v2/project-staged-source/{name}.json"));
+            assert!(shipping.is_valid(&value), "schema has no content/hash authority for {name}");
+        }
+        for (name, schema) in [
+            ("create-ceil-native-invalid", "CreateSourceTransferStageRequest"),
+            ("chunk-sha-native-invalid", "SourceTransferChunkRequest"),
+            ("manifest-ceil-native-invalid", "SourceStreamManifest"),
+            ("stream-chunk-sha-native-invalid", "SourceStreamChunk"),
+        ] {
+            let value =
+                staged_json(&format!("docs/api/fixtures-v2/project-staged-source/{name}.json"));
+            assert!(component_validator(&api, schema).is_valid(&value), "{name}");
+        }
+    }
+}

@@ -1,0 +1,77 @@
+{
+  "availability": "available",
+  "comparison_id": "res_11111111111111111111111111111111",
+  "comparison_version": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "counts": {
+    "matching_findings": 1,
+    "total_findings": 1
+  },
+  "emitted_dispositions": {
+    "accepted_risk": 0,
+    "resolved": 0,
+    "still_open": 0,
+    "undispositioned": 1
+  },
+  "full_summary": {
+    "added": 0,
+    "blocking": 0,
+    "content_changed": 1,
+    "dispositioned_accepted_risk": 0,
+    "dispositioned_resolved": 0,
+    "dispositioned_still_open": 0,
+    "findings": 1,
+    "identity_migrated": 0,
+    "informational": 0,
+    "new_controls": 1,
+    "old_controls": 1,
+    "removed": 0,
+    "review_required": 1,
+    "unchanged": 0,
+    "undispositioned": 1
+  },
+  "page": {
+    "items": [
+      {
+        "affected_artifact_id": null,
+        "change_class": "content-changed",
+        "comparison_id": "res_11111111111111111111111111111111",
+        "comparison_version": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "dependency_id": null,
+        "disposition": null,
+        "finding_id": "11111111-1111-5111-8111-111111111111",
+        "framework_groups": [
+          "access-control"
+        ],
+        "migration": null,
+        "new_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "new_subjects": [
+          {
+            "id": "ac-1",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ],
+        "old_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "old_subjects": [
+          {
+            "id": "ac-1",
+            "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          }
+        ],
+        "owner": null,
+        "policy_resource_identity": null,
+        "policy_sources": [],
+        "prior_decision_state": null,
+        "prior_gap_classification": null,
+        "priority": "review-required",
+        "reason_code": "control_content_changed",
+        "required_action": "review-control-change",
+        "subject_id": "ac-1"
+      }
+    ],
+    "next_cursor": null,
+    "total_matching": 1
+  },
+  "resource_version": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "snapshot_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "inferred_approval": true
+}

@@ -1,0 +1,1390 @@
+{
+  "authorship": "Candidate source/tests/docs/deriver share one author; independent correctness excluded.",
+  "basis_commit": "3d9345bda6f8c7eb99e69186b6897a874eff4579",
+  "coverage": {
+    "MCDC": null,
+    "branch": null,
+    "function": null,
+    "line": null
+  },
+  "exclusions": [
+    "Anonymous closures, enum variants, macros and generated Serialize implementations are not named function bodies.",
+    "cfg-specific same-name methods are distinct source declarations; no host execution or uniqueness credit.",
+    "Bodyless foreign declaration excluded from body denominator.",
+    "Record module and all old CLI source remain protected; whole-file legacy gaps are reported rather than repaired.",
+    "No whole-repository docstring, compiler AST, executed coverage, independent correctness or human acceptance claim."
+  ],
+  "method": "Pure lexical source inventory with comments/literals masked, named fn bodies distinguished from foreign declarations. Not a Rust compiler AST or runtime proof.",
+  "preservation": {
+    "all_other_mod_function_bodies_count": 52,
+    "all_other_mod_function_bodies_equal": true,
+    "existing_three_entrypoint_bodies_equal": true,
+    "latest_approval_function_body_equal": true,
+    "prior_cli_named_bodies_count": 32,
+    "prior_cli_test_file_exact_prefix": true,
+    "projection_calculation_equal_after_two_borrow_clones": true,
+    "pure_source_has_no_filesystem_clock_process_network_import_or_call": true,
+    "status_serialization_field_order": [
+      "schema_version",
+      "policy_key",
+      "version_key",
+      "state",
+      "derived_status",
+      "owner_keys",
+      "next_review_date",
+      "as_of",
+      "blockers",
+      "current_fingerprints",
+      "approved_fingerprints",
+      "artifact_identity_changes",
+      "event_ids",
+      "impact_finding_ids",
+      "replaced_by",
+      "trust_boundary"
+    ],
+    "status_serialization_field_order_equal": true,
+    "wrapper_captures_then_projects": true
+  },
+  "runtime": {
+    "CLI": null,
+    "commit": null,
+    "compile": null,
+    "format": null,
+    "hook": null,
+    "hosted": null,
+    "unit": null
+  },
+  "schema_version": "forge.lifecycle-captured-status-static-audit/1",
+  "selected": {
+    "cfg_test_helpers": 4,
+    "documented": 19,
+    "integration_tests": 2,
+    "inventory": [
+      {
+        "body": true,
+        "documented": true,
+        "line": 620,
+        "name": "status_report",
+        "path": "src/lifecycle/mod.rs",
+        "scope": "production",
+        "sha256": "7ea3d422f6e4813e653e1eaea08de6b42bc15b0bbe8364cfde8f68cc9be94372",
+        "source_end": 24478,
+        "source_start": 24240
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 76,
+        "name": "status_from_captured",
+        "path": "src/lifecycle/status.rs",
+        "scope": "production",
+        "sha256": "975468be3d0a7b29c62c6ab8c0c7e485802865f905584c39a2f92c085bf1dec6",
+        "source_end": 6270,
+        "source_start": 3673
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 143,
+        "name": "validate_captured",
+        "path": "src/lifecycle/status.rs",
+        "scope": "production",
+        "sha256": "03d9f2c0f9e8d53c2190e965da8ba713740393d1d762cd830dd12dc8abdad8ab",
+        "source_end": 7950,
+        "source_start": 6355
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 181,
+        "name": "valid_hash",
+        "path": "src/lifecycle/status.rs",
+        "scope": "production",
+        "sha256": "dd75bef65cfd5fb5453942a8fb76651e6a028b6470f506df562b1e5b89c3173f",
+        "source_end": 8191,
+        "source_start": 8039
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 187,
+        "name": "approved_fingerprints",
+        "path": "src/lifecycle/status.rs",
+        "scope": "production",
+        "sha256": "7839be9d33717a8317263c96914fb867627c35a908848c48233ce5c7337789df",
+        "source_end": 8536,
+        "source_start": 8280
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 209,
+        "name": "draft_record",
+        "path": "src/lifecycle/status.rs",
+        "scope": "cfg(test)",
+        "sha256": "10cea7417b035c6426b5f6ab0bccba1162795ed4f8a917443c00773140da9cab",
+        "source_end": 11508,
+        "source_start": 8992
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 264,
+        "name": "captured",
+        "path": "src/lifecycle/status.rs",
+        "scope": "cfg(test)",
+        "sha256": "c1ba4c0e6c7427d584a63ac18d3645cdc8ea3f5cb626b85a9d6d2c5d04f8bd10",
+        "source_end": 12254,
+        "source_start": 11610
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 285,
+        "name": "append_event",
+        "path": "src/lifecycle/status.rs",
+        "scope": "cfg(test)",
+        "sha256": "f922da159bb40c1da728a0474699cf00a5cb5ba3ab427baf29caed5e2c93d497",
+        "source_end": 13892,
+        "source_start": 12360
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 322,
+        "name": "approved_record",
+        "path": "src/lifecycle/status.rs",
+        "scope": "cfg(test)",
+        "sha256": "01dbed566c8305943d541c19a70d78bcba9b32a31f34a6e62c853300e6e9b078",
+        "source_end": 14309,
+        "source_start": 13995
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 332,
+        "name": "captured_status_preserves_full_report_and_inputs",
+        "path": "src/lifecycle/status.rs",
+        "scope": "cfg(test)",
+        "sha256": "0bde1738d857b21752f566640b546de082ad5e9e626e6fb0c97cdbb4b430534a",
+        "source_end": 15752,
+        "source_start": 14424
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 359,
+        "name": "captured_status_keeps_approval_drift_priority_and_evidence",
+        "path": "src/lifecycle/status.rs",
+        "scope": "cfg(test)",
+        "sha256": "f488a7d117488afa6524b8bbde47b6968fa74177e60692302d0ae1fbf88b3484",
+        "source_end": 17129,
+        "source_start": 15870
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 388,
+        "name": "captured_status_retains_date_only_boundaries",
+        "path": "src/lifecycle/status.rs",
+        "scope": "cfg(test)",
+        "sha256": "63ef1a74eecd03f884ca38bba0da280cf5126cde17e3a77a1851c58450cda064",
+        "source_end": 18128,
+        "source_start": 17246
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 408,
+        "name": "captured_status_date_overflow_is_a_lifecycle_error",
+        "path": "src/lifecycle/status.rs",
+        "scope": "cfg(test)",
+        "sha256": "0ca79f08f58344d6002489a0f17dfcf5701177eb26fa76747e015a4426b90f9d",
+        "source_end": 18668,
+        "source_start": 18235
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 421,
+        "name": "captured_status_rejects_invalid_capture_correspondence",
+        "path": "src/lifecycle/status.rs",
+        "scope": "cfg(test)",
+        "sha256": "631040354c044a53ca39fa7d09c43fc3527bd3a32d1f38d005adda2e87a848a0",
+        "source_end": 21585,
+        "source_start": 18785
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 469,
+        "name": "captured_status_rejects_invalid_intrinsic_record",
+        "path": "src/lifecycle/status.rs",
+        "scope": "cfg(test)",
+        "sha256": "3cdbb50a53a4fc772143a6dff9057c19a450f68789d18d10c15a94cce7164500",
+        "source_end": 22446,
+        "source_start": 21700
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 488,
+        "name": "captured_status_preserves_legacy_empty_and_raw_path_contracts",
+        "path": "src/lifecycle/status.rs",
+        "scope": "cfg(test)",
+        "sha256": "fbdfdbf83b6c7249c7b441dcf85d8aafffde5923675dc10787559df476647e18",
+        "source_end": 23336,
+        "source_start": 22557
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 503,
+        "name": "captured_status_retains_latest_approved_window",
+        "path": "src/lifecycle/status.rs",
+        "scope": "cfg(test)",
+        "sha256": "de7f007e061d738fc7417bad141d4d67ef3a86e7ce1aea6772e67ce25d8adbf7",
+        "source_end": 24158,
+        "source_start": 23453
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 929,
+        "name": "captured_status_projector_preserves_cli_reports_and_sources",
+        "path": "tests/lifecycle_cli_test.rs",
+        "scope": "integration",
+        "sha256": "a3f25a4460d653e6c4cee8b9610e6eb926312f735a9a48fcd9a0f9de9d23106b",
+        "source_end": 37090,
+        "source_start": 33817
+      },
+      {
+        "body": true,
+        "documented": true,
+        "line": 992,
+        "name": "captured_status_cli_requires_artifact_reads_before_publication",
+        "path": "tests/lifecycle_cli_test.rs",
+        "scope": "integration",
+        "sha256": "85d749be4cdd36df1e8e3fb89d7dd3bd4676980b192bc72a2d73ad94e24a9154",
+        "source_end": 38964,
+        "source_start": 37195
+      }
+    ],
+    "production": 5,
+    "total": 19,
+    "unit_tests": 8
+  },
+  "types_fields": {
+    "documented_fields": 18,
+    "documented_internal_types": 2,
+    "field_names": [
+      "schema_version",
+      "policy_key",
+      "version_key",
+      "state",
+      "derived_status",
+      "owner_keys",
+      "next_review_date",
+      "as_of",
+      "blockers",
+      "current_fingerprints",
+      "approved_fingerprints",
+      "artifact_identity_changes",
+      "event_ids",
+      "impact_finding_ids",
+      "replaced_by",
+      "trust_boundary",
+      "fingerprints",
+      "identity_changes"
+    ],
+    "new_internal_types": 2,
+    "new_or_moved_crate_internal_fields": 18
+  },
+  "whole_files": {
+    "src/lifecycle/mod.rs": {
+      "bodyless_foreign_declarations": [
+        {
+          "body": false,
+          "documented": false,
+          "line": 1074,
+          "name": "GetFileInformationByHandle",
+          "sha256": "65f00d46071c30f95c2d0347be381dd040f0f06ce631bba18262c957131d3469",
+          "source_end": 40996,
+          "source_start": 40862
+        }
+      ],
+      "documented_named_body_declarations": 10,
+      "inventory": [
+        {
+          "body": true,
+          "documented": true,
+          "line": 118,
+          "name": "execute_init",
+          "sha256": "a08b6211ef774279376a669974b7a70b4c3176a3b34296694f7a9168950f303e",
+          "source_end": 6918,
+          "source_start": 3645
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 203,
+          "name": "execute_check",
+          "sha256": "b27e710bcba093aa2c3416c2b93f642f3851a9b2c28762268a24afc1e83afb33",
+          "source_end": 7905,
+          "source_start": 7204
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 234,
+          "name": "execute_migrate",
+          "sha256": "b29f6587c1758eab3a33c8252c5a0cfef60f8b386527795e3bbfff615322cf5a",
+          "source_end": 9280,
+          "source_start": 8377
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 261,
+          "name": "execute_status",
+          "sha256": "4afe6b87f023fe9456ff04af6206e6fc396964ab6f75248ae2e1be86ffed3996",
+          "source_end": 10464,
+          "source_start": 9543
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 293,
+          "name": "execute_queue",
+          "sha256": "1f3aac78dcd25cf9a02e1a9f26563daa3ee1b5314365be7a309bbb03c1d56172",
+          "source_end": 11385,
+          "source_start": 10744
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 320,
+          "name": "execute_attest",
+          "sha256": "3360569c20a8ab685caa4c34cb4a9e3a976a2307b1526edd6dd2ab50e8d35284",
+          "source_end": 14290,
+          "source_start": 11712
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 381,
+          "name": "execute_transition",
+          "sha256": "180e7150ab11647ace7e8f9d2ef123dd775dc2ba82906bd5824852fd0bcf9b48",
+          "source_end": 18341,
+          "source_start": 14573
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 469,
+          "name": "parse_parties",
+          "sha256": "9fed17f2946457b80ac3442e8cb7696ee84de4681ae8a4778a200931bd59f9f8",
+          "source_end": 18858,
+          "source_start": 18343
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 483,
+          "name": "parse_assertions",
+          "sha256": "bf87ea484e847fe5df0a79f3c1744fb2d415473e902ab9dd7d3b845aa91b444e",
+          "source_end": 19343,
+          "source_start": 18860
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 498,
+          "name": "parse_role",
+          "sha256": "5664f9585e318dd64af4caa0c92c4bfb9da21a29789bea6bf87fbb75b5f6432a",
+          "source_end": 19750,
+          "source_start": 19345
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 509,
+          "name": "fingerprint",
+          "sha256": "111137e381ba051dcd373476a1878149f6520acf542617133054644b823c6712",
+          "source_end": 21334,
+          "source_start": 19752
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 549,
+          "name": "model_root",
+          "sha256": "033707e237e8237f769c592fd317d9ed07652db7d684bf5630512265a8816b24",
+          "source_end": 21748,
+          "source_start": 21336
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 559,
+          "name": "current_fingerprints",
+          "sha256": "21f3462b3abcdeba263c9b042736ef210fec2d7b32e6ca4690f702eb12abe8be",
+          "source_end": 22166,
+          "source_start": 21750
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 573,
+          "name": "current_artifacts",
+          "sha256": "58c93fdec86ee5813cb3ad5413008fa86c3bfc8bfe03ebdf41f36dcb28c3a410",
+          "source_end": 23194,
+          "source_start": 22168
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 604,
+          "name": "confined_join",
+          "sha256": "dfe9e3ca9c17b6108496b889f5d6b28ada02ba9f121db9fd127746d6731422c8",
+          "source_end": 24054,
+          "source_start": 23490
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 620,
+          "name": "status_report",
+          "path": "src/lifecycle/mod.rs",
+          "scope": "production",
+          "sha256": "7ea3d422f6e4813e653e1eaea08de6b42bc15b0bbe8364cfde8f68cc9be94372",
+          "source_end": 24478,
+          "source_start": 24240
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 629,
+          "name": "gate_action_required",
+          "sha256": "8c19dd79020b1b108c7fe77753c205feb69a1c23191f61f6390edb973160cc60",
+          "source_end": 25013,
+          "source_start": 24480
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 644,
+          "name": "build_queue",
+          "sha256": "4b8105928a962968ab138a958ad65e9ebea2caf22071874a4c06972fc0e311af",
+          "source_end": 26323,
+          "source_start": 25015
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 679,
+          "name": "load_portfolio",
+          "sha256": "fcc384432017fa7a3c93c8a99d765671800189e6c21bf6db0aca4e1051fd0214",
+          "source_end": 26615,
+          "source_start": 26325
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 686,
+          "name": "load_record",
+          "sha256": "a2ecfb2f3fa4da414e78105730e2d07254a729c8539f7acebc17c6cf0a68f247",
+          "source_end": 27096,
+          "source_start": 26617
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 697,
+          "name": "validate_portfolio",
+          "sha256": "24bff05ad5740b84651606308b84a67123ac305555e3d724e96405228c4c9622",
+          "source_end": 30095,
+          "source_start": 27098
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 766,
+          "name": "write_reports",
+          "sha256": "10a13b73be44b207495310f6d157e057e0c7ed44e2b95f761a17e917a7145c6a",
+          "source_end": 31584,
+          "source_start": 30097
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 806,
+          "name": "write_queue",
+          "sha256": "66e677a324b9c95d4f915dd786fbc96260563d289dfcffc4cd9ca8f3e9394218",
+          "source_end": 32670,
+          "source_start": 31586
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 837,
+          "name": "validate_report_destination",
+          "sha256": "76e1c01bdfc8885b5586fb8733787e466085afcdcc233eba8faac32c0be7f255",
+          "source_end": 33491,
+          "source_start": 32672
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 861,
+          "name": "render_record",
+          "sha256": "526a18b1ce578f7ebcd6d774e731287fd710b6fe09d868cbb0a0e7809ee7a5a0",
+          "source_end": 33762,
+          "source_start": 33493
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 868,
+          "name": "validate_input_path",
+          "sha256": "73fb36e1bdab933f9e1ff37d227688d1ec6097d496c5b01ccc5adb82a6d48521",
+          "source_end": 34131,
+          "source_start": 33764
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 878,
+          "name": "validate_mutation_target",
+          "sha256": "ffd1cb02696b5e3375aac170eaa7a2405888610f993c62d915ab33cf113a6e40",
+          "source_end": 34388,
+          "source_start": 34133
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 887,
+          "name": "hard_link_count",
+          "sha256": "4bfecc285183342531933235ddb4229ad790143c2ed127e4c818a5e6dc477bf4",
+          "source_end": 34667,
+          "source_start": 34403
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 896,
+          "name": "hard_link_count",
+          "sha256": "9d72f12b51fa1c44829caed86f47f4722b3ada517e0be8fecb49a0edad2ff88d",
+          "source_end": 34806,
+          "source_start": 34685
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 901,
+          "name": "hard_link_count",
+          "sha256": "9e4974425ea755f8c614ce3abd399a243d1e7f0a8031138ab7629ab857c99ab3",
+          "source_end": 35033,
+          "source_start": 34840
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 908,
+          "name": "validate_write_target",
+          "sha256": "608534486dd8ab6628c3d128bf237549c41145d57731c6f8e07b0617881903a2",
+          "source_end": 35621,
+          "source_start": 35035
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 925,
+          "name": "reject_symlink_components",
+          "sha256": "24c249de4a97f40268e9f215de78f2b9041ab090a2d85733464ad4cdf73930d6",
+          "source_end": 36055,
+          "source_start": 35623
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 938,
+          "name": "record_directory",
+          "sha256": "486e5a66b998cc668002da743945eedf107cd5dc45905302daa8b72d4d184e29",
+          "source_end": 36385,
+          "source_start": 36057
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 952,
+          "name": "relative_path",
+          "sha256": "f7f12de45a1daa72f52e100ce74b7d8f4fcd5e2dd287aecb88367f039fe6da05",
+          "source_end": 37731,
+          "source_start": 36610
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 980,
+          "name": "path_components_equal",
+          "sha256": "54f16f9773e2388a6e4d06a3de6afb80d33d425748dd947ab89bcbd48a9bf8b8",
+          "source_end": 37978,
+          "source_start": 37749
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 986,
+          "name": "path_components_equal",
+          "sha256": "7ad6de18e4f484195a798ea981db4ed0eaa83c1981ebfe1d5004b5d3bab3e553",
+          "source_end": 38100,
+          "source_start": 38001
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 991,
+          "name": "normalized_windows_component",
+          "sha256": "d669cdb432baf6ff6c7638174c32622abcade7cbfbb5aa2cedb994d3e04a0301",
+          "source_end": 38390,
+          "source_start": 38129
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 999,
+          "name": "paths_alias",
+          "sha256": "66ff283ee16d2599084ca619ecba745427c477f8967c4306d9b4fbf6345c188e",
+          "source_end": 39234,
+          "source_start": 38392
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1021,
+          "name": "same_file_identity",
+          "sha256": "5616d7b1b0732d27139edf5afb4509220f165c03aaf8e4ca2e064c03c8799560",
+          "source_end": 39605,
+          "source_start": 39249
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1030,
+          "name": "same_file_identity",
+          "sha256": "e999f3bf1665a904c3b5a4688bbb72afdf045b8c70c0a1c030c50efe120a567b",
+          "source_end": 39793,
+          "source_start": 39623
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1035,
+          "name": "same_file_identity",
+          "sha256": "489274f1f2b5109dde849c2ae37db1c703b07a87c2c2d8e49a07b4f4c950fe90",
+          "source_end": 40057,
+          "source_start": 39827
+        },
+        {
+          "body": false,
+          "documented": false,
+          "line": 1074,
+          "name": "GetFileInformationByHandle",
+          "sha256": "65f00d46071c30f95c2d0347be381dd040f0f06ce631bba18262c957131d3469",
+          "source_end": 40996,
+          "source_start": 40862
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1080,
+          "name": "identity",
+          "sha256": "1f4a2b2f999188bf72e971c1f262453762f9be1cd291580b04fe903fe32d44f9",
+          "source_end": 41315,
+          "source_start": 41019
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1087,
+          "name": "link_count",
+          "sha256": "a1f2df22018ec735dd279ddf5c3b81bb6af4ad5edd5949f046733bc6fe173a88",
+          "source_end": 41440,
+          "source_start": 41332
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1091,
+          "name": "information",
+          "sha256": "2d40864e11fb866e43408d5cdf7ccb9ff633498f9b98a88218a64c96418f1382",
+          "source_end": 42197,
+          "source_start": 41446
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1106,
+          "name": "error",
+          "sha256": "56193afa87a34a3dd930ed47c29d2a87afc23250ed2fc8b197a8ba7495884658",
+          "source_end": 42297,
+          "source_start": 42201
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1115,
+          "name": "role_parser_is_closed",
+          "sha256": "18b0c9c3a555ff974449a6a88c830b8aa3cf1816345f131f11f3cf39b548ad58",
+          "source_end": 42523,
+          "source_start": 42359
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1121,
+          "name": "due_date_boundaries_are_inclusive",
+          "sha256": "74870b89a526ea7c2ab078216129631ba503266b34703a80eee133f9b0a1894d",
+          "source_end": 42832,
+          "source_start": 42541
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1128,
+          "name": "confined_join_rejects_escaping_paths",
+          "sha256": "df79749798543475eb2548e2192404ce02bcbf2bcf04a366b33ba2271ec98d73",
+          "source_end": 43567,
+          "source_start": 42850
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1149,
+          "name": "relative_path_rejects_sibling_directories",
+          "sha256": "9c7aa751935fbd4a48d9cba4b783c5c72b347b9ba647c38ad75e897ebc9b3b83",
+          "source_end": 44353,
+          "source_start": 43585
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1167,
+          "name": "windows_component_normalization_matches_canonical_prefix_forms",
+          "sha256": "4ec67a84119cb8c8a8cb4bbb4817a9ff5378d67cb529e56d48883b04c754a4b0",
+          "source_end": 44701,
+          "source_start": 44371
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1176,
+          "name": "alias_check_rejects_a_nonexistent_path_without_a_file_name",
+          "sha256": "804a9faae00694a2dcd143cf82319b6171b36d78f93a18cf7b3f348b299fabff",
+          "source_end": 45149,
+          "source_start": 44719
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1187,
+          "name": "relative_path_matches_windows_components_case_insensitively",
+          "sha256": "6ca7690065117d85605efd0588def66cbd47b01ea2c840128f1e7312dc15f9ce",
+          "source_end": 45557,
+          "source_start": 45187
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 1200,
+          "name": "windows_file_identity_detects_hard_links",
+          "sha256": "243c6da00313addb0f79110eafe3d7ba2f11df8c1604f154baff4e977f947c3c",
+          "source_end": 46260,
+          "source_start": 45595
+        }
+      ],
+      "named_body_declarations": 53,
+      "undocumented_names": [
+        "parse_parties",
+        "parse_assertions",
+        "parse_role",
+        "fingerprint",
+        "model_root",
+        "current_fingerprints",
+        "current_artifacts",
+        "gate_action_required",
+        "build_queue",
+        "load_portfolio",
+        "load_record",
+        "validate_portfolio",
+        "write_reports",
+        "write_queue",
+        "validate_report_destination",
+        "render_record",
+        "validate_input_path",
+        "validate_mutation_target",
+        "hard_link_count",
+        "hard_link_count",
+        "hard_link_count",
+        "validate_write_target",
+        "reject_symlink_components",
+        "record_directory",
+        "path_components_equal",
+        "path_components_equal",
+        "normalized_windows_component",
+        "paths_alias",
+        "same_file_identity",
+        "same_file_identity",
+        "same_file_identity",
+        "identity",
+        "link_count",
+        "information",
+        "error",
+        "role_parser_is_closed",
+        "due_date_boundaries_are_inclusive",
+        "confined_join_rejects_escaping_paths",
+        "relative_path_rejects_sibling_directories",
+        "windows_component_normalization_matches_canonical_prefix_forms",
+        "alias_check_rejects_a_nonexistent_path_without_a_file_name",
+        "relative_path_matches_windows_components_case_insensitively",
+        "windows_file_identity_detects_hard_links"
+      ]
+    },
+    "src/lifecycle/status.rs": {
+      "bodyless_foreign_declarations": [],
+      "documented_named_body_declarations": 16,
+      "inventory": [
+        {
+          "body": true,
+          "documented": true,
+          "line": 76,
+          "name": "status_from_captured",
+          "path": "src/lifecycle/status.rs",
+          "scope": "production",
+          "sha256": "975468be3d0a7b29c62c6ab8c0c7e485802865f905584c39a2f92c085bf1dec6",
+          "source_end": 6270,
+          "source_start": 3673
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 143,
+          "name": "validate_captured",
+          "path": "src/lifecycle/status.rs",
+          "scope": "production",
+          "sha256": "03d9f2c0f9e8d53c2190e965da8ba713740393d1d762cd830dd12dc8abdad8ab",
+          "source_end": 7950,
+          "source_start": 6355
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 181,
+          "name": "valid_hash",
+          "path": "src/lifecycle/status.rs",
+          "scope": "production",
+          "sha256": "dd75bef65cfd5fb5453942a8fb76651e6a028b6470f506df562b1e5b89c3173f",
+          "source_end": 8191,
+          "source_start": 8039
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 187,
+          "name": "approved_fingerprints",
+          "path": "src/lifecycle/status.rs",
+          "scope": "production",
+          "sha256": "7839be9d33717a8317263c96914fb867627c35a908848c48233ce5c7337789df",
+          "source_end": 8536,
+          "source_start": 8280
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 209,
+          "name": "draft_record",
+          "path": "src/lifecycle/status.rs",
+          "scope": "cfg(test)",
+          "sha256": "10cea7417b035c6426b5f6ab0bccba1162795ed4f8a917443c00773140da9cab",
+          "source_end": 11508,
+          "source_start": 8992
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 264,
+          "name": "captured",
+          "path": "src/lifecycle/status.rs",
+          "scope": "cfg(test)",
+          "sha256": "c1ba4c0e6c7427d584a63ac18d3645cdc8ea3f5cb626b85a9d6d2c5d04f8bd10",
+          "source_end": 12254,
+          "source_start": 11610
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 285,
+          "name": "append_event",
+          "path": "src/lifecycle/status.rs",
+          "scope": "cfg(test)",
+          "sha256": "f922da159bb40c1da728a0474699cf00a5cb5ba3ab427baf29caed5e2c93d497",
+          "source_end": 13892,
+          "source_start": 12360
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 322,
+          "name": "approved_record",
+          "path": "src/lifecycle/status.rs",
+          "scope": "cfg(test)",
+          "sha256": "01dbed566c8305943d541c19a70d78bcba9b32a31f34a6e62c853300e6e9b078",
+          "source_end": 14309,
+          "source_start": 13995
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 332,
+          "name": "captured_status_preserves_full_report_and_inputs",
+          "path": "src/lifecycle/status.rs",
+          "scope": "cfg(test)",
+          "sha256": "0bde1738d857b21752f566640b546de082ad5e9e626e6fb0c97cdbb4b430534a",
+          "source_end": 15752,
+          "source_start": 14424
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 359,
+          "name": "captured_status_keeps_approval_drift_priority_and_evidence",
+          "path": "src/lifecycle/status.rs",
+          "scope": "cfg(test)",
+          "sha256": "f488a7d117488afa6524b8bbde47b6968fa74177e60692302d0ae1fbf88b3484",
+          "source_end": 17129,
+          "source_start": 15870
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 388,
+          "name": "captured_status_retains_date_only_boundaries",
+          "path": "src/lifecycle/status.rs",
+          "scope": "cfg(test)",
+          "sha256": "63ef1a74eecd03f884ca38bba0da280cf5126cde17e3a77a1851c58450cda064",
+          "source_end": 18128,
+          "source_start": 17246
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 408,
+          "name": "captured_status_date_overflow_is_a_lifecycle_error",
+          "path": "src/lifecycle/status.rs",
+          "scope": "cfg(test)",
+          "sha256": "0ca79f08f58344d6002489a0f17dfcf5701177eb26fa76747e015a4426b90f9d",
+          "source_end": 18668,
+          "source_start": 18235
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 421,
+          "name": "captured_status_rejects_invalid_capture_correspondence",
+          "path": "src/lifecycle/status.rs",
+          "scope": "cfg(test)",
+          "sha256": "631040354c044a53ca39fa7d09c43fc3527bd3a32d1f38d005adda2e87a848a0",
+          "source_end": 21585,
+          "source_start": 18785
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 469,
+          "name": "captured_status_rejects_invalid_intrinsic_record",
+          "path": "src/lifecycle/status.rs",
+          "scope": "cfg(test)",
+          "sha256": "3cdbb50a53a4fc772143a6dff9057c19a450f68789d18d10c15a94cce7164500",
+          "source_end": 22446,
+          "source_start": 21700
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 488,
+          "name": "captured_status_preserves_legacy_empty_and_raw_path_contracts",
+          "path": "src/lifecycle/status.rs",
+          "scope": "cfg(test)",
+          "sha256": "fbdfdbf83b6c7249c7b441dcf85d8aafffde5923675dc10787559df476647e18",
+          "source_end": 23336,
+          "source_start": 22557
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 503,
+          "name": "captured_status_retains_latest_approved_window",
+          "path": "src/lifecycle/status.rs",
+          "scope": "cfg(test)",
+          "sha256": "de7f007e061d738fc7417bad141d4d67ef3a86e7ce1aea6772e67ce25d8adbf7",
+          "source_end": 24158,
+          "source_start": 23453
+        }
+      ],
+      "named_body_declarations": 16,
+      "undocumented_names": []
+    },
+    "tests/lifecycle_cli_test.rs": {
+      "bodyless_foreign_declarations": [],
+      "documented_named_body_declarations": 2,
+      "inventory": [
+        {
+          "body": true,
+          "documented": false,
+          "line": 7,
+          "name": "run",
+          "sha256": "97996ee61d689dfb11f62231e45661950a9a397c2322b4536f844faa34993627",
+          "source_end": 246,
+          "source_start": 125
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 11,
+          "name": "run_in",
+          "sha256": "323feac1901e6c2bdca8aab6f234b5980b6919c7ea6b55310affbfc0074b2cd6",
+          "source_end": 449,
+          "source_start": 248
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 19,
+          "name": "catalog",
+          "sha256": "c1d2417f35e67394f69fe5425996af58b9bbcd887cf5419b49645daf3e0472d3",
+          "source_end": 807,
+          "source_start": 451
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 34,
+          "name": "write_json",
+          "sha256": "f8d42c486e8ab2fd1cb79b446127164d0c1d6d0bc910f771595d833cda5a5d0c",
+          "source_end": 975,
+          "source_start": 809
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 39,
+          "name": "rewrite_as_legacy_lifecycle",
+          "sha256": "de9fed5848afbb01be81a2b60d92e84541460c6fbffeec57a0fcf270d0fb526a",
+          "source_end": 1625,
+          "source_start": 977
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 60,
+          "name": "new",
+          "sha256": "1f1611711387d39bc497a8f4b2016c3ce2492354f76edbee364a925e99b2e62d",
+          "source_end": 3278,
+          "source_start": 1750
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 100,
+          "name": "transition",
+          "sha256": "d60ad2ddc304b1d9e9ca5e28b460a87b9dbcf14c9bbcef6fec6299f8287530fc",
+          "source_end": 3857,
+          "source_start": 3284
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 122,
+          "name": "approve",
+          "sha256": "e6190b2cbba3c306ebcb76b306efa5cb7df9ded591add0fa8d818a169c577122",
+          "source_end": 4300,
+          "source_start": 3863
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 133,
+          "name": "draft_review_approval_retains_deterministic_evidence",
+          "sha256": "8d97e3a56423f730a773dbd79b92615f6f9cdef684c700e1aafb0c87f5e10858",
+          "source_end": 5125,
+          "source_start": 4312
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 151,
+          "name": "configurable_role_counts_accept_distinct_assertions",
+          "sha256": "de6b845270d287203cc6f640484006b6f4eca5d6e9335dd3542e23e5392387c4",
+          "source_end": 6192,
+          "source_start": 5135
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 177,
+          "name": "author_separation_requires_declared_author_evidence",
+          "sha256": "f9596eef90304e924a60559b3d33e8fb64648e96b63ca9ac7a36147d605d34c7",
+          "source_end": 7675,
+          "source_start": 6202
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 210,
+          "name": "event_ids_bind_policy_parties_approval_rules_and_review_schedule",
+          "sha256": "c654a471cbaba8a3fe8c7df0f3377adc34827d6caa3b8f4ce0f86273f30a463e",
+          "source_end": 8909,
+          "source_start": 7685
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 243,
+          "name": "legacy_records_remain_readable_and_migrate_without_rewriting_the_input",
+          "sha256": "5ff6e24915d66587ab2ef1da3f543f365a4e9046e373ccce50be660bac3bda22",
+          "source_end": 11443,
+          "source_start": 8919
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 294,
+          "name": "assertion_order_and_duplicates_do_not_change_event_bytes",
+          "sha256": "c297041484da7a2057bffb4c0e25296faf865ee3de968ae467974d041648dfeb",
+          "source_end": 12447,
+          "source_start": 11453
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 327,
+          "name": "approved_byte_drift_is_action_required_without_policy_prose",
+          "sha256": "75b6353948aea194355694bbf6abb332a54c505900faa484619ebcaf7e80abf2",
+          "source_end": 13206,
+          "source_start": 12457
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 349,
+          "name": "approved_generated_artifact_drift_is_action_required",
+          "sha256": "f98e2106d40f8a8822a346f295656845c22fd5d5c3b21c240a5c1b05f51c3344",
+          "source_end": 13915,
+          "source_start": 13216
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 373,
+          "name": "approved_artifact_identity_change_is_action_required_not_invalid_input",
+          "sha256": "3e8ec9ada01b79d9d6e942f50b07ba285cd9a8865c96ef266b2a1a7b92821af2",
+          "source_end": 15254,
+          "source_start": 13925
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 421,
+          "name": "separation_failure_and_retired_terminal_leave_record_unchanged",
+          "sha256": "e46944ef86a15825ce369e5767dacb745f038aeac6f3de1b6ba651f6d4ca16b2",
+          "source_end": 17090,
+          "source_start": 15264
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 453,
+          "name": "explicit_date_status_is_byte_deterministic_and_due_soon_boundary_is_inclusive",
+          "sha256": "4aa1d7982ca854c268e49ad6acaf8e17c2a46eef823b72266163d716d32b9e67",
+          "source_end": 18211,
+          "source_start": 17100
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 492,
+          "name": "publication_gate_treats_due_soon_as_informational_but_blocks_overdue",
+          "sha256": "3b605aa89143945dd0da1bb76be4102087c926e47fbba5db0d62410fc8b8c2c2",
+          "source_end": 19111,
+          "source_start": 18221
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 523,
+          "name": "check_is_schedule_neutral_and_accepts_a_relative_record_path",
+          "sha256": "c4035632f4491061c5afa3c88be42b741c2cbcf6fb68bd4c80bc3a3aa1539585",
+          "source_end": 20005,
+          "source_start": 19121
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 546,
+          "name": "init_collapses_duplicate_owner_flags",
+          "sha256": "d996ec9b5f72b19ef64a2a0bcf676be2dd9aa2e26884866949eb2220fce2380c",
+          "source_end": 21191,
+          "source_start": 20015
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 583,
+          "name": "queue_groups_deterministically_by_owner_and_due_date",
+          "sha256": "327a117cafd0b3bbd26ff6ff0a650dbc4cf5d427635b48380106947d681b5759",
+          "source_end": 22411,
+          "source_start": 21201
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 614,
+          "name": "impact_finding_ids_are_bounded_review_reasons",
+          "sha256": "0951373698c626f15331a66846569fe0828ea4f8c6ff38b534bd2971759cfe9a",
+          "source_end": 24305,
+          "source_start": 22421
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 673,
+          "name": "unsigned_attestation_is_deterministic_and_refuses_drift",
+          "sha256": "b7933b09a57e9452a21d71c0e14ecc81247e8db55b973858b3000f4cb8f0987f",
+          "source_end": 25445,
+          "source_start": 24315
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 695,
+          "name": "closed_schema_rejects_unknown_and_duplicate_keys",
+          "sha256": "03661d0d130d0d1d636edca6123a64772b0bffd447bf6ae1d361cddfdf4195af",
+          "source_end": 26508,
+          "source_start": 25455
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 718,
+          "name": "portfolio_check_rejects_supersession_cycle",
+          "sha256": "fbffbd9bb457c748c683d419d8d6c881c97614b9b3496c477b9e24de2fb41daf",
+          "source_end": 27782,
+          "source_start": 26518
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 761,
+          "name": "superseded_record_can_retire_without_losing_replacement_evidence",
+          "sha256": "b30147d8bda78be3f52d6d8eb18898da6a133a399008741b54400f03e667cfda",
+          "source_end": 29120,
+          "source_start": 27792
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 794,
+          "name": "portfolio_check_uses_the_replacements_latest_approval",
+          "sha256": "e1c1d65670a3102b41f1b3bbaaccf0a5d469a5c72105f7311506ca2a93dece00",
+          "source_end": 30533,
+          "source_start": 29130
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 831,
+          "name": "init_rejects_symlink_output_without_changing_target",
+          "sha256": "86d2a0d54a15bb6794ef00364eb20c0e97f540d050920605965e9994510c01d1",
+          "source_end": 31597,
+          "source_start": 30556
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 866,
+          "name": "init_rejects_a_symlink_in_an_input_path_component",
+          "sha256": "fe3b02304aeafdf25fe7694b9cc0a77ac03938fa9092b5bc70f6988e28f91784",
+          "source_end": 32977,
+          "source_start": 31620
+        },
+        {
+          "body": true,
+          "documented": false,
+          "line": 913,
+          "name": "transition_rejects_hard_link_alias_without_changing_record",
+          "sha256": "bded69634207d503d7e6bbca6dac775184b5e06946ae062e48693310fd09ce0d",
+          "source_end": 33709,
+          "source_start": 33000
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 929,
+          "name": "captured_status_projector_preserves_cli_reports_and_sources",
+          "path": "tests/lifecycle_cli_test.rs",
+          "scope": "integration",
+          "sha256": "a3f25a4460d653e6c4cee8b9610e6eb926312f735a9a48fcd9a0f9de9d23106b",
+          "source_end": 37090,
+          "source_start": 33817
+        },
+        {
+          "body": true,
+          "documented": true,
+          "line": 992,
+          "name": "captured_status_cli_requires_artifact_reads_before_publication",
+          "path": "tests/lifecycle_cli_test.rs",
+          "scope": "integration",
+          "sha256": "85d749be4cdd36df1e8e3fb89d7dd3bd4676980b192bc72a2d73ad94e24a9154",
+          "source_end": 38964,
+          "source_start": 37195
+        }
+      ],
+      "named_body_declarations": 34,
+      "undocumented_names": [
+        "run",
+        "run_in",
+        "catalog",
+        "write_json",
+        "rewrite_as_legacy_lifecycle",
+        "new",
+        "transition",
+        "approve",
+        "draft_review_approval_retains_deterministic_evidence",
+        "configurable_role_counts_accept_distinct_assertions",
+        "author_separation_requires_declared_author_evidence",
+        "event_ids_bind_policy_parties_approval_rules_and_review_schedule",
+        "legacy_records_remain_readable_and_migrate_without_rewriting_the_input",
+        "assertion_order_and_duplicates_do_not_change_event_bytes",
+        "approved_byte_drift_is_action_required_without_policy_prose",
+        "approved_generated_artifact_drift_is_action_required",
+        "approved_artifact_identity_change_is_action_required_not_invalid_input",
+        "separation_failure_and_retired_terminal_leave_record_unchanged",
+        "explicit_date_status_is_byte_deterministic_and_due_soon_boundary_is_inclusive",
+        "publication_gate_treats_due_soon_as_informational_but_blocks_overdue",
+        "check_is_schedule_neutral_and_accepts_a_relative_record_path",
+        "init_collapses_duplicate_owner_flags",
+        "queue_groups_deterministically_by_owner_and_due_date",
+        "impact_finding_ids_are_bounded_review_reasons",
+        "unsigned_attestation_is_deterministic_and_refuses_drift",
+        "closed_schema_rejects_unknown_and_duplicate_keys",
+        "portfolio_check_rejects_supersession_cycle",
+        "superseded_record_can_retire_without_losing_replacement_evidence",
+        "portfolio_check_uses_the_replacements_latest_approval",
+        "init_rejects_symlink_output_without_changing_target",
+        "init_rejects_a_symlink_in_an_input_path_component",
+        "transition_rejects_hard_link_alias_without_changing_record"
+      ]
+    }
+  }
+}

@@ -102,7 +102,7 @@ The following concrete review observations remain open for separately scoped wor
 - Browser refresh/tab-close still relies on the native beforeunload prompt; the
   complete A11Y-C-4 requirement remains unresolved by this in-app navigation fix.
 
-The [supported browser and assistive-technology matrix](../ADR/0004-supported-browser-and-accessibility-matrix.md),
+The [supported browser and assistive-technology matrix](../adr/0004-supported-browser-and-accessibility-matrix.md),
 full keyboard golden path, real screen-reader checks, WCAG 2.2 AA assessment,
 [workspace security review and existing F2–F5 dispositions](../SEC/062-sec-local-web-workspace.md),
 ASVS scope, numeric/RSS/wall profile approvals, platform filesystem/transaction

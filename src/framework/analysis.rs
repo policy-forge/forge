@@ -339,6 +339,7 @@ fn add_missing_migration_evidence_finding(
     )
 }
 
+/// Preserve prior-byte hash, header/pair admission and unique-ID ordering before applying assertions.
 fn apply_dispositions(
     prior_report_path: &Path,
     disposition_path: &Path,
@@ -356,19 +357,7 @@ fn apply_dispositions(
     }
     let prior = super::disposition::parse_strict_value(&prior_bytes, "$.prior_report")?;
     validate_prior_report(&prior, report)?;
-    let prior_finding_ids = prior["findings"]
-        .as_array()
-        .ok_or_else(|| impact_error("$.prior_report.findings must be an array"))?
-        .iter()
-        .map(|finding| {
-            finding["finding_id"]
-                .as_str()
-                .ok_or_else(|| impact_error("$.prior_report contains a finding without an ID"))
-        })
-        .collect::<Result<BTreeSet<_>, _>>()?;
-    if prior_finding_ids.len() != prior["findings"].as_array().map_or(0, Vec::len) {
-        return Err(impact_error("$.prior_report contains duplicate finding IDs"));
-    }
+    let prior_finding_ids = prior_finding_ids(&prior)?;
     let current_finding_indexes = current_finding_indexes(&report.findings)?;
     for disposition in dispositions.dispositions {
         if !prior_finding_ids.contains(disposition.finding_id.as_str()) {
@@ -405,12 +394,55 @@ fn current_finding_indexes(
     Ok(indexes)
 }
 
-fn validate_prior_report(prior: &Value, report: &ImpactReport) -> Result<(), ForgeError> {
+/// Admit a captured historical prior report's limited structural profile.
+///
+/// This preserves the CLI's header/unique-ID prerequisites, not a complete report
+/// schema, declared count consistency, pair identity, dependency freshness or authority.
+/// Exact old/new equality and disposition hash binding remain comparison-time checks.
+pub(crate) fn admit_prior_report(bytes: &[u8]) -> Result<Value, ForgeError> {
+    if bytes.len() as u64 > super::disposition::MAX_PRIOR_REPORT_BYTES {
+        return Err(impact_error("$.prior_report exceeds its byte limit"));
+    }
+    let prior = super::disposition::parse_strict_value(bytes, "$.prior_report")?;
+    validate_prior_header(&prior)?;
+    if !prior["old"].is_object() || !prior["new"].is_object() {
+        return Err(impact_error("$.prior_report old/new evidence must be objects"));
+    }
+    prior_finding_ids(&prior)?;
+    Ok(prior)
+}
+
+/// Preserve the historical schema/status admission independently of pair matching.
+fn validate_prior_header(prior: &Value) -> Result<(), ForgeError> {
     if prior["schema_version"] != REPORT_SCHEMA_VERSION || prior["status"] != "complete" {
         return Err(impact_error(
             "$.prior_report must be a complete forge.framework-impact-report/1 report",
         ));
     }
+    Ok(())
+}
+
+/// Read the exact unique string IDs using the existing CLI admission/error behavior.
+fn prior_finding_ids(prior: &Value) -> Result<BTreeSet<&str>, ForgeError> {
+    let ids = prior["findings"]
+        .as_array()
+        .ok_or_else(|| impact_error("$.prior_report.findings must be an array"))?
+        .iter()
+        .map(|finding| {
+            finding["finding_id"]
+                .as_str()
+                .ok_or_else(|| impact_error("$.prior_report contains a finding without an ID"))
+        })
+        .collect::<Result<BTreeSet<_>, _>>()?;
+    if ids.len() != prior["findings"].as_array().map_or(0, Vec::len) {
+        return Err(impact_error("$.prior_report contains duplicate finding IDs"));
+    }
+    Ok(ids)
+}
+
+/// Match the admitted historical header and exact old/new pair before using IDs.
+fn validate_prior_report(prior: &Value, report: &ImpactReport) -> Result<(), ForgeError> {
+    validate_prior_header(prior)?;
     let old = serde_json::to_value(&report.old)
         .map_err(|error| impact_error(format!("old evidence serialization failed: {error}")))?;
     let new = serde_json::to_value(&report.new)
@@ -1669,5 +1701,51 @@ mod tests {
             policy_sources: Vec::new(),
             disposition: None,
         }
+    }
+    /// Limited prior admission deliberately preserves unknown historical fields without freshness claims.
+    #[test]
+    fn captured_prior_admission_is_structural_not_a_full_report_schema() {
+        let prior = serde_json::json!({
+            "schema_version": crate::framework::model::REPORT_SCHEMA_VERSION,
+            "status": "complete", "old": {}, "new": {},
+            "findings": [{"finding_id":"declared-id"}],
+            "summary": "not independently validated by this admission profile",
+            "historical_extension": {"local_assertion":true}
+        });
+        let bytes = serde_json::to_vec(&prior).unwrap();
+        assert_eq!(super::admit_prior_report(&bytes).unwrap(), prior);
+    }
+
+    /// Admission rejects malformed header, pair containers and nonunique string IDs using strict JSON.
+    #[test]
+    fn captured_prior_admission_rejects_malformed_structure_and_duplicates() {
+        let valid = serde_json::json!({
+            "schema_version": crate::framework::model::REPORT_SCHEMA_VERSION,
+            "status": "complete", "old": {}, "new": {}, "findings":[]
+        });
+        for (key, value) in [
+            ("schema_version", serde_json::json!("forge.framework-impact-report/2")),
+            ("status", serde_json::json!("incomplete")),
+            ("old", serde_json::json!([])),
+            ("new", serde_json::json!(null)),
+            ("findings", serde_json::json!({})),
+            ("findings", serde_json::json!([{"finding_id":1}])),
+            ("findings", serde_json::json!([{}])),
+            ("findings", serde_json::json!([{"finding_id":"same"},{"finding_id":"same"}])),
+        ] {
+            let mut invalid = valid.clone();
+            invalid[key] = value;
+            assert!(super::admit_prior_report(&serde_json::to_vec(&invalid).unwrap()).is_err());
+        }
+        assert!(super::admit_prior_report(br#"{"old":{"key":1,"key":2}}"#).is_err());
+        assert!(super::admit_prior_report(b"not JSON").is_err());
+    }
+
+    /// The existing bounded prior-report byte cap also governs the consumed admission helper.
+    #[test]
+    fn captured_prior_admission_enforces_existing_byte_limit() {
+        let limit = usize::try_from(super::super::disposition::MAX_PRIOR_REPORT_BYTES).unwrap();
+        let oversized = vec![b' '; limit + 1];
+        assert!(super::admit_prior_report(&oversized).is_err());
     }
 }

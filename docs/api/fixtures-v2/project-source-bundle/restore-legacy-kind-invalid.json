@@ -1,0 +1,13 @@
+{
+  "operation_id": "op_222222222222",
+  "kind": "export",
+  "state": "pending",
+  "created_at": "2026-10-03T00:00:00Z",
+  "updated_at": "2026-10-03T00:00:00Z",
+  "cancel_requested": false,
+  "write_outcome": "unmeasured",
+  "progress": null,
+  "result": null,
+  "error": null,
+  "cleanup_state": "unmeasured"
+}

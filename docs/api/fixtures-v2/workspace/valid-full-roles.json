@@ -1,0 +1,41 @@
+{
+  "schema_version": "forge.workspace/1",
+  "label": "Acme ISMS project",
+  "resources": [
+    {
+      "key": "pol-acceptable-use",
+      "role": "policy-source",
+      "path": "policies/POL-01_Acceptable_Use_Policy.md"
+    },
+    {
+      "key": "cat-generated",
+      "role": "oscal-catalog-artifact",
+      "path": "artifacts/acceptable-use_catalog.json"
+    },
+    {
+      "key": "comp-generated",
+      "role": "oscal-component-artifact",
+      "path": "artifacts/acceptable-use_component.json"
+    },
+    {
+      "key": "mapping-primary",
+      "role": "mapping-collection",
+      "path": "mapping/mapping-collection.json"
+    },
+    {
+      "key": "applicability-decisions",
+      "role": "applicability-manifest",
+      "path": "applicability/decisions.json"
+    },
+    {
+      "key": "gap-report-current",
+      "role": "applicability-report",
+      "path": "reports/gap-report.json"
+    },
+    {
+      "key": "trace-report-current",
+      "role": "trace-report",
+      "path": "reports/trace-report.html"
+    }
+  ]
+}

@@ -47,9 +47,9 @@ MCP Native: Designed to feed into the Model Context Protocol (MCP), allowing age
 ## ✨ Features
 
 - **Markdown to OSCAL** — Convert policy documents into OSCAL Catalogs or Component Definitions
-- **Multi-format output** — JSON, XML, and YAML with round-trip fidelity between all three
+- **Multi-format output** — JSON, XML and YAML for Catalog and Component Definition models; current typed export does not guarantee preservation of arbitrary native fields
 - **Schema validation** — Validate supported OSCAL v1.2.0–v1.2.3 declarations against the pinned v1.2.3 JSON schemas with semantic checks
-- **Format conversion** — Export existing OSCAL artifacts between JSON, XML, and YAML
+- **Format conversion** — Export supported Catalog and Component Definition artifacts between JSON, XML and YAML
 - **Requirement atomization** — Automatically split compound policy statements into individual controls
 - **Deterministic IDs** — UUID v5 generation ensures stable identifiers across re-conversions
 - **Citation extraction** — URLs and references extracted into OSCAL back-matter resources
@@ -105,7 +105,7 @@ forge convert large-policy.md --strategy catalog --format json --max-size 20
 ```
 ### Export
 
-Convert an existing OSCAL artifact between formats. Auto-detects the input format from the file extension.
+Convert a supported Catalog or Component Definition between JSON, XML and YAML. The input format is detected from its extension. Current export validates and serializes a typed model projection; retain the original because fields outside that model can be omitted. Other OSCAL models are not supported by `export`.
 
 ```bash
 # JSON to XML
@@ -421,17 +421,29 @@ Download the latest release for your platform from [GitHub Releases](https://git
 | macOS | aarch64 (Apple Silicon) | `forge-*-aarch64-apple-darwin.tar.gz` |
 | Windows | x86_64 | `forge-*-x86_64-pc-windows-msvc.zip` |
 
-**Linux / macOS (one-liner):**
+Select a published tag and the matching Rust target from the table above.
+Replace `vX.Y.Z` before running these download-only examples; it is a placeholder,
+not a claim that a release exists. Archive names include both the tag and target.
+
+**Linux / macOS:**
 ```bash
-curl -fsSL https://github.com/policy-forge/forge/releases/latest/download/forge-$(uname -m)-$(uname -s | tr '[:upper:]' '[:lower:]').tar.gz | tar xz && sudo mv forge /usr/local/bin/
+forge_tag=vX.Y.Z
+forge_target=x86_64-unknown-linux-gnu # choose the target for your platform
+forge_archive="forge-${forge_tag}-${forge_target}.tar.gz"
+curl -fsSL "https://github.com/policy-forge/forge/releases/download/${forge_tag}/${forge_archive}" -o "$forge_archive"
 ```
 
 **Windows (PowerShell):**
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/policy-forge/forge/releases/latest/download/forge-x86_64-pc-windows-msvc.zip" -OutFile forge.zip; Expand-Archive forge.zip -DestinationPath .; Remove-Item forge.zip
+$forgeTag = 'vX.Y.Z'
+$forgeArchive = "forge-$forgeTag-x86_64-pc-windows-msvc.zip"
+Invoke-WebRequest -Uri "https://github.com/policy-forge/forge/releases/download/$forgeTag/$forgeArchive" -OutFile $forgeArchive
 ```
 
-Each release includes SHA-256 checksums and [SLSA Level 3](https://slsa.dev/) provenance attestation.
+Verify the selected release's published SHA-256 checksum and provenance before
+extracting or installing its archive.
+
+The [release workflow](.github/workflows/release.yml) is configured to publish SHA-256 checksums and SLSA provenance. Check the evidence attached to the selected published tag for the archive hashes and any verified SLSA level.
 
 ### From source
 
@@ -475,7 +487,7 @@ PDF (`.pdf`) and DOCX (`.docx`) documents are also accepted directly — heading
 
 25 sample policies are included in `example_data/` covering topics from acceptable use to incident response.
 
-Each release includes SHA-256 checksums and [SLSA Level 3](https://slsa.dev/) provenance attestation.
+The [release workflow](.github/workflows/release.yml) is configured to publish SHA-256 checksums and SLSA provenance. Check the evidence attached to the selected published tag for the archive hashes and any verified SLSA level.
 
 ## 🏗️ How It Works: The Deterministic Pipeline
 
@@ -492,7 +504,7 @@ FORGE is on the v1.1.0 release line. The original 50-item roadmap is complete:
 - Phase 2 — Control Layer & Multi-Format: JSON/XML/YAML output, round-trip checks, export subcommand, Profile generation, parameter tailoring, modality tagging, and parameter extraction.
 - Phase 3 — Ecosystem & Community: oscal-cli integration, trace reports, diff reports, batch conversion, summary dashboards, Assessment Plan scaffolding, SSP templates, community examples, documentation, cross-platform CI, and release automation.
 
-Future work such as Assessment Results, POA&M, built-in Profile Resolution, GRC integrations, web/API mode, and hosted documentation should be tracked in a new v1.x/v2 roadmap rather than reopened against the completed Phase 1–3 plan.
+Post-v1.1.0 work is tracked separately from the completed WI-1–WI-50 history. Assessment Results workflows and the unreleased local web/API workspace are implemented technical tranches with remaining product, human and release gates. Full POA&M, built-in Profile Resolution, GRC integrations and other roadmap scope remain separate; implementation or tests do not establish PRD acceptance.
 
 See `docs/FORGE_PRODUCT_ROADMAP.md` for the reconciled roadmap.
 
@@ -533,6 +545,16 @@ draft implementation: security, accessibility and pilot gates are still open,
 and it is not part of a release. See the
 [local workspace guide](docs/local-workspace.md) for unlock, explicit registration,
 review, preview/commit, recovery, API contracts, bounds, and remaining release gates.
+
+
+Current development snapshots and draft deliveries are tracked in the
+[integrated documentation successor](docs/plans/2026-10-03-integrated-documentation-staged-successor.md).
+The captured committed checkpoint declares API1 1.2.0/39 and API2 2.3.0/57.
+The separately captured working tree declares API2 2.4.0/65 for staged source
+transfer under integration; it supplies no merged, hosted or release result.
+These API versions are not product releases. Separate drafts, local checks and hosted
+checkpoints do not establish full Must/Should, platform, human or release
+acceptance.
 
 ## License
 

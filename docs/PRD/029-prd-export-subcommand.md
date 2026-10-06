@@ -370,8 +370,8 @@ graph LR
     end
 ```
 
-- **Requires:** [026-prd-xml-output](docs/PRD/026-prd-xml-output.md) (WI-26, XML serialization), [027-prd-yaml-output](docs/PRD/027-prd-yaml-output.md) (WI-27, YAML serialization), [028-prd-round-trip-testing](docs/PRD/028-prd-round-trip-testing.md) (WI-28, round-trip fidelity confirmed)
-- **Blocks:** [030-prd-profile-generation](docs/PRD/030-prd-profile-generation.md) (WI-30, profile generation relies on multi-format export being operational)
+- **Requires:** [026-prd-xml-output](026-prd-xml-output.md) (WI-26, XML serialization), [027-prd-yaml-output](027-prd-yaml-output.md) (WI-27, YAML serialization), [028-prd-round-trip-testing](028-prd-round-trip-testing.md) (WI-28, round-trip fidelity confirmed)
+- **Blocks:** [030-prd-profile-generation](030-prd-profile-generation.md) (WI-30, profile generation relies on multi-format export being operational)
 - **Parallel With:** WI-28 (round-trip testing runs in parallel; export can begin as serialization crates are ready)
 - **External:** None (all serialization crates already integrated by WI-26/WI-27)
 

@@ -1,0 +1,33 @@
+{
+  "schema_version": "forge.workspace-index-bundle/3",
+  "profile": "index-and-source-hex",
+  "source_content_included": true,
+  "index": {
+    "schema_version": "forge.workspace/1",
+    "label": "Synthetic explicit source fixture",
+    "resources": [
+      {
+        "key": "policy-a",
+        "role": "policy-source",
+        "path": "policy-a.md"
+      }
+    ]
+  },
+  "index_sha256": "ffdbd950516524335ade23a60630956a106680369681106db9c545b827607471",
+  "pins": [
+    {
+      "key": "policy-a",
+      "sha256": "e9489f37fb3051e9efa1dc916004d7274e7b63975e3209708947267f2393a9be",
+      "size": 4
+    }
+  ],
+  "contents": [
+    {
+      "key": "policy-a",
+      "encoding": "hex",
+      "chunks": [
+        "AABB"
+      ]
+    }
+  ]
+}

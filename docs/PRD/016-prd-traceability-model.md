@@ -401,9 +401,9 @@ graph LR
     end
 ```
 
-- **Requires:** [WI-14: Component Definition Structure](docs/PRD/014-prd-component-definition-structure.md) — the Component Definition builder must exist to instrument it; [WI-9: Catalog Generation](docs/PRD/009-prd-catalog-groups-controls.md) — the Catalog builder must exist to instrument it
+- **Requires:** [WI-14: Component Definition Structure](014-prd-component-definition-structure.md) — the Component Definition builder must exist to instrument it; [WI-9: Catalog Generation](009-prd-catalog-groups-controls.md) — the Catalog builder must exist to instrument it
 - **Parallel With:** [WI-15: Implemented Requirements](docs/PRD/015-prd-implemented-requirements.md) — runs in the same sprint; TraceLink captures implemented-requirement mappings produced by WI-15
-- **Blocks:** [WI-17: Traceability Embedding](docs/PRD/017-prd-traceability-embedding.md) — embeds TraceLinks into OSCAL artifacts as props/links; [WI-19: Schema Validation](docs/PRD/019-prd-schema-validation.md) — validation must account for trace metadata
+- **Blocks:** [WI-17: Traceability Embedding](017-prd-traceability-embedding.md) — embeds TraceLinks into OSCAL artifacts as props/links; [WI-19: Schema Validation](019-prd-schema-validation.md) — validation must account for trace metadata
 - **External:** None
 
 ---
