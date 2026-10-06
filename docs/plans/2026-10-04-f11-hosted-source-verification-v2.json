@@ -1,0 +1,94 @@
+{
+  "format": "forge.f11-hosted-source-verification/1",
+  "requested_head": "75785a2afb19dbb41d80756d12bf45329c5620bb",
+  "tested_merge": "9f52ea966ddae3f250ccf52a7432c7bf3b9a806b",
+  "actual_ordered_parents": [
+    "2967715dd72bb707e1e89b4e1b45c4320b0a597d",
+    "75785a2afb19dbb41d80756d12bf45329c5620bb"
+  ],
+  "event_declared_base": "2f452541dbad44b52fc2569c36ae1df0d1fee858",
+  "windows": {
+    "job": 111565827638,
+    "conclusion": "success",
+    "required_steps": [
+      "Run tests",
+      "API contract validation",
+      "Lint",
+      "Build release",
+      "Maintained local client conformance"
+    ],
+    "library": [
+      2410,
+      0,
+      0
+    ],
+    "driver_controls": [
+      25,
+      25
+    ],
+    "run_tests": {
+      "passed": 3332,
+      "failed": 0,
+      "ignored": 3
+    },
+    "run_tests_summaries": 74
+  },
+  "source_bindings": {
+    "count": 368,
+    "requested_and_tested_equal": true
+  },
+  "artifact_input_bindings": {
+    "count": 32,
+    "all_equal_authenticated_tested_tree": true,
+    "requested_head_differences": [
+      {
+        "path": ".github/workflows/workspace-verification.yml",
+        "bytes": 23497,
+        "sha256": "1a27b497faa331b9d7e5721ebce76ce0ba1235ccd2241d25d0338b9888e6c5ce",
+        "tested_blob": "dd4b6ed0004616cd8a911331483526d4d4ffcd70",
+        "equal_parent_refs": [
+          "2967715dd72bb707e1e89b4e1b45c4320b0a597d"
+        ],
+        "requested_head_bytes_equal": false
+      }
+    ]
+  },
+  "ci_test_jobs": "three passed",
+  "overall_ci": "failed",
+  "vet_missing_safe_to_deploy": [
+    "fancy-regex:0.19.2",
+    "fraction:0.17.0",
+    "hashbrown:0.17.1",
+    "jsonschema:0.57.0",
+    "jsonschema-regex:0.57.0",
+    "jsonschema-value:0.57.0",
+    "micromap:0.3.0",
+    "num-bigint:0.4.8",
+    "referencing:0.57.0",
+    "regex:1.13.1",
+    "regex-automata:0.4.18",
+    "regex-syntax:0.8.11",
+    "serde_json:1.0.151",
+    "strum:0.28.0",
+    "strum_macros:0.28.0",
+    "syn:3.0.6",
+    "thiserror:2.0.21",
+    "thiserror-impl:2.0.21",
+    "uuid:1.26.1",
+    "zmij:1.0.23"
+  ],
+  "workspace_checks": "refused provenance mismatch before product dispatch; no physical/browser/API/console/runtime acceptance",
+  "complete_evidence": {
+    "path": "evidence/2026-10-04-f11-hosted-source-verification-v2-complete.json.gz",
+    "archive": {
+      "bytes": 359743,
+      "sha256": "57c56242b053ab08fdbd237f96d6d8095f110abc9399ff2654cdee6301f2b377"
+    },
+    "uncompressed": {
+      "bytes": 2742620,
+      "sha256": "153a959bb5f0dc61ad8fe02293345e1adde937a1690c98833216015054043fe8"
+    },
+    "lossless": true
+  },
+  "acceptance_eligible": false
+}

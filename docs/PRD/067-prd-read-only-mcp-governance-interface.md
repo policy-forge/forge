@@ -231,3 +231,16 @@ Tools return structured objects before prose. Search accepts explicit filters an
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-08-24 | Codex | Initial draft for a local read-only MCP governance interface |
+
+## F20 `/2` engineering checkpoint
+
+The [MCP guide's `/2` development checkpoint](../mcp.md#f20-2-development-checkpoint) records the explicit declaration-family selector, complete native capture boundary, supported Catalog/Component and empty-Mapping applicability scope, exact native selectors and validation-only offline intent gate. The original declaration path remains the default. The final exact TEMP composition has passed formatting, strict all-feature/all-target lint and 3,699 normal tests with zero failures and three existing ignored fixtures. Its lexical source census documents all 602 selected callable bodies and 104 selected named types; its fresh library-only LLVM run passes 2,611 tests and measures full physical file cohorts separately. The guide records the unchanged legacy gaps and coverage denominators. The earlier 187-control component population remains historical and is not added to the normal run. A separate compiled macOS campaign completed eight successful child commands and two clean workers with 14 actual transactions, including all seven tools, pagination, source drift/restoration and default-family refusal. The prior bare-filename scaffold failure remains retained; the successful explicit-parent recipe is not a product fix. Final managed/hosted/platform qualification and client/owner acceptance remain pending for this draft checkpoint.
+
+This candidate does not deliver evidence-metadata resources (S-1), static-report resource links (S-2) or a deterministic local index builder/publisher (S-4). Hash-pinned profiles (S-3) still require genuine external owner records. Every requirement, Definition of Ready checkbox, client/corpus/platform gate and human acceptance decision above remains unchanged.
+
+A separate **2026-10-06 02:16 UTC** [draft integration checkpoint](../mcp.md#draft-integration-checkpoint)
+records PR #220 open/draft at `7bd8a6f336632660952085aae3574c83a2612e2a` based on
+`codex/f11-read-only-mcp-discovery`. The earlier TEMP engineering section and every requirement/Ready
+checkbox retain their original scope. Ten workflow jobs were still in progress
+at the readback; this checkpoint adds no hosted, client/corpus, real-owner,
+platform, human, merge or release acceptance.

@@ -1,5 +1,7 @@
 //! Human-reviewed framework applicability and policy-gap analysis.
 
+/// Private current-domain semantics over genuine caller-captured original bytes.
+pub(crate) mod captured;
 pub mod manifest;
 pub mod model;
 
@@ -305,6 +307,7 @@ fn validate_decision_references(
     Ok(())
 }
 
+/// Preserve the maintained file loader while sharing its pure native validators.
 fn load_mapping(
     path: &Path,
     index: usize,
@@ -317,18 +320,58 @@ fn load_mapping(
         .map_err(|cause| error(format!("{label} cannot be read: {cause}")))?;
     let value: Value = serde_json::from_slice(&bytes)
         .map_err(|cause| error(format!("{label} is not valid JSON: {cause}")))?;
+    let collection = decode_mapping_value(&label, value)?;
+    validate_mapping_collection(
+        &label,
+        &collection,
+        &sha256_hex(&bytes),
+        framework,
+        validation_state,
+        &mut |_, id, positive, href| {
+            let facts = mapping_facts.entry(id.to_owned()).or_default();
+            if positive {
+                facts.positive_count += 1;
+            } else {
+                facts.no_relationship_count += 1;
+            }
+            facts.policy_sources.insert(href.to_owned());
+        },
+    )
+}
+
+/// Reuse the maintained official schema/model/version admission without performing IO.
+fn decode_mapping_value(
+    label: &str,
+    value: Value,
+) -> Result<MappingCollectionEnvelope, ForgeError> {
     let detected =
         validate::detect_model_type(&value).map_err(|cause| error(format!("{label}: {cause}")))?;
     if detected != OscalModelType::Mapping {
         return Err(error(format!("{label} must contain an OSCAL Mapping Collection")));
     }
-    inventory::validate_schema(&label, &value, OscalModelType::Mapping)
+    inventory::validate_schema(label, &value, OscalModelType::Mapping)
         .map_err(relabel_mapping_error)?;
     let collection: MappingCollectionEnvelope = serde_json::from_value(value)
         .map_err(|cause| error(format!("{label} structure is unsupported: {cause}")))?;
     if collection.mapping_collection.metadata.oscal_version != "1.2.3" {
         return Err(error(format!("{label} must declare OSCAL v1.2.3")));
     }
+    Ok(collection)
+}
+
+/// Validate the actual collection with one shared native per-edge/target recorder.
+///
+/// The legacy report retains owned hrefs; a captured consumer may retain compact
+/// original locators. Duplicate UUIDs, reviewers, fingerprints, polarities and
+/// target semantics run through these same maintained routines in both paths.
+fn validate_mapping_collection(
+    label: &str,
+    collection: &MappingCollectionEnvelope,
+    raw_sha256: &str,
+    framework: &LoadedResource,
+    validation_state: &mut MappingValidationState,
+    record_target: &mut impl FnMut(usize, &str, bool, &str),
+) -> Result<model::MappingEvidence, ForgeError> {
     let collection_key = require_single_prop(
         &format!("{label}.mapping-collection.metadata"),
         &collection.mapping_collection.metadata.props,
@@ -357,7 +400,7 @@ fn load_mapping(
             "{label}.mapping-collection.provenance FORGE 'reviewed-at' must be an RFC 3339 timestamp"
         ))
     })?;
-    let (reviewers, party_uuids) = mapping_reviewer_evidence(&label, &collection)?;
+    let (reviewers, party_uuids) = mapping_reviewer_evidence(label, collection)?;
     let mut source_resources = BTreeMap::new();
     for (mapping_index, mapping) in collection.mapping_collection.mappings.iter().enumerate() {
         let mapping_label = format!("{label}.mapping-collection.mappings[{mapping_index}]");
@@ -379,21 +422,21 @@ fn load_mapping(
             .entry(source_resource.href.clone())
             .or_insert_with(|| source_resource.clone());
         validate_framework_reference(&mapping_label, &mapping.target_resource, framework)?;
-        validate_mapping_edges(
+        validate_mapping_edges_recorded(
             &mapping_label,
             mapping,
             &source_resource,
             framework,
             &party_uuids,
-            mapping_facts,
+            &mut |id, positive, href| record_target(mapping_index, id, positive, href),
             validation_state,
         )?;
     }
     Ok(model::MappingEvidence {
         uuid: collection.mapping_collection.uuid.to_string(),
-        raw_sha256: sha256_hex(&bytes),
-        version: collection.mapping_collection.metadata.version,
-        oscal_version: collection.mapping_collection.metadata.oscal_version,
+        raw_sha256: raw_sha256.to_owned(),
+        version: collection.mapping_collection.metadata.version.clone(),
+        oscal_version: collection.mapping_collection.metadata.oscal_version.clone(),
         reviewed_at,
         reviewers,
         source_resources: source_resources.into_values().collect(),
@@ -448,13 +491,15 @@ fn mapping_reviewer_evidence(
     Ok((reviewers, reviewer_authority))
 }
 
-fn validate_mapping_edges(
+/// Keep all maintained edge validation while recording one fact per target, not pair.
+/// Apply the unchanged native polarity/reviewer/target checks with a caller-owned recorder.
+fn validate_mapping_edges_recorded(
     mapping_label: &str,
     mapping: &crate::mapping::model::OscalMapping,
     source_resource: &ResourceEvidence,
     framework: &LoadedResource,
     party_uuids: &BTreeSet<uuid::Uuid>,
-    mapping_facts: &mut BTreeMap<String, model::ControlMappingFacts>,
+    record_target: &mut impl FnMut(&str, bool, &str),
     validation_state: &mut MappingValidationState,
 ) -> Result<(), ForgeError> {
     for (map_index, edge) in mapping.maps.iter().enumerate() {
@@ -538,13 +583,7 @@ fn validate_mapping_edges(
                 validation_state.relationship_polarities.insert(relationship_key, positive);
             }
             if target.subject_type == SubjectType::Control {
-                let facts = mapping_facts.entry(target.id_ref.clone()).or_default();
-                if edge.relationship == crate::mapping::manifest::Relationship::NoRelationship {
-                    facts.no_relationship_count += 1;
-                } else {
-                    facts.positive_count += 1;
-                }
-                facts.policy_sources.insert(mapping.source_resource.href.clone());
+                record_target(&target.id_ref, positive, &mapping.source_resource.href);
             }
         }
     }

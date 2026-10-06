@@ -239,6 +239,30 @@ pub fn parse(bytes: &[u8]) -> Result<LifecycleRecord, ForgeError> {
     Ok(record)
 }
 
+/// Immutable owned output of the complete maintained raw-record parser.
+///
+/// This plain validation witness creates no source provenance, currentness or approval.
+/// It has no detached constructor, deserializer, mutable accessor or ownership extraction.
+pub(crate) struct ParsedLifecycleRecord {
+    /// Exact fully parsed and intrinsically validated record, owned without a second copy.
+    record: LifecycleRecord,
+}
+impl ParsedLifecycleRecord {
+    /// Borrow all original fields immutably; a mutated clone cannot alter this owner.
+    pub(crate) fn record(&self) -> &LifecycleRecord {
+        &self.record
+    }
+}
+/// Retain only a genuine complete raw-record parse under an immutable plain owner.
+///
+/// # Errors
+///
+/// Returns exactly the existing `parse` error before any immutable value can be issued.
+/// No intrinsic phase is skipped, and no current/capture/native authority is asserted.
+pub(crate) fn parse_owned(bytes: &[u8]) -> Result<ParsedLifecycleRecord, ForgeError> {
+    parse(bytes).map(|record| ParsedLifecycleRecord { record })
+}
+
 /// Validate all intrinsic record invariants and the append-only event chain.
 ///
 /// # Errors

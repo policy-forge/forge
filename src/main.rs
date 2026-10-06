@@ -20,7 +20,7 @@ fn main() -> ExitCode {
     // A valid RUST_LOG filter overrides the flag-derived default for per-module control.
     let filter =
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(default_filter));
-    if matches!(&cli.command, cli::Commands::Workspace { .. }) {
+    if matches!(&cli.command, cli::Commands::Workspace { .. } | cli::Commands::Mcp { .. }) {
         // Workspace HTTP and domain data must never enter process logs, even
         // with RUST_LOG=trace or --verbose. Bootstrap uses explicit safe output.
         tracing::subscriber::set_global_default(tracing::subscriber::NoSubscriber::default())

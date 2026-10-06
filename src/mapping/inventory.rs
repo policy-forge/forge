@@ -273,7 +273,8 @@ pub(crate) fn validate_schema(
     Err(mapping_error(format!("{path_label} is not a valid {}: {detail}", model.as_str())))
 }
 
-fn extract_evidence(
+/// Borrowed-original callers reuse the exact maintained native identity extraction.
+pub(crate) fn extract_evidence(
     path_label: &str,
     resource: &ResourceManifest,
     json: &Value,
@@ -621,9 +622,50 @@ pub(crate) fn load_captured(
     captured_companion: Option<&[u8]>,
     capture: &mut crate::evidence_capture::CaptureSession,
 ) -> Result<LoadedResource, ForgeError> {
+    load_captured_admitted(
+        manifest_dir,
+        path_label,
+        resource,
+        bytes,
+        captured_companion,
+        &mut |value| admit_captured_catalog(value, capture),
+    )
+    .map_err(|error| match error {
+        CapturedInventoryError::Domain(error) | CapturedInventoryError::Admission(error) => error,
+    })
+}
+
+/// Keep a domain failure distinct from the actual caller's shared admission failure.
+pub(crate) enum CapturedInventoryError<E> {
+    /// Existing intrinsic/native inventory error; callers may minimize it.
+    Domain(ForgeError),
+    /// Unchanged actual caller-owned admission/control error.
+    Admission(E),
+}
+
+impl<E> From<ForgeError> for CapturedInventoryError<E> {
+    /// Preserve the exact existing domain error without consuming an admission failure.
+    fn from(error: ForgeError) -> Self {
+        Self::Domain(error)
+    }
+}
+
+/// Reuse the captured native loader with a real caller-owned pre-growth admission.
+///
+/// This pure byte consumer performs no reads or proof construction. Existing path
+/// callers retain their `CaptureSession` callback; MCP passes its original shared
+/// ledger and sticky control. The caller admits strict original JSON beforehand.
+pub(crate) fn load_captured_admitted<E>(
+    manifest_dir: &Path,
+    path_label: &str,
+    resource: &ResourceManifest,
+    bytes: &[u8],
+    captured_companion: Option<&[u8]>,
+    admit: &mut impl FnMut(&Value) -> Result<(), E>,
+) -> Result<LoadedResource, CapturedInventoryError<E>> {
     let artifact_path = manifest_dir.join(&resource.artifact);
     if bytes.len() as u64 > io::MAX_FILE_SIZE {
-        return Err(mapping_error("captured requirement resource exceeds its input bound"));
+        return Err(mapping_error("captured requirement resource exceeds its input bound").into());
     }
     let raw_sha256 = sha256_hex(bytes);
     if let Some(expected) = &resource.expected_sha256
@@ -631,7 +673,8 @@ pub(crate) fn load_captured(
     {
         return Err(mapping_error(format!(
             "{path_label}.expected_sha256 mismatch: expected {expected}, got {raw_sha256}"
-        )));
+        ))
+        .into());
     }
     let json: Value = serde_json::from_slice(bytes).map_err(|error| {
         mapping_error(format!("{path_label}.artifact is not valid JSON: {error}"))
@@ -647,7 +690,8 @@ pub(crate) fn load_captured(
             "{path_label}.type declares '{}' but artifact root is '{}'",
             resource.resource_type.as_str(),
             detected.as_str()
-        )));
+        ))
+        .into());
     }
     validate_schema(path_label, &json, expected_model)?;
     let mut evidence = extract_evidence(path_label, resource, &json, raw_sha256)?;
@@ -660,7 +704,7 @@ pub(crate) fn load_captured(
         let companion_bytes = captured_companion
             .ok_or_else(|| mapping_error("captured Profile companion is required"))?;
         if companion_bytes.len() as u64 > io::MAX_FILE_SIZE {
-            return Err(mapping_error("captured Catalog companion exceeds its input bound"));
+            return Err(mapping_error("captured Catalog companion exceeds its input bound").into());
         }
         let resolved_catalog_sha256 = sha256_hex(companion_bytes);
         let expected_resolved_catalog_sha256 =
@@ -672,7 +716,7 @@ pub(crate) fn load_captured(
         if expected_resolved_catalog_sha256 != &resolved_catalog_sha256 {
             return Err(mapping_error(format!(
                 "{path_label}.expected_resolved_catalog_sha256 mismatch: expected {expected_resolved_catalog_sha256}, got {resolved_catalog_sha256}"
-            )));
+            )).into());
         }
         evidence.resolved_catalog_sha256 = Some(resolved_catalog_sha256);
         let companion_json: Value = serde_json::from_slice(companion_bytes).map_err(|error| {
@@ -683,13 +727,14 @@ pub(crate) fn load_captured(
         if detected != OscalModelType::Catalog {
             return Err(mapping_error(format!(
                 "{path_label}.resolved_catalog must contain a Catalog root"
-            )));
+            ))
+            .into());
         }
         validate_schema(path_label, &companion_json, OscalModelType::Catalog)?;
-        admit_captured_catalog(&companion_json, capture)?;
+        admit(&companion_json).map_err(CapturedInventoryError::Admission)?;
         inventory_catalog(path_label, &companion_json)?
     } else {
-        admit_captured_catalog(&json, capture)?;
+        admit(&json).map_err(CapturedInventoryError::Admission)?;
         inventory_catalog(path_label, &json)?
     };
 
@@ -698,7 +743,7 @@ pub(crate) fn load_captured(
         if expected != &actual {
             return Err(mapping_error(format!(
                 "{path_label}.inventory no longer matches the supplied resource; regenerate or review the manifest"
-            )));
+            )).into());
         }
     }
     Ok(LoadedResource { path: artifact_path, evidence, inventory })
