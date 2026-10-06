@@ -10,6 +10,7 @@ Thank you for your interest in contributing! FORGE is built on a spec-driven, te
 - **Git** for version control
 - **cargo-audit** — `cargo install cargo-audit --locked`
 - **cargo-deny** — `cargo install cargo-deny --locked`
+- **cargo-vet** — `cargo install cargo-vet --locked`
 
 ### Clone and Build
 
@@ -45,7 +46,7 @@ Before opening a PR, replicate the CI pipeline:
 ./scripts/ci-local.sh
 ```
 
-This runs, in order: `cargo fmt --check` → `cargo clippy -- -D warnings` → `cargo test` → `cargo bench --bench pipeline_benchmark -- --warm-up-time 1 --measurement-time 3` → `cargo audit` → `cargo deny check`. All must pass.
+The maintained [local CI script](scripts/ci-local.sh) runs format, all-target Clippy, tests, the API contract gate, `cargo audit`, `cargo deny check` and `cargo vet --locked`. Each enabled gate must pass. Set `CI_LOCAL_BENCH=1` to add the optional local benchmark; check the script and [workflow](.github/workflows/ci.yml) for exact commands.
 
 ## Spec-Driven Workflow
 
@@ -121,7 +122,7 @@ cargo bench                                  # All benchmarks
 cargo bench --bench pipeline_benchmark       # Pipeline benchmark only
 ```
 
-Benchmarks use Criterion. CI runs a quick 3-second pipeline benchmark; full benchmarks are for local regression testing.
+Benchmarks use Criterion. The workflow invokes the pipeline benchmark with its maintained configuration; the local CI script includes it only with `CI_LOCAL_BENCH=1`. Do not treat a fixed three-second run as the current CI contract.
 
 ### Mutation Testing
 
@@ -170,17 +171,9 @@ Run the full CI pipeline locally and verify **all gates pass**:
 ./scripts/ci-local.sh
 ```
 
-Expected output:
-
-```
-[ci-local] cargo fmt --check
-[ci-local] cargo clippy -- -D warnings
-[ci-local] cargo test
-[ci-local] cargo bench --bench pipeline_benchmark -- --warm-up-time 1 --measurement-time 3
-[ci-local] cargo audit
-[ci-local] cargo deny check
-[ci-local] all checks passed
-```
+The script prints each enabled command. The benchmark appears only when
+`CI_LOCAL_BENCH=1`; use the retained raw check output to determine which gates
+actually passed rather than treating this guide as an execution transcript.
 
 A PR that fails CI will not be reviewed. Save reviewer time by running locally first.
 
@@ -189,8 +182,8 @@ A PR that fails CI will not be reviewed. Save reviewer time by running locally f
 - **Rust edition 2024**, max width 100 columns (see `.rustfmt.toml`).
 - `clippy::all` + `clippy::pedantic` enabled in `Cargo.toml`.
 - `unsafe_code = "warn"` — avoid unsafe Rust.
-- No network dependencies — reads and writes local files only.
-- Do not add new crate dependencies without checking for existing alternatives first.
+- Core conversion and embedded validation are offline; the explicit loopback workspace and configured external tools have separate documented boundaries.
+- New crate dependencies require prior approval and a supply-chain entry. Check existing alternatives and record the crate, reason and approver in the introducing PR/PRD; see [AGENTS.md](AGENTS.md) and [PRD 069](docs/PRD/069-prd-dependency-security-audit.md).
 
 ### Review Expectations
 

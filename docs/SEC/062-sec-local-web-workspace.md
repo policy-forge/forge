@@ -719,7 +719,7 @@ later dependency addition.
 - Loopback-only binding with exact Host matching and no host configurability eliminates network-exposure misconfiguration by construction
 - The preview/receipt/revalidate/atomic-commit transaction model gives integrity protection that most local tools lack; receipts bind destination identity, base hash, input hashes, and exact-byte hash
 - Existing code conventions (atomic writer, bounded duplicate-key-safe JSON, symlink-rejecting reads, control-character stripping, shared SHA-256 hex fingerprints) already encode several required controls and are reused rather than reinvented
-- No-runtime-network and no-service-worker constraints mean even a successful XSS cannot exfiltrate data to a remote origin under the CSP
+- Offline assets and restrictive CSP reduce remote request surfaces. They do not by themselves establish a complete browser exfiltration guarantee after a successful XSS; that threat remains subject to security evaluation.
 - Project Containment's typed-API-only rule removes generic file-server abuse rather than trying to filter it
 
 ---
@@ -835,3 +835,32 @@ Before marking as Approved:
 - [ ] No Critical/High findings remain Open — R1/R2 close only when the adversarial suite and platform primitive review pass
 - [x] Compliance N/A items have justification
 - [x] Risk acceptance has named approver and review date
+
+## Source checkpoint — 2026-10-05 (not security acceptance)
+
+The Slice 0 requirements and 2026-09-10 implementation evidence above remain
+historical review records. The pinned candidate (`304b31f8`) has a separately
+selected API major: default/explicit `/api/v1` and explicit `/api/v2` use
+distinct committed contracts (`src/workspace/contract.rs`). This does not change
+the original normative v1 requirements or waive later API-family review.
+
+The retained `src/workspace/session.rs` centrally fixes the D-1 Argon2id
+parameters. `assets.rs` embeds offline script/style references and a shell with
+alert/status/dialog hooks; `http.rs` supplies the restrictive CSP and no-store
+headers. These bounded source observations do not constitute an adversarial
+browser/security audit, dependency acceptance, ASVS checklist completion or
+manual accessibility evaluation.
+
+Treat the T-5, D-4 and AV-13 committed-or-unchanged language as intended
+verification targets, not a universal promise from an error response. The
+single-file writer in `src/workspace/root.rs` prepares and revalidates before
+rename, then attempts parent sync without reporting a successful rename as a
+failed write. The candidate's separate source-restore transaction exposes
+`recovery-required` and `write_outcome: unknown` when complete state cannot be
+verified (`root_transaction.rs`). Recovery may block further project access;
+inspect the retained outcome rather than infer unchanged files from a failure.
+The final external-writer race and crash/durability limits remain applicable.
+
+All named risk acceptances, findings, questions, approval checkboxes and security
+sign-off fields above remain unchanged. No live platform run or human decision
+was obtained in this checkpoint, and the whole-goal acceptance remains open.

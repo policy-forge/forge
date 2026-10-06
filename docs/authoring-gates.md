@@ -18,10 +18,11 @@ implemented, effective or approved language (M-14), and no approval or lifecycle
 evidence is created.
 
 The [Authoring `/3` review candidate](authoring-review-exchange.md) preserves
-these recorded dispositions and open pilot/release gates. Component test evidence
-does not authenticate asserted review keys, grant independent reviewer authority
-or promote a native plan. Its final integrated docstring/test-coverage and
-goal-wide documentation checks remain required.
+these recorded dispositions and open pilot/release gates. Its guide separates
+the earlier TEMP docstring/test-coverage qualification from the later integrated
+open-draft readback and remaining hosted gates. Neither authenticates asserted
+review keys, grants independent reviewer authority or promotes a native plan.
+The whole-goal documentation review remains open.
 
 ## Status
 

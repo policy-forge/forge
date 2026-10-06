@@ -58,8 +58,11 @@ native semantic review and independent-tool interpretation remain required.
 An explicitly supplied prior authoring manifest enforces exact event-prefix
 preservation and immutable plan/item/milestone keys. This does not prove history
 before that supplied baseline. The first lane refuses removal and terminal
-identity revision; a full baseline impact/removal/reopening workflow is still
-required. Prior baseline bytes receive structural validation only in this lane;
+identity revision. The separate [baseline comparison command](poam-baseline-comparison.md)
+can report complete added/removed/changed identities and proposed reopening links,
+including revisions that native production refuses. It grants no accepted removal,
+terminal revision or reopening authority; those decisions remain required. Prior
+baseline bytes receive structural validation only in this native-production lane;
 current source bytes and the exact selected source tuple are independently checked.
 
 Bounds remain four MiB raw manifest, 64 KiB decoded strings, 10,000 items, 1,000

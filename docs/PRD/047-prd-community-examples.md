@@ -324,7 +324,7 @@ graph LR
     end
 ```
 
-- **Requires:** [WI-35: Phase 2 Integration Testing](docs/PRD/035-prd-phase2-integration.md) — the conversion pipeline must be stable and validated before creating reference example outputs
+- **Requires:** [WI-35: Phase 2 Integration Testing](035-prd-phase2-release.md) — the conversion pipeline must be stable and validated before creating reference example outputs
 - **Parallel With:** [WI-45: SSP Template Structure](045-prd-ssp-template-structure.md), [WI-46: SSP Template Placeholders](046-prd-ssp-template-placeholders.md), [WI-48: Community Documentation](048-prd-community-documentation.md), [WI-49: Cross-platform Release](049-prd-cross-platform-release.md) — runs in the same Phase 3 timeframe
 - **Blocks:** [WI-48: Community Documentation](048-prd-community-documentation.md) — documentation references examples for usage guide; [WI-49: Cross-platform Release](049-prd-cross-platform-release.md) — release package should include working examples
 - **External:** None
@@ -483,3 +483,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation (OQ-1 and OQ-2 are non-blocking preferences)
+
+## Source checkpoint — 2026-10-05
+
+The retained source tree contains examples/simple-access-control, examples/component-based, examples/full-compliance-package and examples/authoring. Older illustrative simple/moderate/complex-policy paths are not current copy-paste paths. The present ingestion pipeline accepts Markdown, PDF with extractable text and DOCX; it does not perform OCR. This source note does not qualify any example or external-tool run.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/cli/mod.rs](../../src/cli/mod.rs), [src/ingest/mod.rs](../../src/ingest/mod.rs).

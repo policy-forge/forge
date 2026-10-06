@@ -1,19 +1,25 @@
 # FORGE Tester Runbook
 
-A hands-on manual for testing FORGE end to end: from the simplest
-Markdown-to-OSCAL conversion to drafting policies from control standards with
-local-AI suggestions. Every command below was run against the release binary
-from the repository root; expected outputs are shown so you can confirm each
-step worked.
+A hands-on recipe for FORGE workflows: from Markdown-to-OSCAL conversion to
+policy drafting with explicit human inputs and optional configured suggestions.
+Expected outputs below are guidance; they are not a fresh execution receipt bound
+to the current source head. Dated verification records retain their own scope.
 
 Conventions:
 
-- `forge` means `./target/release/forge` (build it with
-  `cargo build --release --locked`).
-- Work in a scratch directory for Chapters 3–4 so generated files stay out of
+- Start from the repository root. Build the release binary and add its absolute
+  directory to `PATH` before entering a scratch directory:
+
+  ```bash
+  cargo build --release --locked
+  export PATH="$(pwd)/target/release:$PATH"
+  ```
+
+- Run Chapters 1–2 from the repository root: their `example_data/` inputs are
+  repository-relative and their outputs go to `/tmp`.
+- Work in a fresh scratch copy for Chapters 3–4 so generated files stay out of
   the repo: `cp -r examples/authoring /tmp/forge-run && cd /tmp/forge-run`.
-- Chapters 1–2 only read `example_data/` and write to `/tmp`, so they are safe
-  to run anywhere.
+  The absolute binary directory on `PATH` continues to work after this change.
 
 ## 1. Convert a Markdown policy to OSCAL (the simplest path)
 

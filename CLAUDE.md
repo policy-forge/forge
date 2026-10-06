@@ -45,7 +45,8 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 
 ## Dependencies
 
-Rust edition 2024 with MSRV 1.85. The version ranges below mirror
+`Cargo.toml` declares Rust edition 2024 and `rust-version = "1.85"`; this is a
+manifest minimum, not a measured current MSRV qualification. The version ranges below mirror
 `Cargo.toml`; `Cargo.lock` is authoritative for exact resolved versions.
 
 ### Production
@@ -66,7 +67,7 @@ Rust edition 2024 with MSRV 1.85. The version ranges below mirror
 | chrono | 0.4 | Timestamps (OSCAL metadata) |
 | url | 2 | URL parsing (back matter, citations) |
 | uuid | 1 | Deterministic v5 + random v4 identifiers |
-| jsonschema | 0.45 | Offline OSCAL schema validation (resolver defaults disabled) |
+| jsonschema | 0.57 | Offline OSCAL schema validation (resolver defaults disabled) |
 | quick-xml | 0.41 | XML serialization/deserialization (serialize feature) |
 | rayon | 1 | Parallel batch processing |
 | tempfile | 3 | Atomic temporary output files |

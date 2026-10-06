@@ -28,8 +28,10 @@ bump. (Owner disposition, 2026-09-11; see [authoring gates](authoring-gates.md).
 - **Exhaustive `match` on `AuthorCommand` or `ForgeError`:** add the new arms, or
   add a trailing `_ => ...`. Prefer matching the variants you handle and letting
   the rest fall through, so future additions do not break compilation again.
-- **Constructing `AuthorCommand`:** unchanged; the enum is only produced by clap
-  parsing in the binary (`forge author <command> --manifest ...`).
+- **Constructing `AuthorCommand` in Rust:** provide all required variant fields,
+  including newly added fields such as `components`, `html` and `format`. Library
+  callers can construct this public enum directly. Matches that do not use every
+  field can include `..`; clap parsing remains the CLI construction path.
 - **Constructing or matching `ForgeError`:** existing variants keep their meaning.
   New authoring variants report invalid authoring input (`Authoring`) and
   "valid artifacts, authoring work remains" (`AuthoringActionRequired`, exit 1).

@@ -139,7 +139,7 @@ API 2.3.0 declares57 operations, preserving the51-operation2.2 contract and addi
 
 ## Staged source successor: API2.4
 
-This proposal adds eight operations (65 total) and five actions. API1/1.2.0 remains39; the inline Bundle3/2.3 checkpoint remains57. New staged controls require explicit2.4; existing S3/metadata/inline-source consumers must deliberately include2.4. ROOT integration and actual tests are required before advertisement.
+The current draft contract declares eight staged-source operations (65 total) and five actions. API1/1.2.0 remains 39; the inline Bundle3/2.3 checkpoint remains 57. Staged controls require explicit 2.4; the maintained client admits 2.4 for inspection, metadata and inline-source features according to their separate version gates. These declarations do not establish a published release or acceptance; advertisement and conformance evidence must bind the selected runtime/artifact.
 
 | ID | Action | Step | Stories | Operations | Authorization |
 |---|---|---|---|---|---|

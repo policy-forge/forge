@@ -495,3 +495,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+The current typed builder requires stable requirement IDs and returns ControlImplementation entries. It accepts optional source-file context, sanitizes source-profile hrefs and receives regular-file checks from the CLI. Those checks do not establish a semantically valid resolved Profile or approval. Missing-ID fallback and raw path pass-through examples remain historical.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/oscal/implemented_requirements.rs](../../src/oscal/implemented_requirements.rs), [src/cli/convert.rs](../../src/cli/convert.rs).

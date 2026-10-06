@@ -408,7 +408,7 @@ graph LR
 
 - **Requires:** [008-prd-citation-extraction](008-prd-citation-extraction.md) (provides extracted Citation objects), [009-prd-catalog-groups-controls](009-prd-catalog-groups-controls.md) (provides catalog control skeleton for link insertion)
 - **Parallel With:** [009-prd-catalog-groups-controls](009-prd-catalog-groups-controls.md), [010-prd-catalog-statement-parts](010-prd-catalog-statement-parts.md), [011-prd-oscal-metadata](011-prd-oscal-metadata.md)
-- **Blocks:** [013-prd-end-to-end-catalog](docs/PRD/013-prd-end-to-end-catalog.md) (end-to-end catalog pipeline)
+- **Blocks:** [013-prd-end-to-end-catalog](013-prd-catalog-pipeline.md) (end-to-end catalog pipeline)
 - **External:** OSCAL v1.2.0 JSON schema (back matter section)
 
 ---
@@ -524,3 +524,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+The current builder returns resources and a citation-ID-to-resource-UUID map and deduplicates normalized resource identity. Valid HTTP(S) URLs use canonical spelling. Dangerous and control-obfuscated schemes are omitted from rlinks while citation evidence and a removal property remain; malformed-URL examples must not imply that dangerous links are emitted. No URL is fetched.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/oscal/back_matter.rs](../../src/oscal/back_matter.rs).

@@ -1,5 +1,12 @@
 # Linux headless OS-denial prerequisite
 
+This page preserves separate dated mock, physical-control and hosted runtime
+checkpoints. The [22-case physical campaign](#inspected-hosted-physical-campaign-successor)
+is not a successful IP-denial experiment; the runtime producer remained not-run
+at that checkpoint. Earlier proposal/pending wording and all failed receipts
+retain their original intervals. No later source presence or unrelated passing
+job supplies native denial, attempted-egress or acceptance evidence.
+
 This F04 development slice prepares a calibrated Linux x86_64 IP-denial experiment for a provided Forge release and the maintained headless client. The first authentic hosted attempt at `532c9e808d831bd6a43c6ed84d73956f9eb77c41` failed before the native experiment with `tool-untrusted`; its exact failing predicate remains unknown. No successful native Linux experiment, associated Forge/client/probe run or attempted-egress observation has been qualified.
 
 The fixed-administrative-path successor has passed 106 mocked controls on frozen TEMP sources. It selects exactly `/usr/bin/python3`, `/usr/bin/ip`, and `/usr/bin/sudo`; ordinary shared tool observation remains separate. Outer `/2`, native `/1`, shared API/client `/2`, all 71 diagnostic pairs, and the original pass/trust/deadline/cleanup gates remain unchanged. This is development evidence with `acceptance_eligible=false`; fixed paths remain conditional on actual presence and qualification.

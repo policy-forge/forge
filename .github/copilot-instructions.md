@@ -4,7 +4,7 @@
 
 **FORGE** (Framework for OSCAL Risk & Governance Execution) is a Rust CLI tool that converts Markdown security policy documents into OSCAL (Open Security Controls Assessment Language) artifacts — NIST's standard for machine-readable compliance. It produces OSCAL Catalogs and Component Definitions in JSON, XML, and YAML.
 
-- **Language**: Rust, Edition 2024, stable 1.93.0
+- **Language**: Rust, Edition 2024; `Cargo.toml` declares the minimum version, and qualification records bind the exact tested compiler.
 - **Binary crate**: `src/main.rs` (CLI entry point)
 - **Library crate**: `src/lib.rs` (all reusable modules)
 - **License**: MIT
@@ -48,17 +48,19 @@ The project enables `clippy::all` and `clippy::pedantic` lint groups in `Cargo.t
 ./scripts/ci-local.sh
 ```
 
-This runs: `cargo fmt --check` → `cargo clippy -- -D warnings` → `cargo test` → `cargo bench --bench pipeline_benchmark -- --warm-up-time 1 --measurement-time 3` → `cargo audit` → `cargo deny check`.
+The maintained [`scripts/ci-local.sh`](../scripts/ci-local.sh) runs format, all-target Clippy, tests, the API contract gate, `cargo audit`, `cargo deny check` and `cargo vet --locked`. Set `CI_LOCAL_BENCH=1` to add the pipeline benchmark; it is opt-in locally. The script and [CI workflow](workflows/ci.yml) define their exact commands.
 
-Individual CI steps (mirrors `.github/workflows/ci.yml`):
+Individual checks (see the maintained script for order and preconditions):
 
 ```bash
 cargo fmt --check
-cargo clippy -- -D warnings
+cargo clippy --all-targets -- -D warnings
 cargo test
-cargo bench --bench pipeline_benchmark -- --warm-up-time 1 --measurement-time 3
-cargo audit          # requires: cargo install cargo-audit --locked
-cargo deny check     # requires: cargo install cargo-deny --locked
+cargo test --test api_contract_validation
+cargo audit               # requires cargo-audit
+cargo deny check          # requires cargo-deny
+cargo vet --locked        # requires cargo-vet
+CI_LOCAL_BENCH=1 ./scripts/ci-local.sh  # add the optional local benchmark
 ```
 
 ## Project Layout
@@ -109,7 +111,7 @@ benches/             # Criterion benchmarks
 - **Serialization**: JSON via `serde_json`, XML via `quick-xml` (feature `serialize`), YAML via `serde_yaml_ng` (aliased as `serde_yaml` in `Cargo.toml`).
 - **Schemas** are embedded at compile time with `include_str!` from the `schemas/` directory.
 - **UUIDs** are deterministic (v5) for stable identifiers; random (v4) for unique run metadata.
-- **No network dependencies** — reads and writes local files only.
+- **Offline core** — conversion and embedded validation need no outbound fetch. The explicitly launched loopback workspace and configured external-tool paths have separate contracts.
 
 ## Dependencies
 
@@ -146,6 +148,12 @@ version matters.
 | DOCX ingestion | `zip 8` (deflate only) |
 | Snapshot testing | `insta 1` (json feature) |
 | Temp files | `tempfile 3` |
+
+The version column describes the declared graph; it is not a new version-specific
+approval or audit record. In particular, the current `Cargo.toml` declares
+`jsonschema 0.57`, while older documentation recorded `0.45`. Resolve approval
+provenance from the introducing PR/PRD and supply-chain records; this editorial
+refresh does not close the recorded dependency audit or vet gaps.
 
 Approved for the local workspace transport and session unlock (mandated by
 [PRD 062](../docs/PRD/062-prd-local-web-workspace.md) M-1, which requires a

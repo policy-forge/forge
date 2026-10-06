@@ -248,3 +248,9 @@ unvetted crate or stale exception), `2` invalid store or input.
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-09-11 | Codex | Initial draft for a full dependency audit: inventory, criteria, owned exceptions, differential audits and a CI gate |
+
+## Source checkpoint — 2026-10-05
+
+The 293 pre-existing plus 26 workspace exemptions and scaffold-only audit statements are the recorded 2026-09-11 baseline, not freshly measured graph/store counts. The retained src/Cargo snapshot does not include audit-store or CI contents for this review. Current inventory and gate claims require an exact committed lockfile, store and CI evidence. New dependencies still require recorded approval and a supply-chain entry; no human auditor, trusted import or exception decision is supplied by this note.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged.

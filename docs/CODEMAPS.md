@@ -209,7 +209,7 @@ Benchmark results (from `cargo bench`):
 ## Architecture Decisions
 
 1. **Functional pipeline**: Each stage takes ownership and returns enriched data (no shared mutable state)
-2. **Deterministic output**: UUID v5 with content-based namespace ensures identical input always produces identical output
+2. **Stable requirement identities**: Content-derived UUID v5 identifiers support comparison. Catalog/Component artifact metadata uses runtime UUIDs and timestamps by default, so identical input does not imply byte-identical complete output; see [configuration reproducibility limits](project-configuration.md#reproducibility-limitation).
 3. **Schema-first validation**: OSCAL JSON schemas embedded at compile time via `include_str!`
 4. **Post-processing traceability**: Trace links injected after OSCAL generation to keep generation logic clean
 5. **Lazy regex compilation**: `LazyLock<Regex>` for patterns used in atomization and citation extraction

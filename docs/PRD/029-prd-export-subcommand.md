@@ -486,3 +486,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+Current export detects source format from the extension and validates decoded Catalog or Component Definition content before serialization. JSON/YAML output preserves the decoded value within the exact integer domain; XML uses the narrower maintained typed projection. Profile, SSP, Mapping and POA&M export remain refused. This is the current boundary, not a generic all-model fidelity guarantee.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/cli/export.rs](../../src/cli/export.rs).

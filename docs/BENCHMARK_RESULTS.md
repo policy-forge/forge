@@ -1,5 +1,9 @@
 # Benchmark Results (WI-24)
 
+> Historical WI-24 measurement record. The values and hardware below are retained
+> as recorded; this page does not bind a current source head or raw run receipt
+> and is not a fresh performance qualification.
+
 ## Hardware Description
 
 | Parameter | Value |

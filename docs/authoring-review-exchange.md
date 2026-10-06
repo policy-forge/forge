@@ -4,9 +4,10 @@ The implementation candidate adds `forge review authoring init`, `respond`,
 `merge` and `status` with separate closed `/3` documents. Closed TEMP qualification
 includes full tests, strict lint and a genuine compiled CLI campaign on macOS;
 the qualification checkpoint below records exact documentation and LLVM scopes.
-These instructions apply after candidate integration. Published v1.1.0 does not
-include this exchange. Final integrated checks and hosted/platform/human acceptance
-remain open.
+These instructions apply to the integrated open draft described in the
+[readback checkpoint](#open-draft-integration-readback-2026-10-06-utc). Published
+v1.1.0 does not include this exchange. Remaining hosted/platform/human acceptance
+and release gates stay open.
 
 Reviewer keys, roles, author keys and times are assertions. `quorum-met` means
 that the declared review policy is satisfied. It does not approve a plan, certify
@@ -94,7 +95,7 @@ This example assigns two distinct reviewers and excludes the declared author:
 ```
 
 Use the [init-request schema](../schemas/forge.review-authoring-plan-init-1.schema.json)
-with the candidate after integration. Keys and ordered declaration lists must be
+with the integrated draft. Keys and ordered declaration lists must be
 unique and sorted as required by the closed format. Assignments and substitutions
 must reference declared roles and reviewers and cannot make an author eligible.
 A non-null due time must be later than queue creation. Review times use real
@@ -268,11 +269,40 @@ reconciles the extra unchanged `suggest::review` control. These overlapping
 cohorts are not added together. Zero-test compiler failures, the failed command
 fixture trial and earlier strict-lint failures remain historical evidence.
 
-Root must integrate the exact qualified source and schemas and verify the final
-integrated source/documentation bindings before drafting the PR. Hosted CI, real
-review-team workflows, reviewer authority, interoperability, additional platform
-and privacy qualification, pilot measurements and release acceptance remain
-separate. Other F13 adapters, individual-clause and component-plan review, proposed
+At this earlier TEMP checkpoint, exact managed integration and final
+source/documentation readback were required before drafting. The later
+[open-draft readback](#open-draft-integration-readback-2026-10-06-utc) records the
+integrated PR and mixed hosted gates. Real review-team workflows, reviewer
+authority, interoperability, additional platform and privacy qualification,
+pilot measurements and release acceptance remain separate.
+Other F13 adapters, individual-clause and component-plan review, proposed
 edits, local response clients and signed envelopes remain open. This is a scoped
 documentation proposal; the user's final goal-wide documentation review is not
 complete.
+
+### Open-draft integration readback: 2026-10-06 UTC
+
+[Draft PR #219](https://github.com/policy-forge/forge/pull/219) contains the
+Authoring `/3` exchange at head
+`304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`, based on the Lifecycle review branch.
+It remains open and is not included in verified `main`
+`aef0ab24f77559593b6d0b4fe5027f8a5eaa857e` or the published v1.1.0 binary.
+The prior TEMP qualification checkpoint retains its exact source, test,
+documentation, compiled-child and library coverage populations; the integration
+readback is a separate later observation.
+
+Hosted Test and Workspace API jobs pass on macOS, Linux and Windows at this
+head. Two hosted gates still fail:
+[Supply-chain audits](https://github.com/policy-forge/forge/actions/runs/37397458081/job/112056718700)
+and the
+[Linux headless IP-denial prerequisite](https://github.com/policy-forge/forge/actions/runs/37397458213/job/112056719119).
+Those failed rows are retained without converting them to acceptance or assigning
+unverified detailed failure counts. Passing tests do not change production
+Windows publication refusal, provide an installed-platform CLI campaign, or
+supply reviewer authority, real-team workflows, privacy/interoperability studies,
+pilot measurements or release approval.
+
+No Must/Should or Ready checkbox is changed by this readback. Other adapters,
+individual-clause/component-plan review, proposed edits, local response clients
+and signed envelopes remain separate unfinished work. The whole-goal
+documentation review remains OPEN.

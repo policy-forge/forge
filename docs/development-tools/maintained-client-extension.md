@@ -1,5 +1,13 @@
 # Maintained headless client extension
 
+This page preserves the extension's local and 2026-10-02 hosted measurements.
+The [qualified hosted checkpoint](#qualified-hosted-checkpoint--2026-10-02)
+supersedes only the earlier delivery-pending state for its exact API receipts.
+The API 1.2.0 and operation counts below describe those historical sources; newer
+open-draft APIs and their client gates are documented separately in
+[workspace operations](../workspace-operations.md). No current-head, complete
+39-operation, OS-denial or product acceptance follows from the old receipt.
+
 The maintained client now has a locally tested extension for fourteen additional workspace operation families. The root-owned candidate run passed all sixteen existing check groups against a preserved default-feature release executable built with `--release --locked --offline` from Rust source at `aa73a72349bce9f61905ceaea02f934c01e3d6b3`. The candidate scripts were frozen separately; this local result is not release-candidate, hosted, browser, OS-confinement, attempted-egress or human acceptance.
 
 From the repository root, run the standard-library controls or the actual client against a supplied Forge executable:

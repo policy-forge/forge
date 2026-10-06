@@ -53,6 +53,61 @@ This dated checkpoint changes none of the historical tables below. The final
 integrated documentation review and exact-source docstring/test coverage checks
 remain required before the next draft PR.
 
+### Open-draft integration readback: 2026-10-06 UTC
+
+[Draft PR #219](https://github.com/policy-forge/forge/pull/219) contains the
+Authoring `/3` exchange at head
+`304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`, based on the Lifecycle review branch.
+It remains open and is not included in verified `main`
+`aef0ab24f77559593b6d0b4fe5027f8a5eaa857e` or the published v1.1.0 binary.
+The prior TEMP qualification checkpoint retains its exact source, test,
+documentation, compiled-child and library coverage populations; the integration
+readback is a separate later observation.
+
+Hosted Test and Workspace API jobs pass on macOS, Linux and Windows at this
+head. Two hosted gates still fail:
+[Supply-chain audits](https://github.com/policy-forge/forge/actions/runs/37397458081/job/112056718700)
+and the
+[Linux headless IP-denial prerequisite](https://github.com/policy-forge/forge/actions/runs/37397458213/job/112056719119).
+Those failed rows are retained without converting them to acceptance or assigning
+unverified detailed failure counts. Passing tests do not change production
+Windows publication refusal, provide an installed-platform CLI campaign, or
+supply reviewer authority, real-team workflows, privacy/interoperability studies,
+pilot measurements or release approval.
+
+No Must/Should or Ready checkbox is changed by this readback. Other adapters,
+individual-clause/component-plan review, proposed edits, local response clients
+and signed envelopes remain separate unfinished work. The whole-goal
+documentation review remains OPEN.
+
+### Current source availability: 2026-10-06 UTC
+
+The September reconciliation below is historical. The verified main baseline is
+`aef0ab24f77559593b6d0b4fe5027f8a5eaa857e`; it contains the local workspace
+implementation from [PR #146](https://github.com/policy-forge/forge/pull/146),
+merged on 2026-09-12 at `24d356ef14887660c285d95b635bbe00db13c933`. The old
+in-progress PR #146 row does not describe its present merge state. This establishes
+the merged workspace baseline, rather than acceptance of every PRD 062 feature.
+Workspace API 2.4 belongs to the newer open draft source, separately from main.
+
+The earlier 2026-10-05 MCP App failure checkpoint above remains historical.
+[Draft PR #220](https://github.com/policy-forge/forge/pull/220) later integrates
+explicit `/2` native server queries at
+`7bd8a6f336632660952085aae3574c83a2612e2a`, based on
+`codex/f11-read-only-mcp-discovery`. The [MCP guide](mcp.md) preserves the later
+qualified engineering populations and the separately dated integration readback.
+At the 2026-10-06 02:26 UTC check snapshot, Supply-chain audits and the Linux
+headless IP-denial prerequisite failed, while five workflow jobs remained in
+progress. This snapshot supplies no complete hosted qualification or failure-cause
+attribution. The original 02:16 all-in-progress snapshot is retained separately.
+
+The open Authoring and MCP drafts are neither merged main nor a released 2.0.0.
+The earlier main/October baseline counts, WI-1–WI-50 history, recorded owner
+choices, requirement/Ready checkboxes and all pending acceptance gates keep their
+original scopes. Real owner records, review-team and client/corpus evaluation,
+remaining unsupported features, platform/privacy qualification, release authority
+and the final goal-wide documentation review remain open.
+
 ## Historical reconciliation summary: 2026-09-11
 
 This document is the canonical reconciled roadmap for FORGE. Earlier roadmap

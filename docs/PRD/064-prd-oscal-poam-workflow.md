@@ -221,3 +221,9 @@ Risk/findings absent from the POA&M remain absent; FORGE does not infer `no acti
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-08-24 | Codex | Initial draft for human-owned OSCAL POA&M planning and status history |
+
+## Source checkpoint — 2026-10-05
+
+The retained candidate provides native POA&M foundation and nonterminal workflow interfaces. Terminal completion and accepted-risk dispositions remain refused under D064 until the approved design and owner evidence exist. Required assessment/native identity, provenance and explicit dates remain domain inputs; recorded workflow output is not approval or closure authority.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/poam/mod.rs](../../src/poam/mod.rs), [src/poam/workflow.rs](../../src/poam/workflow.rs), [src/poam/workflow_cli.rs](../../src/poam/workflow_cli.rs).

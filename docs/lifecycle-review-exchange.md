@@ -1,9 +1,9 @@
 # Lifecycle review exchange candidate
 
-The implementation candidate registers four local commands: `forge review
-lifecycle init`, `respond`, `merge` and `status`. These instructions apply after
-the candidate code and documentation are integrated. Published v1.1.0 does not
-include this exchange. One authentic 2026-10-05 coupled run passed 63 controls,
+The open draft implementation registers four local commands: `forge review
+lifecycle init`, `respond`, `merge` and `status`. These instructions target that
+draft source. Published v1.1.0 does not include this exchange. One authentic
+2026-10-05 coupled run passed 63 controls,
 including a real in-process clap-to-execute workflow. Later local checks cover
 normal regressions, strict lint, library-only LLVM and a macOS child workflow;
 other platform and human acceptance remain open.
@@ -214,4 +214,12 @@ Linux/Windows Lifecycle execution, platform/privacy/accessibility qualification,
 real reviewer/owner/team acceptance and release gates remain open. Other F13
 adapters, proposed edits, interactive response-file clients and signed envelopes
 remain separate work. This guide does not finish the final goal-wide docs review;
-reconcile it again against the eventual integrated source.
+reconcile it again against the final accepted source.
+
+A separate 2026-10-06 UTC source/readback checkpoint records Lifecycle PR #218
+as an open draft at `6f5da682369b41dba53d4d9c89240d6c34f75cec`; Authoring PR #219
+at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4` inherits these registered commands.
+This establishes draft-source integration, not merge, release, reviewer authority
+or human acceptance. The TEMP checks above retain their original source and
+coverage scopes; this checkpoint does not add hosted or cross-platform runtime
+credit to them.

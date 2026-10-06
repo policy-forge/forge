@@ -42,17 +42,20 @@ Rustdoc link checks passed separately for the library and binary. Exact source, 
 executable coverage denominators, zero-count records, and limitations are recorded in the
 [root validation audit](plans/2026-10-02-f19-lifecycle-captured-status-checks-v2.json).
 
-The later [portable Lifecycle review exchange candidate](lifecycle-review-exchange.md)
-consumes a separate native closure and registers four review commands in the
-implementation candidate. After integration, these remain separate from the
-status `/1` report and its qualification; review quorum grants no native
-Lifecycle transition or reviewer authority.
+The separate [portable Lifecycle review exchange](lifecycle-review-exchange.md)
+is registered in the open draft stack and consumes its own native closure. Its
+four review commands remain separate from the status `/1` report and its
+qualification; review quorum grants no native Lifecycle transition or reviewer
+authority. The linked guide distinguishes draft-source availability from
+acceptance and release.
 
 See the [projector source](../src/lifecycle/status.rs),
 [CLI regression tests](../tests/lifecycle_cli_test.rs), and
 [delivery plan](plans/2026-10-02-f19-lifecycle-captured-status.md).
 
-Lifecycle/impact browser views, workspace capture and freshness integration, human acceptance,
-and the final all-work integrated documentation review remain open. This prerequisite does not
-complete PRD 062 Should S-3. Commit, enabled repository-hook and draft delivery evidence are
-recorded separately from the pre-commit validation audit.
+The open draft stack also provides [read-only Lifecycle & Impact inspection](workspace-lifecycle-impact.md)
+over registered captured inputs. That separate view does not turn this prerequisite
+into accepted PRD 062 Should S-3. Human, platform and release acceptance, and the
+final all-work integrated documentation review, remain open. Commit, enabled
+repository-hook and draft delivery evidence are recorded separately from the
+pre-commit validation audit.

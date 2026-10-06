@@ -487,3 +487,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+The builder emits a statement part and optional nonempty guidance. An objective enum does not establish objective generation, which remains deferred. The present build_control_parts interface accepts guidance, emits schema-safe part IDs and represents source-line properties with a separate namespace rather than the Draft forge:source-line spelling.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/oscal/parts.rs](../../src/oscal/parts.rs), [src/oscal/catalog.rs](../../src/oscal/catalog.rs).

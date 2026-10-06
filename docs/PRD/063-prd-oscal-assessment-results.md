@@ -279,3 +279,9 @@ remain open. The full goal-wide documentation review remains a final gate.
 |---------|------|--------|---------|
 | 0.2 | 2026-08-27 | Codex | Implemented the bounded JSON MVP, schema provenance, exact context/reference validation, deterministic typed output, baseline/reporting, scaffold, tests, and engineering-status audit; human release gates remain open |
 | 0.1 | 2026-08-24 | Codex | Initial draft for human-authored OSCAL Assessment Results |
+
+## Source checkpoint — 2026-10-05
+
+The Background statements about stopping before an assessment layer and an absent schema spike describe the original planning checkpoint. Native Assessment Results and later explicit epoch/risk-authoring interfaces now appear in the retained candidate. Recorded evaluations and declared history are not assessor independence, evidence sufficiency or a pilot result; terminal D064 closure remains refused.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/assessment_results/mod.rs](../../src/assessment_results/mod.rs), [src/poam/risk_authoring_cli.rs](../../src/poam/risk_authoring_cli.rs), [src/poam/assessment_epochs_cli.rs](../../src/poam/assessment_epochs_cli.rs).

@@ -354,7 +354,7 @@ graph LR
 ```
 
 - **Requires:** [001-prd-project-scaffolding](001-prd-project-scaffolding.md) (project structure), [005-prd-domain-model](005-prd-domain-model.md) (DocumentMetadata struct), WI-9 (catalog structure exists to add metadata to)
-- **Blocks:** [013-prd-end-to-end-catalog](docs/PRD/013-prd-end-to-end-catalog.md) (end-to-end catalog pipeline needs metadata)
+- **Blocks:** [013-prd-end-to-end-catalog](013-prd-catalog-pipeline.md) (end-to-end catalog pipeline needs metadata)
 - **Parallel With:** WI-9 (Catalog groups/controls), WI-10 (statement parts/prose), WI-12 (back matter)
 - **External:** None
 
@@ -468,3 +468,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+The maintained metadata has title, last-modified, version and oscal-version; artifact UUID belongs at the root. The current schema baseline is OSCAL 1.2.3. Empty title or version returns Validation rather than the original warning/default example; explicit override interfaces remain available.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/oscal/metadata.rs](../../src/oscal/metadata.rs).

@@ -227,14 +227,13 @@ After preparation, the component pipeline:
 ## Local workspace runtime
 
 `workspace::launch` selects one API major before capture, credentials or listening.
-The captured committed checkpoint declares API v1 **1.2.0 / 39 operations** and
-API v2 **2.3.0 / 57 operations**. The separately captured working tree declares
-API2 **2.4.0 / 65 operations** under integration, adding eight staged-source
-operations to those retained surfaces. This source description establishes no
-compiled, merged or hosted result and does not move v1 callers to v2. These local
-contract versions are separate from the product release version. See the
-[workspace codemap](CODEMAPS.md#workspace-source-bundle-paths) and
-[API compatibility policy](api/compatibility.md).
+The selected committed draft source (`304b31f8`) declares API v1 **1.2.0 / 39
+operations** and API v2 **2.4.0 / 65 operations**, including eight staged-source
+operations beyond the historical 2.3.0/57 checkpoint. The source declaration does
+not move v1 callers to v2 or establish a published release, platform/capacity or
+human acceptance result. Contract versions are separate from the product release
+version. See the [workspace codemap](CODEMAPS.md#workspace-source-bundle-paths)
+and [API compatibility policy](api/compatibility.md).
 
 | Method and source route | Handoff |
 | --- | --- |
@@ -294,14 +293,12 @@ not revived. The Windows native restore port returns typed unavailable rather
 than using a weaker publication fallback.
 
 The [source workflow guide](workspace-source-bundles.md) defines the finite inline
-profile and whole planning/capture/retention limits. In the separately captured
-working tree, `http_staged.rs`, `source_transfers.rs` and `source_stream_reads.rs`
-provide the staged adapter, session transport and committed private-part reader
-proposals described in the [staged guide](workspace-staged-source-bundles.md).
-Their presence does not establish runtime or capacity qualification. Larger capacity,
-cross-platform crash/rollback qualification, human acceptance and the final
-integrated documentation gate remain open; this architectural description supplies
-no execution or acceptance result.
+profile and whole planning/capture/retention limits. The current draft source also
+contains `http_staged.rs`, `source_transfers.rs` and `source_stream_reads.rs` for
+the staged adapter, session transport and committed private-part reader described
+in the [staged guide](workspace-staged-source-bundles.md). Source presence is not
+a runtime or capacity result. Larger capacity, cross-platform crash/rollback,
+human acceptance and final integrated documentation gates remain separate.
 
 ## CLI Commands
 

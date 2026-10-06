@@ -280,3 +280,9 @@ fresh coverage/docstring checks remain required.
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-08-24 | Codex | Initial draft for deterministic asynchronous collaborative review queues |
+
+## Source checkpoint — 2026-10-05
+
+The stack-219 snapshot includes integrated draft portable /1, Lifecycle /2 and whole saved-plan/1 Authoring /3 review commands. Their earlier TEMP evidence remains historical; exact integrated/head and hosted/platform checks are separate receipt intervals. Asserted reviewer identity, preserved dissent and quorum do not authenticate people, approve domain artifacts or promote a plan. Other adapters, proposed edits, interactive clients, signatures and team adoption remain separate requirements.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/review/mod.rs](../../src/review/mod.rs), [src/review/commands.rs](../../src/review/commands.rs), [src/review/authoring_commands.rs](../../src/review/authoring_commands.rs), [src/cli/mod.rs](../../src/cli/mod.rs).

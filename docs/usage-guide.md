@@ -940,21 +940,13 @@ forge -q convert policy.md --strategy catalog --format json
 
 ## 5. The FORGE Pipeline
 
-Every `convert` execution runs through these stages:
+The common conversion preparation and output sequence is:
 
-```
-Ingest → Parse → Extract → Assemble → Atomize → Assign IDs → Map to OSCAL → Serialize → Validate
-```
+1. **Prepare the source** — Ingest and reconstruct content, extract sections and clauses, then assemble the internal `PolicyDocument`.
+2. **Enrich requirements** — Atomize compound requirements, assign stable IDs, then extract citations, annotate modalities and extract parameters.
+3. **Build and emit the model** — Map to the requested supported OSCAL model, embed applicable trace links, validate the JSON-compatible model structurally and semantically, then serialize in the requested format.
 
-1. **Ingest** — Read and validate the input file
-2. **Parse** — Extract sections, clauses, and structure from Markdown
-3. **Extract** — Pull out citations, modalities, and parameters
-4. **Assemble** — Build the internal PolicyDocument model
-5. **Atomize** — Split compound requirements into individual controls
-6. **Assign IDs** — Generate deterministic UUID v5 identifiers
-7. **Map to OSCAL** — Build OSCAL Catalog or Component Definition, embedding trace links
-8. **Serialize** — Convert to JSON, XML, or YAML
-9. **Validate** — Run JSON schema + semantic validation
+The exact model-specific path is described in the [architecture guide](architecture.md). Stable IDs do not imply byte-identical runtime metadata.
 
 Use `-v` to watch each stage execute.
 

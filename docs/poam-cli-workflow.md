@@ -87,6 +87,10 @@ The [adapter proposal](plans/2026-10-03-f08-workflow-cli-adapter-proposal.md) re
 precise source guards, required nested-href and compact native-declaration repairs,
 and historical proposal guards. The integration applies the nested producer/consumer
 path correction, compact bounded native declarations and explicit clap conflicts
-for every workflow-only option in source-only mode. Full baseline impacts/reopening, closure disposition,
-fresh evidence, portfolio/HTML/connector packages, independent-tool interpretation,
+for every workflow-only option in source-only mode. The same open implementation stack
+also provides [baseline comparison](poam-baseline-comparison.md), [portfolio JSON/static HTML](poam-portfolio.md),
+[local outbound handoffs](poam-outbound.md) and [local evidence inspection](poam-evidence-inspection.md).
+These commands report bounded comparisons, handoffs and local observations; they do
+not accept terminal/reopening revisions, establish evidence sufficiency or authorize
+remote connectors. D064 closure disposition, independent-tool interpretation,
 representative plans and owner/human/platform acceptance remain open.

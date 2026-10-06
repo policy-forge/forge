@@ -411,3 +411,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+The maintained clause extractor records list items, paragraphs and tables with source locations. Domain assembly currently creates requirements from list items; the presence of extracted paragraph or table data does not itself make that content a PolicyRequirement. The Draft interface examples and acceptance targets remain historical.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/parse/clauses.rs](../../src/parse/clauses.rs), [src/model/assemble.rs](../../src/model/assemble.rs).
