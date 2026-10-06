@@ -46,6 +46,8 @@ pub(crate) enum CaptureRole {
     LifecycleRecord,
     /// Mode-private Lifecycle source/generated original bytes, without schema authority.
     LifecycleArtifactOriginal,
+    /// Mode-private complete native authoring original; ordinary /1 cannot admit this role.
+    AuthoringArtifactOriginal,
     /// Exact maintained native Impact manifest, admitted only by the S4 review profile.
     ImpactManifest,
     /// Exact complete current/prior native Impact report; use purposes remain separate.

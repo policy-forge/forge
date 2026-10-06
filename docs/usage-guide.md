@@ -919,6 +919,15 @@ init/respond/merge/status`; the linked guide gives exact flags for use after
 candidate integration. This section's seven commands retain their existing
 Mapping/applicability scope; no review disposition changes native Lifecycle state.
 
+Authoring re-review uses a separate [closed `/3` candidate](authoring-review-exchange.md)
+for one complete current saved `forge.authoring-plan/1`. Its routes are
+`forge review authoring init/respond/merge/status`; the linked guide records exact
+flags, private declarations and completed TEMP test/lint/Rustdoc/LLVM/compiled-CLI
+qualification scopes. Apply these instructions after candidate integration;
+final integrated checks and hosted/platform/human acceptance remain open. The
+adapter does not select individual clauses or consume component
+`forge.authoring-plan/2` output. Published v1.1.0 has no `/3` exchange.
+
 ## 4. Global Options
 
 ```bash
@@ -1114,6 +1123,7 @@ remain open.
 - [README.md](../README.md) — project overview and quick start
 - [Portable review queues](review-queues.md) — asserted review policy, immutable responses, recorded exports and explicit queue supersession
 - [Lifecycle review exchange candidate](lifecycle-review-exchange.md) — separate `/2` formats, candidate CLI commands and qualification limits
+- [Authoring review exchange candidate](authoring-review-exchange.md) — whole saved-plan `/3` review, private inputs and qualification limits
 - [Evidence and Implementation Linking](evidence-linkage.md) — exact subject/evidence metadata linkage, freshness, privacy, and baseline contracts
 - [Evidence overlays](evidence-overlays.md) — new Catalog/Component JSON documents, complete source preservation and generated metadata boundaries
 - [Contributing Guide](../CONTRIBUTING.md) — development setup and PR process

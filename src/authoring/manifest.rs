@@ -282,7 +282,8 @@ pub fn parse_project(bytes: &[u8]) -> Result<AuthorProject, ForgeError> {
     Ok(project)
 }
 
-fn parse_closed<T: serde::de::DeserializeOwned>(
+/// Strictly decode a bounded authoring contract after duplicate-key and null rejection.
+pub(super) fn parse_closed<T: serde::de::DeserializeOwned>(
     bytes: &[u8],
     label: &str,
 ) -> Result<T, ForgeError> {
@@ -311,7 +312,9 @@ fn reject_null(value: &Value) -> Result<(), ForgeError> {
     }
 }
 
-fn validate_pack(pack: &AuthoringPack) -> Result<(), ForgeError> {
+/// Validate the complete intrinsic pack declarations, references and review assertions.
+/// Cross-project native baseline and clause relationships are checked separately.
+pub(super) fn validate_pack(pack: &AuthoringPack) -> Result<(), ForgeError> {
     schema_version(&pack.schema_version, PACK_SCHEMA_VERSION)?;
     key("pack_key", &pack.pack_key)?;
     if pack.version.len() > 128 || !SEMVER.is_match(&pack.version) {
@@ -378,7 +381,9 @@ fn validate_pack(pack: &AuthoringPack) -> Result<(), ForgeError> {
     Ok(())
 }
 
-fn validate_project(project: &AuthorProject) -> Result<(), ForgeError> {
+/// Validate complete intrinsic project pins, records and asserted review chronology.
+/// Cross-pack baseline and clause relationships remain separate native checks.
+pub(super) fn validate_project(project: &AuthorProject) -> Result<(), ForgeError> {
     schema_version(&project.schema_version, PROJECT_SCHEMA_VERSION)?;
     key("project_key", &project.project_key)?;
     if project.project_root.as_os_str() != "." {

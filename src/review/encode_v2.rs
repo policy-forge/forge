@@ -314,3 +314,14 @@ mod tests;
 /// Pure additive typed queue/response codecs, retaining every old disposition byte.
 #[path = "encode_v2_exchange.rs"]
 pub(crate) mod exchange;
+
+/// Shared plain finite-token emitter for separately typed codec consumers.
+/// Complete typed operand admission and strict family readback remain caller duties.
+pub(crate) fn admitted_json<T: Serialize>(
+    document: &T,
+    limit: usize,
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<Vec<u8>, ContractError> {
+    encoded(document, limit, ledger, control)
+}

@@ -259,6 +259,19 @@ is M-13's "technical evidence, not human acceptance"; the gate dispositions abov
 do not convert implementation into a checkbox claim. The Definition of Ready
 checklist is dispositioned separately.
 
+### Collaborative whole-plan review candidate
+
+The separate [Authoring `/3` exchange candidate](../authoring-review-exchange.md)
+re-reviews one complete current saved `forge.authoring-plan/1` under asserted
+review policy. It regenerates the exact applicability baseline and full native
+plan, retaining private provenance and all physical inputs through final checks.
+It grants no plan promotion, authenticated identity, clause edit or Lifecycle
+transition and does not cover component `forge.authoring-plan/2` output. The TEMP
+candidate has completed full-test/strict-lint and actual compiled-CLI qualification;
+the linked guide records lexical Rustdoc and physical LLVM populations. Final
+integrated checks and applicable hosted/platform/human pilot/release gates remain
+open. No requirement or Ready checkbox changes with this scope note.
+
 ## Risks and Mitigations :yellow_circle: `@human-review`
 
 | Risk | Impact | Mitigation |

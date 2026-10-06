@@ -1,0 +1,522 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forge.review-response/3",
+  "title": "forge.review-response/3",
+  "description": "Proposed separately closed whole authoring-plan /3 exchange. Inert asserted declarations only; structural shape does not supply native preparation, alias/currentness/capture, authenticated identity or approval. Complete UTF-8 byte limits and all semantic correlations require the typed contract.",
+  "$ref": "#/$defs/ResponseDocument",
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "time": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "Domain": {
+      "const": "authoring-plan"
+    },
+    "RequestedAction": {
+      "type": "string",
+      "enum": [
+        "re-review"
+      ]
+    },
+    "Disposition": {
+      "type": "string",
+      "enum": [
+        "approve",
+        "reject",
+        "request-changes",
+        "abstain",
+        "superseded"
+      ]
+    },
+    "SourcePin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_key",
+        "kind",
+        "raw_sha256",
+        "byte_length",
+        "schema_identity",
+        "validation_profile",
+        "native_model",
+        "native_root_uuid"
+      ],
+      "properties": {
+        "artifact_key": {
+          "$ref": "#/$defs/key"
+        },
+        "kind": {
+          "enum": [
+            "author-project",
+            "authoring-pack",
+            "gap-report",
+            "applicability-manifest",
+            "framework",
+            "resolved-catalog",
+            "mapping-collection",
+            "human-clause",
+            "stored-plan"
+          ]
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "schema_identity": {
+          "anyOf": [
+            {
+              "enum": [
+                "forge.author-project/1",
+                "forge.authoring-pack/1",
+                "forge.applicability-report/1",
+                "forge.applicability/1",
+                "forge.authoring-plan/1"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validation_profile": {
+          "enum": [
+            "forge.author-project-intrinsic/1",
+            "forge.authoring-pack-intrinsic/1",
+            "forge.authoring-gap-report-complete/1",
+            "forge.authoring-applicability-intrinsic/1",
+            "forge.authoring-framework-native/1",
+            "forge.authoring-resolved-catalog-native/1",
+            "forge.authoring-mapping-native/1",
+            "forge.authoring-clause-validated/1",
+            "forge.authoring-plan-complete-equality/1"
+          ]
+        },
+        "native_model": {
+          "anyOf": [
+            {
+              "enum": [
+                "catalog",
+                "profile",
+                "mapping-collection"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "native_root_uuid": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/native_uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "artifact_key": {
+              "const": "authoring:project"
+            },
+            "kind": {
+              "const": "author-project"
+            },
+            "byte_length": {
+              "minimum": 1,
+              "maximum": 2097152
+            },
+            "schema_identity": {
+              "const": "forge.author-project/1"
+            },
+            "validation_profile": {
+              "const": "forge.author-project-intrinsic/1"
+            },
+            "native_model": {
+              "type": "null"
+            },
+            "native_root_uuid": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "artifact_key": {
+              "const": "authoring:pack"
+            },
+            "kind": {
+              "const": "authoring-pack"
+            },
+            "byte_length": {
+              "minimum": 1,
+              "maximum": 2097152
+            },
+            "schema_identity": {
+              "const": "forge.authoring-pack/1"
+            },
+            "validation_profile": {
+              "const": "forge.authoring-pack-intrinsic/1"
+            },
+            "native_model": {
+              "type": "null"
+            },
+            "native_root_uuid": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "artifact_key": {
+              "const": "authoring:gap-report"
+            },
+            "kind": {
+              "const": "gap-report"
+            },
+            "byte_length": {
+              "minimum": 1,
+              "maximum": 10485760
+            },
+            "schema_identity": {
+              "const": "forge.applicability-report/1"
+            },
+            "validation_profile": {
+              "const": "forge.authoring-gap-report-complete/1"
+            },
+            "native_model": {
+              "type": "null"
+            },
+            "native_root_uuid": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "artifact_key": {
+              "const": "authoring:applicability"
+            },
+            "kind": {
+              "const": "applicability-manifest"
+            },
+            "byte_length": {
+              "minimum": 1,
+              "maximum": 10485760
+            },
+            "schema_identity": {
+              "const": "forge.applicability/1"
+            },
+            "validation_profile": {
+              "const": "forge.authoring-applicability-intrinsic/1"
+            },
+            "native_model": {
+              "type": "null"
+            },
+            "native_root_uuid": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "artifact_key": {
+              "const": "authoring:framework"
+            },
+            "kind": {
+              "const": "framework"
+            },
+            "byte_length": {
+              "minimum": 1,
+              "maximum": 10485760
+            },
+            "schema_identity": {
+              "type": "null"
+            },
+            "validation_profile": {
+              "const": "forge.authoring-framework-native/1"
+            },
+            "native_model": {
+              "enum": [
+                "catalog",
+                "profile"
+              ]
+            },
+            "native_root_uuid": {
+              "$ref": "#/$defs/native_uuid"
+            }
+          }
+        },
+        {
+          "properties": {
+            "artifact_key": {
+              "const": "authoring:resolved"
+            },
+            "kind": {
+              "const": "resolved-catalog"
+            },
+            "byte_length": {
+              "minimum": 1,
+              "maximum": 10485760
+            },
+            "schema_identity": {
+              "type": "null"
+            },
+            "validation_profile": {
+              "const": "forge.authoring-resolved-catalog-native/1"
+            },
+            "native_model": {
+              "enum": [
+                "catalog"
+              ]
+            },
+            "native_root_uuid": {
+              "$ref": "#/$defs/native_uuid"
+            }
+          }
+        },
+        {
+          "properties": {
+            "artifact_key": {
+              "type": "string",
+              "pattern": "^authoring:mapping:(?:0|[1-9][0-9]?)$"
+            },
+            "kind": {
+              "const": "mapping-collection"
+            },
+            "byte_length": {
+              "minimum": 1,
+              "maximum": 10485760
+            },
+            "schema_identity": {
+              "type": "null"
+            },
+            "validation_profile": {
+              "const": "forge.authoring-mapping-native/1"
+            },
+            "native_model": {
+              "enum": [
+                "mapping-collection"
+              ]
+            },
+            "native_root_uuid": {
+              "$ref": "#/$defs/native_uuid"
+            }
+          }
+        },
+        {
+          "properties": {
+            "artifact_key": {
+              "type": "string",
+              "pattern": "^authoring:clause:(?:0|[1-9][0-9]?)$"
+            },
+            "kind": {
+              "const": "human-clause"
+            },
+            "byte_length": {
+              "minimum": 1,
+              "maximum": 1048576
+            },
+            "schema_identity": {
+              "type": "null"
+            },
+            "validation_profile": {
+              "const": "forge.authoring-clause-validated/1"
+            },
+            "native_model": {
+              "type": "null"
+            },
+            "native_root_uuid": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "artifact_key": {
+              "const": "authoring:plan"
+            },
+            "kind": {
+              "const": "stored-plan"
+            },
+            "byte_length": {
+              "minimum": 1,
+              "maximum": 10485760
+            },
+            "schema_identity": {
+              "const": "forge.authoring-plan/1"
+            },
+            "validation_profile": {
+              "const": "forge.authoring-plan-complete-equality/1"
+            },
+            "native_model": {
+              "type": "null"
+            },
+            "native_root_uuid": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    },
+    "SupersessionReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "response_id",
+        "raw_sha256"
+      ],
+      "properties": {
+        "response_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "ResponseDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "identity_disclaimer",
+        "response_id",
+        "queue_id",
+        "queue_raw_sha256",
+        "item_key",
+        "item_id",
+        "domain",
+        "adapter_version",
+        "requested_action",
+        "source_pins",
+        "subject_sha256",
+        "context_sha256",
+        "policy_sha256",
+        "reviewer_key",
+        "reviewer_role",
+        "disposition",
+        "responded_at",
+        "rationale",
+        "abstention_reason",
+        "proposed_edit",
+        "supersedes"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "forge.review-response/3"
+        },
+        "identity_disclaimer": {
+          "const": "keys-roles-authors-and-times-are-asserted-not-authenticated-signed-or-non-repudiable"
+        },
+        "response_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "queue_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "queue_raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "item_key": {
+          "$ref": "#/$defs/key"
+        },
+        "item_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "domain": {
+          "$ref": "#/$defs/Domain"
+        },
+        "adapter_version": {
+          "const": "forge.authoring-plan-review/1"
+        },
+        "requested_action": {
+          "$ref": "#/$defs/RequestedAction"
+        },
+        "source_pins": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourcePin"
+          },
+          "minItems": 6,
+          "maxItems": 100
+        },
+        "subject_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "context_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "policy_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "reviewer_key": {
+          "$ref": "#/$defs/key"
+        },
+        "reviewer_role": {
+          "$ref": "#/$defs/key"
+        },
+        "disposition": {
+          "$ref": "#/$defs/Disposition"
+        },
+        "responded_at": {
+          "$ref": "#/$defs/time"
+        },
+        "rationale": {
+          "type": "string",
+          "maxLength": 8192
+        },
+        "abstention_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/key"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "proposed_edit": {
+          "type": "null"
+        },
+        "supersedes": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SupersessionReference"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "native_uuid": {
+      "type": "string",
+      "minLength": 32,
+      "maxLength": 45,
+      "pattern": "^(?:[0-9A-Fa-f]{32}|[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}|\\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\\}|urn:uuid:[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})$"
+    }
+  }
+}

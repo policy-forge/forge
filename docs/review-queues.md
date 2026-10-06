@@ -20,6 +20,18 @@ seven commands documented below. Currentness depends on the complete actual
 native source closure; asserted review quorum grants no Lifecycle transition or
 reviewer authority.
 
+## Authoring review exchange candidate
+
+[Whole saved-plan Authoring review](authoring-review-exchange.md) uses a separate
+`/3` family with `forge review authoring init/respond/merge/status`. Its native
+receiver regenerates the complete applicability baseline and saved
+`forge.authoring-plan/1`; it does not require an Approved Lifecycle record or
+change authoring state. A completed compiled CLI campaign exercised all four
+routes in the TEMP candidate; the linked guide records full-test, strict-lint,
+Rustdoc and physical LLVM scopes. Final integrated checks and hosted/platform/human
+acceptance remain open. This candidate leaves the seven `/1` commands below and
+Lifecycle `/2` unchanged.
+
 ## Prepare the private inputs
 
 Use an explicit absolute project root. Every input and output file path is a

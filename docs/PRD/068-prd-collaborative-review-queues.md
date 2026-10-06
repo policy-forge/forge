@@ -220,6 +220,17 @@ acceptance gates remain open. A recorded `Current` result does
 not authenticate reviewers or perform a Lifecycle transition. This slice does
 not complete the other adapters, proposed edits or interactive client requirements.
 
+The separate [Authoring `/3` exchange candidate](../authoring-review-exchange.md)
+uses genuine complete native regeneration of a saved `forge.authoring-plan/1`
+and an independently typed Queue/Response/Disposition family.
+`forge review authoring init/respond/merge/status` retains asserted identity,
+distinct reviewer keys, author exclusion, nonapproving abstention and dissent.
+Completed TEMP full-test/strict-lint and compiled-CLI evidence is retained, with
+lexical Rustdoc and physical LLVM scopes in the linked guide. Final integrated
+checks and hosted/platform/human acceptance remain open. This slice does not
+select individual clauses, consume component-plan `/2` output, apply edits or
+grant native promotion.
+
 See the [portable review queue guide](../review-queues.md) for all seven commands,
 private formats, publication limits and exact authority boundaries. This is an
 implementation scope note. Requirements and Ready gates remain open pending

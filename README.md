@@ -223,6 +223,14 @@ code and documentation are integrated; published v1.1.0 does not include the
 exchange. Recorded review results grant no native Lifecycle transition or
 reviewer authority.
 
+The separate [Authoring review exchange candidate](docs/authoring-review-exchange.md)
+adds `forge review authoring init/respond/merge/status` and closed `/3` documents
+for one complete current saved `forge.authoring-plan/1`. Its TEMP candidate has
+full-test/strict-lint evidence and a completed compiled CLI campaign; the linked
+guide records Rustdoc and physical LLVM scopes. Final integrated checks and
+hosted/platform/human acceptance remain open. Review quorum grants no native plan
+promotion or authenticated reviewer authority.
+
 ### Assessment Results
 
 Package explicit assessor-authored observations, findings, and risks into

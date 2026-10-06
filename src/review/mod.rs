@@ -104,3 +104,43 @@ pub(crate) mod lifecycle_finalize;
 pub(crate) mod lifecycle_commands;
 /// Genuine native Lifecycle init queue export; distinct from captured input Queue binding.
 pub(crate) mod lifecycle_queue_export;
+
+/// Seven admitted plain Authoring-plan frame profiles; no native owner/currentness.
+pub(crate) mod hash_v3;
+/// Separately closed inert Authoring-plan /3 declarations; no native authority.
+pub(crate) mod wire_v3;
+
+/// Strict plain Authoring Queue/3 codec; no native owner or publication capability.
+#[path = "decode_v3.rs"]
+pub(crate) mod decode_v3;
+/// Finite plain Authoring Queue/3 serializer with exact typed readback.
+#[path = "encode_v3.rs"]
+pub(crate) mod encode_v3;
+
+/// Genuine whole native authoring receiver, distinct from inert Queue/3 codecs.
+pub(crate) mod authoring_capture;
+/// Strict fixed private authoring locator; no native owner issuer.
+mod authoring_locator;
+/// Same-original-ledger native authoring forwarding, without independent allowances.
+mod authoring_work;
+
+/// Genuine Authoring Queue and every actual Response original retained by one native owner.
+pub(crate) mod authoring_binding;
+/// Actual private Authoring current-output issuer over a genuine complete binding.
+pub(crate) mod authoring_finalize;
+/// Ordinary separately typed /3 Queue/Response/recorded-output assertion binding.
+pub(crate) mod authoring_response_binding;
+/// Complete plain /3 original identity and withdrawal chain, without native authority.
+pub(crate) mod chain_v3;
+/// Pending /3 classification and complete policy/history facts, without currentness.
+pub(crate) mod merge_v3;
+/// Independently typed asserted /3 distinct-key maximum matching.
+pub(crate) mod quorum_v3;
+
+/// Strict private asserted Authoring Init policy, without native authority.
+pub(crate) mod authoring_init_policy;
+/// Genuine native Init Queue preparation and finite output retaining the complete owner.
+pub(crate) mod authoring_queue_export;
+
+/// Whole native Authoring review command lifetime through actual output sinks.
+pub(crate) mod authoring_commands;

@@ -25,6 +25,10 @@ pub(super) mod supersession;
 #[path = "lifecycle_mode.rs"]
 pub(super) mod lifecycle;
 
+/// Closed authoring Source mode; ordinary /1 compatibility stays unchanged.
+#[path = "authoring_mode.rs"]
+pub(super) mod authoring;
+
 /// Complete actual file attempts across the separate bounded pools.
 const MAX_ATTEMPTS: usize = 10_105;
 
@@ -141,6 +145,8 @@ pub(crate) struct ReviewCapture {
     supersession: Option<supersession::SupersessionRegistrations>,
     /// Successful actual Lifecycle purposes, absent in ordinary /1 operations.
     lifecycle: Option<lifecycle::LifecycleRegistrations>,
+    /// Actual authoring purposes, absent in ordinary and Lifecycle captures.
+    authoring: Option<authoring::AuthoringRegistrations>,
 }
 
 impl ReviewCapture {
@@ -237,6 +243,7 @@ impl ReviewCapture {
                 queue_original: None,
                 supersession: None,
                 lifecycle: None,
+                authoring: None,
             })
         })
     }
@@ -252,6 +259,9 @@ impl ReviewCapture {
         ledger: &mut ContractLedger,
         control: &mut dyn WorkControl,
     ) -> Result<usize, ContractError> {
+        if self.authoring.is_some() && pool == Pool::Source {
+            return self.reject_authoring_source(path, per_file, ledger, control);
+        }
         if self.lifecycle.is_some() && pool == Pool::Source {
             return self.reject_lifecycle_source(path, per_file, ledger, control);
         }
@@ -460,6 +470,9 @@ impl ReviewCapture {
                 self.response_originals.try_reserve(1).map_err(|_| ledger.capacity())?;
                 self.response_originals.push(index);
             }
+            Pool::Auxiliary if self.authoring.is_some() => {
+                self.register_authoring_auxiliary(index, ledger)?;
+            }
             Pool::Source | Pool::Recorded | Pool::Auxiliary => {}
         }
         Ok(())
@@ -484,6 +497,7 @@ impl ReviewCapture {
             queue_original: self.queue_original,
             supersession: self.supersession,
             lifecycle: self.lifecycle,
+            authoring: self.authoring,
         }
     }
 }
@@ -502,6 +516,8 @@ pub(crate) struct HeldReviewInputs {
     supersession: Option<supersession::SupersessionRegistrations>,
     /// Successful actual Lifecycle purposes, absent in ordinary /1 operations.
     lifecycle: Option<lifecycle::LifecycleRegistrations>,
+    /// Actual authoring purposes, absent in ordinary and Lifecycle captures.
+    authoring: Option<authoring::AuthoringRegistrations>,
 }
 
 impl HeldReviewInputs {
@@ -1449,3 +1465,7 @@ mod folded_component_registration_tests {
         assert_alias_refuses_before_read(capture, &root, &mut ledger, &mut control);
     }
 }
+
+#[cfg(test)]
+/// Test-only closed purpose name for the existing private authoring fixture descendant.
+pub(crate) use authoring::AuthoringOperation;

@@ -1538,3 +1538,138 @@ pub(crate) fn decode_lifecycle_init(
         Ok(decoded.document)
     })
 }
+
+/// Plain admitted JSON primitives shared by separately closed later codecs.
+/// They do not construct a family envelope or any native/capture/currentness owner.
+pub(crate) mod structural {
+    use super::{ContractError, ContractLedger, Value, phase};
+    use crate::workspace::preparation::WorkControl;
+
+    /// Bound raw input, reserve the complete duplicate-aware tree, and validate a
+    /// caller-selected fixed schema before reserving complete typed conversion.
+    /// The returned Value is inert; its consumer still owns family semantics.
+    pub(crate) fn admitted_value(
+        raw: &[u8],
+        cap: usize,
+        schema_text: &str,
+        ledger: &mut ContractLedger,
+        control: &mut dyn WorkControl,
+    ) -> Result<Value, ContractError> {
+        phase(ledger, control, |ledger, control| {
+            if cap == 0 || cap > 33_554_432 {
+                return Err(ContractError::Invalid);
+            }
+            if raw.len() > cap {
+                return Err(ledger.capacity());
+            }
+            ledger.bytes(raw.len().min(3))?;
+            if raw.is_empty() || raw.starts_with(&[0xef, 0xbb, 0xbf]) {
+                return Err(ContractError::Invalid);
+            }
+            let value = super::value(raw, ledger, control)?;
+            super::schema(&value, raw.len(), schema_text, ledger, control)?;
+            phase(ledger, control, |ledger, _| super::typed(&value, ledger))?;
+            Ok(value)
+        })
+    }
+}
+
+/// Plain original-byte intake forwarding; no envelope or native authority is issued.
+/// All old /1-/2 bodies above remain byte-exact.
+pub(crate) mod operational_raw {
+    use super::{ContractError, ContractLedger, DeserializeOwned, WorkControl, phase};
+
+    /// Preserve cap/empty/BOM preflight, response accounting and edit-before-schema order.
+    /// Return only owned inert data and an actual original-byte digest, without a /2 cast.
+    pub(crate) fn admitted_document<T: DeserializeOwned>(
+        raw: &[u8],
+        cap: usize,
+        schema_text: &str,
+        response: bool,
+        ledger: &mut ContractLedger,
+        control: &mut dyn WorkControl,
+    ) -> Result<(T, String), ContractError> {
+        phase(ledger, control, |ledger, control| {
+            if cap == 0 || cap > 33_554_432 {
+                return Err(ContractError::Invalid);
+            }
+            if raw.len() > cap {
+                return Err(ledger.capacity());
+            }
+            ledger.bytes(raw.len().min(3))?;
+            if raw.is_empty() || raw.starts_with(&[0xef, 0xbb, 0xbf]) {
+                return Err(ContractError::Invalid);
+            }
+            if response {
+                ledger.response_registration(raw.len())?;
+            }
+            let value = super::value(raw, ledger, control)?;
+            ledger.bytes(raw.len())?;
+            ledger.visits(1)?;
+            if response && value.get("proposed_edit").is_some_and(|edit| !edit.is_null()) {
+                return Err(ContractError::UnsupportedEdit);
+            }
+            super::schema(&value, raw.len(), schema_text, ledger, control)?;
+            phase(ledger, control, |ledger, _| super::typed(&value, ledger))?;
+            ledger.bytes(raw.len())?;
+            let document = phase(ledger, control, |_, _| {
+                serde_json::from_value(value).map_err(|_| ContractError::Invalid)
+            })?;
+            ledger.bytes(raw.len())?;
+            ledger.derived(128)?;
+            let digest = phase(ledger, control, |_, _| Ok(crate::hashing::sha256_hex(raw)))?;
+            Ok((document, digest))
+        })
+    }
+}
+
+/// Shared inert recorded-row checks, independent of any versioned document or source pin.
+pub(crate) mod recorded_data {
+    use super::{
+        ContractError, ContractLedger, ItemDisposition, RecordedResponse, WorkControl, checkpoint,
+        phase,
+    };
+
+    /// Retain complete recorded original metadata, order and unique-byte denominator.
+    pub(crate) fn rows(
+        rows: &[RecordedResponse],
+        ledger: &mut ContractLedger,
+        control: &mut dyn WorkControl,
+    ) -> Result<(), ContractError> {
+        phase(ledger, control, |ledger, control| {
+            // Full actual identity extents cover ordered comparisons before canonical grammar.
+            for row in rows {
+                checkpoint(ledger, control)?;
+                ledger.visits(1)?;
+                let identity_work =
+                    row.response_id.len().checked_mul(2).ok_or_else(|| ledger.capacity())?;
+                ledger.bytes(identity_work)?;
+            }
+            super::recorded_responses(rows, ledger)
+        })
+    }
+    /// Check all response/dissent/witness correlations without matching or policy authority.
+    /// Admit a full conservative pair bound before the borrowed seat/reviewer trees grow.
+    pub(crate) fn item(
+        item: &ItemDisposition,
+        rows: &[RecordedResponse],
+        ledger: &mut ContractLedger,
+        control: &mut dyn WorkControl,
+    ) -> Result<(), ContractError> {
+        phase(ledger, control, |ledger, _| {
+            let seats = item
+                .met_seats
+                .len()
+                .checked_add(item.unmet_seats.len())
+                .ok_or_else(|| ledger.capacity())?;
+            if seats > 100 {
+                return Err(ContractError::Invalid);
+            }
+            let pairs = seats.checked_mul(seats).ok_or_else(|| ledger.capacity())?;
+            ledger.visits(pairs)?;
+            let pair_work = pairs.checked_mul(512).ok_or_else(|| ledger.capacity())?;
+            ledger.bytes(pair_work)?;
+            super::recorded_item(item, rows, ledger)
+        })
+    }
+}

@@ -1,0 +1,186 @@
+//! Ordinary Authoring Response/3 from complete held Queue and private rationale.
+//! Assertions preserve recorded bindings and never issue native currentness.
+use super::{command_phase, publish};
+use crate::evidence_capture::CaptureRole;
+use crate::review::capture::{HeldReviewInputs, Pool, ReviewCapture, ReviewControl};
+use crate::review::chain::{compare, reserved};
+use crate::review::chain_v2::visit;
+use crate::review::commands::{CommandError, RespondOptions};
+use crate::review::decode::{ContractError, ContractLedger};
+use crate::review::decode_v2::phase;
+use crate::review::decode_v3::{self, DecodedV3};
+use crate::review::wire_v3::{
+    IDENTITY_DISCLAIMER, QueueDocumentV3, ResponseDocumentV3, SourcePinV3, SupersessionReference,
+};
+use crate::review::{authoring_response_binding, encode_v3};
+use crate::workspace::preparation::WorkControl;
+
+/// Publish one immutable assertion after complete strict recorded binding/readback.
+pub(crate) fn respond(
+    options: &RespondOptions<'_>,
+    caller: &mut dyn WorkControl,
+) -> Result<(), CommandError> {
+    let mut control = ReviewControl::accept(caller);
+    let mut ledger = ContractLedger::default();
+    command_phase(&mut ledger, &mut control, |ledger, control| {
+        let mut capture =
+            ReviewCapture::new(options.project_root, &[options.output], ledger, control)?;
+        let queue_index = capture.required(
+            options.queue,
+            CaptureRole::ReviewQueue,
+            Pool::Queue,
+            10_485_760,
+            ledger,
+            control,
+        )?;
+        let rationale_index = capture.required(
+            options.rationale_file,
+            CaptureRole::ReviewPrivateConfig,
+            Pool::Auxiliary,
+            8_192,
+            ledger,
+            control,
+        )?;
+        let held = phase(ledger, control, |ledger, _| {
+            ledger.derived(std::mem::size_of::<HeldReviewInputs>())?;
+            Ok(capture.finish())
+        })?;
+        let queue = decode_v3::decode_queue(held.bytes(queue_index)?, ledger, control)?;
+        let response =
+            build_response(options, &queue, held.bytes(rationale_index)?, ledger, control)?;
+        let bytes = encode_v3::response(&response, ledger, control)?;
+        let readback = decode_v3::decode_response(&bytes, ledger, control)?;
+        encode_v3::compare_responses(&response, readback.document(), ledger, control)?;
+        authoring_response_binding::bind_response(&queue, &readback, ledger, control)?;
+        held.verify_inputs(ledger, control)?;
+        publish(options.project_root, options.output, &bytes, ledger, control, |ledger, control| {
+            held.verify_inputs(ledger, control)
+        })
+    })
+}
+
+/// Copy a full bounded field after admitting its complete work/payload representation.
+fn copied(
+    value: &str,
+    maximum: usize,
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<String, ContractError> {
+    visit(ledger, control)?;
+    ledger.bytes(value.len())?;
+    if value.len() > maximum {
+        return Err(ContractError::Invalid);
+    }
+    let retained_extent =
+        value.len().checked_add(std::mem::size_of::<String>()).ok_or_else(|| ledger.capacity())?;
+    ledger.derived(retained_extent)?;
+    let mut result = String::new();
+    result.try_reserve_exact(value.len()).map_err(|_| ledger.capacity())?;
+    result.push_str(value);
+    Ok(result)
+}
+
+/// Preserve all eight exact pin fields and every explicit nullable value in order.
+fn pins(
+    input: &[SourcePinV3],
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<Vec<SourcePinV3>, ContractError> {
+    let mut result = reserved(input.len(), ledger)?;
+    for pin in input {
+        visit(ledger, control)?;
+        ledger.bytes(std::mem::size_of::<SourcePinV3>())?;
+        result.push(SourcePinV3 {
+            artifact_key: copied(&pin.artifact_key, 128, ledger, control)?,
+            kind: pin.kind,
+            raw_sha256: copied(&pin.raw_sha256, 64, ledger, control)?,
+            byte_length: pin.byte_length,
+            schema_identity: pin
+                .schema_identity
+                .as_deref()
+                .map(|value| copied(value, 128, ledger, control))
+                .transpose()?,
+            validation_profile: copied(&pin.validation_profile, 128, ledger, control)?,
+            native_model: pin.native_model,
+            native_root_uuid: pin
+                .native_root_uuid
+                .as_deref()
+                .map(|value| copied(value, 128, ledger, control))
+                .transpose()?,
+        });
+    }
+    Ok(result)
+}
+
+/// Derive recorded correlations only from the actual strict Queue original.
+fn build_response(
+    options: &RespondOptions<'_>,
+    queue: &DecodedV3<'_, QueueDocumentV3>,
+    rationale: &[u8],
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<ResponseDocumentV3, ContractError> {
+    phase(ledger, control, |ledger, control| {
+        if rationale.len() > 8_192 {
+            return Err(ledger.capacity());
+        }
+        ledger.bytes(rationale.len())?;
+        let rationale = std::str::from_utf8(rationale).map_err(|_| ContractError::Invalid)?;
+        ledger.bytes(options.item_key.len())?;
+        if options.item_key.len() > 128 {
+            return Err(ContractError::Invalid);
+        }
+        let document = queue.document();
+        let mut selected = None;
+        for item in &document.items {
+            visit(ledger, control)?;
+            if compare(&item.key, options.item_key, ledger)?.is_eq() {
+                selected = Some(item);
+            }
+        }
+        let item = selected.ok_or(ContractError::Binding)?;
+        ledger.bytes(std::mem::size_of::<ResponseDocumentV3>())?;
+        ledger.derived(std::mem::size_of::<ResponseDocumentV3>())?;
+        let supersedes = options
+            .supersedes
+            .as_ref()
+            .map(|prior| -> Result<SupersessionReference, ContractError> {
+                ledger.bytes(std::mem::size_of::<SupersessionReference>())?;
+                ledger.derived(std::mem::size_of::<SupersessionReference>())?;
+                Ok(SupersessionReference {
+                    response_id: copied(prior.response_id, 36, ledger, control)?,
+                    raw_sha256: copied(prior.raw_sha256, 64, ledger, control)?,
+                })
+            })
+            .transpose()?;
+        let response = ResponseDocumentV3 {
+            schema_version: copied("forge.review-response/3", 128, ledger, control)?,
+            identity_disclaimer: copied(IDENTITY_DISCLAIMER, 128, ledger, control)?,
+            response_id: copied(options.response_id, 36, ledger, control)?,
+            queue_id: copied(&document.queue_id, 36, ledger, control)?,
+            queue_raw_sha256: copied(queue.raw_sha256(), 64, ledger, control)?,
+            item_key: copied(&item.key, 128, ledger, control)?,
+            item_id: copied(&item.item_id, 36, ledger, control)?,
+            domain: item.domain,
+            adapter_version: copied(&item.adapter_version, 128, ledger, control)?,
+            requested_action: item.requested_action,
+            source_pins: pins(&document.source_pins, ledger, control)?,
+            subject_sha256: copied(&item.subject_sha256, 64, ledger, control)?,
+            context_sha256: copied(&item.context_sha256, 64, ledger, control)?,
+            policy_sha256: copied(&item.policy_sha256, 64, ledger, control)?,
+            reviewer_key: copied(options.reviewer_key, 128, ledger, control)?,
+            reviewer_role: copied(options.reviewer_role, 128, ledger, control)?,
+            disposition: options.disposition,
+            responded_at: copied(options.responded_at, 20, ledger, control)?,
+            rationale: copied(rationale, 8_192, ledger, control)?,
+            abstention_reason: options
+                .abstention_reason
+                .map(|value| copied(value, 128, ledger, control))
+                .transpose()?,
+            proposed_edit: (),
+            supersedes,
+        };
+        decode_v3::response(&response, ledger, control)?;
+        Ok(response)
+    })
+}

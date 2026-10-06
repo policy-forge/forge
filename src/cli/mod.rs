@@ -408,6 +408,13 @@ const REVIEW_IDENTITY_HELP: &str = "Reviewer keys, roles, authors and times are 
 #[deny(missing_docs)]
 #[command(after_help = REVIEW_IDENTITY_HELP)]
 pub enum ReviewCommand {
+    /// Review one complete current Authoring plan with a separate closed /3 exchange
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Authoring {
+        /// Explicit native-derived init, ordinary respond or current merge/status operation.
+        #[command(subcommand)]
+        command: AuthoringReviewCommand,
+    },
     /// Review one recorded Lifecycle policy/version with a separate closed /2 exchange
     #[command(after_help = REVIEW_IDENTITY_HELP)]
     Lifecycle {
@@ -727,6 +734,7 @@ fn run_review(command: &ReviewCommand) -> Result<(), ForgeError> {
     let mut control = crate::workspace::preparation::NoopControl;
     let result = match command {
         ReviewCommand::Lifecycle { command } => return run_lifecycle_review(command),
+        ReviewCommand::Authoring { command } => return run_authoring_review(command),
         ReviewCommand::Init(args) => commands::init(
             &commands::InitOptions {
                 project_root: &args.project_root,
@@ -3081,6 +3089,126 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             )
         }
     }
+}
+
+/// Explicit whole-plan Authoring review; the /3 exchange preserves its separate family.
+#[derive(Subcommand)]
+#[deny(missing_docs)]
+#[command(after_help = REVIEW_IDENTITY_HELP)]
+pub enum AuthoringReviewCommand {
+    /// Create one queue from a complete current native plan and private asserted review policy
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Init(
+        /// Complete private native locator, asserted policy, identities and new destination.
+        Box<AuthoringReviewInitArgs>,
+    ),
+    /// Write an immutable private assertion to an exact Authoring /3 queue original
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Respond(
+        /// Explicit reviewer, disposition, time, private rationale and new destination.
+        Box<ReviewRespondArgs>,
+    ),
+    /// Merge every response occurrence against the complete current native plan
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Merge(
+        /// Whole native, queue and response originals, evaluation time and new destination.
+        Box<ReviewMergeArgs>,
+    ),
+    /// Write complete current Authoring disposition JSON to stdout
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Status(
+        /// Whole native, queue and response originals with an explicit evaluation time.
+        Box<ReviewCurrentArgs>,
+    ),
+}
+
+/// Private Authoring Init inputs; reviewer identities, seats and times are asserted.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct AuthoringReviewInitArgs {
+    /// Actual normalized root containing every original and the new destination
+    #[arg(long)]
+    pub project_root: PathBuf,
+    /// Closed forge.review-authoring-plan-inputs/1 locator for the project and saved full plan
+    #[arg(long)]
+    pub sources: PathBuf,
+    /// Private forge.review-authoring-plan-init/1 roles, reviewers, policy and item declarations
+    #[arg(long)]
+    pub policy: PathBuf,
+    /// Explicit canonical queue revision UUID
+    #[arg(long)]
+    pub queue_id: String,
+    /// Asserted creation time in canonical UTC seconds
+    #[arg(long)]
+    pub created_at: String,
+    /// Confined new queue file; existing destinations are refused
+    #[arg(long)]
+    pub output: PathBuf,
+}
+
+/// Dispatch the separate Authoring /3 family through complete actual operation owners.
+fn run_authoring_review(command: &AuthoringReviewCommand) -> Result<(), ForgeError> {
+    use crate::review::{authoring_commands, commands};
+    let mut control = crate::workspace::preparation::NoopControl;
+    let result = match command {
+        AuthoringReviewCommand::Init(args) => authoring_commands::init(
+            &commands::InitOptions {
+                project_root: &args.project_root,
+                sources: &args.sources,
+                policy: &args.policy,
+                queue_id: &args.queue_id,
+                created_at: &args.created_at,
+                output: &args.output,
+            },
+            &mut control,
+        ),
+        AuthoringReviewCommand::Respond(args) => {
+            let disposition = match args.disposition {
+                ReviewDisposition::Approve => crate::review::wire::Disposition::Approve,
+                ReviewDisposition::Reject => crate::review::wire::Disposition::Reject,
+                ReviewDisposition::RequestChanges => {
+                    crate::review::wire::Disposition::RequestChanges
+                }
+                ReviewDisposition::Abstain => crate::review::wire::Disposition::Abstain,
+                ReviewDisposition::Superseded => crate::review::wire::Disposition::Superseded,
+            };
+            let supersedes = match (&args.supersedes_id, &args.supersedes_sha256) {
+                (None, None) => None,
+                (Some(response_id), Some(raw_sha256)) => {
+                    Some(commands::Supersedes { response_id, raw_sha256 })
+                }
+                _ => return Err(ForgeError::Validation("invalid review response chain".into())),
+            };
+            authoring_commands::respond(
+                &commands::RespondOptions {
+                    project_root: &args.project_root,
+                    queue: &args.queue,
+                    rationale_file: &args.rationale_file,
+                    item_key: &args.item_key,
+                    reviewer_key: &args.reviewer_key,
+                    reviewer_role: &args.reviewer_role,
+                    disposition,
+                    responded_at: &args.responded_at,
+                    response_id: &args.response_id,
+                    abstention_reason: args.abstention_reason.as_deref(),
+                    supersedes,
+                    output: &args.output,
+                },
+                &mut control,
+            )
+        }
+        AuthoringReviewCommand::Merge(args) => authoring_commands::merge(
+            &review_current_options(&args.current),
+            &args.output,
+            &mut control,
+        ),
+        AuthoringReviewCommand::Status(args) => authoring_commands::status(
+            &review_current_options(args),
+            &mut std::io::stdout().lock(),
+            &mut control,
+        ),
+    };
+    result.map_err(review_error)
 }
 
 #[cfg(test)]

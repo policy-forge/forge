@@ -135,6 +135,17 @@ Other platform and acceptance gates remain open. The other
 F13 adapters, proposed edits, workspace client and signature design remain open;
 existing F12 notification/supersession work does not complete those requirements.
 
+The separate [Authoring `/3` candidate](../authoring-review-exchange.md) covers one
+complete current saved `forge.authoring-plan/1` and the
+`forge review authoring init/respond/merge/status` routes. Closed TEMP qualification
+includes 4,248 passing full-suite controls with three unchanged ignored controls,
+strict lint, a lexical Rustdoc census, physical library LLVM coverage and a genuine
+compiled CLI campaign. The linked guide preserves exact populations and limits.
+Final integrated checks and hosted/platform/human acceptance remain open. This
+adapter grants no native promotion and does not complete individual-clause or
+component-plan review, other F13 adapters, proposed edits, client or signature
+gates. The historical requirement and Ready checkboxes remain unchanged.
+
 The [MCP `/2` checkpoint](../mcp.md#f20-2-development-checkpoint) records an
 offline native-input consumer and a later App candidate. The latest same-owner
 reuse run passed 25 selected native/controller controls and failed two native

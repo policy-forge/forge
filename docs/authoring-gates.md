@@ -17,6 +17,12 @@ Nothing here emits compliant, certified,
 implemented, effective or approved language (M-14), and no approval or lifecycle
 evidence is created.
 
+The [Authoring `/3` review candidate](authoring-review-exchange.md) preserves
+these recorded dispositions and open pilot/release gates. Component test evidence
+does not authenticate asserted review keys, grant independent reviewer authority
+or promote a native plan. Its final integrated docstring/test-coverage and
+goal-wide documentation checks remain required.
+
 ## Status
 
 | Gate | Owner | Status |

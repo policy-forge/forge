@@ -12,6 +12,11 @@ The [portable review guide](review-queues.md) covers the separate F12
 Mapping/applicability `/1` commands. [Native Lifecycle commands](../README.md#policy-lifecycle)
 retain their own transition and approval rules.
 
+The separate [Authoring `/3` candidate](authoring-review-exchange.md) reviews one
+complete current saved authoring plan with its own native regeneration and
+qualification requirements. The Approved/current Lifecycle prerequisite in this
+guide does not apply to that Authoring adapter.
+
 ## Prepare and review one policy version
 
 Use an explicit normalized project root. Every input and new file destination
