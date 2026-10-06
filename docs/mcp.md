@@ -208,3 +208,20 @@ The earlier campaign using `--output app.json` failed during Applicability scaff
 The earlier 187-control component campaign remains a separate historical population and must not be added to the normal run. Its 182-pass/1-failure predecessor and 0-pass/1-failure diagnostic remain preserved. The combined strict V1–V3 failures are retained; V4's success does not retroactively change them. Original App 25-pass/2-failure and subsequent qualified repair intervals remain dated evidence, not new owner acceptance.
 
 The intended managed integration and hosted/platform qualification remain pending for this exact candidate. Real external project-owner records, two independent MCP clients, adjudicated corpus/raw-document baseline evaluation, absent resource/native families and human acceptance remain open. This guide does not complete PRD 067 S-1–S-4, make a validation-only offline gate an index builder/publisher, or close the full-goal documentation review.
+
+### Draft integration checkpoint
+
+A later **2026-10-06 02:16 UTC** readback confirms [PR #220](https://github.com/policy-forge/forge/pull/220)
+is **open and draft** at `7bd8a6f336632660952085aae3574c83a2612e2a`, based on
+`codex/f11-read-only-mcp-discovery`. Its committed MCP guide and PRD match the
+two reviewed pages from the TEMP checkpoint above. This records draft-source
+integration separately from those earlier measured intervals; it does not
+reclassify their prospective integration notes or add a new LLVM, compiled-child
+or platform measurement.
+
+At that readback, all ten workflow jobs were still in progress. No hosted
+qualification follows from this snapshot, and an open draft is neither merged
+main nor a released or accepted feature. The unsupported native/resource
+families, index builder/publisher, real owner records, independent client/corpus
+evaluation, platform and human acceptance gates remain open. The final goal-wide
+documentation review also remains open.

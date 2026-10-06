@@ -731,6 +731,13 @@ fn ancestry_payload(ancestors: &[DirectoryGeneration]) -> Result<usize, NativeGe
 
 impl RootGeneration {
     /// Read the actual held-root vectors and private path after native construction.
+    #[cfg_attr(
+        not(unix),
+        expect(
+            clippy::used_underscore_binding,
+            reason = "The geometry reader observes the existing private non-Unix handle owner."
+        )
+    )]
     pub(crate) fn geometry(&self) -> Result<NativeGeometry, NativeGeometryError> {
         #[cfg(unix)]
         let handles = self.directories.len();
