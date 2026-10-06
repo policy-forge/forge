@@ -29,7 +29,9 @@ configuration, drift, traceability, and lifecycle workflows. Use
 
 For local agent queries, see [the MCP guide](mcp.md). `forge mcp serve` exposes
 seven read-only tools over stdio, with an explicit project and reviewed disclosure
-scope. Static discovery does not authorize project data.
+scope. Static discovery does not authorize project data. The guide also records
+the separate [F20 `/2` development checkpoint](mcp.md#f20-2-development-checkpoint);
+those candidate inputs do not activate additional shipped MCP features.
 
 ## 2. Writing a Policy Document
 
@@ -85,15 +87,15 @@ All users must authenticate before accessing systems.
 FORGE detects and processes:
 - **Requirement atomization** — splits "must X and must Y" into separate controls
 - **Modality detection** — classifies statements as mandatory (MUST/SHALL) or advisory (SHOULD/MAY)
-- **Parameter extraction** — turns prose thresholds (e.g., "12 characters", "30 minutes") into machine-enforceable parameters
+- **Parameter extraction** — turns prose thresholds (e.g., "12 characters", "30 minutes") into structured OSCAL parameters; enforcement depends on separately configured consumers
 - **Citation extraction** — URLs and references become OSCAL back-matter resources
-- **Stable identifiers** — UUID v5 generation ensures every control has a persistent identity across re-conversions
+- **Content-derived identifiers** — UUID v5 tags repeat for the same normalized requirement text; substantive text or duplicate-occurrence changes can change them. These tags are not integrity or approval anchors.
 
 25 sample policies are included in `example_data/` covering topics from acceptable use to incident response.
 
 PDF and DOCX source documents are also accepted directly — Word heading and list styles are mapped to the document model automatically. For other formats, convert to Markdown first using [pandoc](https://pandoc.org/) or [markitdown](https://github.com/microsoft/markitdown).
 
-## 3. The Seven CLI Subcommands
+## 3. CLI Workflows
 
 ### 3.1 `convert` — Convert Policy to OSCAL
 
@@ -887,6 +889,45 @@ for the selection format, complete native matching, minimized fields and bounds.
 
 Inspect local evidence with `forge poam evidence --manifest ./assessment-bundle/authored.json --links review/evidence-links.json --as-of 2026-10-04`. Add `--report inspection.json` to publish a new report beside the plan on Linux or macOS. See [local evidence inspection](poam-evidence-inspection.md) for explicit assertion bindings, complete counts and unchanged closure gates.
 
+### 3.15 `review` — Coordinate Portable Local Re-review
+
+Portable review commands are an unreleased F12 implementation candidate and are
+not included in the published v1.1.0 binary.
+
+Use `forge review init` for selected Mapping assertions or explicit applicability
+decisions in complete recorded Approved/current native closures. `respond` binds
+to the exact recorded queue; `merge` and `status` check the complete current source
+closure. Reviewer keys, roles, authors and times are asserted. A satisfied quorum
+does not approve or modify the domain artifact.
+
+`export-html` renders a recorded disposition bundle; `export-notifications`
+exports recorded queue assignments without sending them or checking current
+native sources. `supersede` creates a separate immutable old/new lineage companion
+from explicit links and a complete native Impact comparison. The old queue stays
+historical, and responses and quorum do not transfer to the new queue.
+
+See the [portable review queue guide](review-queues.md) for the private source,
+policy, Impact and link formats, exact commands, source requirements, sharing
+limits and remaining acceptance gates. Inputs and outputs are explicit paths
+under an absolute project root; output files must be new. Publication uses the
+Linux/macOS no-replace publisher and refuses on Windows. Identifiers and hashes
+can still contain sensitive project metadata.
+
+Lifecycle re-review uses a separate [closed `/2` exchange candidate](lifecycle-review-exchange.md).
+Its implementation candidate registers `forge review lifecycle
+init/respond/merge/status`; the linked guide gives exact flags for use after
+candidate integration. This section's seven commands retain their existing
+Mapping/applicability scope; no review disposition changes native Lifecycle state.
+
+Authoring re-review uses a separate [closed `/3` candidate](authoring-review-exchange.md)
+for one complete current saved `forge.authoring-plan/1`. Its routes are
+`forge review authoring init/respond/merge/status`; the linked guide records exact
+flags, private declarations and completed TEMP test/lint/Rustdoc/LLVM/compiled-CLI
+qualification scopes. Apply these instructions after candidate integration;
+final integrated checks and hosted/platform/human acceptance remain open. The
+adapter does not select individual clauses or consume component
+`forge.authoring-plan/2` output. Published v1.1.0 has no `/3` exchange.
+
 ## 4. Global Options
 
 ```bash
@@ -1018,14 +1059,18 @@ forge convert example_data/POL-0[1-3]*.md --strategy catalog --format json --out
 
 ## 7. Exit Codes
 
-| Code | Meaning |
-|------|---------|
-| 0    | Success |
-| 1    | Validation failure or diff found changes |
-| 2    | File not found |
-| 3    | Invalid argument |
-| 4    | oscal-cli not found (resolve/round-trip) |
-| 5    | oscal-cli execution failure |
+| Code | Maintained error family or completed action |
+|------|---------------------------------------------|
+| 0 | Success under the selected command/gate |
+| 1 | Input/I/O, serialization or external execution failure; also completed diff, drift or review-action states |
+| 2 | Parse/structure, required-argument or domain build/analysis failure |
+| 3 | Schema validation or configuration failure |
+| 4 | External dependency unavailable or nonfunctional |
+
+CLI argument parsing also exits `2` for rejected usage. Use each command's
+documented gate/action semantics before treating a nonzero code as a failed
+analysis. The [maintained error mapping](../src/error.rs) defines these families;
+there is no generic exit `5`.
 
 ## 8. Quality Gates
 
@@ -1063,10 +1108,12 @@ See [Workspace index bundles](workspace-index-bundles.md) for the Python example
 normalized index hash versus original resource hashes and safe errors.
 Negotiated API2.2, 2.3 or 2.4 sessions offer [confirmed metadata receipts and index
 replacement](workspace-bundle-receipts.md); API2.3 and 2.4 admit [opt-in exact-source
-export and complete source restore](workspace-source-bundles.md). The separately
-captured API2.4 working-tree [staged proposal](workspace-staged-source-bundles.md)
-adds bounded part transfer; this compatibility description supplies no runtime,
-merged or hosted result. These writes require
+export and complete source restore](workspace-source-bundles.md). The current captured API2.4 source adds
+[bounded staged part transfer](workspace-staged-source-bundles.md). Exact-tree
+hosted API and Chrome staged-source development workflows at the historical
+F12 `c2fa4cd` checkpoint have scoped successful receipts; that same run
+retains its headless and dependency-audit failures. This does not
+establish full S-6, network-denial, platform or human acceptance. These writes require
 preparation and a separate confirmation, with distinct known-ID recovery for
 source restore. Full S-6 capacity, larger transfer and platform/crash/batch
 qualification, human acceptance and the final integrated documentation review
@@ -1075,6 +1122,9 @@ remain open.
 ## Further Reading
 
 - [README.md](../README.md) — project overview and quick start
+- [Portable review queues](review-queues.md) — asserted review policy, immutable responses, recorded exports and explicit queue supersession
+- [Lifecycle review exchange candidate](lifecycle-review-exchange.md) — separate `/2` formats, candidate CLI commands and qualification limits
+- [Authoring review exchange candidate](authoring-review-exchange.md) — whole saved-plan `/3` review, private inputs and qualification limits
 - [Evidence and Implementation Linking](evidence-linkage.md) — exact subject/evidence metadata linkage, freshness, privacy, and baseline contracts
 - [Evidence overlays](evidence-overlays.md) — new Catalog/Component JSON documents, complete source preservation and generated metadata boundaries
 - [Contributing Guide](../CONTRIBUTING.md) — development setup and PR process

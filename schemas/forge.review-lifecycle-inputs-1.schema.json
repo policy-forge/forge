@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forge.review-lifecycle-inputs/1",
+  "title": "Proposed private Lifecycle review inputs; no capture or native proof",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record",
+    "source",
+    "generated_artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.review-lifecycle-inputs/1"
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        }
+      }
+    },
+    "source": {
+      "$ref": "#/$defs/Route"
+    },
+    "generated_artifacts": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 98,
+      "items": {
+        "$ref": "#/$defs/Route"
+      }
+    }
+  },
+  "$defs": {
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "Route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "declared_path",
+        "path"
+      ],
+      "properties": {
+        "declared_path": {
+          "$ref": "#/$defs/path"
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        }
+      }
+    }
+  }
+}

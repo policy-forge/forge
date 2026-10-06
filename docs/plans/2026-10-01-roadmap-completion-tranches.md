@@ -121,6 +121,49 @@ acceptance evidence can be reviewed independently.
 | F19 — Workspace Should features | Verify existing coverage, then finish static redacted exports, guided authoring, lifecycle/impact views, bounded long-operation progress/cancel/restart, signed platform launch integration and explicit manifest/hash bundle import/export. Complete 062 S-1–S-6. | Existing 057/058/061 services; F04/F05; platform packaging decisions |
 | F20 — MCP Should features | Evidence metadata trace, static report links, owner-bound visibility profiles and a deterministic contained optional full-text index. Complete 067 S-1–S-4; evidence bytes remain excluded. | F11/F19 and existing 060 linkage metadata; profile integrity design |
 
+## Dated F13/F20 candidate checkpoint: 2026-10-05
+
+This retained checkpoint describes its original measured interval. Later MCP source
+and qualification are recorded separately in [the MCP guide](../mcp.md); the
+failed and successful historical populations below are not relabeled.
+
+The [Lifecycle `/2` documentation proposal](../lifecycle-review-exchange.md)
+describes a separate re-review adapter whose implementation candidate registers
+`forge review lifecycle init/respond/merge/status`. One authentic coupled run
+passed 63 controls: 11 receiver, 7 binding, 9 finalizer, 7 current-command,
+8 response, 12 export and 9 init/CLI controls. This is one cohort, not cumulative
+credit for earlier overlapping runs. Later exact formatted candidate checks
+passed normal regressions, strict lint and fresh library-only LLVM instrumentation,
+plus a separate macOS child workflow; the linked guide records the denominators.
+Other platform and acceptance gates remain open. The other
+F13 adapters, proposed edits, workspace client and signature design remain open;
+existing F12 notification/supersession work does not complete those requirements.
+
+The separate [Authoring `/3` candidate](../authoring-review-exchange.md) covers one
+complete current saved `forge.authoring-plan/1` and the
+`forge review authoring init/respond/merge/status` routes. Closed TEMP qualification
+includes 4,248 passing full-suite controls with three unchanged ignored controls,
+strict lint, a lexical Rustdoc census, physical library LLVM coverage and a genuine
+compiled CLI campaign. The linked guide preserves exact populations and limits.
+Final integrated checks and hosted/platform/human acceptance remain open. This
+adapter grants no native promotion and does not complete individual-clause or
+component-plan review, other F13 adapters, proposed edits, client or signature
+gates. The historical requirement and Ready checkboxes remain unchanged.
+
+The [MCP `/2` checkpoint](../mcp.md#f20-2-development-checkpoint) records an
+offline native-input consumer and a later App candidate. The latest same-owner
+reuse run passed 25 selected native/controller controls and failed two native
+controls; standalone report preparation and the distinct-manifest case still
+reach Capacity. Both failed-run diagnostic histories remain retained. No
+accepted App capability or completed S-1–S-4 claim follows. Managed F11/server
+coupling, evidence metadata/report resources, the actual deterministic index
+builder, real owner records, clients and corpus evaluation remain open.
+
+This is a development checkpoint, not a change to package finish lines or owner
+dispositions. Apply and re-review its documentation against the eventual
+integrated source; final docstring/coverage checks and the user's goal-wide docs
+review remain required before the next draft PR.
+
 ## Acceptance and release closeout
 
 **F21 — Execute real combined workflows.** Run the authoring protocol over at

@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forge.review-authoring-plan-init/1",
+  "title": "Proposed private asserted authoring-plan review init request",
+  "description": "Closed asserted review declarations only. All native pins, project subject, complete plan/provenance, context, digests and currentness must derive from the genuine receiver. No paths, native prose or edit supplied here.",
+  "$ref": "#/$defs/InitRequest",
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "time": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "AbstentionRule": {
+      "type": "string",
+      "enum": [
+        "nonapproving"
+      ]
+    },
+    "AuthorSeparation": {
+      "type": "string",
+      "enum": [
+        "declared-keys"
+      ]
+    },
+    "RoleDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        }
+      }
+    },
+    "Reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "role_keys"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "role_keys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/key"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        }
+      }
+    },
+    "SeatRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role_key",
+        "count"
+      ],
+      "properties": {
+        "role_key": {
+          "$ref": "#/$defs/key"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    },
+    "Substitution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "seat_role",
+        "reviewer_key",
+        "asserted_role",
+        "reason_code"
+      ],
+      "properties": {
+        "seat_role": {
+          "$ref": "#/$defs/key"
+        },
+        "reviewer_key": {
+          "$ref": "#/$defs/key"
+        },
+        "asserted_role": {
+          "$ref": "#/$defs/key"
+        },
+        "reason_code": {
+          "$ref": "#/$defs/key"
+        }
+      }
+    },
+    "ReviewPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "seats",
+        "substitutions",
+        "abstention_rule",
+        "empty_abstention_reasons",
+        "author_separation"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "seats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SeatRequirement"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "substitutions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Substitution"
+          },
+          "minItems": 0,
+          "maxItems": 3200
+        },
+        "abstention_rule": {
+          "$ref": "#/$defs/AbstentionRule"
+        },
+        "empty_abstention_reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/key"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "author_separation": {
+          "$ref": "#/$defs/AuthorSeparation"
+        }
+      }
+    },
+    "Assignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_key",
+        "role_key"
+      ],
+      "properties": {
+        "reviewer_key": {
+          "$ref": "#/$defs/key"
+        },
+        "role_key": {
+          "$ref": "#/$defs/key"
+        }
+      }
+    },
+    "InitItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "policy_key",
+        "author_keys",
+        "assignments",
+        "due_at"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "author_keys": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/key"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "assignments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Assignment"
+          },
+          "minItems": 0,
+          "maxItems": 3200
+        },
+        "due_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "InitRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "roles",
+        "reviewers",
+        "policies",
+        "items"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "forge.review-authoring-plan-init/1"
+        },
+        "roles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RoleDefinition"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "reviewers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Reviewer"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "policies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ReviewPolicy"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InitItem"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      }
+    }
+  }
+}

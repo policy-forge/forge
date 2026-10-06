@@ -1,9 +1,11 @@
 use std::process::Command;
 
+/// Select the actual compiled CLI executable for subprocess checks.
 fn forge_bin() -> Command {
     Command::new(env!("CARGO_BIN_EXE_forge"))
 }
 
+/// Invoke the real catalog conversion route with complete required arguments.
 fn run_convert(path: &str) -> std::process::Output {
     forge_bin()
         .args(["convert", path, "--strategy", "catalog", "--format", "json"])
@@ -13,6 +15,7 @@ fn run_convert(path: &str) -> std::process::Output {
 
 // --- T031: Adversarial input integration tests ---
 
+/// An empty source must reach the descriptive controlled CLI error.
 #[test]
 fn empty_file_exits_nonzero_with_descriptive_error() {
     let output = run_convert("tests/fixtures/adversarial/empty.md");
@@ -28,6 +31,7 @@ fn empty_file_exits_nonzero_with_descriptive_error() {
     );
 }
 
+/// A binary extension must reach the controlled unsupported-format error.
 #[test]
 fn binary_file_exits_nonzero_with_descriptive_error() {
     let output = run_convert("tests/fixtures/adversarial/binary.bin");
@@ -43,6 +47,7 @@ fn binary_file_exits_nonzero_with_descriptive_error() {
     );
 }
 
+/// Binary Markdown content must reach the controlled ingestion error.
 #[test]
 fn null_bytes_file_exits_nonzero_with_descriptive_error() {
     let output = run_convert("tests/fixtures/adversarial/null_bytes.md");
@@ -58,6 +63,7 @@ fn null_bytes_file_exits_nonzero_with_descriptive_error() {
     );
 }
 
+/// Whitespace-only input must reach the controlled missing-structure result.
 #[test]
 fn whitespace_only_file_exits_nonzero_with_descriptive_error() {
     let output = run_convert("tests/fixtures/adversarial/whitespace_only.md");
@@ -74,6 +80,7 @@ fn whitespace_only_file_exits_nonzero_with_descriptive_error() {
     );
 }
 
+/// Long input without newlines must reach a controlled result, never a startup crash.
 #[test]
 fn no_newlines_long_line_does_not_panic() {
     let output = run_convert("tests/fixtures/adversarial/no_newlines.md");
@@ -85,16 +92,21 @@ fn no_newlines_long_line_does_not_panic() {
         output.status
     );
 
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        !stderr.contains("has overflowed its stack") && !stderr.contains("panicked at"),
+        "Process must reach a controlled CLI result, got: {stderr}"
+    );
     // This file has "# Policy" so it has structure; it should succeed
     // or produce a descriptive error — either is acceptable
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(!stderr.is_empty(), "If non-zero exit, stderr should contain a descriptive error");
     }
 }
 
 // --- T032: Large file test ---
 
+/// An oversized actual source must reach the descriptive size-limit refusal.
 #[test]
 fn large_file_exceeds_default_limit() {
     let dir = tempfile::TempDir::new().unwrap();

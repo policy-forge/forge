@@ -83,6 +83,8 @@ pub mod poam;
 /// Deterministic composition of local, hash-pinned Markdown policy components.
 pub mod policy;
 pub mod reuse;
+/// Closed asserted portable review contracts; native integration remains private.
+pub(crate) mod review;
 /// OSCAL artifact round-trip validation.
 pub mod round_trip;
 /// Input sanitization utilities (control-character stripping, etc.).

@@ -1,0 +1,25 @@
+{
+  "format": "forge.f12-implementation-design-decision/1",
+  "recorded_utc": "2026-10-04T23:44:20.951496+00:00",
+  "authority_source": "Direct human reply in this Codex chat",
+  "answer": "Approve this design for implementation",
+  "proposal": {
+    "path": "/private/tmp/forge-f12-implementation-decision-v1.md",
+    "bytes": 3706,
+    "sha256": "e1acbbae0f350198a1424d28f0d39f924a89d0e0bf860a749b5ab43518b89b74"
+  },
+  "scope": "F12 engineering implementation design: Approved/current native Mapping assertion re-review first, recorded applicability second; asserted identities and explicit positive finite policy quorum with distinct keys, author exclusion, nonapproving abstention, preserved dissent, immutable closed artifacts, exact current closure, minimized exports and finite capacities.",
+  "unearned": [
+    "Actual team inputs or named reviewer authority",
+    "Authenticated human identity/organization/signatures",
+    "Domain promotion or source mutation approval",
+    "Privacy/accessibility/security/pilot acceptance",
+    "Signed-envelope identity/key/trust design",
+    "Later F13 adapters/edits/client/notification implementation",
+    "Independent native/platform/client/corpus evaluation",
+    "Dependency audit or new crate approval",
+    "Full-goal final documentation completion",
+    "Verified 2.0.0 release candidate, merge or publication"
+  ],
+  "history": "Frozen original design/capacity/owner decision packets remain unchanged."
+}

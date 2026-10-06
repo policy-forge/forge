@@ -530,7 +530,8 @@ fn strict_json(bytes: &[u8], label: &str) -> Result<serde_json::Value, ForgeErro
     .map_err(|cause| error(cause.to_string()))
 }
 
-fn portable_label(path: &Path) -> Result<String, ForgeError> {
+/// Validate and retain exact UTF-8 spelling for a portable relative descendant label.
+pub(super) fn portable_label(path: &Path) -> Result<String, ForgeError> {
     manifest::validate_local_path("captured input", path)?;
     let raw = path.to_str().ok_or_else(|| error("input paths must be UTF-8"))?;
     if raw.is_empty() || raw.contains(['\\', ':', '\0']) || path.is_absolute() {
@@ -542,7 +543,9 @@ fn portable_label(path: &Path) -> Result<String, ForgeError> {
     Ok(raw.to_owned())
 }
 
-fn contained_dependency(base: &Path, relative: &Path) -> Result<PathBuf, ForgeError> {
+/// Normalize permitted leading parent hops without escaping the author project root.
+/// Reject internal parent hops and preserve canonical portable dependency spelling.
+pub(super) fn contained_dependency(base: &Path, relative: &Path) -> Result<PathBuf, ForgeError> {
     let raw = relative.to_str().ok_or_else(|| error("baseline paths must be UTF-8"))?;
     if raw.contains(['\\', ':', '\0']) || relative.is_absolute() || raw.is_empty() {
         return Err(error("baseline dependencies must be portable local paths"));
