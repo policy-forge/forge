@@ -3,41 +3,108 @@
 import argparse
 import base64
 import json
+import hashlib
 from pathlib import Path
 import tempfile
 import uuid
 import sys
-from verify_workspace import atomic_receipt, contract_routes
+
+sys.dont_write_bytecode = True
+from verify_workspace import MAX_CLIENT_REQUESTS, atomic_receipt, contract_routes
 from workspace_client import Workspace, WorkspaceError
 
+# Limit actual request attempts across the two synchronous sessions; retain only
+# allowlisted contract identifiers and three integer outcome categories.
+MAX_RECORDED_REQUESTS = MAX_CLIENT_REQUESTS
+
+
 class RecordingWorkspace(Workspace):
-    """Record operation identifiers and outcomes, never paths or payloads."""
+    """Record documented operation identifiers and bounded outcomes only."""
+
+    # Shared only within one synchronous run; run() resets it before both sessions.
+    request_count = 0
+    accounting_failed = False
+
+    def record(self, operation, outcome):
+        """Increment one allowlisted outcome without retaining request or response data."""
+        if outcome not in ("succeeded", "rejected", "transport_failed"):
+            RecordingWorkspace.accounting_failed = True
+            raise RuntimeError("The client used an unsupported outcome category")
+        try:
+            self.outcomes.setdefault(operation, {
+                "succeeded": 0, "rejected": 0, "transport_failed": 0,
+            })[outcome] += 1
+        except Exception:
+            RecordingWorkspace.accounting_failed = True
+            raise
 
     def request(self, method, path, body=None, **kwargs):
-        """Record only documented operation identifiers and outcomes while returning the real response to the caller."""
-        operation = next((name for verb, pattern, name in self.routes
-                          if verb == method and pattern.fullmatch(path.split("?", 1)[0])), None)
+        """Forward one documented request and retain only its operation outcome."""
+        try:
+            operation = next((name for verb, pattern, name in self.routes
+                              if verb == method and pattern.fullmatch(path.split("?", 1)[0])), None)
+        except Exception:
+            RecordingWorkspace.accounting_failed = True
+            raise RuntimeError("The client could not classify its request") from None
         if operation is None:
+            RecordingWorkspace.accounting_failed = True
             raise RuntimeError("The client used an undocumented operation")
+        if (type(RecordingWorkspace.request_count) is not int or
+                not 0 <= RecordingWorkspace.request_count < MAX_RECORDED_REQUESTS):
+            RecordingWorkspace.accounting_failed = True
+            raise RuntimeError("The client exceeded its request accounting bound")
+        RecordingWorkspace.request_count += 1
         try:
             result = super().request(method, path, body, **kwargs)
         except WorkspaceError:
-            self.outcomes.setdefault(operation, {"succeeded": 0, "rejected": 0, "transport_failed": 0})["rejected"] += 1
+            self.record(operation, "rejected")
             raise
         except OSError:
-            self.outcomes.setdefault(operation, {"succeeded": 0, "rejected": 0, "transport_failed": 0})["transport_failed"] += 1
+            self.record(operation, "transport_failed")
             raise
-        self.outcomes.setdefault(operation, {"succeeded": 0, "rejected": 0, "transport_failed": 0})["succeeded"] += 1
+        except Exception:
+            # close() may swallow RuntimeError/ValueError after the server has
+            # already honoured shutdown; retain a failure latch without its text.
+            RecordingWorkspace.accounting_failed = True
+            raise
+        self.record(operation, "succeeded")
         return result
 
 
+    @classmethod
+    def ensure_accounting(cls):
+        """Reject sticky failures and require every attempted request to have one closed outcome."""
+        if cls.accounting_failed:
+            raise RuntimeError("The client could not account for every request")
+        try:
+            if type(cls.request_count) is not int or not 0 <= cls.request_count <= MAX_RECORDED_REQUESTS:
+                raise ValueError("Invalid attempt count")
+            declared = {name for _, _, name in cls.routes}
+            total = 0
+            for operation, counts in cls.outcomes.items():
+                if operation not in declared or set(counts) != {"succeeded", "rejected", "transport_failed"}:
+                    raise ValueError("Invalid outcome inventory")
+                if any(type(count) is not int or count < 0 for count in counts.values()):
+                    raise ValueError("Invalid outcome count")
+                total += sum(counts.values())
+            if total != cls.request_count:
+                raise ValueError("Unreconciled attempt count")
+        except Exception:
+            cls.accounting_failed = True
+            raise RuntimeError("The client could not account for every request") from None
+
+
+
 def run(forge):
-    """Execute writable and read-only synthetic workflows against Forge and return the closed assertion receipt."""
+    """Run all existing workflows and publish only complete assertion-group accounting."""
     if not __debug__:
         raise RuntimeError("Conformance assertions require Python without optimization")
     checks = []
     RecordingWorkspace.routes = contract_routes(Path(__file__).resolve().parents[1])
     RecordingWorkspace.outcomes = {}
+    RecordingWorkspace.request_count = 0
+    RecordingWorkspace.accounting_failed = False
+
     with tempfile.TemporaryDirectory(prefix="forge-client-") as directory:
         root=Path(directory)
         with RecordingWorkspace(forge,root,read_only=False) as client:
@@ -52,7 +119,7 @@ def run(forge):
             assert first==second and (root/"policy.md").read_bytes()==source
             checks.append("idempotent_commit_replays_exact_bytes")
             def register(file,role,key):
-                """Prepare and explicitly commit one resource registration through the documented API."""
+                """Prepare and explicitly commit one documented resource registration."""
                 response=client.request("POST","/api/v1/resources/register",{"path":file,"role":role,"key":key},idempotency_key=str(uuid.uuid4()))
                 client.commit(response["preview"],confirmed=True,idempotency_key=str(uuid.uuid4()))
             register("policy.md","policy-source","policy")
@@ -113,6 +180,35 @@ def run(forge):
         with RecordingWorkspace(forge,root,read_only=True) as client:
             assert client.request("GET","/api/v1/project/summary")["resource_counts"]["total"]==6
             checks.append("read_only_summary_reconciles_resources")
+            before_bundle_queries={path.name:path.read_bytes() for path in root.iterdir() if path.is_file()}
+            bundle_preview=client.bundle_preview()
+            bundle=bundle_preview["bundle"]
+            assert bundle_preview["source_index_present"] is True
+            assert bundle_preview["source_content_included"] is False
+            assert bundle["schema_version"]=="forge.workspace-index-bundle/1"
+            assert bundle["content_profile"]=="index-and-hashes"
+            assert len(bundle["pins"])==len(bundle["index"]["resources"])==6
+            checks.append("metadata_bundle_preview_preserves_complete_denominator")
+            normalized_index={"schema_version":bundle["index"]["schema_version"],"label":bundle["index"]["label"],"resources":[{"key":item["key"],"role":item["role"],"path":item["path"]} for item in bundle["index"]["resources"]]}
+            normalized_bytes=(json.dumps(normalized_index,ensure_ascii=False,indent=2)+"\n").encode()
+            assert hashlib.sha256(normalized_bytes).hexdigest()==bundle["index_sha256"]
+            for registration,pin in zip(bundle["index"]["resources"],bundle["pins"]):
+                resource_bytes=(root/registration["path"]).read_bytes()
+                assert pin["key"]==registration["key"]
+                assert pin["sha256"]==hashlib.sha256(resource_bytes).hexdigest()
+                assert pin["size_bytes"]==len(resource_bytes)
+            checks.append("metadata_bundle_fingerprints_match_exact_bytes")
+            verified=client.verify_bundle(bundle)
+            assert verified["scope"]=="registered-fingerprints-only" and verified["state"]=="matched"
+            assert verified["expected_resources"]==verified["matched_resources"]==6
+            assert verified["unregistered_resources"]==verified["mismatched_resources"]==0
+            assert verified["current_resources"]==6 and verified["current_only_resources"]==0
+            assert verified["expected_index_matches_current"] is True
+            assert [item["key"] for item in verified["items"]]==[item["key"] for item in bundle["index"]["resources"]]
+            assert verified["source_content_included"] is False
+            checks.append("registered_bundle_comparison_reconciles_expected_current")
+            assert {path.name:path.read_bytes() for path in root.iterdir() if path.is_file()}==before_bundle_queries
+            checks.append("metadata_bundle_queries_preserve_workspace_files")
             try:
                 client.request("POST","/api/v1/resources/register",{"path":"report.html","role":"trace-report","key":"report"},idempotency_key=str(uuid.uuid4()))
             except WorkspaceError as error:
@@ -126,18 +222,20 @@ def run(forge):
         # the close() timeout killing the process, and nothing may still answer.
         for session in (writer,reader):
             assert session.process.poll()==0, f"Workspace did not shut down cleanly: exit {session.process.poll()}"
-            checks.append("clean_shutdown_" + ("writable" if session is writer else "read_only"))
             try:
                 session.request("GET","/api/v1/project/summary")
             except OSError:
+                checks.append("clean_shutdown_" + ("writable" if session is writer else "read_only"))
                 continue
             except WorkspaceError:
                 raise AssertionError("The workspace answered after close()") from None
             raise AssertionError("The workspace answered after close()")
+
+    RecordingWorkspace.ensure_accounting()
     observed = sorted(RecordingWorkspace.outcomes)
     declared = sorted(name for _, _, name in RecordingWorkspace.routes)
     return {
-        "schema_version": "forge.workspace-client-verification/1",
+        "schema_version": "forge.workspace-client-verification/2",
         "status": "passed",
         "checks": checks,
         "check_count": len(checks),
@@ -149,26 +247,39 @@ def run(forge):
 
 
 def main():
-    """Run conformance, optionally publish its receipt and report failure without exception payloads."""
+    """Run conformance and atomically retain an optional redacted receipt without replacement."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--forge", required=True)
     parser.add_argument("--receipt", type=Path)
     args = parser.parse_args()
+    # Existing destinations, including dangling symlinks, are preserved before
+    # executing the workflow. Atomic hard-link publication also closes the race.
+    if args.receipt and (args.receipt.exists() or args.receipt.is_symlink()):
+        print("Maintained headless client receipt destination already exists.", file=sys.stderr)
+        return 1
     try:
         receipt = run(args.forge)
     except Exception:
         if args.receipt:
-            atomic_receipt(args.receipt, {
-                "schema_version": "forge.workspace-client-verification/1",
-                "status": "failed", "checks": [], "check_count": 0,
-                "failure": "client-conformance-failed",
-            })
-        # Assertion payloads and native paths never enter retained receipts/stdout.
+            try:
+                atomic_receipt(args.receipt, {
+                    "schema_version": "forge.workspace-client-verification/2",
+                    "status": "failed", "checks": [], "check_count": 0,
+                    "failure": "client-conformance-failed",
+                })
+            except Exception:
+                # Publication failures never expose native paths or exception
+                # payloads. Exit status remains failed without a success receipt.
+                pass
         print("Maintained headless client conformance failed.", file=sys.stderr)
         return 1
     if args.receipt:
-        atomic_receipt(args.receipt, receipt)
-    print("Maintained headless client conformance passed (12 explicit checks).")
+        try:
+            atomic_receipt(args.receipt, receipt)
+        except Exception:
+            print("Maintained headless client receipt publication failed.", file=sys.stderr)
+            return 1
+    print(f"Maintained headless client conformance passed ({receipt['check_count']} explicit check groups).")
     return 0
 
 

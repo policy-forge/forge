@@ -82,6 +82,25 @@ class Workspace:
         finally:
             connection.close()
 
+    def bundle_preview(self):
+        """Inspect every registered index entry and exact-byte fingerprint.
+
+        Metadata labels, keys, paths and hashes can be sensitive. This returns
+        no source bytes, exported file, receipt or approval. An absent index
+        raises the server's typed not-found error.
+        """
+        return self.request("GET", "/api/v1/project/bundle-preview")
+
+    def verify_bundle(self, bundle):
+        """Compare expected fingerprints only with current registered captures.
+
+        The complete encoded request must fit the server's 1 MiB bound.
+        Unregistered supplied paths are never opened. Matching bytes establish
+        neither current domain validity nor import readiness; retries capture
+        current state again and create no effect or replay receipt.
+        """
+        return self.request("POST", "/api/v1/project/bundle-verifications", {"bundle": bundle})
+
     def wait(self, operation, timeout=35):
         deadline = time.monotonic() + timeout
         while operation["state"] in ("pending", "running"):

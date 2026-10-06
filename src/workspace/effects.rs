@@ -1,5 +1,6 @@
 //! Session-owned exact-byte receipts, idempotent results, and single-file effects.
 use super::contract::{self, Error, Result};
+use super::preparation::ProgressUpdate;
 use super::root::{Root, Target, conflict};
 use super::services::{Snapshot, resource_id};
 use serde_json::{Value, json};
@@ -39,6 +40,8 @@ pub(crate) struct Store {
     operations: BTreeMap<String, Value>,
     replays: BTreeMap<String, Replay>,
     retained_bytes: usize,
+    /// Last complete capture count and immutable denominator for each active job.
+    capture_progress: BTreeMap<String, (usize, usize)>,
 }
 fn unavailable() -> Error {
     Error::new("not-found", "The session operation or preview was not found.", false)
@@ -243,53 +246,115 @@ impl Store {
         self.operations.insert(id, operation.clone());
         Ok(operation)
     }
+    /// Enter running once, settling an already cancelled pending job without work.
     pub(crate) fn running(&mut self, id: &str) -> Result<bool> {
         let operation = self.operations.get_mut(id).ok_or_else(unavailable)?;
+        if !matches!(operation["state"].as_str(), Some("pending" | "running")) {
+            return Ok(false);
+        }
+        operation["updated_at"] = json!(now());
         if operation["cancel_requested"] == true {
             operation["state"] = json!("cancelled");
+            operation["progress"] = Value::Null;
+            self.capture_progress.remove(id);
             return Ok(false);
         }
         operation["state"] = json!("running");
+        Ok(true)
+    }
+
+    /// Publish only complete captured registrations for the original active job.
+    /// A fixed denominator and nondecreasing prefix preserve truthful units;
+    /// clearing the measured phase does not erase its internal last observation.
+    pub(crate) fn observe_progress(&mut self, id: &str, update: ProgressUpdate) -> Result<bool> {
+        let operation = self.operations.get_mut(id).ok_or_else(unavailable)?;
+        if operation["state"] != "running" || operation["cancel_requested"] == true {
+            return Ok(false);
+        }
+        match update {
+            ProgressUpdate::Unchanged => return Ok(true),
+            ProgressUpdate::Clear => operation["progress"] = Value::Null,
+            ProgressUpdate::Capture { completed, total } => {
+                if total > 1000
+                    || completed > total
+                    || self.capture_progress.get(id).is_some_and(|(previous, denominator)| {
+                        total != *denominator || completed < *previous
+                    })
+                {
+                    return Err(Error::invalid());
+                }
+                self.capture_progress.insert(id.to_owned(), (completed, total));
+                operation["progress"] = json!({"completed_items":completed,"total_items":total});
+            }
+        }
         operation["updated_at"] = json!(now());
         Ok(true)
     }
+
+    /// Settle an active job once and transfer its local receipts only on success.
+    /// Cancellation wins before transfer; late workers cannot alter any terminal
+    /// result, resurrect the job, or charge the same retained bytes twice.
     pub(crate) fn finish(
         &mut self,
         id: &str,
         prepared: Result<(Self, Reply)>,
         cancelled: bool,
     ) -> Result<()> {
-        let operation = self.operations.get_mut(id).ok_or_else(unavailable)?;
+        let mut operation = self.operations.get(id).cloned().ok_or_else(unavailable)?;
+        if !matches!(operation["state"].as_str(), Some("pending" | "running")) {
+            return Ok(());
+        }
         operation["updated_at"] = json!(now());
+        operation["progress"] = Value::Null;
+        let mut retained = None;
         if cancelled || operation["cancel_requested"] == true {
             operation["state"] = json!("cancelled");
             operation["cancel_requested"] = json!(true);
-            return Ok(());
-        }
-        let prepared = prepared.and_then(|(local, reply)| {
-            if self.receipts.len() + local.receipts.len() > MAX_RETAINED
-                || self.retained_bytes.saturating_add(local.retained_bytes) > MAX_PREVIEW_BYTES
-            {
-                return Err(capacity());
-            }
-            Ok((local, reply))
-        });
-        match prepared {
-            Ok((mut local, reply)) => {
-                let mut result = reply.value["result"].clone();
-                if result.get("operation_id").is_some() {
-                    result["operation_id"] = json!(id);
+        } else {
+            let prepared = prepared.and_then(|(local, reply)| {
+                if self.receipts.len() + local.receipts.len() > MAX_RETAINED
+                    || self.retained_bytes.saturating_add(local.retained_bytes) > MAX_PREVIEW_BYTES
+                {
+                    return Err(capacity());
                 }
-                operation["state"] = json!("succeeded");
-                operation["result"] = result;
-                contract::validate("Operation", operation)?;
-                self.retained_bytes += local.retained_bytes;
-                self.receipts.append(&mut local.receipts);
+                Ok((local, reply))
+            });
+            match prepared {
+                Ok((local, reply)) => {
+                    let mut result = reply.value["result"].clone();
+                    if result.get("operation_id").is_some() {
+                        result["operation_id"] = json!(id);
+                    }
+                    operation["state"] = json!("succeeded");
+                    operation["result"] = result;
+                    retained = Some(local);
+                }
+                Err(error) => {
+                    operation["state"] = json!("failed");
+                    operation["error"] =
+                        serde_json::to_value(error).map_err(|_| Error::invalid())?;
+                }
             }
-            Err(error) => {
-                operation["state"] = json!("failed");
-                operation["error"] = serde_json::to_value(error).map_err(|_| Error::invalid())?;
-            }
+        }
+        if contract::validate("Operation", &operation).is_err() {
+            // Reject an invalid internal reply before any local receipt transfer,
+            // while preserving a queryable safe terminal result for the caller.
+            operation.as_object_mut().ok_or_else(Error::invalid)?.remove("result");
+            operation["state"] = json!("failed");
+            operation["error"] = serde_json::to_value(Error::new(
+                "internal-error",
+                "The workspace operation could not be completed.",
+                false,
+            ))
+            .map_err(|_| Error::invalid())?;
+            retained = None;
+            contract::validate("Operation", &operation)?;
+        }
+        self.operations.insert(id.to_owned(), operation);
+        self.capture_progress.remove(id);
+        if let Some(mut local) = retained {
+            self.retained_bytes += local.retained_bytes;
+            self.receipts.append(&mut local.receipts);
         }
         Ok(())
     }
@@ -571,5 +636,484 @@ mod tests {
         let (diff, truncated) = text_diff("café".as_bytes(), "日本語\n".as_bytes());
         assert!(!truncated);
         assert!(diff.contains("-café\n\\ No newline at end of file\n+日本語\n"));
+    }
+    /// Build real registered input and destination sentinels for Store checkpoint tests.
+    fn checkpoint_store_fixture() -> (tempfile::TempDir, Root, Snapshot) {
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::write(
+            directory.path().join("policy.md"),
+            b"# Explicit policy\n\nA supplied clause.\n",
+        )
+        .unwrap();
+        let index = json!({"schema_version":"forge.workspace/1","label":"Checkpoint fixture",
+            "resources":[{"key":"policy","role":"policy-source","path":"policy.md"}]});
+        std::fs::write(
+            directory.path().join("forge.workspace.json"),
+            super::super::index::Index::parse(&serde_json::to_vec(&index).unwrap())
+                .unwrap()
+                .bytes()
+                .unwrap(),
+        )
+        .unwrap();
+        std::fs::write(directory.path().join("review.html"), b"EXISTING REVIEW SENTINEL\n")
+            .unwrap();
+        std::fs::write(directory.path().join("keeper.html"), b"EXISTING KEEPER SENTINEL\n")
+            .unwrap();
+        let root = Root::open(directory.path()).unwrap();
+        let snapshot = Snapshot::capture(&root).unwrap();
+        (directory, root, snapshot)
+    }
+
+    /// Prepare an actual inert trace export and its local one-use receipt.
+    fn checkpoint_store_prepared(
+        root: &Root,
+        snapshot: &Snapshot,
+        target: &str,
+    ) -> (Store, Reply, String) {
+        let inputs = super::super::reports::inputs(snapshot, "trace").unwrap();
+        let bytes = super::super::reports::render(snapshot, "trace", json!({
+            "total_elements":0,"asserted_trace_elements":0,"current_source_locations":0,"unresolved_elements":0
+        })).unwrap();
+        let mut local = Store::default();
+        let preview =
+            local.preview(root, snapshot, target, "report-export", bytes, &inputs).unwrap();
+        let preview_id = preview["preview_id"].as_str().unwrap().to_owned();
+        let value = local
+            .completed(
+                "export",
+                json!({"preview":preview,
+            "redaction_summary":{"removed_categories":[]}}),
+            )
+            .unwrap();
+        (local, Reply { value, schema: "Operation", status: 202 }, preview_id)
+    }
+
+    /// Seed an unrelated real receipt so interruption tests detect accidental clearing.
+    fn checkpoint_store_keeper(
+        store: &mut Store,
+        root: &Root,
+        snapshot: &Snapshot,
+    ) -> (String, Value, usize) {
+        let inputs = super::super::reports::inputs(snapshot, "trace").unwrap();
+        let bytes = super::super::reports::render(snapshot, "trace", json!({
+            "total_elements":0,"asserted_trace_elements":0,"current_source_locations":0,"unresolved_elements":0
+        })).unwrap();
+        let preview =
+            store.preview(root, snapshot, "keeper.html", "report-export", bytes, &inputs).unwrap();
+        let id = preview["preview_id"].as_str().unwrap().to_owned();
+        (id, preview, store.retained_bytes)
+    }
+
+    /// Assert that preparation neither publishes nor modifies registered fixture bytes.
+    fn checkpoint_store_sources_unchanged(directory: &std::path::Path, snapshot: &Snapshot) {
+        for item in &snapshot.items {
+            assert_eq!(
+                std::fs::read(directory.join(&item.registration.path)).unwrap(),
+                item.captured.bytes
+            );
+        }
+        assert_eq!(
+            std::fs::read(directory.join("forge.workspace.json")).unwrap(),
+            snapshot.index.bytes().unwrap()
+        );
+    }
+
+    /// Adversarial observations after one of three captured items: regression, denominator change, overflow and cap excess.
+    fn checkpoint_store_invalid_counters() -> [super::super::preparation::ProgressUpdate; 5] {
+        use super::super::preparation::ProgressUpdate;
+        [
+            ProgressUpdate::Capture { completed: 0, total: 3 },
+            ProgressUpdate::Capture { completed: 2, total: 4 },
+            ProgressUpdate::Capture { completed: 4, total: 3 },
+            ProgressUpdate::Capture { completed: 1, total: 1001 },
+            ProgressUpdate::Capture { completed: usize::MAX, total: usize::MAX },
+        ]
+    }
+
+    /// Inactive operations ignore observations and active capture rejects invalid whole counters atomically.
+    #[test]
+    fn checkpoint_progress_requires_running_and_fixed_valid_capture_counters() {
+        use super::super::preparation::ProgressUpdate;
+        let mut store = Store::default();
+        let operation = store.begin("export").unwrap();
+        let id = operation["operation_id"].as_str().unwrap();
+        assert!(
+            !store
+                .observe_progress(id, ProgressUpdate::Capture { completed: 0, total: 3 })
+                .unwrap()
+        );
+        assert_eq!(store.operation(id).unwrap(), operation);
+        assert!(store.running(id).unwrap());
+        assert!(
+            store.observe_progress(id, ProgressUpdate::Capture { completed: 0, total: 3 }).unwrap()
+        );
+        assert!(
+            store.observe_progress(id, ProgressUpdate::Capture { completed: 1, total: 3 }).unwrap()
+        );
+        let observed = store.operation(id).unwrap();
+        for update in checkpoint_store_invalid_counters() {
+            assert_eq!(store.observe_progress(id, update).unwrap_err().code, "invalid-request");
+            assert_eq!(store.operation(id).unwrap(), observed);
+        }
+        assert!(store.observe_progress(id, ProgressUpdate::Unchanged).unwrap());
+        assert_eq!(
+            store.operation(id).unwrap()["progress"],
+            json!({"completed_items":1,"total_items":3})
+        );
+        assert!(
+            store.observe_progress(id, ProgressUpdate::Capture { completed: 3, total: 3 }).unwrap()
+        );
+        assert!(store.observe_progress(id, ProgressUpdate::Clear).unwrap());
+        let cleared = store.operation(id).unwrap();
+        assert!(cleared["progress"].is_null());
+        for update in [
+            ProgressUpdate::Capture { completed: 2, total: 3 },
+            ProgressUpdate::Capture { completed: 3, total: 4 },
+        ] {
+            assert_eq!(store.observe_progress(id, update).unwrap_err().code, "invalid-request");
+            assert_eq!(store.operation(id).unwrap(), cleared);
+        }
+        super::super::contract::validate("Operation", &store.operation(id).unwrap()).unwrap();
+    }
+
+    /// Empty capture and the complete 1,000-registration boundary remain representable facts.
+    #[test]
+    fn checkpoint_progress_accepts_empty_and_full_capture_boundaries() {
+        use super::super::preparation::ProgressUpdate;
+        for total in [0, 1000] {
+            let mut store = Store::default();
+            let operation = store.begin("export").unwrap();
+            let id = operation["operation_id"].as_str().unwrap();
+            assert!(store.running(id).unwrap());
+            assert!(
+                store
+                    .observe_progress(id, ProgressUpdate::Capture { completed: 0, total })
+                    .unwrap()
+            );
+            assert!(
+                store
+                    .observe_progress(id, ProgressUpdate::Capture { completed: total, total })
+                    .unwrap()
+            );
+            assert_eq!(
+                store.operation(id).unwrap()["progress"],
+                json!({"completed_items":total,"total_items":total})
+            );
+            super::super::contract::validate("Operation", &store.operation(id).unwrap()).unwrap();
+        }
+    }
+
+    /// A running cancellation acknowledges work, suppresses further progress, and discards only its local receipt.
+    #[test]
+    fn checkpoint_cancelled_transfer_preserves_keeper_and_project_sentinels() {
+        use super::super::preparation::ProgressUpdate;
+        let (directory, root, snapshot) = checkpoint_store_fixture();
+        let mut store = Store::default();
+        let (keeper_id, keeper, retained) = checkpoint_store_keeper(&mut store, &root, &snapshot);
+        let operation = store.begin("export").unwrap();
+        let id = operation["operation_id"].as_str().unwrap();
+        assert!(store.running(id).unwrap());
+        assert!(
+            store.observe_progress(id, ProgressUpdate::Capture { completed: 1, total: 1 }).unwrap()
+        );
+        let acknowledgement = store.cancel(id).unwrap();
+        assert_eq!(acknowledgement["state"], "running");
+        assert_eq!(acknowledgement["cancel_requested"], true);
+        assert!(
+            !store
+                .observe_progress(id, ProgressUpdate::Capture { completed: 1, total: 1 })
+                .unwrap()
+        );
+        assert_eq!(store.operation(id).unwrap(), acknowledgement);
+        let (local, reply, discarded_id) =
+            checkpoint_store_prepared(&root, &snapshot, "review.html");
+        store.finish(id, Ok((local, reply)), false).unwrap();
+        let terminal = store.operation(id).unwrap();
+        assert_eq!(terminal["state"], "cancelled");
+        assert_eq!(terminal["cancel_requested"], true);
+        assert!(terminal["result"].is_null());
+        assert!(terminal["error"].is_null());
+        assert!(terminal["progress"].is_null());
+        assert_eq!(store.get_preview(&discarded_id).unwrap_err().code, "not-found");
+        assert_eq!(store.get_preview(&keeper_id).unwrap(), keeper);
+        assert_eq!(store.receipts.len(), 1);
+        assert_eq!(store.retained_bytes, retained);
+        assert_eq!(
+            std::fs::read(directory.path().join("review.html")).unwrap(),
+            b"EXISTING REVIEW SENTINEL\n"
+        );
+        assert_eq!(
+            std::fs::read(directory.path().join("keeper.html")).unwrap(),
+            b"EXISTING KEEPER SENTINEL\n"
+        );
+        checkpoint_store_sources_unchanged(directory.path(), &snapshot);
+        super::super::contract::validate("Operation", &terminal).unwrap();
+    }
+
+    /// Once success owns a real receipt, late cancellation, running, progress, and finish cannot replace it.
+    #[test]
+    fn checkpoint_succeeded_operation_cannot_resurrect_or_merge_twice() {
+        use super::super::preparation::ProgressUpdate;
+        let (directory, root, snapshot) = checkpoint_store_fixture();
+        let mut store = Store::default();
+        let operation = store.begin("export").unwrap();
+        let id = operation["operation_id"].as_str().unwrap();
+        assert!(store.running(id).unwrap());
+        assert!(
+            store.observe_progress(id, ProgressUpdate::Capture { completed: 1, total: 1 }).unwrap()
+        );
+        let (local, reply, retained_id) =
+            checkpoint_store_prepared(&root, &snapshot, "review.html");
+        store.finish(id, Ok((local, reply)), false).unwrap();
+        let terminal = store.operation(id).unwrap();
+        assert_eq!(terminal["state"], "succeeded");
+        assert_eq!(terminal["result"]["operation_id"], id);
+        assert!(terminal["progress"].is_null());
+        let preview = store.get_preview(&retained_id).unwrap();
+        let bytes = store.retained_bytes;
+        assert_eq!(store.cancel(id).unwrap_err().code, "operation-not-cancellable");
+        assert!(!store.running(id).unwrap());
+        assert!(
+            !store
+                .observe_progress(id, ProgressUpdate::Capture { completed: 0, total: 1 })
+                .unwrap()
+        );
+        assert!(!store.observe_progress(id, ProgressUpdate::Clear).unwrap());
+        let (late_local, late_reply, late_id) =
+            checkpoint_store_prepared(&root, &snapshot, "review.html");
+        store.finish(id, Ok((late_local, late_reply)), true).unwrap();
+        store.finish(id, Err(Error::invalid()), false).unwrap();
+        assert_eq!(store.operation(id).unwrap(), terminal);
+        assert_eq!(store.get_preview(&retained_id).unwrap(), preview);
+        assert_eq!(store.get_preview(&late_id).unwrap_err().code, "not-found");
+        assert_eq!(store.receipts.len(), 1);
+        assert_eq!(store.retained_bytes, bytes);
+        assert_eq!(
+            std::fs::read(directory.path().join("review.html")).unwrap(),
+            b"EXISTING REVIEW SENTINEL\n"
+        );
+        checkpoint_store_sources_unchanged(directory.path(), &snapshot);
+    }
+
+    /// A real failure is terminal and an obsolete successful local reply cannot attach a preview later.
+    #[test]
+    fn checkpoint_failed_operation_rejects_late_progress_and_receipt_transfer() {
+        use super::super::preparation::ProgressUpdate;
+        let (directory, root, snapshot) = checkpoint_store_fixture();
+        let mut store = Store::default();
+        let (keeper_id, keeper, retained) = checkpoint_store_keeper(&mut store, &root, &snapshot);
+        let operation = store.begin("export").unwrap();
+        let id = operation["operation_id"].as_str().unwrap();
+        assert!(store.running(id).unwrap());
+        assert!(
+            store.observe_progress(id, ProgressUpdate::Capture { completed: 1, total: 1 }).unwrap()
+        );
+        store.finish(id, Err(Error::invalid()), false).unwrap();
+        let terminal = store.operation(id).unwrap();
+        assert_eq!(terminal["state"], "failed");
+        assert_eq!(terminal["error"]["code"], "invalid-request");
+        assert!(terminal["result"].is_null());
+        assert!(terminal["progress"].is_null());
+        assert!(!store.running(id).unwrap());
+        assert!(!store.observe_progress(id, ProgressUpdate::Unchanged).unwrap());
+        let (local, reply, discarded_id) =
+            checkpoint_store_prepared(&root, &snapshot, "review.html");
+        store.finish(id, Ok((local, reply)), false).unwrap();
+        assert_eq!(store.operation(id).unwrap(), terminal);
+        assert_eq!(store.get_preview(&discarded_id).unwrap_err().code, "not-found");
+        assert_eq!(store.get_preview(&keeper_id).unwrap(), keeper);
+        assert_eq!(store.receipts.len(), 1);
+        assert_eq!(store.retained_bytes, retained);
+        checkpoint_store_sources_unchanged(directory.path(), &snapshot);
+        super::super::contract::validate("Operation", &terminal).unwrap();
+    }
+
+    /// A cancelled pending job never starts, and obsolete completion cannot replace its cancelled terminal.
+    #[test]
+    fn checkpoint_pending_cancellation_is_terminal_before_any_late_completion() {
+        use super::super::preparation::ProgressUpdate;
+        let (_, root, snapshot) = checkpoint_store_fixture();
+        let mut store = Store::default();
+        let operation = store.begin("export").unwrap();
+        let id = operation["operation_id"].as_str().unwrap();
+        assert_eq!(store.cancel(id).unwrap()["state"], "pending");
+        assert!(!store.running(id).unwrap());
+        let terminal = store.operation(id).unwrap();
+        assert_eq!(terminal["state"], "cancelled");
+        assert!(terminal["progress"].is_null());
+        assert!(!store.running(id).unwrap());
+        assert!(!store.observe_progress(id, ProgressUpdate::Clear).unwrap());
+        let (local, reply, discarded_id) =
+            checkpoint_store_prepared(&root, &snapshot, "review.html");
+        store.finish(id, Ok((local, reply)), false).unwrap();
+        assert_eq!(store.operation(id).unwrap(), terminal);
+        assert_eq!(store.receipts.keys().collect::<Vec<_>>(), [] as [&String; 0]);
+        assert_eq!(store.retained_bytes, 0);
+        assert_eq!(store.get_preview(&discarded_id).unwrap_err().code, "not-found");
+        super::super::contract::validate("Operation", &terminal).unwrap();
+    }
+
+    /// A final deadline/shutdown fence overrides both success and ordinary failure without charging local receipts.
+    #[test]
+    fn checkpoint_stop_fence_wins_over_success_and_failure_before_transfer() {
+        let (directory, root, snapshot) = checkpoint_store_fixture();
+        for succeeds in [false, true] {
+            let mut store = Store::default();
+            let (keeper_id, keeper, retained) =
+                checkpoint_store_keeper(&mut store, &root, &snapshot);
+            let operation = store.begin("export").unwrap();
+            let id = operation["operation_id"].as_str().unwrap();
+            assert!(store.running(id).unwrap());
+            let prepared = if succeeds {
+                let (local, reply, _) = checkpoint_store_prepared(&root, &snapshot, "review.html");
+                Ok((local, reply))
+            } else {
+                Err(Error::invalid())
+            };
+            store.finish(id, prepared, true).unwrap();
+            let terminal = store.operation(id).unwrap();
+            assert_eq!(terminal["state"], "cancelled");
+            assert!(terminal["result"].is_null());
+            assert!(terminal["error"].is_null());
+            assert!(terminal["progress"].is_null());
+            assert_eq!(store.get_preview(&keeper_id).unwrap(), keeper);
+            assert_eq!(store.receipts.len(), 1);
+            assert_eq!(store.retained_bytes, retained);
+            assert_eq!(
+                std::fs::read(directory.path().join("review.html")).unwrap(),
+                b"EXISTING REVIEW SENTINEL\n"
+            );
+            checkpoint_store_sources_unchanged(directory.path(), &snapshot);
+            super::super::contract::validate("Operation", &terminal).unwrap();
+        }
+    }
+
+    /// Actual ten-MiB destination bases collide at final retention without partially merging local receipts.
+    #[test]
+    fn checkpoint_retention_collision_preserves_existing_receipts_and_large_targets() {
+        let (directory, root, snapshot) = checkpoint_store_fixture();
+        let keeper_bytes = vec![b'k'; 10 * 1024 * 1024];
+        let review_bytes = vec![b'r'; 10 * 1024 * 1024];
+        std::fs::write(directory.path().join("keeper.html"), &keeper_bytes).unwrap();
+        std::fs::write(directory.path().join("review.html"), &review_bytes).unwrap();
+        let mut store = Store::default();
+        let (keeper_id, keeper, retained) = checkpoint_store_keeper(&mut store, &root, &snapshot);
+        let operation = store.begin("export").unwrap();
+        let id = operation["operation_id"].as_str().unwrap();
+        assert!(store.running(id).unwrap());
+        let (local, reply, discarded_id) =
+            checkpoint_store_prepared(&root, &snapshot, "review.html");
+        assert!(retained <= MAX_PREVIEW_BYTES);
+        assert!(local.retained_bytes <= MAX_PREVIEW_BYTES);
+        assert!(retained + local.retained_bytes > MAX_PREVIEW_BYTES);
+        store.finish(id, Ok((local, reply)), false).unwrap();
+        let terminal = store.operation(id).unwrap();
+        assert_eq!(terminal["state"], "failed");
+        assert_eq!(terminal["error"]["code"], "invalid-request");
+        assert!(terminal["result"].is_null());
+        assert!(terminal["progress"].is_null());
+        assert_eq!(store.receipts.len(), 1);
+        assert_eq!(store.retained_bytes, retained);
+        assert_eq!(store.get_preview(&keeper_id).unwrap(), keeper);
+        assert_eq!(store.get_preview(&discarded_id).unwrap_err().code, "not-found");
+        assert_eq!(std::fs::read(directory.path().join("keeper.html")).unwrap(), keeper_bytes);
+        assert_eq!(std::fs::read(directory.path().join("review.html")).unwrap(), review_bytes);
+        checkpoint_store_sources_unchanged(directory.path(), &snapshot);
+    }
+
+    /// Real retained receipt cardinality rejects a 257th merge without dropping any of the existing 256 previews.
+    #[test]
+    fn checkpoint_receipt_count_collision_preserves_every_retained_preview() {
+        let (directory, root, snapshot) = checkpoint_store_fixture();
+        let mut store = Store::default();
+        let mut keepers = Vec::new();
+        for _ in 0..MAX_RETAINED {
+            let (id, preview, _) = checkpoint_store_keeper(&mut store, &root, &snapshot);
+            keepers.push((id, preview));
+        }
+        assert_eq!(store.receipts.len(), MAX_RETAINED);
+        let retained = store.retained_bytes;
+        let operation = store.begin("export").unwrap();
+        let id = operation["operation_id"].as_str().unwrap();
+        assert!(store.running(id).unwrap());
+        let (local, reply, discarded_id) =
+            checkpoint_store_prepared(&root, &snapshot, "review.html");
+        store.finish(id, Ok((local, reply)), false).unwrap();
+        let terminal = store.operation(id).unwrap();
+        assert_eq!(terminal["state"], "failed");
+        assert_eq!(terminal["error"]["code"], "invalid-request");
+        assert!(terminal["result"].is_null());
+        assert!(terminal["progress"].is_null());
+        assert_eq!(store.receipts.len(), MAX_RETAINED);
+        assert_eq!(store.retained_bytes, retained);
+        for (keeper_id, preview) in keepers {
+            assert_eq!(store.get_preview(&keeper_id).unwrap(), preview);
+        }
+        assert_eq!(store.get_preview(&discarded_id).unwrap_err().code, "not-found");
+        assert_eq!(
+            std::fs::read(directory.path().join("keeper.html")).unwrap(),
+            b"EXISTING KEEPER SENTINEL\n"
+        );
+        assert_eq!(
+            std::fs::read(directory.path().join("review.html")).unwrap(),
+            b"EXISTING REVIEW SENTINEL\n"
+        );
+        checkpoint_store_sources_unchanged(directory.path(), &snapshot);
+    }
+
+    /// Invalid internal result contracts fail safely before receipt transfer, while an acknowledged cancellation retains priority.
+    #[test]
+    fn checkpoint_invalid_internal_result_settles_safely_without_partial_merge() {
+        use super::super::preparation::ProgressUpdate;
+        let (directory, root, snapshot) = checkpoint_store_fixture();
+        for cancelled in [false, true] {
+            let mut store = Store::default();
+            let (keeper_id, keeper, retained) =
+                checkpoint_store_keeper(&mut store, &root, &snapshot);
+            let operation = store.begin("export").unwrap();
+            let id = operation["operation_id"].as_str().unwrap();
+            assert!(store.running(id).unwrap());
+            assert!(
+                store
+                    .observe_progress(id, ProgressUpdate::Capture { completed: 1, total: 1 })
+                    .unwrap()
+            );
+            let (local, mut reply, discarded_id) =
+                checkpoint_store_prepared(&root, &snapshot, "review.html");
+            reply.value["result"] = json!({"private_source":"PRIVATE INTERNAL TEST SENTINEL"});
+            if cancelled {
+                store.cancel(id).unwrap();
+            }
+            store.finish(id, Ok((local, reply)), false).unwrap();
+            let terminal = store.operation(id).unwrap();
+            if cancelled {
+                assert_eq!(terminal["state"], "cancelled");
+                assert!(terminal["error"].is_null());
+            } else {
+                assert_eq!(terminal["state"], "failed");
+                assert_eq!(terminal["error"]["code"], "internal-error");
+                assert_eq!(
+                    terminal["error"]["message"],
+                    "The workspace operation could not be completed."
+                );
+                assert_eq!(terminal["error"]["retryable"], false);
+            }
+            assert!(terminal["result"].is_null());
+            assert!(terminal["progress"].is_null());
+            assert!(!terminal.to_string().contains("PRIVATE INTERNAL TEST SENTINEL"));
+            assert_eq!(store.receipts.len(), 1);
+            assert_eq!(store.retained_bytes, retained);
+            assert_eq!(store.get_preview(&keeper_id).unwrap(), keeper);
+            assert_eq!(store.get_preview(&discarded_id).unwrap_err().code, "not-found");
+            assert!(!store.running(id).unwrap());
+            assert!(!store.observe_progress(id, ProgressUpdate::Unchanged).unwrap());
+            assert_eq!(store.operation(id).unwrap(), terminal);
+            assert_eq!(
+                std::fs::read(directory.path().join("review.html")).unwrap(),
+                b"EXISTING REVIEW SENTINEL\n"
+            );
+            checkpoint_store_sources_unchanged(directory.path(), &snapshot);
+            super::super::contract::validate("Operation", &terminal).unwrap();
+        }
     }
 }

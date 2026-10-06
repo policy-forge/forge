@@ -1,0 +1,24 @@
+{
+  "scope": "registered-fingerprints-only",
+  "snapshot_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "source_index_present": false,
+  "state": "missing-index",
+  "current_resources": 0,
+  "current_only_resources": 0,
+  "expected_index_matches_current": false,
+  "expected_resources": 1,
+  "matched_resources": 0,
+  "unregistered_resources": 1,
+  "mismatched_resources": 0,
+  "items": [
+    {
+      "key": "policy",
+      "status": "not-registered",
+      "reason_codes": [
+        "registration-not-found"
+      ],
+      "observed_resource_validation_state": "not-registered"
+    }
+  ],
+  "source_content_included": false
+}

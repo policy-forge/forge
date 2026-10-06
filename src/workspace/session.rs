@@ -136,6 +136,12 @@ fn valid_passphrase(passphrase: &str) -> bool {
     (15..=128).contains(&passphrase.chars().count())
 }
 
+/// Round the remaining monotonic retry interval up, reporting zero after expiry.
+fn retry_delay_seconds(deadline: Instant, now: Instant) -> u64 {
+    let remaining = deadline.saturating_duration_since(now);
+    remaining.as_secs().saturating_add(u64::from(remaining.subsec_nanos() != 0))
+}
+
 impl Session {
     pub(crate) fn new(
         mode: Mode,
@@ -205,6 +211,10 @@ impl Session {
         self.issue()
     }
 
+    /// Verify a browser passphrase or report the actual bounded retry delay.
+    ///
+    /// Retry guidance uses the existing monotonic deadline; no client estimate,
+    /// wall clock, credential or verifier state is included in the safe message.
     pub(crate) fn unlock(&mut self, passphrase: &str) -> Result<Zeroizing<String>> {
         if self.stopped || self.mode != Mode::Browser {
             return Err(unauthorized());
@@ -212,11 +222,7 @@ impl Session {
         let now = Instant::now();
         if now < self.unlock_after {
             security_event(&self.id, "throttle", "throttled", attempt_bucket(self.unlock_failures));
-            return Err(Error::new(
-                "unlock-throttled",
-                "Unlock is temporarily unavailable. Wait before retrying.",
-                true,
-            ));
+            return Err(Error::unlock_throttled(retry_delay_seconds(self.unlock_after, now)));
         }
         // Invalid-length and malformed submissions take the same fixed-cost hash
         // path as incorrect in-range values. No attacker-selected cost or allocation.
@@ -348,6 +354,7 @@ mod tests {
         assert!(session.authorize(&token, false, false).is_err());
     }
 
+    /// Keep throttling guidance server-authored and retain distinct valid capabilities.
     #[test]
     fn browser_unlock_throttles_and_mints_distinct_capabilities() {
         let mut session =
@@ -361,14 +368,20 @@ mod tests {
                 .code,
             "unlock-failed"
         );
-        assert_eq!(
-            session
-                .unlock("valid long passphrase")
-                .map(|_| ())
-                .expect_err("retry must be throttled")
-                .code,
-            "unlock-throttled"
-        );
+        let throttled = session
+            .unlock("valid long passphrase")
+            .map(|_| ())
+            .expect_err("retry must be throttled");
+        assert_eq!(throttled.code, "unlock-throttled");
+        assert!(throttled.retryable);
+        let seconds = throttled
+            .message
+            .strip_prefix("Too many attempts — retry available in ")
+            .and_then(|message| message.strip_suffix(" seconds. Wait, then retry. If repeated, stop and relaunch the workspace from the terminal."))
+            .expect("safe guidance must state the server's retry delay")
+            .parse::<u64>()
+            .expect("retry delay must be a whole number of seconds");
+        assert!((1..=2).contains(&seconds));
         session.unlock_after = Instant::now();
         let first = session.unlock("valid long passphrase").unwrap();
         session.unlock_after = Instant::now();
@@ -377,6 +390,19 @@ mod tests {
         session.authorize(&first, true, false).unwrap();
         session.authorize(&second, true, false).unwrap();
         assert!(session.authorize(&first, false, false).is_err());
+    }
+
+    /// Fractional waits round up; expiry and the existing 64-second ceiling stay honest.
+    #[test]
+    fn retry_delay_seconds_rounds_up_and_expires_without_wall_clock() {
+        let now = Instant::now();
+        assert_eq!(retry_delay_seconds(now, now), 0);
+        assert_eq!(retry_delay_seconds(now, now + Duration::from_nanos(1)), 0);
+        assert_eq!(retry_delay_seconds(now + Duration::from_nanos(1), now), 1);
+        assert_eq!(retry_delay_seconds(now + Duration::from_secs(1), now), 1);
+        assert_eq!(retry_delay_seconds(now + Duration::from_millis(1001), now), 2);
+        assert_eq!(retry_delay_seconds(now + Duration::from_millis(63_999), now), 64);
+        assert_eq!(retry_delay_seconds(now + Duration::from_secs(64), now), 64);
     }
 
     #[test]

@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 use serde::de::{MapAccess, Visitor};
-use serde_json::{Map, Number, Value};
+use serde_json::{Map, Number, Value, json};
 use sha2::{Digest, Sha256};
 use std::fmt::Write as _;
 
@@ -902,4 +902,57 @@ fn capability_matrix_covers_the_contract_in_both_directions() {
     }
 
     assert!(errors.is_empty(), "capability matrix coverage failures:\n{}", errors.join("\n"));
+}
+
+/// Rewrite only the original index schema's local definitions into API components.
+/// The equality test below prevents a separately maintained nested index contract.
+fn bundle_index_api_mirror(value: &Value) -> Value {
+    match value {
+        Value::Object(map) => Value::Object(
+            map.iter()
+                .map(|(key, value)| {
+                    let rewritten = if key == "$ref" {
+                        match value.as_str() {
+                            Some("#/$defs/resource") => {
+                                json!("#/components/schemas/WorkspaceBundleIndexResource")
+                            }
+                            Some("#/$defs/role") => {
+                                json!("#/components/schemas/WorkspaceBundleIndexRole")
+                            }
+                            _ => value.clone(),
+                        }
+                    } else {
+                        bundle_index_api_mirror(value)
+                    };
+                    (key.clone(), rewritten)
+                })
+                .collect(),
+        ),
+        Value::Array(items) => Value::Array(items.iter().map(bundle_index_api_mirror).collect()),
+        _ => value.clone(),
+    }
+}
+
+/// Keep all nested index constraints identical to the existing closed on-disk schema.
+#[test]
+fn bundle_index_components_are_composed_from_the_unchanged_index_schema() {
+    let document = load_openapi();
+    let raw = fs::read(repo_path("schemas/forge.workspace-1.schema.json")).unwrap();
+    let original = read_json_strict(&raw, "workspace index schema").unwrap();
+    let mut expected = original.clone();
+    for key in ["$schema", "$id", "$defs"] {
+        expected.as_object_mut().unwrap().remove(key);
+    }
+    for (name, definition) in [
+        ("WorkspaceBundleIndex", &expected),
+        ("WorkspaceBundleIndexResource", &original["$defs"]["resource"]),
+        ("WorkspaceBundleIndexRole", &original["$defs"]["role"]),
+    ] {
+        assert_eq!(
+            document["components"]["schemas"][name],
+            bundle_index_api_mirror(definition),
+            "{name} must preserve the original index contract"
+        );
+    }
+    assert_eq!(document["info"]["version"], "1.2.0");
 }

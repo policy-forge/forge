@@ -1,0 +1,5437 @@
+{
+  "schema_version": "forge.workspace-keyboard-development-verification/1",
+  "scope": "F05 child16 unlock feedback, confirmed-write focus and retained-pager recovery; local development checks before draft PR",
+  "base_oid": "b4207ea8280304c655cda2ad018f28324403a0d0",
+  "branch": "codex/f05-keyboard-completion",
+  "tracked_source_clean_at_measurement": false,
+  "source_pins": [
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/src/workspace/session.rs",
+      "bytes": 19141,
+      "sha256": "6bd27beb5fdc11c22e4a5d2489934cc47cca564600c0229a9c7f7d9eb5e0f197",
+      "repository_path": "src/workspace/session.rs"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/src/workspace/contract.rs",
+      "bytes": 19129,
+      "sha256": "f0a0255eee6fe0d66d3fe877b53bd2866cfa7a58f2abf90d6782503296a98c08",
+      "repository_path": "src/workspace/contract.rs"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/workspace.js",
+      "bytes": 68383,
+      "sha256": "9c1f8be532f8cd1eaa73926c34ebbb7a8ca3d346ea0caeb67d91faa103191d8e",
+      "repository_path": "ui/workspace.js"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/workspace.css",
+      "bytes": 4759,
+      "sha256": "d4ce961b5043cd2fc756b032583bb99b40d5f42563a3526ab13ebfbbae22fa02",
+      "repository_path": "ui/workspace.css"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/tests/workspace.cjs",
+      "bytes": 38327,
+      "sha256": "504c97350bd59bcad433cca383fdeedff6b95085e5a4ca26c5aa9c304bf0d28c",
+      "repository_path": "ui/tests/workspace.cjs"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/tests/workspace-navigation.cjs",
+      "bytes": 106334,
+      "sha256": "d6141d0ec18984fd3e50fbf5836f11018d5a61388cd5c62c956c8465be9732c3",
+      "repository_path": "ui/tests/workspace-navigation.cjs"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/scripts/test_workspace_browser.py",
+      "bytes": 3989,
+      "sha256": "efce8ee8980be499d72be6edb38ab2fa9a8f51fe410c72068e7bae690859882b",
+      "repository_path": "scripts/test_workspace_browser.py"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/docs/api/forge-workspace-v1.openapi.yaml",
+      "bytes": 105794,
+      "sha256": "ac8a2cf02a20c8428d1bca61fe17b93902b59e762cf02df26d42283766d585a5",
+      "repository_path": "docs/api/forge-workspace-v1.openapi.yaml"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/Cargo.toml",
+      "bytes": 2344,
+      "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+      "repository_path": "Cargo.toml"
+    },
+    {
+      "path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/Cargo.lock",
+      "bytes": 74338,
+      "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+      "repository_path": "Cargo.lock"
+    }
+  ],
+  "runtime": {
+    "browser_driver_node": "v24.19.0",
+    "playwright": "1.62.1",
+    "python": "3.14.8",
+    "host_system": "Darwin",
+    "host_machine": "arm64",
+    "source_node": "v22.22.3"
+  },
+  "binary": {
+    "path": "/private/tmp/forge-f05-keyboard-browser-binaries/5ed6bf992b47d5e75d209252ef2479766cb371cdccac786b48689d48ce4b5967/forge",
+    "sha256": "5ed6bf992b47d5e75d209252ef2479766cb371cdccac786b48689d48ce4b5967",
+    "bytes": 68044280
+  },
+  "binary_qualification": "Preserved local debug executable before later Cargo hooks, not a final release artifact. Build-time source snapshot pins earlier harnesses; native runs bind final harnesses separately. Production source/embedded assets unchanged.",
+  "documentation": {
+    "selected_js_functions": {
+      "documented": 16,
+      "denominator": 16,
+      "inventory": {
+        "source_path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/workspace.js",
+        "source_sha256": "9c1f8be532f8cd1eaa73926c34ebbb7a8ca3d346ea0caeb67d91faa103191d8e",
+        "scope": "source-owner16 selected changed/new or clarified named functions; unchanged pageAction excluded",
+        "documented": 16,
+        "denominator": 16,
+        "top_level": 6,
+        "nested": 10,
+        "entries": [
+          {
+            "name": "pagedTable",
+            "line": 102,
+            "category": "top-level",
+            "adjacent_jsdoc": "/** Keep verified rows and allow a retained live pager to recover after a dismissed write refresh. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "renderView",
+            "line": 183,
+            "category": "top-level",
+            "adjacent_jsdoc": "/** Install only an owned live view; dismissed write previews cannot publish a late refresh. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "initializeUnlock",
+            "line": 258,
+            "category": "top-level",
+            "adjacent_jsdoc": "/** Announce the locked state and place initial keyboard focus on the credential field. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "submitUnlock",
+            "line": 265,
+            "category": "top-level",
+            "adjacent_jsdoc": "/** Guard one pending unlock, retain trigger focus, and announce server throttle facts verbatim. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "previewCloseLifecycle",
+            "line": 614,
+            "category": "top-level",
+            "adjacent_jsdoc": "/** Serialize native close processing before the shared preview dialog may be reused. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "preview",
+            "line": 632,
+            "category": "top-level",
+            "adjacent_jsdoc": "/** Open only the current receipt; confirmed writes own their refresh and native close focus. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "resumePage",
+            "line": 117,
+            "category": "nested",
+            "adjacent_jsdoc": "/** Rebind only a retained installed pager; older responses and their finally handlers stay obsolete. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "load",
+            "line": 136,
+            "category": "nested",
+            "adjacent_jsdoc": "/** Stage verified pages; release only this latest local read even if its view fence became obsolete. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "current",
+            "line": 139,
+            "category": "nested",
+            "adjacent_jsdoc": "/** Only the latest read under this pager's current view owner may publish results or focus. */",
+            "doc_only_clarification": true
+          },
+          {
+            "name": "finishPreviewClose",
+            "line": 618,
+            "category": "nested",
+            "adjacent_jsdoc": "/** Release only this queued close's barrier before any successor preview is installed. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "previewCurrent",
+            "line": 643,
+            "category": "nested",
+            "adjacent_jsdoc": "/** New previews, navigation, dismissal and shutdown revoke this receipt's UI ownership. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "invalidatePreview",
+            "line": 646,
+            "category": "nested",
+            "adjacent_jsdoc": "/** Native Escape invalidates immediately; queued close events belong to their original preview. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "downloadCommittedExport",
+            "line": 661,
+            "category": "nested",
+            "adjacent_jsdoc": "/** Download only a confirmed export's bound bytes through the existing authenticated route. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "closeConfirmedPreview",
+            "line": 668,
+            "category": "nested",
+            "adjacent_jsdoc": "/** Await native return-focus processing before selecting the still-owned saved result target. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "dismissPreview",
+            "line": 673,
+            "category": "nested",
+            "adjacent_jsdoc": "/** Dismissal revokes the old write immediately and waits for its native return-focus lifecycle. */",
+            "doc_only_clarification": false
+          },
+          {
+            "name": "confirmWrite",
+            "line": 678,
+            "category": "nested",
+            "adjacent_jsdoc": "/** One receipt/key may publish saved UI only while its preview and destination remain current. */",
+            "doc_only_clarification": false
+          }
+        ]
+      }
+    },
+    "selected_rust_functions": {
+      "documented": 8,
+      "denominator": 8,
+      "production": 5,
+      "embedded_tests": 3,
+      "audit": {
+        "base_oid": "b4207ea8280304c655cda2ad018f28324403a0d0",
+        "changed_named_functions_documented": 8,
+        "inventory": [
+          "retry_delay_seconds",
+          "Session::unlock",
+          "browser_unlock_throttles_and_mints_distinct_capabilities",
+          "retry_delay_seconds_rounds_up_and_expires_without_wall_clock",
+          "Error::new",
+          "Error::unlock_throttled",
+          "Error::fmt",
+          "authored_retry_message_preserves_closed_error_contract"
+        ],
+        "source_pins": [
+          {
+            "path": "src/workspace/session.rs",
+            "sha256": "6bd27beb5fdc11c22e4a5d2489934cc47cca564600c0229a9c7f7d9eb5e0f197"
+          },
+          {
+            "path": "src/workspace/contract.rs",
+            "sha256": "f0a0255eee6fe0d66d3fe877b53bd2866cfa7a58f2abf90d6782503296a98c08"
+          }
+        ],
+        "scope": "Manually reviewed changed/new Rust production functions/trait method and embedded tests; all8 have adjacent rustdoc. Unchanged declarations and fields excluded; no whole-repository documentation percentage.",
+        "actual_compilation_and_runtime_tests": {
+          "workspace_tests_passed": 47,
+          "workspace_http_tests_passed": 11,
+          "llvm_workspace_tests_passed": 47
+        },
+        "independent_static_review": "No concrete finding, same source hashes; no runtime/security/human acceptance."
+      }
+    },
+    "selected_js_test_helpers": {
+      "documented": 13,
+      "denominator": 13,
+      "audit": {
+        "documented": 13,
+        "denominator": 13,
+        "entries": [
+          {
+            "name": "FakeNode.removeEventListener",
+            "file": "ui/tests/workspace-navigation.cjs",
+            "line": 208,
+            "adjacent_jsdoc": "/** Remove exactly one callback, including native-preview lifecycle listeners. */"
+          },
+          {
+            "name": "FakeNode.close",
+            "file": "ui/tests/workspace-navigation.cjs",
+            "line": 258,
+            "adjacent_jsdoc": "/** Queue the native close event after restoration; close listeners are not synchronous. */"
+          },
+          {
+            "name": "FakeDocument.constructor",
+            "file": "ui/tests/workspace-navigation.cjs",
+            "line": 282,
+            "adjacent_jsdoc": "/** Assemble a connected shell with the same view, dialog, and status identifiers. */"
+          },
+          {
+            "name": "unlockedSession",
+            "file": "ui/tests/workspace-navigation.cjs",
+            "line": 1630,
+            "adjacent_jsdoc": "/** Return a closed-contract synthetic unlock response without persisting a real credential. */"
+          },
+          {
+            "name": "beginUnlock",
+            "file": "ui/tests/workspace-navigation.cjs",
+            "line": 1638,
+            "adjacent_jsdoc": "/** Observe actual form submission; this fake DOM does not synthesize native Enter defaults. */"
+          },
+          {
+            "name": "committedWrite",
+            "file": "ui/tests/workspace-navigation.cjs",
+            "line": 1742,
+            "adjacent_jsdoc": "/** Provide the documented terminal commit result; these bytes are a synthetic transport fixture. */"
+          },
+          {
+            "name": "commitApp",
+            "file": "ui/tests/workspace-navigation.cjs",
+            "line": 1748,
+            "adjacent_jsdoc": "/** Render the actual preview and commit controls, using only synthetic API observations. */"
+          },
+          {
+            "name": "oneExactCommit",
+            "file": "ui/tests/workspace-navigation.cjs",
+            "line": 1765,
+            "adjacent_jsdoc": "/** Assert the actual receipt confirmation/key and that UI recovery never resends a commit. */"
+          },
+          {
+            "name": "activate",
+            "file": "ui/tests/workspace.cjs",
+            "line": 77,
+            "adjacent_jsdoc": "/** Activate a native control with Enter after explicitly setting keyboard focus. */"
+          },
+          {
+            "name": "focused",
+            "file": "ui/tests/workspace.cjs",
+            "line": 79,
+            "adjacent_jsdoc": "/** Observe exact focus after async work without assigning a target to satisfy the assertion. */"
+          },
+          {
+            "name": "delayThrottle",
+            "file": "ui/tests/workspace.cjs",
+            "line": 89,
+            "adjacent_jsdoc": "/** Hold one closed Error-envelope response until pending keyboard behavior is observed. */"
+          },
+          {
+            "name": "confirm",
+            "file": "ui/tests/workspace.cjs",
+            "line": 178,
+            "adjacent_jsdoc": "/** Confirm with native Enter, then observe queued close and the exact current saved focus target. */"
+          },
+          {
+            "name": "FakeNode.close.emit",
+            "file": "ui/tests/workspace-navigation.cjs",
+            "line": 264,
+            "adjacent_jsdoc": "/** Dispatch this queued native close only when its controlled lifecycle is released. */"
+          }
+        ],
+        "previous_selected_inventory": "Original frozen12/12 is preserved byte-for-byte as a narrower selected list; it omitted new named emit and is not exhaustive.",
+        "scope": "11 changed/new named helpers/methods plus moved activate and JSDoc-clarified focused; anonymous callback expressions excluded."
+      }
+    },
+    "whole_js_ast": {
+      "source_path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/workspace.js",
+      "source_sha256": "9c1f8be532f8cd1eaa73926c34ebbb7a8ca3d346ea0caeb67d91faa103191d8e",
+      "production": {
+        "named_declarations_and_bindings": 60,
+        "documented": 40,
+        "byKind": {
+          "variable-function-binding": {
+            "denominator": 10,
+            "documented": 7
+          },
+          "function-declaration": {
+            "denominator": 50,
+            "documented": 33
+          }
+        },
+        "excluded_anonymous_default_and_call_site_callbacks": 102,
+        "entries": [
+          {
+            "name": "element",
+            "owner": "",
+            "kind": "variable-function-binding",
+            "line": 3,
+            "documented": false
+          },
+          {
+            "name": "node",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 23,
+            "documented": false
+          },
+          {
+            "name": "showError",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 30,
+            "documented": false
+          },
+          {
+            "name": "api",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 40,
+            "documented": false
+          },
+          {
+            "name": "collection",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 59,
+            "documented": false
+          },
+          {
+            "name": "table",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 75,
+            "documented": false
+          },
+          {
+            "name": "checkedPage",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 92,
+            "documented": true
+          },
+          {
+            "name": "pagedTable",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 102,
+            "documented": true
+          },
+          {
+            "name": "resumePage",
+            "owner": "pagedTable",
+            "kind": "function-declaration",
+            "line": 117,
+            "documented": true
+          },
+          {
+            "name": "pageAction",
+            "owner": "pagedTable",
+            "kind": "variable-function-binding",
+            "line": 125,
+            "documented": true
+          },
+          {
+            "name": "load",
+            "owner": "pagedTable",
+            "kind": "function-declaration",
+            "line": 136,
+            "documented": true
+          },
+          {
+            "name": "current",
+            "owner": "pagedTable/load",
+            "kind": "variable-function-binding",
+            "line": 139,
+            "documented": true
+          },
+          {
+            "name": "renderView",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 183,
+            "documented": true
+          },
+          {
+            "name": "initializeUnlock",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 258,
+            "documented": true
+          },
+          {
+            "name": "submitUnlock",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 265,
+            "documented": true
+          },
+          {
+            "name": "allowViewChange",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 319,
+            "documented": true
+          },
+          {
+            "name": "focusViewTitle",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 324,
+            "documented": true
+          },
+          {
+            "name": "navigate",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 331,
+            "documented": true
+          },
+          {
+            "name": "confirmDiscard",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 344,
+            "documented": true
+          },
+          {
+            "name": "button",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 360,
+            "documented": true
+          },
+          {
+            "name": "fieldInput",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 370,
+            "documented": false
+          },
+          {
+            "name": "field",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 380,
+            "documented": false
+          },
+          {
+            "name": "operationRegion",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 386,
+            "documented": true
+          },
+          {
+            "name": "pendingRequestRow",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 393,
+            "documented": true
+          },
+          {
+            "name": "requestAction",
+            "owner": "pendingRequestRow",
+            "kind": "variable-function-binding",
+            "line": 400,
+            "documented": true
+          },
+          {
+            "name": "pendingRequestFailure",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 420,
+            "documented": true
+          },
+          {
+            "name": "removePendingRequest",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 429,
+            "documented": true
+          },
+          {
+            "name": "operationRow",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 436,
+            "documented": true
+          },
+          {
+            "name": "operationAction",
+            "owner": "operationRow",
+            "kind": "variable-function-binding",
+            "line": 445,
+            "documented": true
+          },
+          {
+            "name": "operationCurrent",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 478,
+            "documented": true
+          },
+          {
+            "name": "refreshOperationActions",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 483,
+            "documented": true
+          },
+          {
+            "name": "operationUnknown",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 494,
+            "documented": true
+          },
+          {
+            "name": "operationPreviewFailure",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 504,
+            "documented": true
+          },
+          {
+            "name": "acceptOperation",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 512,
+            "documented": true
+          },
+          {
+            "name": "pollOperation",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 535,
+            "documented": true
+          },
+          {
+            "name": "effect",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 563,
+            "documented": true
+          },
+          {
+            "name": "send",
+            "owner": "effect",
+            "kind": "variable-function-binding",
+            "line": 566,
+            "documented": true
+          },
+          {
+            "name": "attempt",
+            "owner": "effect",
+            "kind": "variable-function-binding",
+            "line": 597,
+            "documented": true
+          },
+          {
+            "name": "previewCloseLifecycle",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 614,
+            "documented": true
+          },
+          {
+            "name": "finishPreviewClose",
+            "owner": "previewCloseLifecycle",
+            "kind": "function-declaration",
+            "line": 618,
+            "documented": true
+          },
+          {
+            "name": "preview",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 632,
+            "documented": true
+          },
+          {
+            "name": "previewCurrent",
+            "owner": "preview",
+            "kind": "variable-function-binding",
+            "line": 643,
+            "documented": true
+          },
+          {
+            "name": "invalidatePreview",
+            "owner": "preview",
+            "kind": "function-declaration",
+            "line": 646,
+            "documented": true
+          },
+          {
+            "name": "downloadCommittedExport",
+            "owner": "preview",
+            "kind": "function-declaration",
+            "line": 661,
+            "documented": true
+          },
+          {
+            "name": "closeConfirmedPreview",
+            "owner": "preview",
+            "kind": "function-declaration",
+            "line": 668,
+            "documented": true
+          },
+          {
+            "name": "dismissPreview",
+            "owner": "preview",
+            "kind": "function-declaration",
+            "line": 673,
+            "documented": true
+          },
+          {
+            "name": "confirmWrite",
+            "owner": "preview",
+            "kind": "function-declaration",
+            "line": 678,
+            "documented": true
+          },
+          {
+            "name": "resourceActions",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 704,
+            "documented": false
+          },
+          {
+            "name": "draftEditor",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 725,
+            "documented": false
+          },
+          {
+            "name": "applicabilityDecisionForm",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 744,
+            "documented": false
+          },
+          {
+            "name": "mappingDecisionForm",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 764,
+            "documented": false
+          },
+          {
+            "name": "mappingCreationForm",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 787,
+            "documented": false
+          },
+          {
+            "name": "options",
+            "owner": "mappingCreationForm",
+            "kind": "variable-function-binding",
+            "line": 791,
+            "documented": false
+          },
+          {
+            "name": "relativeProjectReference",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 805,
+            "documented": false
+          },
+          {
+            "name": "applicabilityMappingForm",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 810,
+            "documented": false
+          },
+          {
+            "name": "evidenceList",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 825,
+            "documented": false
+          },
+          {
+            "name": "showProvenance",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 831,
+            "documented": true
+          },
+          {
+            "name": "exportForm",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 866,
+            "documented": false
+          },
+          {
+            "name": "initializeForm",
+            "owner": "",
+            "kind": "function-declaration",
+            "line": 875,
+            "documented": false
+          },
+          {
+            "name": "reload",
+            "owner": "initializeForm",
+            "kind": "variable-function-binding",
+            "line": 893,
+            "documented": false
+          }
+        ]
+      },
+      "test_changed_semantic_declarations": [
+        {
+          "file": "ui/tests/workspace-navigation.cjs",
+          "name": "removeEventListener",
+          "owner": "FakeNode",
+          "line": 208,
+          "documented": true,
+          "kind": "ClassMethod:method",
+          "new": true
+        },
+        {
+          "file": "ui/tests/workspace-navigation.cjs",
+          "name": "close",
+          "owner": "FakeNode",
+          "line": 258,
+          "documented": true,
+          "kind": "ClassMethod:method",
+          "new": false
+        },
+        {
+          "file": "ui/tests/workspace-navigation.cjs",
+          "name": "emit",
+          "owner": "FakeNode/close:method",
+          "line": 264,
+          "documented": true,
+          "kind": "variable-function-binding",
+          "new": true
+        },
+        {
+          "file": "ui/tests/workspace-navigation.cjs",
+          "name": "constructor",
+          "owner": "FakeDocument",
+          "line": 282,
+          "documented": true,
+          "kind": "ClassMethod:constructor",
+          "new": false
+        },
+        {
+          "file": "ui/tests/workspace-navigation.cjs",
+          "name": "unlockedSession",
+          "owner": "",
+          "line": 1630,
+          "documented": true,
+          "kind": "function-declaration",
+          "new": true
+        },
+        {
+          "file": "ui/tests/workspace-navigation.cjs",
+          "name": "beginUnlock",
+          "owner": "",
+          "line": 1638,
+          "documented": true,
+          "kind": "function-declaration",
+          "new": true
+        },
+        {
+          "file": "ui/tests/workspace-navigation.cjs",
+          "name": "committedWrite",
+          "owner": "",
+          "line": 1742,
+          "documented": true,
+          "kind": "function-declaration",
+          "new": true
+        },
+        {
+          "file": "ui/tests/workspace-navigation.cjs",
+          "name": "commitApp",
+          "owner": "",
+          "line": 1748,
+          "documented": true,
+          "kind": "function-declaration",
+          "new": true
+        },
+        {
+          "file": "ui/tests/workspace-navigation.cjs",
+          "name": "oneExactCommit",
+          "owner": "",
+          "line": 1765,
+          "documented": true,
+          "kind": "function-declaration",
+          "new": true
+        },
+        {
+          "file": "ui/tests/workspace.cjs",
+          "name": "delayThrottle",
+          "owner": "",
+          "line": 89,
+          "documented": true,
+          "kind": "variable-function-binding",
+          "new": true
+        },
+        {
+          "file": "ui/tests/workspace.cjs",
+          "name": "confirm",
+          "owner": "",
+          "line": 178,
+          "documented": true,
+          "kind": "variable-function-binding",
+          "new": false
+        }
+      ],
+      "expanded_scope_note": "11 changed/new named declarations/methods plus moved activate and documentation-clarified focused =13 selected test helpers. Original12 omitted newly named emit.",
+      "parser": {
+        "path": "/Users/bluby/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/lib/transform/babelBundle.js",
+        "sha256": "01511e45db7646e2a12890de8d7866caa0754c8799db6407a6345236f4bed0c4",
+        "runtime": "v22.22.3"
+      },
+      "method": "Read-only AST parse with installed Playwright Babel parser; JSDoc means immediately preceding /** block separated only by whitespace at function/variable-declaration anchor; named lexical function declarations, identifier variable function bindings and class/object methods included. Unnamed callbacks/default function parameters excluded."
+    },
+    "whole_repository_documentation_percentage": null,
+    "final_integrated_documentation_review": "open"
+  },
+  "source_tests": {
+    "passed": 86,
+    "failed": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "previous_cases_preserved": 58,
+    "new_cases": 28,
+    "run": {
+      "exit": 0,
+      "source_path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/workspace.js",
+      "source_sha256": "9c1f8be532f8cd1eaa73926c34ebbb7a8ca3d346ea0caeb67d91faa103191d8e",
+      "test_path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/tests/workspace-navigation.cjs",
+      "test_sha256": "d6141d0ec18984fd3e50fbf5836f11018d5a61388cd5c62c956c8465be9732c3",
+      "node_runtime": "v22.22.3",
+      "node_executable": "/Users/bluby/.local/bin/node",
+      "log": "/private/tmp/forge-f05-keyboard-harness-successor/node-9c1f8be532f8-1790942600016351000.tap",
+      "coverage": "/private/tmp/forge-f05-keyboard-harness-successor/v8-9c1f8be532f8-1790942600016351000"
+    },
+    "log": {
+      "path": "/private/tmp/forge-f05-keyboard-harness-successor/node-9c1f8be532f8-1790942600016351000.tap",
+      "bytes": 21488,
+      "sha256": "374a1f0cee3c94cf686fe7a26ce308b5c62914636577d2863a370c2752419d4a"
+    },
+    "v8": {
+      "scope": "actual complete production asset executed in isolated fake DOM realms; unique function/range locations combined by maximum observed count",
+      "source_path": "/Users/bluby/.codex/worktrees/f05-live-state/forge/ui/workspace.js",
+      "v8_url": "file:///Users/bluby/.codex/worktrees/f05-live-state/forge/ui/workspace.js",
+      "source_sha256": "9c1f8be532f8cd1eaa73926c34ebbb7a8ca3d346ea0caeb67d91faa103191d8e",
+      "raw_files": [
+        {
+          "path": "/private/tmp/forge-f05-keyboard-harness-successor/v8-9c1f8be532f8-1790942600016351000/coverage-66381-1790942600246-0.json",
+          "bytes": 357098,
+          "sha256": "7a0a942bca12f396a3e18d7356cbca67d23169f5ea64d3408d124239c1b45ff4"
+        }
+      ],
+      "matching_script_entries": 1,
+      "functions_positive": 99,
+      "functions_observed": 124,
+      "ranges_positive": 424,
+      "ranges_observed": 528,
+      "selected_named_functions_positive": 16,
+      "selected_named_functions_denominator": 16,
+      "selected": [
+        {
+          "name": "pagedTable",
+          "start_offset": 4921,
+          "end_offset": 11423,
+          "maximum_observed_count": 22,
+          "line": 102,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "renderView",
+          "start_offset": 11521,
+          "end_offset": 17200,
+          "maximum_observed_count": 105,
+          "line": 183,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "initializeUnlock",
+          "start_offset": 17293,
+          "end_offset": 17502,
+          "maximum_observed_count": 86,
+          "line": 258,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "submitUnlock",
+          "start_offset": 17604,
+          "end_offset": 19444,
+          "maximum_observed_count": 13,
+          "line": 265,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "previewCloseLifecycle",
+          "start_offset": 41271,
+          "end_offset": 41844,
+          "maximum_observed_count": 22,
+          "line": 614,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "preview",
+          "start_offset": 41943,
+          "end_offset": 47553,
+          "maximum_observed_count": 36,
+          "line": 632,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "resumePage",
+          "start_offset": 6342,
+          "end_offset": 6748,
+          "maximum_observed_count": 4,
+          "line": 117,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "load",
+          "start_offset": 7907,
+          "end_offset": 11029,
+          "maximum_observed_count": 43,
+          "line": 136,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "current",
+          "start_offset": 8187,
+          "end_offset": 8287,
+          "maximum_observed_count": 43,
+          "line": 139,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "finishPreviewClose",
+          "start_offset": 41505,
+          "end_offset": 41636,
+          "maximum_observed_count": 22,
+          "line": 618,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "previewCurrent",
+          "start_offset": 42672,
+          "end_offset": 42862,
+          "maximum_observed_count": 67,
+          "line": 643,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "invalidatePreview",
+          "start_offset": 42968,
+          "end_offset": 43386,
+          "maximum_observed_count": 31,
+          "line": 646,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "downloadCommittedExport",
+          "start_offset": 44469,
+          "end_offset": 45209,
+          "maximum_observed_count": 1,
+          "line": 661,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "closeConfirmedPreview",
+          "start_offset": 45312,
+          "end_offset": 45432,
+          "maximum_observed_count": 10,
+          "line": 668,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "dismissPreview",
+          "start_offset": 45537,
+          "end_offset": 45677,
+          "maximum_observed_count": 3,
+          "line": 673,
+          "line_observed_as_v8_offset": true
+        },
+        {
+          "name": "confirmWrite",
+          "start_offset": 45781,
+          "end_offset": 47333,
+          "maximum_observed_count": 21,
+          "line": 678,
+          "line_observed_as_v8_offset": true
+        }
+      ],
+      "limits": [
+        "V8 ranges are not statement or branch coverage percentages.",
+        "Maximum positive count proves observation in at least one test realm; it is not a combined execution-frequency claim.",
+        "Fake DOM has no native keyboard defaults, layout, native focus trap, accessibility tree or assistive technology.",
+        "Source-level download check covers authenticated failure; successful download is root-owned native-browser evidence."
+      ],
+      "qualification": "Final successor harness raw V8; selected source offsets and positive observations replayed independently against original and successor, not combined frequencies."
+    },
+    "all_production_v8_function_and_range_observations": [
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 0,
+            "endOffset": 68357,
+            "count": 86
+          },
+          {
+            "startOffset": 19559,
+            "endOffset": 19774,
+            "count": 516
+          },
+          {
+            "startOffset": 19629,
+            "endOffset": 19673,
+            "count": 86
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "element",
+        "ranges": [
+          {
+            "startOffset": 110,
+            "endOffset": 145,
+            "count": 3617
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "node",
+        "ranges": [
+          {
+            "startOffset": 841,
+            "endOffset": 1051,
+            "count": 11333
+          },
+          {
+            "startOffset": 951,
+            "endOffset": 985,
+            "count": 8018
+          },
+          {
+            "startOffset": 1003,
+            "endOffset": 1032,
+            "count": 168
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "showError",
+        "ranges": [
+          {
+            "startOffset": 1053,
+            "endOffset": 1462,
+            "count": 271
+          },
+          {
+            "startOffset": 1154,
+            "endOffset": 1169,
+            "count": 2
+          },
+          {
+            "startOffset": 1198,
+            "endOffset": 1205,
+            "count": 2
+          },
+          {
+            "startOffset": 1207,
+            "endOffset": 1293,
+            "count": 2
+          },
+          {
+            "startOffset": 1381,
+            "endOffset": 1422,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "api",
+        "ranges": [
+          {
+            "startOffset": 1464,
+            "endOffset": 2701,
+            "count": 695
+          },
+          {
+            "startOffset": 1636,
+            "endOffset": 1697,
+            "count": 0
+          },
+          {
+            "startOffset": 1713,
+            "endOffset": 1791,
+            "count": 0
+          },
+          {
+            "startOffset": 1862,
+            "endOffset": 1912,
+            "count": 12
+          },
+          {
+            "startOffset": 1937,
+            "endOffset": 1982,
+            "count": 333
+          },
+          {
+            "startOffset": 1994,
+            "endOffset": 2027,
+            "count": 311
+          },
+          {
+            "startOffset": 2138,
+            "endOffset": 2149,
+            "count": 362
+          },
+          {
+            "startOffset": 2150,
+            "endOffset": 2178,
+            "count": 333
+          },
+          {
+            "startOffset": 2172,
+            "endOffset": 2177,
+            "count": 0
+          },
+          {
+            "startOffset": 2276,
+            "endOffset": 2383,
+            "count": 0
+          },
+          {
+            "startOffset": 2443,
+            "endOffset": 2683,
+            "count": 287
+          },
+          {
+            "startOffset": 2542,
+            "endOffset": 2568,
+            "count": 0
+          },
+          {
+            "startOffset": 2596,
+            "endOffset": 2643,
+            "count": 1
+          },
+          {
+            "startOffset": 2643,
+            "endOffset": 2646,
+            "count": 286
+          },
+          {
+            "startOffset": 2683,
+            "endOffset": 2700,
+            "count": 408
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "headers.Accept",
+        "ranges": [
+          {
+            "startOffset": 1654,
+            "endOffset": 1695,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "collection",
+        "ranges": [
+          {
+            "startOffset": 2703,
+            "endOffset": 3376,
+            "count": 68
+          },
+          {
+            "startOffset": 2857,
+            "endOffset": 2862,
+            "count": 6
+          },
+          {
+            "startOffset": 2863,
+            "endOffset": 2868,
+            "count": 62
+          },
+          {
+            "startOffset": 2891,
+            "endOffset": 2932,
+            "count": 0
+          },
+          {
+            "startOffset": 2941,
+            "endOffset": 3068,
+            "count": 64
+          },
+          {
+            "startOffset": 3068,
+            "endOffset": 3120,
+            "count": 0
+          },
+          {
+            "startOffset": 3120,
+            "endOffset": 3152,
+            "count": 64
+          },
+          {
+            "startOffset": 3152,
+            "endOffset": 3243,
+            "count": 0
+          },
+          {
+            "startOffset": 3247,
+            "endOffset": 3295,
+            "count": 64
+          },
+          {
+            "startOffset": 3295,
+            "endOffset": 3357,
+            "count": 0
+          },
+          {
+            "startOffset": 3357,
+            "endOffset": 3375,
+            "count": 64
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 3086,
+            "endOffset": 3118,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "table",
+        "ranges": [
+          {
+            "startOffset": 3378,
+            "endOffset": 4078,
+            "count": 85
+          },
+          {
+            "startOffset": 3740,
+            "endOffset": 3817,
+            "count": 255
+          },
+          {
+            "startOffset": 3898,
+            "endOffset": 4017,
+            "count": 1008
+          },
+          {
+            "startOffset": 3955,
+            "endOffset": 3996,
+            "count": 3052
+          },
+          {
+            "startOffset": 3987,
+            "endOffset": 3993,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "checkedPage",
+        "ranges": [
+          {
+            "startOffset": 4164,
+            "endOffset": 4817,
+            "count": 40
+          },
+          {
+            "startOffset": 4560,
+            "endOffset": 4666,
+            "count": 26
+          },
+          {
+            "startOffset": 4695,
+            "endOffset": 4716,
+            "count": 26
+          },
+          {
+            "startOffset": 4719,
+            "endOffset": 4800,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "pagedTable",
+        "ranges": [
+          {
+            "startOffset": 4921,
+            "endOffset": 11423,
+            "count": 22
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 5717,
+            "endOffset": 5984,
+            "count": 22
+          },
+          {
+            "startOffset": 5926,
+            "endOffset": 5958,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 5826,
+            "endOffset": 5870,
+            "count": 154
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 6071,
+            "endOffset": 6109,
+            "count": 22
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "resumePage",
+        "ranges": [
+          {
+            "startOffset": 6342,
+            "endOffset": 6748,
+            "count": 4
+          },
+          {
+            "startOffset": 6453,
+            "endOffset": 6460,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 6574,
+            "endOffset": 6631,
+            "count": 20
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "pageAction",
+        "ranges": [
+          {
+            "startOffset": 6901,
+            "endOffset": 7223,
+            "count": 110
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 7103,
+            "endOffset": 7197,
+            "count": 23
+          },
+          {
+            "startOffset": 7127,
+            "endOffset": 7178,
+            "count": 21
+          },
+          {
+            "startOffset": 7180,
+            "endOffset": 7195,
+            "count": 21
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 7272,
+            "endOffset": 7317,
+            "count": 2
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 7383,
+            "endOffset": 7503,
+            "count": 11
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 7567,
+            "endOffset": 7644,
+            "count": 2
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 7724,
+            "endOffset": 7772,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "load",
+        "ranges": [
+          {
+            "startOffset": 7907,
+            "endOffset": 11029,
+            "count": 43
+          },
+          {
+            "startOffset": 8618,
+            "endOffset": 8651,
+            "count": 21
+          },
+          {
+            "startOffset": 8652,
+            "endOffset": 8656,
+            "count": 22
+          },
+          {
+            "startOffset": 8807,
+            "endOffset": 8829,
+            "count": 7
+          },
+          {
+            "startOffset": 8868,
+            "endOffset": 8916,
+            "count": 12
+          },
+          {
+            "startOffset": 9037,
+            "endOffset": 9137,
+            "count": 34
+          },
+          {
+            "startOffset": 9137,
+            "endOffset": 9647,
+            "count": 6
+          },
+          {
+            "startOffset": 9318,
+            "endOffset": 9369,
+            "count": 5
+          },
+          {
+            "startOffset": 9371,
+            "endOffset": 9595,
+            "count": 1
+          },
+          {
+            "startOffset": 9595,
+            "endOffset": 9647,
+            "count": 5
+          },
+          {
+            "startOffset": 9647,
+            "endOffset": 9670,
+            "count": 33
+          },
+          {
+            "startOffset": 9670,
+            "endOffset": 9677,
+            "count": 3
+          },
+          {
+            "startOffset": 9677,
+            "endOffset": 9849,
+            "count": 30
+          },
+          {
+            "startOffset": 9849,
+            "endOffset": 9886,
+            "count": 29
+          },
+          {
+            "startOffset": 9887,
+            "endOffset": 9929,
+            "count": 1
+          },
+          {
+            "startOffset": 10157,
+            "endOffset": 10179,
+            "count": 13
+          },
+          {
+            "startOffset": 10181,
+            "endOffset": 10197,
+            "count": 13
+          },
+          {
+            "startOffset": 10197,
+            "endOffset": 10268,
+            "count": 30
+          },
+          {
+            "startOffset": 10268,
+            "endOffset": 10824,
+            "count": 10
+          },
+          {
+            "startOffset": 10308,
+            "endOffset": 10315,
+            "count": 3
+          },
+          {
+            "startOffset": 10315,
+            "endOffset": 10387,
+            "count": 7
+          },
+          {
+            "startOffset": 10388,
+            "endOffset": 10419,
+            "count": 0
+          },
+          {
+            "startOffset": 10430,
+            "endOffset": 10503,
+            "count": 4
+          },
+          {
+            "startOffset": 10504,
+            "endOffset": 10536,
+            "count": 3
+          },
+          {
+            "startOffset": 10640,
+            "endOffset": 10673,
+            "count": 4
+          },
+          {
+            "startOffset": 10674,
+            "endOffset": 10678,
+            "count": 3
+          },
+          {
+            "startOffset": 10742,
+            "endOffset": 10748,
+            "count": 7
+          },
+          {
+            "startOffset": 10804,
+            "endOffset": 10818,
+            "count": 4
+          },
+          {
+            "startOffset": 10824,
+            "endOffset": 10825,
+            "count": 37
+          },
+          {
+            "startOffset": 10854,
+            "endOffset": 10880,
+            "count": 41
+          },
+          {
+            "startOffset": 10882,
+            "endOffset": 11019,
+            "count": 39
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "current",
+        "ranges": [
+          {
+            "startOffset": 8187,
+            "endOffset": 8287,
+            "count": 43
+          },
+          {
+            "startOffset": 8202,
+            "endOffset": 8222,
+            "count": 41
+          },
+          {
+            "startOffset": 8223,
+            "endOffset": 8249,
+            "count": 39
+          },
+          {
+            "startOffset": 8250,
+            "endOffset": 8287,
+            "count": 37
+          },
+          {
+            "startOffset": 8264,
+            "endOffset": 8286,
+            "count": 17
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 8427,
+            "endOffset": 8483,
+            "count": 215
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 10958,
+            "endOffset": 11015,
+            "count": 195
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 11064,
+            "endOffset": 11095,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 11160,
+            "endOffset": 11260,
+            "count": 6
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 11213,
+            "endOffset": 11251,
+            "count": 6
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "renderView",
+        "ranges": [
+          {
+            "startOffset": 11521,
+            "endOffset": 17200,
+            "count": 105
+          },
+          {
+            "startOffset": 11604,
+            "endOffset": 11617,
+            "count": 0
+          },
+          {
+            "startOffset": 11982,
+            "endOffset": 13492,
+            "count": 21
+          },
+          {
+            "startOffset": 12036,
+            "endOffset": 12600,
+            "count": 20
+          },
+          {
+            "startOffset": 12600,
+            "endOffset": 12808,
+            "count": 80
+          },
+          {
+            "startOffset": 12808,
+            "endOffset": 13008,
+            "count": 20
+          },
+          {
+            "startOffset": 12996,
+            "endOffset": 13007,
+            "count": 0
+          },
+          {
+            "startOffset": 13009,
+            "endOffset": 13024,
+            "count": 0
+          },
+          {
+            "startOffset": 13075,
+            "endOffset": 13209,
+            "count": 0
+          },
+          {
+            "startOffset": 13209,
+            "endOffset": 13492,
+            "count": 20
+          },
+          {
+            "startOffset": 13492,
+            "endOffset": 16145,
+            "count": 84
+          },
+          {
+            "startOffset": 13541,
+            "endOffset": 14413,
+            "count": 51
+          },
+          {
+            "startOffset": 13593,
+            "endOffset": 13820,
+            "count": 50
+          },
+          {
+            "startOffset": 13820,
+            "endOffset": 13990,
+            "count": 0
+          },
+          {
+            "startOffset": 13990,
+            "endOffset": 14028,
+            "count": 50
+          },
+          {
+            "startOffset": 14028,
+            "endOffset": 14155,
+            "count": 28
+          },
+          {
+            "startOffset": 14156,
+            "endOffset": 14247,
+            "count": 22
+          },
+          {
+            "startOffset": 14413,
+            "endOffset": 16145,
+            "count": 33
+          },
+          {
+            "startOffset": 14454,
+            "endOffset": 14838,
+            "count": 22
+          },
+          {
+            "startOffset": 14838,
+            "endOffset": 16145,
+            "count": 11
+          },
+          {
+            "startOffset": 14882,
+            "endOffset": 15415,
+            "count": 0
+          },
+          {
+            "startOffset": 15452,
+            "endOffset": 15777,
+            "count": 0
+          },
+          {
+            "startOffset": 15840,
+            "endOffset": 15994,
+            "count": 10
+          },
+          {
+            "startOffset": 15994,
+            "endOffset": 16087,
+            "count": 4
+          },
+          {
+            "startOffset": 16087,
+            "endOffset": 16109,
+            "count": 10
+          },
+          {
+            "startOffset": 16109,
+            "endOffset": 16139,
+            "count": 7
+          },
+          {
+            "startOffset": 16145,
+            "endOffset": 16175,
+            "count": 102
+          },
+          {
+            "startOffset": 16175,
+            "endOffset": 16185,
+            "count": 99
+          },
+          {
+            "startOffset": 16186,
+            "endOffset": 16201,
+            "count": 99
+          },
+          {
+            "startOffset": 16203,
+            "endOffset": 16216,
+            "count": 8
+          },
+          {
+            "startOffset": 16216,
+            "endOffset": 16401,
+            "count": 94
+          },
+          {
+            "startOffset": 16401,
+            "endOffset": 16409,
+            "count": 16
+          },
+          {
+            "startOffset": 16411,
+            "endOffset": 16433,
+            "count": 14
+          },
+          {
+            "startOffset": 16433,
+            "endOffset": 16480,
+            "count": 94
+          },
+          {
+            "startOffset": 16480,
+            "endOffset": 16514,
+            "count": 2
+          },
+          {
+            "startOffset": 16515,
+            "endOffset": 16540,
+            "count": 92
+          },
+          {
+            "startOffset": 16569,
+            "endOffset": 16775,
+            "count": 3
+          },
+          {
+            "startOffset": 16775,
+            "endOffset": 16778,
+            "count": 0
+          },
+          {
+            "startOffset": 16813,
+            "endOffset": 16824,
+            "count": 102
+          },
+          {
+            "startOffset": 16826,
+            "endOffset": 17196,
+            "count": 102
+          },
+          {
+            "startOffset": 16921,
+            "endOffset": 16940,
+            "count": 97
+          },
+          {
+            "startOffset": 16930,
+            "endOffset": 16937,
+            "count": 2
+          },
+          {
+            "startOffset": 16940,
+            "endOffset": 17192,
+            "count": 5
+          },
+          {
+            "startOffset": 17154,
+            "endOffset": 17186,
+            "count": 4
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "isCurrent",
+        "ranges": [
+          {
+            "startOffset": 11559,
+            "endOffset": 11569,
+            "count": 264
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 12631,
+            "endOffset": 12695,
+            "count": 1
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 13626,
+            "endOffset": 13776,
+            "count": 28
+          },
+          {
+            "startOffset": 13661,
+            "endOffset": 13714,
+            "count": 0
+          },
+          {
+            "startOffset": 13736,
+            "endOffset": 13775,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 13951,
+            "endOffset": 13987,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 14297,
+            "endOffset": 14357,
+            "count": 28
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 16042,
+            "endOffset": 16084,
+            "count": 3
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "initializeUnlock",
+        "ranges": [
+          {
+            "startOffset": 17293,
+            "endOffset": 17502,
+            "count": 86
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "submitUnlock",
+        "ranges": [
+          {
+            "startOffset": 17604,
+            "endOffset": 19444,
+            "count": 13
+          },
+          {
+            "startOffset": 17687,
+            "endOffset": 17697,
+            "count": 11
+          },
+          {
+            "startOffset": 17699,
+            "endOffset": 17706,
+            "count": 2
+          },
+          {
+            "startOffset": 17706,
+            "endOffset": 18118,
+            "count": 11
+          },
+          {
+            "startOffset": 18118,
+            "endOffset": 18150,
+            "count": 10
+          },
+          {
+            "startOffset": 18152,
+            "endOffset": 18194,
+            "count": 1
+          },
+          {
+            "startOffset": 18194,
+            "endOffset": 18280,
+            "count": 10
+          },
+          {
+            "startOffset": 18280,
+            "endOffset": 18320,
+            "count": 6
+          },
+          {
+            "startOffset": 18320,
+            "endOffset": 18327,
+            "count": 0
+          },
+          {
+            "startOffset": 18327,
+            "endOffset": 18370,
+            "count": 6
+          },
+          {
+            "startOffset": 18370,
+            "endOffset": 18456,
+            "count": 1
+          },
+          {
+            "startOffset": 18456,
+            "endOffset": 18746,
+            "count": 5
+          },
+          {
+            "startOffset": 18747,
+            "endOffset": 18764,
+            "count": 0
+          },
+          {
+            "startOffset": 18792,
+            "endOffset": 18794,
+            "count": 5
+          },
+          {
+            "startOffset": 18794,
+            "endOffset": 18818,
+            "count": 4
+          },
+          {
+            "startOffset": 18823,
+            "endOffset": 19319,
+            "count": 6
+          },
+          {
+            "startOffset": 18878,
+            "endOffset": 18885,
+            "count": 0
+          },
+          {
+            "startOffset": 18907,
+            "endOffset": 18913,
+            "count": 4
+          },
+          {
+            "startOffset": 18937,
+            "endOffset": 18981,
+            "count": 3
+          },
+          {
+            "startOffset": 18983,
+            "endOffset": 19213,
+            "count": 3
+          },
+          {
+            "startOffset": 19075,
+            "endOffset": 19096,
+            "count": 1
+          },
+          {
+            "startOffset": 19136,
+            "endOffset": 19156,
+            "count": 2
+          },
+          {
+            "startOffset": 19157,
+            "endOffset": 19191,
+            "count": 2
+          },
+          {
+            "startOffset": 19193,
+            "endOffset": 19207,
+            "count": 2
+          },
+          {
+            "startOffset": 19213,
+            "endOffset": 19315,
+            "count": 3
+          },
+          {
+            "startOffset": 19319,
+            "endOffset": 19442,
+            "count": 11
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 19709,
+            "endOffset": 19730,
+            "count": 1
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 19820,
+            "endOffset": 19858,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 19903,
+            "endOffset": 19943,
+            "count": 7
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 19996,
+            "endOffset": 20032,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 20085,
+            "endOffset": 21082,
+            "count": 7
+          },
+          {
+            "startOffset": 20241,
+            "endOffset": 20493,
+            "count": 2
+          },
+          {
+            "startOffset": 20538,
+            "endOffset": 20736,
+            "count": 1
+          },
+          {
+            "startOffset": 21013,
+            "endOffset": 21080,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "allowViewChange",
+        "ranges": [
+          {
+            "startOffset": 21175,
+            "endOffset": 21254,
+            "count": 100
+          },
+          {
+            "startOffset": 21226,
+            "endOffset": 21251,
+            "count": 6
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "focusViewTitle",
+        "ranges": [
+          {
+            "startOffset": 21345,
+            "endOffset": 21459,
+            "count": 88
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "navigate",
+        "ranges": [
+          {
+            "startOffset": 21552,
+            "endOffset": 22100,
+            "count": 84
+          },
+          {
+            "startOffset": 21653,
+            "endOffset": 21666,
+            "count": 0
+          },
+          {
+            "startOffset": 21783,
+            "endOffset": 21919,
+            "count": 504
+          },
+          {
+            "startOffset": 21824,
+            "endOffset": 21869,
+            "count": 84
+          },
+          {
+            "startOffset": 21869,
+            "endOffset": 21915,
+            "count": 420
+          },
+          {
+            "startOffset": 21946,
+            "endOffset": 22098,
+            "count": 80
+          },
+          {
+            "startOffset": 21981,
+            "endOffset": 22036,
+            "count": 1
+          },
+          {
+            "startOffset": 22055,
+            "endOffset": 22071,
+            "count": 1
+          },
+          {
+            "startOffset": 22071,
+            "endOffset": 22094,
+            "count": 79
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "confirmDiscard",
+        "ranges": [
+          {
+            "startOffset": 22189,
+            "endOffset": 23017,
+            "count": 9
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 22599,
+            "endOffset": 23013,
+            "count": 9
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 22670,
+            "endOffset": 22688,
+            "count": 2
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 22713,
+            "endOffset": 22749,
+            "count": 3
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "dialog.addEventListener.once",
+        "ranges": [
+          {
+            "startOffset": 22789,
+            "endOffset": 22931,
+            "count": 9
+          },
+          {
+            "startOffset": 22838,
+            "endOffset": 22861,
+            "count": 6
+          },
+          {
+            "startOffset": 22862,
+            "endOffset": 22882,
+            "count": 5
+          },
+          {
+            "startOffset": 22883,
+            "endOffset": 22899,
+            "count": 4
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "button",
+        "ranges": [
+          {
+            "startOffset": 23108,
+            "endOffset": 23511,
+            "count": 647
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 23243,
+            "endOffset": 23489,
+            "count": 325
+          },
+          {
+            "startOffset": 23348,
+            "endOffset": 23361,
+            "count": 323
+          },
+          {
+            "startOffset": 23361,
+            "endOffset": 23393,
+            "count": 2
+          },
+          {
+            "startOffset": 23445,
+            "endOffset": 23467,
+            "count": 3
+          },
+          {
+            "startOffset": 23468,
+            "endOffset": 23484,
+            "count": 3
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "fieldInput",
+        "ranges": [
+          {
+            "startOffset": 23512,
+            "endOffset": 24132,
+            "count": 444
+          },
+          {
+            "startOffset": 23717,
+            "endOffset": 23727,
+            "count": 193
+          },
+          {
+            "startOffset": 23728,
+            "endOffset": 23772,
+            "count": 251
+          },
+          {
+            "startOffset": 23750,
+            "endOffset": 23762,
+            "count": 0
+          },
+          {
+            "startOffset": 23839,
+            "endOffset": 23861,
+            "count": 251
+          },
+          {
+            "startOffset": 23863,
+            "endOffset": 23881,
+            "count": 251
+          },
+          {
+            "startOffset": 23909,
+            "endOffset": 23953,
+            "count": 0
+          },
+          {
+            "startOffset": 23969,
+            "endOffset": 24086,
+            "count": 193
+          },
+          {
+            "startOffset": 24006,
+            "endOffset": 24086,
+            "count": 1037
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "field",
+        "ranges": [
+          {
+            "startOffset": 24133,
+            "endOffset": 24318,
+            "count": 422
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 24277,
+            "endOffset": 24298,
+            "count": 10
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "operationRegion",
+        "ranges": [
+          {
+            "startOffset": 24405,
+            "endOffset": 24664,
+            "count": 311
+          },
+          {
+            "startOffset": 24493,
+            "endOffset": 24645,
+            "count": 31
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "pendingRequestRow",
+        "ranges": [
+          {
+            "startOffset": 24756,
+            "endOffset": 27253,
+            "count": 287
+          },
+          {
+            "startOffset": 24834,
+            "endOffset": 24954,
+            "count": 1
+          },
+          {
+            "startOffset": 24954,
+            "endOffset": 27252,
+            "count": 286
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "requestAction",
+        "ranges": [
+          {
+            "startOffset": 25695,
+            "endOffset": 26476,
+            "count": 572
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 25870,
+            "endOffset": 26454,
+            "count": 5
+          },
+          {
+            "startOffset": 25999,
+            "endOffset": 26006,
+            "count": 0
+          },
+          {
+            "startOffset": 26159,
+            "endOffset": 26261,
+            "count": 0
+          },
+          {
+            "startOffset": 26309,
+            "endOffset": 26340,
+            "count": 4
+          },
+          {
+            "startOffset": 26342,
+            "endOffset": 26446,
+            "count": 3
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 26594,
+            "endOffset": 27049,
+            "count": 1
+          },
+          {
+            "startOffset": 26659,
+            "endOffset": 26666,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 26753,
+            "endOffset": 26864,
+            "count": 2
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "pendingRequestFailure",
+        "ranges": [
+          {
+            "startOffset": 27348,
+            "endOffset": 28077,
+            "count": 261
+          },
+          {
+            "startOffset": 27518,
+            "endOffset": 27556,
+            "count": 0
+          },
+          {
+            "startOffset": 27598,
+            "endOffset": 27698,
+            "count": 0
+          },
+          {
+            "startOffset": 27742,
+            "endOffset": 27837,
+            "count": 1
+          },
+          {
+            "startOffset": 27838,
+            "endOffset": 27962,
+            "count": 260
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "removePendingRequest",
+        "ranges": [
+          {
+            "startOffset": 28172,
+            "endOffset": 28428,
+            "count": 25
+          },
+          {
+            "startOffset": 28303,
+            "endOffset": 28330,
+            "count": 1
+          },
+          {
+            "startOffset": 28406,
+            "endOffset": 28426,
+            "count": 1
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "operationRow",
+        "ranges": [
+          {
+            "startOffset": 28516,
+            "endOffset": 31971,
+            "count": 25
+          },
+          {
+            "startOffset": 28587,
+            "endOffset": 28616,
+            "count": 0
+          },
+          {
+            "startOffset": 28650,
+            "endOffset": 28744,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "operationAction",
+        "ranges": [
+          {
+            "startOffset": 29595,
+            "endOffset": 29906,
+            "count": 75
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 29770,
+            "endOffset": 29880,
+            "count": 17
+          },
+          {
+            "startOffset": 29810,
+            "endOffset": 29861,
+            "count": 14
+          },
+          {
+            "startOffset": 29863,
+            "endOffset": 29878,
+            "count": 13
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 29967,
+            "endOffset": 30680,
+            "count": 5
+          },
+          {
+            "startOffset": 30253,
+            "endOffset": 30288,
+            "count": 3
+          },
+          {
+            "startOffset": 30288,
+            "endOffset": 30295,
+            "count": 0
+          },
+          {
+            "startOffset": 30295,
+            "endOffset": 30339,
+            "count": 3
+          },
+          {
+            "startOffset": 30339,
+            "endOffset": 30422,
+            "count": 0
+          },
+          {
+            "startOffset": 30422,
+            "endOffset": 30492,
+            "count": 3
+          },
+          {
+            "startOffset": 30492,
+            "endOffset": 30570,
+            "count": 2
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 30739,
+            "endOffset": 30804,
+            "count": 2
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 30888,
+            "endOffset": 31776,
+            "count": 6
+          },
+          {
+            "startOffset": 31001,
+            "endOffset": 31008,
+            "count": 0
+          },
+          {
+            "startOffset": 31111,
+            "endOffset": 31118,
+            "count": 0
+          },
+          {
+            "startOffset": 31237,
+            "endOffset": 31261,
+            "count": 0
+          },
+          {
+            "startOffset": 31283,
+            "endOffset": 31287,
+            "count": 0
+          },
+          {
+            "startOffset": 31401,
+            "endOffset": 31443,
+            "count": 4
+          },
+          {
+            "startOffset": 31445,
+            "endOffset": 31584,
+            "count": 4
+          },
+          {
+            "startOffset": 31591,
+            "endOffset": 31676,
+            "count": 2
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 31301,
+            "endOffset": 31399,
+            "count": 10
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "operationCurrent",
+        "ranges": [
+          {
+            "startOffset": 32059,
+            "endOffset": 32176,
+            "count": 626
+          },
+          {
+            "startOffset": 32110,
+            "endOffset": 32136,
+            "count": 619
+          },
+          {
+            "startOffset": 32137,
+            "endOffset": 32173,
+            "count": 619
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "refreshOperationActions",
+        "ranges": [
+          {
+            "startOffset": 32268,
+            "endOffset": 32877,
+            "count": 251
+          },
+          {
+            "startOffset": 32343,
+            "endOffset": 32357,
+            "count": 193
+          },
+          {
+            "startOffset": 32358,
+            "endOffset": 32380,
+            "count": 181
+          },
+          {
+            "startOffset": 32381,
+            "endOffset": 32407,
+            "count": 174
+          },
+          {
+            "startOffset": 32408,
+            "endOffset": 32418,
+            "count": 169
+          },
+          {
+            "startOffset": 32520,
+            "endOffset": 32560,
+            "count": 58
+          },
+          {
+            "startOffset": 32623,
+            "endOffset": 32638,
+            "count": 66
+          },
+          {
+            "startOffset": 32639,
+            "endOffset": 32649,
+            "count": 27
+          },
+          {
+            "startOffset": 32687,
+            "endOffset": 32726,
+            "count": 239
+          },
+          {
+            "startOffset": 32845,
+            "endOffset": 32861,
+            "count": 66
+          },
+          {
+            "startOffset": 32862,
+            "endOffset": 32872,
+            "count": 58
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "operationUnknown",
+        "ranges": [
+          {
+            "startOffset": 32976,
+            "endOffset": 33401,
+            "count": 7
+          },
+          {
+            "startOffset": 33087,
+            "endOffset": 33127,
+            "count": 0
+          },
+          {
+            "startOffset": 33176,
+            "endOffset": 33367,
+            "count": 5
+          },
+          {
+            "startOffset": 33254,
+            "endOffset": 33286,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "operationPreviewFailure",
+        "ranges": [
+          {
+            "startOffset": 33487,
+            "endOffset": 33856,
+            "count": 4
+          },
+          {
+            "startOffset": 33754,
+            "endOffset": 33795,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "acceptOperation",
+        "ranges": [
+          {
+            "startOffset": 33950,
+            "endOffset": 36278,
+            "count": 175
+          },
+          {
+            "startOffset": 34204,
+            "endOffset": 34220,
+            "count": 174
+          },
+          {
+            "startOffset": 34221,
+            "endOffset": 34251,
+            "count": 174
+          },
+          {
+            "startOffset": 34252,
+            "endOffset": 34342,
+            "count": 174
+          },
+          {
+            "startOffset": 34343,
+            "endOffset": 34389,
+            "count": 173
+          },
+          {
+            "startOffset": 34390,
+            "endOffset": 34445,
+            "count": 173
+          },
+          {
+            "startOffset": 34446,
+            "endOffset": 34495,
+            "count": 173
+          },
+          {
+            "startOffset": 34497,
+            "endOffset": 34609,
+            "count": 2
+          },
+          {
+            "startOffset": 34609,
+            "endOffset": 34630,
+            "count": 173
+          },
+          {
+            "startOffset": 34630,
+            "endOffset": 34637,
+            "count": 0
+          },
+          {
+            "startOffset": 34637,
+            "endOffset": 34720,
+            "count": 173
+          },
+          {
+            "startOffset": 34720,
+            "endOffset": 34746,
+            "count": 6
+          },
+          {
+            "startOffset": 34748,
+            "endOffset": 35289,
+            "count": 5
+          },
+          {
+            "startOffset": 34850,
+            "endOffset": 34902,
+            "count": 4
+          },
+          {
+            "startOffset": 34903,
+            "endOffset": 34936,
+            "count": 4
+          },
+          {
+            "startOffset": 34938,
+            "endOffset": 35044,
+            "count": 1
+          },
+          {
+            "startOffset": 35044,
+            "endOffset": 35120,
+            "count": 4
+          },
+          {
+            "startOffset": 35120,
+            "endOffset": 35197,
+            "count": 1
+          },
+          {
+            "startOffset": 35198,
+            "endOffset": 35284,
+            "count": 3
+          },
+          {
+            "startOffset": 35289,
+            "endOffset": 35324,
+            "count": 172
+          },
+          {
+            "startOffset": 35324,
+            "endOffset": 35407,
+            "count": 8
+          },
+          {
+            "startOffset": 35363,
+            "endOffset": 35406,
+            "count": 0
+          },
+          {
+            "startOffset": 35409,
+            "endOffset": 35533,
+            "count": 0
+          },
+          {
+            "startOffset": 35533,
+            "endOffset": 35755,
+            "count": 172
+          },
+          {
+            "startOffset": 35755,
+            "endOffset": 35841,
+            "count": 8
+          },
+          {
+            "startOffset": 35842,
+            "endOffset": 36173,
+            "count": 164
+          },
+          {
+            "startOffset": 35873,
+            "endOffset": 35955,
+            "count": 2
+          },
+          {
+            "startOffset": 35917,
+            "endOffset": 35953,
+            "count": 0
+          },
+          {
+            "startOffset": 35956,
+            "endOffset": 36173,
+            "count": 162
+          },
+          {
+            "startOffset": 35990,
+            "endOffset": 36046,
+            "count": 11
+          },
+          {
+            "startOffset": 36047,
+            "endOffset": 36173,
+            "count": 151
+          },
+          {
+            "startOffset": 36102,
+            "endOffset": 36155,
+            "count": 4
+          },
+          {
+            "startOffset": 36156,
+            "endOffset": 36160,
+            "count": 147
+          },
+          {
+            "startOffset": 36214,
+            "endOffset": 36244,
+            "count": 51
+          },
+          {
+            "startOffset": 36244,
+            "endOffset": 36277,
+            "count": 172
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "pollOperation",
+        "ranges": [
+          {
+            "startOffset": 36378,
+            "endOffset": 38026,
+            "count": 24
+          },
+          {
+            "startOffset": 36501,
+            "endOffset": 36508,
+            "count": 0
+          },
+          {
+            "startOffset": 36611,
+            "endOffset": 36635,
+            "count": 169
+          },
+          {
+            "startOffset": 36636,
+            "endOffset": 36652,
+            "count": 169
+          },
+          {
+            "startOffset": 36666,
+            "endOffset": 37202,
+            "count": 151
+          },
+          {
+            "startOffset": 36696,
+            "endOffset": 36711,
+            "count": 2
+          },
+          {
+            "startOffset": 36713,
+            "endOffset": 36768,
+            "count": 149
+          },
+          {
+            "startOffset": 36803,
+            "endOffset": 36810,
+            "count": 0
+          },
+          {
+            "startOffset": 36944,
+            "endOffset": 36953,
+            "count": 149
+          },
+          {
+            "startOffset": 36953,
+            "endOffset": 37068,
+            "count": 2
+          },
+          {
+            "startOffset": 36999,
+            "endOffset": 37006,
+            "count": 0
+          },
+          {
+            "startOffset": 37042,
+            "endOffset": 37068,
+            "count": 1
+          },
+          {
+            "startOffset": 37068,
+            "endOffset": 37103,
+            "count": 149
+          },
+          {
+            "startOffset": 37103,
+            "endOffset": 37110,
+            "count": 1
+          },
+          {
+            "startOffset": 37110,
+            "endOffset": 37152,
+            "count": 148
+          },
+          {
+            "startOffset": 37152,
+            "endOffset": 37161,
+            "count": 1
+          },
+          {
+            "startOffset": 37161,
+            "endOffset": 37202,
+            "count": 147
+          },
+          {
+            "startOffset": 37202,
+            "endOffset": 37233,
+            "count": 146
+          },
+          {
+            "startOffset": 37233,
+            "endOffset": 37249,
+            "count": 19
+          },
+          {
+            "startOffset": 37251,
+            "endOffset": 37365,
+            "count": 1
+          },
+          {
+            "startOffset": 37365,
+            "endOffset": 37430,
+            "count": 19
+          },
+          {
+            "startOffset": 37431,
+            "endOffset": 37456,
+            "count": 7
+          },
+          {
+            "startOffset": 37457,
+            "endOffset": 37499,
+            "count": 4
+          },
+          {
+            "startOffset": 37501,
+            "endOffset": 37732,
+            "count": 4
+          },
+          {
+            "startOffset": 37547,
+            "endOffset": 37580,
+            "count": 0
+          },
+          {
+            "startOffset": 37606,
+            "endOffset": 37614,
+            "count": 0
+          },
+          {
+            "startOffset": 37726,
+            "endOffset": 37732,
+            "count": 3
+          },
+          {
+            "startOffset": 37737,
+            "endOffset": 37932,
+            "count": 5
+          },
+          {
+            "startOffset": 37830,
+            "endOffset": 37845,
+            "count": 1
+          },
+          {
+            "startOffset": 37847,
+            "endOffset": 37885,
+            "count": 1
+          },
+          {
+            "startOffset": 37885,
+            "endOffset": 37922,
+            "count": 4
+          },
+          {
+            "startOffset": 37932,
+            "endOffset": 37935,
+            "count": 23
+          },
+          {
+            "startOffset": 37993,
+            "endOffset": 38022,
+            "count": 22
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 36731,
+            "endOffset": 36766,
+            "count": 149
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 37628,
+            "endOffset": 37724,
+            "count": 7
+          },
+          {
+            "startOffset": 37656,
+            "endOffset": 37681,
+            "count": 6
+          },
+          {
+            "startOffset": 37682,
+            "endOffset": 37724,
+            "count": 6
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "effect",
+        "ranges": [
+          {
+            "startOffset": 38123,
+            "endOffset": 41180,
+            "count": 287
+          },
+          {
+            "startOffset": 41098,
+            "endOffset": 41159,
+            "count": 1
+          },
+          {
+            "startOffset": 41159,
+            "endOffset": 41179,
+            "count": 286
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "send",
+        "ranges": [
+          {
+            "startOffset": 38385,
+            "endOffset": 40458,
+            "count": 290
+          },
+          {
+            "startOffset": 38416,
+            "endOffset": 38423,
+            "count": 0
+          },
+          {
+            "startOffset": 38437,
+            "endOffset": 38480,
+            "count": 0
+          },
+          {
+            "startOffset": 38537,
+            "endOffset": 38555,
+            "count": 30
+          },
+          {
+            "startOffset": 38555,
+            "endOffset": 38562,
+            "count": 1
+          },
+          {
+            "startOffset": 38562,
+            "endOffset": 38590,
+            "count": 29
+          },
+          {
+            "startOffset": 38605,
+            "endOffset": 38634,
+            "count": 3
+          },
+          {
+            "startOffset": 38636,
+            "endOffset": 39715,
+            "count": 26
+          },
+          {
+            "startOffset": 38740,
+            "endOffset": 38944,
+            "count": 1
+          },
+          {
+            "startOffset": 38944,
+            "endOffset": 39125,
+            "count": 25
+          },
+          {
+            "startOffset": 39125,
+            "endOffset": 39150,
+            "count": 22
+          },
+          {
+            "startOffset": 39150,
+            "endOffset": 39475,
+            "count": 3
+          },
+          {
+            "startOffset": 39200,
+            "endOffset": 39221,
+            "count": 1
+          },
+          {
+            "startOffset": 39222,
+            "endOffset": 39264,
+            "count": 1
+          },
+          {
+            "startOffset": 39266,
+            "endOffset": 39475,
+            "count": 1
+          },
+          {
+            "startOffset": 39304,
+            "endOffset": 39337,
+            "count": 0
+          },
+          {
+            "startOffset": 39359,
+            "endOffset": 39367,
+            "count": 0
+          },
+          {
+            "startOffset": 39484,
+            "endOffset": 39695,
+            "count": 1
+          },
+          {
+            "startOffset": 39640,
+            "endOffset": 39677,
+            "count": 0
+          },
+          {
+            "startOffset": 39695,
+            "endOffset": 39715,
+            "count": 25
+          },
+          {
+            "startOffset": 39715,
+            "endOffset": 39754,
+            "count": 3
+          },
+          {
+            "startOffset": 39754,
+            "endOffset": 39777,
+            "count": 0
+          },
+          {
+            "startOffset": 39805,
+            "endOffset": 39817,
+            "count": 3
+          },
+          {
+            "startOffset": 39819,
+            "endOffset": 39885,
+            "count": 0
+          },
+          {
+            "startOffset": 39885,
+            "endOffset": 40205,
+            "count": 3
+          },
+          {
+            "startOffset": 40205,
+            "endOffset": 40235,
+            "count": 1
+          },
+          {
+            "startOffset": 40237,
+            "endOffset": 40261,
+            "count": 1
+          },
+          {
+            "startOffset": 40261,
+            "endOffset": 40423,
+            "count": 3
+          },
+          {
+            "startOffset": 40423,
+            "endOffset": 40454,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 39381,
+            "endOffset": 39473,
+            "count": 1
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 40325,
+            "endOffset": 40404,
+            "count": 3
+          },
+          {
+            "startOffset": 40362,
+            "endOffset": 40404,
+            "count": 1
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "attempt",
+        "ranges": [
+          {
+            "startOffset": 40575,
+            "endOffset": 41036,
+            "count": 291
+          },
+          {
+            "startOffset": 40605,
+            "endOffset": 40615,
+            "count": 290
+          },
+          {
+            "startOffset": 40617,
+            "endOffset": 40624,
+            "count": 1
+          },
+          {
+            "startOffset": 40624,
+            "endOffset": 40668,
+            "count": 290
+          },
+          {
+            "startOffset": 40668,
+            "endOffset": 40671,
+            "count": 29
+          },
+          {
+            "startOffset": 40671,
+            "endOffset": 41003,
+            "count": 261
+          },
+          {
+            "startOffset": 40708,
+            "endOffset": 40715,
+            "count": 0
+          },
+          {
+            "startOffset": 40793,
+            "endOffset": 40810,
+            "count": 259
+          },
+          {
+            "startOffset": 40812,
+            "endOffset": 40997,
+            "count": 259
+          },
+          {
+            "startOffset": 40922,
+            "endOffset": 40989,
+            "count": 258
+          },
+          {
+            "startOffset": 41003,
+            "endOffset": 41032,
+            "count": 290
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "previewCloseLifecycle",
+        "ranges": [
+          {
+            "startOffset": 41271,
+            "endOffset": 41844,
+            "count": 22
+          },
+          {
+            "startOffset": 41809,
+            "endOffset": 41824,
+            "count": 13
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 41389,
+            "endOffset": 41715,
+            "count": 22
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "finishPreviewClose",
+        "ranges": [
+          {
+            "startOffset": 41505,
+            "endOffset": 41636,
+            "count": 22
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "preview",
+        "ranges": [
+          {
+            "startOffset": 41943,
+            "endOffset": 47553,
+            "count": 36
+          },
+          {
+            "startOffset": 42043,
+            "endOffset": 42056,
+            "count": 3
+          },
+          {
+            "startOffset": 42056,
+            "endOffset": 42083,
+            "count": 33
+          },
+          {
+            "startOffset": 42084,
+            "endOffset": 42150,
+            "count": 0
+          },
+          {
+            "startOffset": 42150,
+            "endOffset": 42283,
+            "count": 33
+          },
+          {
+            "startOffset": 42283,
+            "endOffset": 42311,
+            "count": 29
+          },
+          {
+            "startOffset": 42311,
+            "endOffset": 42337,
+            "count": 2
+          },
+          {
+            "startOffset": 42337,
+            "endOffset": 42357,
+            "count": 29
+          },
+          {
+            "startOffset": 42357,
+            "endOffset": 42390,
+            "count": 28
+          },
+          {
+            "startOffset": 42392,
+            "endOffset": 42405,
+            "count": 1
+          },
+          {
+            "startOffset": 42405,
+            "endOffset": 43536,
+            "count": 28
+          },
+          {
+            "startOffset": 43536,
+            "endOffset": 43544,
+            "count": 0
+          },
+          {
+            "startOffset": 43892,
+            "endOffset": 43905,
+            "count": 28
+          },
+          {
+            "startOffset": 44220,
+            "endOffset": 44333,
+            "count": 0
+          },
+          {
+            "startOffset": 44333,
+            "endOffset": 47552,
+            "count": 28
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "isCurrent",
+        "ranges": [
+          {
+            "startOffset": 42005,
+            "endOffset": 42019,
+            "count": 42
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "previewCurrent",
+        "ranges": [
+          {
+            "startOffset": 42672,
+            "endOffset": 42862,
+            "count": 67
+          },
+          {
+            "startOffset": 42705,
+            "endOffset": 42738,
+            "count": 65
+          },
+          {
+            "startOffset": 42739,
+            "endOffset": 42763,
+            "count": 56
+          },
+          {
+            "startOffset": 42764,
+            "endOffset": 42789,
+            "count": 55
+          },
+          {
+            "startOffset": 42790,
+            "endOffset": 42862,
+            "count": 55
+          },
+          {
+            "startOffset": 42806,
+            "endOffset": 42819,
+            "count": 47
+          },
+          {
+            "startOffset": 42820,
+            "endOffset": 42861,
+            "count": 8
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "invalidatePreview",
+        "ranges": [
+          {
+            "startOffset": 42968,
+            "endOffset": 43386,
+            "count": 31
+          },
+          {
+            "startOffset": 43037,
+            "endOffset": 43067,
+            "count": 9
+          },
+          {
+            "startOffset": 43099,
+            "endOffset": 43113,
+            "count": 22
+          },
+          {
+            "startOffset": 43115,
+            "endOffset": 43122,
+            "count": 0
+          },
+          {
+            "startOffset": 43155,
+            "endOffset": 43271,
+            "count": 22
+          },
+          {
+            "startOffset": 43311,
+            "endOffset": 43360,
+            "count": 19
+          },
+          {
+            "startOffset": 43333,
+            "endOffset": 43359,
+            "count": 10
+          },
+          {
+            "startOffset": 43362,
+            "endOffset": 43382,
+            "count": 9
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "downloadCommittedExport",
+        "ranges": [
+          {
+            "startOffset": 44469,
+            "endOffset": 45209,
+            "count": 1
+          },
+          {
+            "startOffset": 44847,
+            "endOffset": 45208,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 45170,
+            "endOffset": 45198,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "closeConfirmedPreview",
+        "ranges": [
+          {
+            "startOffset": 45312,
+            "endOffset": 45432,
+            "count": 10
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "dismissPreview",
+        "ranges": [
+          {
+            "startOffset": 45537,
+            "endOffset": 45677,
+            "count": 3
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "confirmWrite",
+        "ranges": [
+          {
+            "startOffset": 45781,
+            "endOffset": 47333,
+            "count": 21
+          },
+          {
+            "startOffset": 45840,
+            "endOffset": 45847,
+            "count": 0
+          },
+          {
+            "startOffset": 45888,
+            "endOffset": 45896,
+            "count": 0
+          },
+          {
+            "startOffset": 46062,
+            "endOffset": 46187,
+            "count": 20
+          },
+          {
+            "startOffset": 46187,
+            "endOffset": 46194,
+            "count": 5
+          },
+          {
+            "startOffset": 46194,
+            "endOffset": 46236,
+            "count": 15
+          },
+          {
+            "startOffset": 46236,
+            "endOffset": 46311,
+            "count": 0
+          },
+          {
+            "startOffset": 46311,
+            "endOffset": 46506,
+            "count": 15
+          },
+          {
+            "startOffset": 46506,
+            "endOffset": 46513,
+            "count": 5
+          },
+          {
+            "startOffset": 46513,
+            "endOffset": 46653,
+            "count": 10
+          },
+          {
+            "startOffset": 46653,
+            "endOffset": 46666,
+            "count": 1
+          },
+          {
+            "startOffset": 46667,
+            "endOffset": 46716,
+            "count": 9
+          },
+          {
+            "startOffset": 46681,
+            "endOffset": 46689,
+            "count": 1
+          },
+          {
+            "startOffset": 46702,
+            "endOffset": 46715,
+            "count": 1
+          },
+          {
+            "startOffset": 46717,
+            "endOffset": 46778,
+            "count": 8
+          },
+          {
+            "startOffset": 46746,
+            "endOffset": 46777,
+            "count": 0
+          },
+          {
+            "startOffset": 46779,
+            "endOffset": 46813,
+            "count": 8
+          },
+          {
+            "startOffset": 46842,
+            "endOffset": 46937,
+            "count": 2
+          },
+          {
+            "startOffset": 46937,
+            "endOffset": 47030,
+            "count": 10
+          },
+          {
+            "startOffset": 47030,
+            "endOffset": 47037,
+            "count": 2
+          },
+          {
+            "startOffset": 47037,
+            "endOffset": 47138,
+            "count": 8
+          },
+          {
+            "startOffset": 47138,
+            "endOffset": 47155,
+            "count": 6
+          },
+          {
+            "startOffset": 47155,
+            "endOffset": 47265,
+            "count": 2
+          },
+          {
+            "startOffset": 47272,
+            "endOffset": 47329,
+            "count": 1
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 46345,
+            "endOffset": 46408,
+            "count": 45
+          },
+          {
+            "startOffset": 46394,
+            "endOffset": 46408,
+            "count": 35
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "resourceActions",
+        "ranges": [
+          {
+            "startOffset": 47554,
+            "endOffset": 50617,
+            "count": 54
+          },
+          {
+            "startOffset": 47917,
+            "endOffset": 47987,
+            "count": 0
+          },
+          {
+            "startOffset": 49874,
+            "endOffset": 50391,
+            "count": 28
+          },
+          {
+            "startOffset": 50391,
+            "endOffset": 50488,
+            "count": 26
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 47723,
+            "endOffset": 47898,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 48162,
+            "endOffset": 48202,
+            "count": 378
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 48527,
+            "endOffset": 48669,
+            "count": 2
+          },
+          {
+            "startOffset": 48570,
+            "endOffset": 48577,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 48710,
+            "endOffset": 48739,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 49051,
+            "endOffset": 49512,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 49654,
+            "endOffset": 49683,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 49822,
+            "endOffset": 49849,
+            "count": 28
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 49943,
+            "endOffset": 49967,
+            "count": 28
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 50227,
+            "endOffset": 50387,
+            "count": 284
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 50528,
+            "endOffset": 50557,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "draftEditor",
+        "ranges": [
+          {
+            "startOffset": 50618,
+            "endOffset": 52346,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "applicabilityDecisionForm",
+        "ranges": [
+          {
+            "startOffset": 52347,
+            "endOffset": 54426,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "mappingDecisionForm",
+        "ranges": [
+          {
+            "startOffset": 54428,
+            "endOffset": 56656,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "mappingCreationForm",
+        "ranges": [
+          {
+            "startOffset": 56658,
+            "endOffset": 58747,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "relativeProjectReference",
+        "ranges": [
+          {
+            "startOffset": 58748,
+            "endOffset": 59081,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "applicabilityMappingForm",
+        "ranges": [
+          {
+            "startOffset": 59082,
+            "endOffset": 60462,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "evidenceList",
+        "ranges": [
+          {
+            "startOffset": 60464,
+            "endOffset": 60795,
+            "count": 84
+          },
+          {
+            "startOffset": 60590,
+            "endOffset": 60778,
+            "count": 1012
+          },
+          {
+            "startOffset": 60648,
+            "endOffset": 60669,
+            "count": 32
+          },
+          {
+            "startOffset": 60669,
+            "endOffset": 60672,
+            "count": 980
+          },
+          {
+            "startOffset": 60674,
+            "endOffset": 60778,
+            "count": 32
+          },
+          {
+            "startOffset": 60729,
+            "endOffset": 60746,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 60749,
+            "endOffset": 60775,
+            "count": 4
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "showProvenance",
+        "ranges": [
+          {
+            "startOffset": 60886,
+            "endOffset": 63048,
+            "count": 9
+          },
+          {
+            "startOffset": 60958,
+            "endOffset": 60971,
+            "count": 3
+          },
+          {
+            "startOffset": 60971,
+            "endOffset": 61243,
+            "count": 6
+          },
+          {
+            "startOffset": 61243,
+            "endOffset": 61479,
+            "count": 4
+          },
+          {
+            "startOffset": 61479,
+            "endOffset": 62415,
+            "count": 0
+          },
+          {
+            "startOffset": 62415,
+            "endOffset": 62549,
+            "count": 4
+          },
+          {
+            "startOffset": 62549,
+            "endOffset": 62556,
+            "count": 1
+          },
+          {
+            "startOffset": 62556,
+            "endOffset": 62797,
+            "count": 3
+          },
+          {
+            "startOffset": 62797,
+            "endOffset": 62938,
+            "count": 2
+          },
+          {
+            "startOffset": 62841,
+            "endOffset": 62934,
+            "count": 1
+          },
+          {
+            "startOffset": 62938,
+            "endOffset": 62939,
+            "count": 4
+          },
+          {
+            "startOffset": 62939,
+            "endOffset": 63046,
+            "count": 6
+          },
+          {
+            "startOffset": 62978,
+            "endOffset": 63042,
+            "count": 4
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 61690,
+            "endOffset": 61722,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 61830,
+            "endOffset": 62354,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "exportForm",
+        "ranges": [
+          {
+            "startOffset": 63049,
+            "endOffset": 63641,
+            "count": 7
+          }
+        ],
+        "isBlockCoverage": true
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 63424,
+            "endOffset": 63559,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 63596,
+            "endOffset": 63625,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "",
+        "ranges": [
+          {
+            "startOffset": 63681,
+            "endOffset": 63745,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      },
+      {
+        "functionName": "initializeForm",
+        "ranges": [
+          {
+            "startOffset": 63749,
+            "endOffset": 68356,
+            "count": 0
+          }
+        ],
+        "isBlockCoverage": false
+      }
+    ],
+    "qualification": "Exact complete source evaluated in fake DOM. Raw ranges are not line/statement/branch/condition coverage; maximum counts are observations, not summed frequency."
+  },
+  "rust_tests": {
+    "library_workspace_passed": 47,
+    "http_real_process_passed": 11,
+    "instrumented_workspace_passed": 47,
+    "production_coverage": {
+      "schema_version": "forge.f05-keyboard-rust-coverage/1",
+      "scope": "47 selected workspace library tests; macOS aarch64 development Rust1.98.1/LLVM22.1.8",
+      "denominator": "LCOV instrumented production lines before each tests module, additionally excluding the cfg(test) Session::capability_count helper at203-205; unchanged production code remains; blank/uninstrumented lines excluded.",
+      "files": [
+        {
+          "path": "src/workspace/session.rs",
+          "sha256": "6bd27beb5fdc11c22e4a5d2489934cc47cca564600c0229a9c7f7d9eb5e0f197",
+          "production_stop_exclusive": 340,
+          "instrumented_production_lines": 207,
+          "covered_production_lines": 162,
+          "production_line_counts": {
+            "58": 67,
+            "60": 67,
+            "61": 67,
+            "62": 67,
+            "63": 2144,
+            "64": 2144,
+            "66": 67,
+            "67": 67,
+            "69": 0,
+            "70": 0,
+            "71": 0,
+            "72": 4,
+            "73": 4,
+            "74": 4,
+            "77": 24,
+            "78": 24,
+            "79": 3,
+            "80": 19,
+            "81": 2,
+            "82": 0,
+            "83": 0,
+            "84": 0,
+            "85": 0,
+            "87": 24,
+            "99": 1056,
+            "103": 1056,
+            "104": 1056,
+            "105": 1,
+            "106": 1,
+            "107": 1055,
+            "108": 1055,
+            "109": 8,
+            "110": 1047,
+            "111": 1047,
+            "112": 1047,
+            "117": 1047,
+            "118": 1047,
+            "119": 1056,
+            "121": 26,
+            "122": 26,
+            "123": 26,
+            "125": 22,
+            "126": 22,
+            "127": 22,
+            "128": 22,
+            "129": 22,
+            "130": 22,
+            "131": 22,
+            "132": 22,
+            "133": 22,
+            "135": 26,
+            "136": 26,
+            "137": 26,
+            "140": 15,
+            "141": 15,
+            "142": 15,
+            "143": 15,
+            "146": 11,
+            "147": 11,
+            "148": 11,
+            "149": 11,
+            "150": 11,
+            "151": 11,
+            "152": 1,
+            "153": 10,
+            "154": 10,
+            "155": 10,
+            "156": 10,
+            "157": 10,
+            "159": 0,
+            "161": 11,
+            "162": 11,
+            "163": 11,
+            "164": 11,
+            "165": 11,
+            "166": 11,
+            "167": 11,
+            "168": 11,
+            "169": 11,
+            "170": 11,
+            "171": 11,
+            "172": 11,
+            "173": 11,
+            "175": 21,
+            "176": 21,
+            "177": 0,
+            "178": 21,
+            "182": 21,
+            "183": 1,
+            "184": 20,
+            "185": 21,
+            "186": 21,
+            "187": 21,
+            "188": 21,
+            "189": 21,
+            "190": 21,
+            "191": 21,
+            "192": 21,
+            "195": 0,
+            "196": 0,
+            "197": 0,
+            "198": 0,
+            "199": 0,
+            "200": 0,
+            "207": 2,
+            "208": 2,
+            "209": 1,
+            "210": 1,
+            "211": 1,
+            "212": 2,
+            "218": 20,
+            "219": 20,
+            "220": 0,
+            "221": 20,
+            "222": 20,
+            "223": 20,
+            "224": 8,
+            "225": 8,
+            "226": 12,
+            "229": 12,
+            "230": 12,
+            "231": 12,
+            "232": 12,
+            "233": 12,
+            "235": 0,
+            "237": 12,
+            "238": 8,
+            "241": 8,
+            "242": 8,
+            "243": 8,
+            "244": 4,
+            "245": 4,
+            "246": 4,
+            "247": 4,
+            "248": 4,
+            "249": 4,
+            "250": 4,
+            "251": 20,
+            "255": 8,
+            "256": 8,
+            "257": 8,
+            "258": 4,
+            "259": 4,
+            "260": 4,
+            "261": 8,
+            "262": 8,
+            "264": 8,
+            "265": 8,
+            "266": 3,
+            "267": 5,
+            "268": 5,
+            "270": 22,
+            "271": 22,
+            "272": 5,
+            "274": 17,
+            "276": 22,
+            "277": 5,
+            "278": 5,
+            "279": 5,
+            "280": 5,
+            "281": 5,
+            "282": 0,
+            "283": 0,
+            "284": 5,
+            "285": 5,
+            "286": 5,
+            "287": 0,
+            "288": 0,
+            "289": 0,
+            "290": 0,
+            "291": 0,
+            "292": 5,
+            "293": 5,
+            "294": 1,
+            "295": 1,
+            "296": 1,
+            "297": 1,
+            "298": 1,
+            "299": 4,
+            "300": 4,
+            "301": 8,
+            "303": 1,
+            "304": 1,
+            "305": 1,
+            "306": 1,
+            "307": 1,
+            "312": 0,
+            "313": 0,
+            "314": 0,
+            "315": 0,
+            "316": 0,
+            "321": 0,
+            "322": 0,
+            "324": 0,
+            "325": 0,
+            "326": 0,
+            "327": 0,
+            "328": 0,
+            "329": 0,
+            "331": 0,
+            "332": 0,
+            "333": 0,
+            "334": 0,
+            "335": 0,
+            "336": 0,
+            "337": 0,
+            "338": 0
+          },
+          "uncovered_production_lines": [
+            69,
+            70,
+            71,
+            82,
+            83,
+            84,
+            85,
+            159,
+            177,
+            195,
+            196,
+            197,
+            198,
+            199,
+            200,
+            220,
+            235,
+            282,
+            283,
+            287,
+            288,
+            289,
+            290,
+            291,
+            312,
+            313,
+            314,
+            315,
+            316,
+            321,
+            322,
+            324,
+            325,
+            326,
+            327,
+            328,
+            329,
+            331,
+            332,
+            333,
+            334,
+            335,
+            336,
+            337,
+            338
+          ],
+          "changed_behavior_instrumented_lines": {
+            "140": 15,
+            "141": 15,
+            "142": 15,
+            "143": 15,
+            "222": 20,
+            "223": 20,
+            "224": 8,
+            "225": 8
+          },
+          "changed_behavior_scope": "retry rounding and throttle branch",
+          "changed_added_instrumented_production_lines": {
+            "140": 15,
+            "141": 15,
+            "142": 15,
+            "143": 15,
+            "225": 8
+          },
+          "excluded_test_only_helper": {
+            "attribute_line": 202,
+            "helper": "Session::capability_count",
+            "instrumented_line_counts": {
+              "203": 2,
+              "204": 2,
+              "205": 2
+            }
+          }
+        },
+        {
+          "path": "src/workspace/contract.rs",
+          "sha256": "f0a0255eee6fe0d66d3fe877b53bd2866cfa7a58f2abf90d6782503296a98c08",
+          "production_stop_exclusive": 341,
+          "instrumented_production_lines": 236,
+          "covered_production_lines": 216,
+          "production_line_counts": {
+            "21": 33,
+            "22": 33,
+            "23": 33,
+            "25": 25,
+            "26": 25,
+            "31": 25,
+            "34": 164,
+            "35": 164,
+            "36": 164,
+            "39": 9,
+            "40": 9,
+            "41": 9,
+            "42": 9,
+            "43": 9,
+            "44": 9,
+            "45": 9,
+            "46": 9,
+            "47": 9,
+            "48": 9,
+            "53": 1,
+            "54": 1,
+            "55": 1,
+            "62": 1,
+            "63": 1,
+            "64": 1,
+            "65": 1,
+            "67": 3115,
+            "68": 3115,
+            "69": 927,
+            "70": 927,
+            "71": 2508,
+            "72": 2508,
+            "73": 198,
+            "74": 0,
+            "75": 198,
+            "76": 198,
+            "77": 198,
+            "78": 198,
+            "79": 198,
+            "82": 2310,
+            "84": 2508,
+            "85": 2508,
+            "86": 927,
+            "88": 235,
+            "89": 1953,
+            "91": 3115,
+            "94": 1,
+            "95": 1,
+            "96": 1,
+            "97": 1,
+            "98": 1,
+            "99": 1,
+            "100": 58,
+            "101": 58,
+            "102": 58,
+            "103": 58,
+            "104": 58,
+            "105": 58,
+            "106": 58,
+            "107": 58,
+            "108": 1,
+            "109": 1,
+            "114": 95,
+            "115": 95,
+            "116": 95,
+            "117": 95,
+            "118": 95,
+            "119": 95,
+            "120": 95,
+            "121": 95,
+            "127": 1,
+            "128": 1,
+            "129": 1,
+            "130": 1,
+            "131": 35,
+            "132": 35,
+            "133": 37,
+            "134": 41,
+            "135": 41,
+            "136": 0,
+            "138": 41,
+            "139": 41,
+            "140": 18,
+            "141": 18,
+            "142": 18,
+            "143": 18,
+            "144": 18,
+            "145": 18,
+            "146": 18,
+            "147": 18,
+            "151": 1,
+            "152": 1,
+            "154": 1646,
+            "155": 1646,
+            "156": 1630,
+            "158": 16,
+            "160": 1646,
+            "163": 114,
+            "164": 114,
+            "165": 1,
+            "166": 1,
+            "167": 1,
+            "168": 1,
+            "169": 1,
+            "170": 113,
+            "173": 113,
+            "174": 113,
+            "175": 113,
+            "176": 1649611,
+            "177": 1649611,
+            "178": 1612778,
+            "179": 2,
+            "180": 1612776,
+            "181": 2,
+            "182": 1612774,
+            "183": 11879,
+            "184": 1600895,
+            "185": 36833,
+            "186": 11879,
+            "187": 24954,
+            "188": 14122,
+            "189": 14122,
+            "190": 0,
+            "191": 14122,
+            "192": 10832,
+            "194": 113,
+            "195": 113,
+            "196": 113,
+            "197": 113,
+            "199": 113,
+            "200": 114,
+            "212": 25,
+            "213": 25,
+            "214": 25,
+            "215": 25,
+            "216": 25,
+            "217": 25,
+            "218": 25,
+            "219": 25,
+            "220": 25,
+            "221": 775,
+            "222": 775,
+            "223": 775,
+            "224": 307,
+            "225": 468,
+            "226": 468,
+            "227": 1909,
+            "228": 1909,
+            "229": 0,
+            "230": 0,
+            "232": 1909,
+            "234": 1909,
+            "235": 468,
+            "236": 443,
+            "237": 25,
+            "238": 25,
+            "239": 0,
+            "241": 25,
+            "242": 25,
+            "243": 25,
+            "244": 13,
+            "245": 13,
+            "246": 13,
+            "247": 13,
+            "248": 13,
+            "249": 13,
+            "250": 13,
+            "251": 2,
+            "252": 2,
+            "254": 11,
+            "255": 11,
+            "256": 11,
+            "257": 11,
+            "258": 11,
+            "259": 0,
+            "260": 11,
+            "261": 11,
+            "263": 0,
+            "265": 13,
+            "266": 5,
+            "267": 5,
+            "268": 4,
+            "270": 1,
+            "271": 0,
+            "272": 0,
+            "273": 0,
+            "275": 1,
+            "277": 4,
+            "278": 4,
+            "279": 4,
+            "280": 4,
+            "281": 2,
+            "282": 2,
+            "283": 8,
+            "284": 1,
+            "285": 7,
+            "287": 19,
+            "290": 21,
+            "291": 1,
+            "292": 20,
+            "293": 20,
+            "294": 0,
+            "295": 20,
+            "296": 20,
+            "297": 18,
+            "298": 16,
+            "299": 16,
+            "300": 16,
+            "301": 16,
+            "302": 16,
+            "303": 2,
+            "304": 0,
+            "305": 2,
+            "306": 6,
+            "308": 0,
+            "309": 25,
+            "312": 27,
+            "318": 8713,
+            "319": 8713,
+            "320": 0,
+            "321": 8713,
+            "322": 8713,
+            "323": 8713,
+            "324": 8713,
+            "325": 0,
+            "326": 0,
+            "327": 0,
+            "329": 27,
+            "330": 27,
+            "331": 12,
+            "333": 15,
+            "335": 27,
+            "336": 0,
+            "337": 0,
+            "338": 27,
+            "339": 27
+          },
+          "uncovered_production_lines": [
+            74,
+            136,
+            190,
+            229,
+            230,
+            239,
+            259,
+            263,
+            271,
+            272,
+            273,
+            294,
+            304,
+            308,
+            320,
+            325,
+            326,
+            327,
+            336,
+            337
+          ],
+          "changed_behavior_instrumented_lines": {
+            "34": 164,
+            "35": 164,
+            "36": 164,
+            "39": 9,
+            "40": 9,
+            "41": 9,
+            "42": 9,
+            "43": 9,
+            "44": 9,
+            "45": 9,
+            "46": 9,
+            "47": 9,
+            "48": 9,
+            "54": 1,
+            "55": 1
+          },
+          "changed_behavior_scope": "static constructor, timed constructor and Display",
+          "changed_added_instrumented_production_lines": {
+            "35": 164,
+            "36": 164,
+            "39": 9,
+            "40": 9,
+            "41": 9,
+            "42": 9,
+            "43": 9,
+            "44": 9,
+            "45": 9,
+            "46": 9,
+            "47": 9,
+            "54": 1
+          }
+        }
+      ],
+      "tests_passed": 47,
+      "tests_filtered": 1774,
+      "raw_json": {
+        "path": "/private/tmp/forge-f05-keyboard-llvm-raw.json",
+        "sha256": "8ed543347c7b6b4d8abe53805f34d3b5f42c797b2b5806cd1112d6784358a7fa"
+      },
+      "lcov": {
+        "path": "/private/tmp/forge-f05-keyboard-llvm.lcov",
+        "sha256": "8a67c3380ddfbb658c02b49f1325969ca874025add1c80c3d42eb77fea294441"
+      },
+      "branch_condition_platform_coverage": false,
+      "acceptance_eligible": false,
+      "supersedes": {
+        "path": "/private/tmp/forge-f05-keyboard-production-coverage.json",
+        "sha256": "56711ae107a264be7cf1d7dc0f2065454bc193f7faf107d6fa0bfd5df1468522",
+        "qualification": "earlier pre-tests-module count included3 covered test-only helper lines; original retained byte-for-byte, no runtime change"
+      }
+    },
+    "added_instrumented_production_lines_covered": 17,
+    "added_instrumented_production_lines": 17,
+    "required_commit_checks": "Mandatory hook enforces formatting, strict default all-target Clippy and full Rust suite. This focused receipt supplies no full-suite counters; commit log and PR validation report that separate outcome."
+  },
+  "native_browser": [
+    {
+      "log": {
+        "path": "/private/tmp/forge-f05-keyboard-chrome-writable-native-property.log",
+        "bytes": 3681,
+        "sha256": "7dabc3393db7aca6a510671c66aefaad466422a4e0a1db5814675cc8b1e51a63"
+      },
+      "result": {
+        "mode": "writable",
+        "browserVersion": "154.0.8037.97",
+        "embeddedAssetSha256": "9c1f8be532f8cd1eaa73926c34ebbb7a8ca3d346ea0caeb67d91faa103191d8e",
+        "embeddedStyleSha256": "d4ce961b5043cd2fc756b032583bb99b40d5f42563a3526ab13ebfbbae22fa02",
+        "inputBorderContrast": {
+          "border": "rgb(82, 96, 91)",
+          "fill": "rgb(255, 255, 255)",
+          "ancestor": "rgb(246, 247, 244)",
+          "againstFill": 6.597586198170763,
+          "againstAncestor": 6.135504615280822
+        },
+        "focusChecks": 60,
+        "reflowChecks": [
+          {
+            "viewportWidth": 640,
+            "pageWidth": 640,
+            "operations": [
+              {
+                "id": "op_b941f24643f38124a16a712f6e68ea05808f99a4d082429f30ec37f861f51c0c",
+                "heading": "Operation op_b941f24643f38124a16a712f6e68ea05808f99a4d082429f30ec37f861f51c0c",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_3ecef7746508c3b23e44550f641b38b03079f4d5e14ff5928516c7e21732f3c4",
+                "heading": "Operation op_3ecef7746508c3b23e44550f641b38b03079f4d5e14ff5928516c7e21732f3c4",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_9bc9c24c833cc81de1e5b49b1468f0045b01c7f2eb66ef43f30a98176086ab58",
+                "heading": "Operation op_9bc9c24c833cc81de1e5b49b1468f0045b01c7f2eb66ef43f30a98176086ab58",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_c09bc2f63181193da3fedfc92d5f46954de6130fd9ccc1bae79534b004b60248",
+                "heading": "Operation op_c09bc2f63181193da3fedfc92d5f46954de6130fd9ccc1bae79534b004b60248",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_d2e328c6556b89b5d691f407141e501a1d6300116634d889637ca86a041b1d12",
+                "heading": "Operation op_d2e328c6556b89b5d691f407141e501a1d6300116634d889637ca86a041b1d12",
+                "headingWithinRow": true
+              }
+            ]
+          },
+          {
+            "viewportWidth": 320,
+            "pageWidth": 320,
+            "operations": [
+              {
+                "id": "op_b941f24643f38124a16a712f6e68ea05808f99a4d082429f30ec37f861f51c0c",
+                "heading": "Operation op_b941f24643f38124a16a712f6e68ea05808f99a4d082429f30ec37f861f51c0c",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_3ecef7746508c3b23e44550f641b38b03079f4d5e14ff5928516c7e21732f3c4",
+                "heading": "Operation op_3ecef7746508c3b23e44550f641b38b03079f4d5e14ff5928516c7e21732f3c4",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_9bc9c24c833cc81de1e5b49b1468f0045b01c7f2eb66ef43f30a98176086ab58",
+                "heading": "Operation op_9bc9c24c833cc81de1e5b49b1468f0045b01c7f2eb66ef43f30a98176086ab58",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_c09bc2f63181193da3fedfc92d5f46954de6130fd9ccc1bae79534b004b60248",
+                "heading": "Operation op_c09bc2f63181193da3fedfc92d5f46954de6130fd9ccc1bae79534b004b60248",
+                "headingWithinRow": true
+              },
+              {
+                "id": "op_d2e328c6556b89b5d691f407141e501a1d6300116634d889637ca86a041b1d12",
+                "heading": "Operation op_d2e328c6556b89b5d691f407141e501a1d6300116634d889637ca86a041b1d12",
+                "headingWithinRow": true
+              }
+            ]
+          }
+        ],
+        "syntheticFaults": [
+          {
+            "kind": "unlock-throttled",
+            "status": 429,
+            "message": "Too many attempts \u2014 retry available in 2 seconds. Wait, then retry. If repeated, stop and relaunch the workspace from the terminal.",
+            "duplicateSubmitObservationMs": 150,
+            "scope": "delayed documented UI fault; no authentic server delay qualification"
+          }
+        ],
+        "unlockRequests": 2,
+        "documentedRequests": [
+          "GET /api/v1/applicability/controls",
+          "GET /api/v1/applicability/draft",
+          "GET /api/v1/effects/previews/{id}",
+          "GET /api/v1/exports/{id}/download",
+          "GET /api/v1/mapping/draft",
+          "GET /api/v1/mapping/subjects",
+          "GET /api/v1/operations/{id}",
+          "GET /api/v1/project/config-status",
+          "GET /api/v1/project/summary",
+          "GET /api/v1/provenance/entries",
+          "GET /api/v1/resources",
+          "GET /api/v1/review-queue/items",
+          "POST /api/v1/applicability/analyses",
+          "POST /api/v1/applicability/initializations",
+          "POST /api/v1/conversions",
+          "POST /api/v1/effects/commits",
+          "POST /api/v1/exports",
+          "POST /api/v1/mapping/builds",
+          "POST /api/v1/mapping/draft/validation",
+          "POST /api/v1/mapping/initializations",
+          "POST /api/v1/resources/register",
+          "POST /api/v1/session/shutdown",
+          "POST /api/v1/session/unlock",
+          "PUT /api/v1/applicability/draft",
+          "PUT /api/v1/mapping/draft"
+        ],
+        "nonLoopbackRequests": 0,
+        "pageErrors": 0
+      },
+      "harness_sha256": "504c97350bd59bcad433cca383fdeedff6b95085e5a4ca26c5aa9c304bf0d28c",
+      "binary_sha256": "5ed6bf992b47d5e75d209252ef2479766cb371cdccac786b48689d48ce4b5967"
+    },
+    {
+      "log": {
+        "path": "/private/tmp/forge-f05-keyboard-chrome-read-only-native-property.log",
+        "bytes": 1106,
+        "sha256": "0ffbe6c1ccbf6127d55f69de213449d09645677128e61dee52eb950fcafca7bc"
+      },
+      "result": {
+        "mode": "read-only",
+        "browserVersion": "154.0.8037.97",
+        "embeddedAssetSha256": "9c1f8be532f8cd1eaa73926c34ebbb7a8ca3d346ea0caeb67d91faa103191d8e",
+        "embeddedStyleSha256": "d4ce961b5043cd2fc756b032583bb99b40d5f42563a3526ab13ebfbbae22fa02",
+        "inputBorderContrast": {
+          "border": "rgb(82, 96, 91)",
+          "fill": "rgb(255, 255, 255)",
+          "ancestor": "rgb(246, 247, 244)",
+          "againstFill": 6.597586198170763,
+          "againstAncestor": 6.135504615280822
+        },
+        "focusChecks": 5,
+        "reflowChecks": [
+          {
+            "viewportWidth": 640,
+            "pageWidth": 640,
+            "operations": []
+          },
+          {
+            "viewportWidth": 320,
+            "pageWidth": 320,
+            "operations": []
+          }
+        ],
+        "syntheticFaults": [
+          {
+            "kind": "unlock-throttled",
+            "status": 429,
+            "message": "Too many attempts \u2014 retry available in 2 seconds. Wait, then retry. If repeated, stop and relaunch the workspace from the terminal.",
+            "duplicateSubmitObservationMs": 150,
+            "scope": "delayed documented UI fault; no authentic server delay qualification"
+          }
+        ],
+        "unlockRequests": 2,
+        "documentedRequests": [
+          "GET /api/v1/project/config-status",
+          "GET /api/v1/project/summary",
+          "GET /api/v1/resources",
+          "POST /api/v1/session/shutdown",
+          "POST /api/v1/session/unlock"
+        ],
+        "nonLoopbackRequests": 0,
+        "pageErrors": 0
+      },
+      "harness_sha256": "504c97350bd59bcad433cca383fdeedff6b95085e5a4ca26c5aa9c304bf0d28c",
+      "binary_sha256": "5ed6bf992b47d5e75d209252ef2479766cb371cdccac786b48689d48ce4b5967"
+    }
+  ],
+  "native_qualification": "Chrome154 on macOSarm64, synthetic project53controls. Injected documented429/refresh faults qualify UI handling, not actual server timing. Real retry unlock, confirmed writes and downloads execute. No whole-browser/OS network denial, AT timing or full platform acceptance.",
+  "historical_receipts": [
+    {
+      "repository_path": "docs/workspace-navigation-verification.json",
+      "sha256": "b235a2b01c442721469935206daa27cfb22c46c935e02ac385756a5507a4f83b",
+      "unchanged": true
+    },
+    {
+      "repository_path": "docs/workspace-live-state-verification.json",
+      "sha256": "a1527934852c66977fb2b342495a028d639052b4178fa4eeaa25f01b17edd204",
+      "unchanged": true
+    }
+  ],
+  "previous_preserved_binary": {
+    "path": "/private/tmp/forge-f05-live-state-browser-binaries/b3a2a99f3c2fed8a847f36f8d102189eba807775f15cb3074aacdc5d893eb857/forge",
+    "bytes": 68022952,
+    "sha256": "b3a2a99f3c2fed8a847f36f8d102189eba807775f15cb3074aacdc5d893eb857"
+  },
+  "historical_attempts": {
+    "source": {
+      "historical_logs": [
+        {
+          "path": "/private/tmp/forge-f05-keyboard-tests/node-437b53763950-1790941931054917000.tap",
+          "bytes": 19804,
+          "sha256": "4e9b408ca8b934bbf81655d14cd6296798d18ca4f124977b0ea994ec5bfe78df",
+          "tap_summary": {
+            "tests": 79,
+            "pass": 79,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0
+          }
+        },
+        {
+          "path": "/private/tmp/forge-f05-keyboard-tests/node-437b53763950-1790941972216065000.tap",
+          "bytes": 21897,
+          "sha256": "d6f5b33149d17d5a45bbaf51e75d7339dc18f25cf9c36bc63a5b1f25b66abada",
+          "tap_summary": {
+            "tests": 81,
+            "pass": 79,
+            "fail": 2,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0
+          }
+        },
+        {
+          "path": "/private/tmp/forge-f05-keyboard-tests/node-437b53763950-1790942068687669000.tap",
+          "bytes": 24401,
+          "sha256": "35bf9ea799d2b072922ef5a8d23506edf214ba236bc65ecf4e8e63bcac73f502",
+          "tap_summary": {
+            "tests": 86,
+            "pass": 82,
+            "fail": 4,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0
+          }
+        },
+        {
+          "path": "/private/tmp/forge-f05-keyboard-tests/node-9c1f8be532f8-1790942161282626000.tap",
+          "bytes": 21492,
+          "sha256": "93558467aa0d7f23ba9013870eeb5af3fbd5dc40d42b82ac81d862f18662a4a8",
+          "tap_summary": {
+            "tests": 86,
+            "pass": 86,
+            "fail": 0,
+            "cancelled": 0,
+            "skipped": 0,
+            "todo": 0
+          }
+        },
+        {
+          "path": "/private/tmp/forge-f05-keyboard-tests/node-ac784580400c-1790941838331692000.tap",
+          "bytes": 19056,
+          "sha256": "1a3e6d010ef16a48746dbbc194cfa5797cb81e4ca1eb23ef61eea6ec2584a7e2",
+          "tap_summary": {
+            "tests": 75,
+            "pass": 74,
+            "fail": 0,
+            "cancelled": 1,
+            "skipped": 0,
+            "todo": 0
+          }
+        }
+      ],
+      "first_attempt": {
+        "command": "node --test ui/tests/workspace-navigation.cjs; subprocess timeout60s",
+        "outcome": "timeout; no stdout artifact retained because subprocess capture raised before write",
+        "qualification": "No raw output is fabricated. The subsequent bounded10s run retains the final-fixture timeout; debug diagnostic is a copied harness and cannot serve as final applied-source test receipt."
+      },
+      "debug_harness": "debug-last.cjs is a temporary copied harness with diagnostic prints, not the final applied test file",
+      "failures": "Two retained-pager failures at79/81 then four at82/86 are preserved in existing rawlogs; final86/86 result is bound to9c1f8be5.",
+      "historical_navigation_live_state_receipts": "Earlier /private/tmp/forge-f05-live-state-tests and navigation receipt files were left untouched."
+    },
+    "browser_first_attempt": {
+      "log": {
+        "path": "/private/tmp/forge-f05-keyboard-chrome-writable.log",
+        "bytes": 495,
+        "sha256": "932e92eda9d43248ed2bc8c9a0dc2a61ff60e4afbf77a172a6ead77720b38936"
+      },
+      "outcome": "failed harness assertion",
+      "reason": "Playwright isDisabled includes aria-disabled; successor checks native disabled/isConnected while retaining aria-disabled=true; no production change"
+    },
+    "llvm_first_command": {
+      "log": {
+        "path": "/private/tmp/forge-f05-keyboard-llvm.log",
+        "bytes": 43,
+        "sha256": "ca4afa6404a326308e48b9902e542090aa630e081f10af76675fc157430ea0a8"
+      },
+      "outcome": "argument parsing failed before execution; corrected test subcommand ran47 and exported actual coverage"
+    },
+    "coverage_scope_correction": {
+      "path": "/private/tmp/forge-f05-keyboard-production-coverage.json",
+      "sha256": "56711ae107a264be7cf1d7dc0f2065454bc193f7faf107d6fa0bfd5df1468522",
+      "qualification": "earlier pre-tests-module count included3 covered test-only helper lines; original retained byte-for-byte, no runtime change"
+    }
+  },
+  "packet_pins": [
+    {
+      "path": "/private/tmp/forge-f05-keyboard-tests/index.json",
+      "bytes": 5947,
+      "sha256": "f171f8e9d2c3183c7783a42a5fd297b5487a274969062a3401f9090ac7872318"
+    },
+    {
+      "path": "/private/tmp/forge-f05-keyboard-harness-successor/index.json",
+      "bytes": 3189,
+      "sha256": "df8dafa68474b1b1e23d042ac26889d36245660ec6246ea62b43498368059df0"
+    }
+  ],
+  "diagnostic_pins": [
+    {
+      "path": "/private/tmp/forge-f05-keyboard-rust-workspace.log",
+      "bytes": 4639,
+      "sha256": "88e93f62b14ae854c578270ab0ae1e7c6dec2aa142fb68f9de99b519cbe41e32"
+    },
+    {
+      "path": "/private/tmp/forge-f05-keyboard-rust-http.log",
+      "bytes": 1290,
+      "sha256": "d77c10deecd89523102bf9e950c6b0bec9998b043fcb68826f44deab16494491"
+    },
+    {
+      "path": "/private/tmp/forge-f05-keyboard-llvm-corrected.log",
+      "bytes": 13000,
+      "sha256": "407c6f05e6793cd37d71af87de71bb24903fb9f6ae6e82e35cd8f387ad29f53b"
+    },
+    {
+      "path": "/private/tmp/forge-f05-keyboard-llvm-export.log",
+      "bytes": 72,
+      "sha256": "633cd263870a2d68ca18e44240fe2bc7b04a4ed30c2daef62537de2be302c770"
+    },
+    {
+      "path": "/private/tmp/forge-f05-keyboard-llvm.log",
+      "bytes": 43,
+      "sha256": "ca4afa6404a326308e48b9902e542090aa630e081f10af76675fc157430ea0a8"
+    },
+    {
+      "path": "/private/tmp/forge-f05-keyboard-chrome-writable.log",
+      "bytes": 495,
+      "sha256": "932e92eda9d43248ed2bc8c9a0dc2a61ff60e4afbf77a172a6ead77720b38936"
+    }
+  ],
+  "acceptance_eligible": false,
+  "remaining_gates": [
+    "full-keyboard-golden-path",
+    "A11Y-C-1 universal invoker restoration vs detached confirmed-write heading/error fallback disposition",
+    "A11Y-F-5 broader error envelope and field/resource linkage",
+    "real-screen-reader-announcement-timing",
+    "supported-browser-platform-AT-matrix",
+    "WCAG-ASVS-security-owner-acceptance",
+    "dependency-and-package-provenance",
+    "real-user-evaluation",
+    "final-integrated-documentation-review"
+  ]
+}

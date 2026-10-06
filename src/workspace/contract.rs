@@ -1,5 +1,6 @@
 //! Runtime validation against the single committed API contract.
 
+use std::borrow::Cow;
 use std::sync::LazyLock;
 
 use serde::Serialize;
@@ -9,7 +10,8 @@ use serde_json::{Value, json};
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct Error {
     pub code: &'static str,
-    pub message: &'static str,
+    /// Authored safe text; only bounded server retry guidance needs owned storage.
+    pub message: Cow<'static, str>,
     pub retryable: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resource_version: Option<String>,
@@ -28,14 +30,28 @@ impl Error {
         )
     }
 
+    /// Retain a static authored error without allocating or changing its wire shape.
     pub(crate) const fn new(code: &'static str, message: &'static str, retryable: bool) -> Self {
-        Self { code, message, retryable, resource_version: None }
+        Self { code, message: Cow::Borrowed(message), retryable, resource_version: None }
+    }
+
+    /// State the server's remaining retry interval without retaining request data.
+    pub(crate) fn unlock_throttled(wait_seconds: u64) -> Self {
+        Self {
+            code: "unlock-throttled",
+            message: Cow::Owned(format!(
+                "Too many attempts — retry available in {wait_seconds} seconds. Wait, then retry. If repeated, stop and relaunch the workspace from the terminal."
+            )),
+            retryable: true,
+            resource_version: None,
+        }
     }
 }
 
 impl std::fmt::Display for Error {
+    /// Display only the authored safe message for both borrowed and owned errors.
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str(self.message)
+        formatter.write_str(&self.message)
     }
 }
 
@@ -92,7 +108,8 @@ static VALIDATORS: LazyLock<std::collections::BTreeMap<String, jsonschema::Valid
             .collect()
     });
 
-pub(crate) const VERSION: &str = "1.1.0";
+/// Additive API revision, identical to the normative API document version.
+pub(crate) const VERSION: &str = "1.2.0";
 
 /// Resolve a possibly `$ref`-ed parameter against the embedded contract.
 fn resolve_parameter(definition: &Value) -> &Value {
@@ -325,6 +342,31 @@ pub(crate) fn encode(value: &impl serde::Serialize, limit: usize, pretty: bool) 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Dynamic retry text and unchanged static errors retain the same closed API envelope.
+    #[test]
+    fn authored_retry_message_preserves_closed_error_contract() {
+        let unchanged = Error::new("unlock-failed", "The workspace could not be unlocked.", false);
+        let unchanged_json = serde_json::to_value(&unchanged).unwrap();
+        assert_eq!(
+            unchanged_json,
+            json!({
+                "code": "unlock-failed", "message": "The workspace could not be unlocked.", "retryable": false
+            })
+        );
+        validate("Error", &unchanged_json).unwrap();
+
+        let throttled = Error::unlock_throttled(7);
+        let timed_json = serde_json::to_value(&throttled).unwrap();
+        validate("Error", &timed_json).unwrap();
+        assert_eq!(timed_json.as_object().unwrap().len(), 3);
+        assert_eq!(timed_json["code"], "unlock-throttled");
+        assert_eq!(timed_json["retryable"], true);
+        let message = timed_json["message"].as_str().unwrap();
+        assert!(message.contains("retry available in 7 seconds."));
+        assert!(message.contains("relaunch the workspace from the terminal."));
+        assert_eq!(throttled.to_string(), message);
+    }
 
     #[test]
     fn rejects_duplicates_and_forward_closed_requests() {

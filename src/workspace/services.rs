@@ -6,6 +6,7 @@ use serde_json::{Value, json};
 
 use super::contract::{self, Error, Result};
 use super::index::{Index, Resource, Role};
+use super::preparation::{NoopControl, ProgressUpdate, Stage, WorkControl, WorkError, WorkResult};
 use super::root::{Captured, Root};
 
 const MAX_CAPTURE_BYTES: usize = 50 * 1024 * 1024;
@@ -96,12 +97,32 @@ fn validate_oscal(bytes: &[u8], kind: crate::validate::OscalModelType) -> bool {
 }
 
 impl Snapshot {
+    /// Capture for existing synchronous launch/query/direct-effect callers.
+    /// No operation lock, numeric progress or deadline is invented by this wrapper.
     pub(crate) fn capture(root: &Root) -> Result<Self> {
-        let captured_index = root.read_index()?;
+        Self::capture_with_control(root, &mut NoopControl).map_err(WorkError::into_error)
+    }
+
+    /// Capture the entire ordered explicit index, checking before/after bounded
+    /// reads and classification. Counts advance only after complete Item install;
+    /// derived snapshot work remains indeterminate and preserves interruption.
+    pub(crate) fn capture_with_control(
+        root: &Root,
+        control: &mut dyn WorkControl,
+    ) -> WorkResult<Self> {
+        control.checkpoint(Stage::ReadIndex, ProgressUpdate::Unchanged)?;
+        let captured_index = root.read_index();
+        control.checkpoint(Stage::ReadIndex, ProgressUpdate::Unchanged)?;
+        let captured_index = captured_index?;
         let index_present = captured_index.is_some();
         let index = captured_index
             .as_ref()
-            .map_or_else(|| Ok(Index::empty()), |captured| Index::parse(&captured.bytes))?;
+            .map_or_else(|| Ok(Index::empty()), |captured| Index::parse(&captured.bytes));
+        control.checkpoint(Stage::ReadIndex, ProgressUpdate::Unchanged)?;
+        let index = index?;
+        let total = index.resources.len();
+        control
+            .checkpoint(Stage::CaptureResource, ProgressUpdate::Capture { completed: 0, total })?;
         let mut spent = captured_index.as_ref().map_or(0, |captured| captured.bytes.len());
         let mut identities = BTreeSet::new();
         if let Some(captured) = &captured_index {
@@ -113,14 +134,19 @@ impl Snapshot {
         );
         let mut items = Vec::with_capacity(index.resources.len());
         for registration in &index.resources {
+            control.checkpoint(Stage::CaptureResource, ProgressUpdate::Unchanged)?;
             let remaining = MAX_CAPTURE_BYTES.checked_sub(spent).ok_or_else(Error::invalid)?;
-            let captured = root.read(&registration.path, remaining.min(MAX_RESOURCE_BYTES))?;
+            let captured = root.read(&registration.path, remaining.min(MAX_RESOURCE_BYTES));
+            control.checkpoint(Stage::CaptureResource, ProgressUpdate::Unchanged)?;
+            let captured = captured?;
             spent += captured.bytes.len();
             if !identities.insert(captured.identity) {
-                return Err(Error::containment());
+                return Err(Error::containment().into());
             }
             let id = resource_id(registration);
+            control.checkpoint(Stage::ValidateResource, ProgressUpdate::Unchanged)?;
             let valid = validate_bytes(registration, &captured.bytes);
+            control.checkpoint(Stage::ValidateResource, ProgressUpdate::Unchanged)?;
             let version = captured.sha256.clone();
             version_input.extend_from_slice(
                 format!("{id}:{}:{}", captured.identity.0, captured.identity.1).as_bytes(),
@@ -128,14 +154,21 @@ impl Snapshot {
             version_input.extend_from_slice(version.as_bytes());
             let metadata = json!({"resource_id":id, "key":registration.key, "role":registration.role, "path":registration.path,
                 "sha256":captured.sha256, "size_bytes":captured.bytes.len(), "validation_state":if valid {"valid"} else {"invalid"}, "stale":false,"version":version});
-            contract::validate("Resource", &metadata)?;
+            let checked_metadata = contract::validate("Resource", &metadata);
+            control.checkpoint(Stage::ValidateResource, ProgressUpdate::Unchanged)?;
+            checked_metadata?;
             items.push(Item {
                 registration: registration.clone(),
                 captured,
                 metadata,
                 validation: validation(valid, Some(&id)),
             });
+            control.checkpoint(
+                Stage::CaptureResource,
+                ProgressUpdate::Capture { completed: items.len(), total },
+            )?;
         }
+        control.checkpoint(Stage::SnapshotAnalysis, ProgressUpdate::Clear)?;
         let mut snapshot = Self {
             index,
             index_present,
@@ -144,19 +177,38 @@ impl Snapshot {
             analysis: None,
             mapping_queue: Vec::new(),
         };
-        if snapshot.items.iter().any(|item| item.registration.role == Role::ApplicabilityManifest) {
-            match super::domain::analyze(&snapshot) {
+        snapshot.populate_analysis_with_control(control)?;
+        control.checkpoint(Stage::SnapshotReports, ProgressUpdate::Clear)?;
+        snapshot.mark_input_staleness();
+        control.checkpoint(Stage::SnapshotReports, ProgressUpdate::Unchanged)?;
+        snapshot.populate_mapping_queue_with_control(control)?;
+        snapshot.validate_applicability_reports_with_control(control)?;
+        snapshot.validate_trace_reports_with_control(control)?;
+        control.checkpoint(Stage::SnapshotReports, ProgressUpdate::Clear)?;
+        Ok(snapshot)
+    }
+
+    /// Populate captured applicability analysis while preserving sticky interruption.
+    /// Ordinary domain failure still classifies its manifest as invalid.
+    fn populate_analysis_with_control(&mut self, control: &mut dyn WorkControl) -> WorkResult<()> {
+        if self.items.iter().any(|item| item.registration.role == Role::ApplicabilityManifest) {
+            let analysis = super::domain::analyze_with_control(self, control);
+            if let Err(WorkError::Interrupted(reason)) = analysis {
+                return Err(WorkError::Interrupted(reason));
+            }
+            control.checkpoint(Stage::SnapshotAnalysis, ProgressUpdate::Unchanged)?;
+            match analysis {
                 Ok(analysis) => {
                     if analysis.controls.len() > 10000
                         || analysis.review_queue.len() > 10000
                         || analysis.mapping_collections.len() > 100
                     {
-                        return Err(Error::invalid());
+                        return Err(Error::invalid().into());
                     }
-                    snapshot.analysis = Some(analysis);
+                    self.analysis = Some(analysis);
                 }
-                Err(_) => {
-                    for item in &mut snapshot.items {
+                Err(WorkError::Failed(_)) => {
+                    for item in &mut self.items {
                         if item.registration.role == Role::ApplicabilityManifest {
                             item.validation =
                                 validation(false, Some(&resource_id(&item.registration)));
@@ -164,14 +216,24 @@ impl Snapshot {
                         }
                     }
                 }
+                Err(WorkError::Interrupted(reason)) => {
+                    return Err(WorkError::Interrupted(reason));
+                }
             }
         }
-        snapshot.mark_input_staleness();
-        snapshot.populate_mapping_queue()?;
-        for item in &mut snapshot.items {
+        Ok(())
+    }
+
+    /// Compare stored applicability reports at bounded report-check boundaries.
+    fn validate_applicability_reports_with_control(
+        &mut self,
+        control: &mut dyn WorkControl,
+    ) -> WorkResult<()> {
+        for item in &mut self.items {
             if item.registration.role == Role::ApplicabilityReport {
+                control.checkpoint(Stage::SnapshotReports, ProgressUpdate::Clear)?;
                 let parsed = contract::parse(&item.captured.bytes, MAX_RESOURCE_BYTES, 64 * 1024);
-                let matches = snapshot.analysis.as_ref().is_some_and(|analysis| {
+                let matches = self.analysis.as_ref().is_some_and(|analysis| {
                     parsed.as_ref().is_ok_and(|value| {
                         serde_json::to_value(analysis).is_ok_and(|expected| *value == expected)
                     })
@@ -187,25 +249,30 @@ impl Snapshot {
                     "invalid"
                 });
                 item.metadata["stale"] = json!(!matches && historical);
+                control.checkpoint(Stage::SnapshotReports, ProgressUpdate::Unchanged)?;
             }
         }
-        snapshot.validate_trace_reports()?;
-        Ok(snapshot)
+        Ok(())
     }
 
-    fn validate_trace_reports(&mut self) -> Result<()> {
-        let trace_states: Vec<_> = self
-            .items
-            .iter()
-            .filter(|item| item.registration.role == Role::TraceReport)
-            .map(|item| {
-                let valid = super::reports::parse(&item.captured.bytes);
-                let matches =
-                    valid.as_ref().is_ok_and(|report| report.matches(self).unwrap_or(false));
-                (resource_id(&item.registration), valid.is_ok(), matches)
-            })
-            .collect();
+    /// Compare stored trace reports with current capture facts. Controls surround
+    /// ordinary callback-free parser/matches calls, outside Result-to-bool
+    /// fallbacks, so an interruption cannot be swallowed as stale/invalid data.
+    fn validate_trace_reports_with_control(
+        &mut self,
+        control: &mut dyn WorkControl,
+    ) -> WorkResult<()> {
+        let mut trace_states = Vec::new();
+        for item in self.items.iter().filter(|item| item.registration.role == Role::TraceReport) {
+            control.checkpoint(Stage::SnapshotReports, ProgressUpdate::Clear)?;
+            let valid = super::reports::parse(&item.captured.bytes);
+            control.checkpoint(Stage::SnapshotReports, ProgressUpdate::Unchanged)?;
+            let matches = valid.as_ref().is_ok_and(|report| report.matches(self).unwrap_or(false));
+            control.checkpoint(Stage::SnapshotReports, ProgressUpdate::Unchanged)?;
+            trace_states.push((resource_id(&item.registration), valid.is_ok(), matches));
+        }
         for (id, valid, matches) in trace_states {
+            control.checkpoint(Stage::SnapshotReports, ProgressUpdate::Unchanged)?;
             let item = self
                 .items
                 .iter_mut()
@@ -224,8 +291,16 @@ impl Snapshot {
         Ok(())
     }
 
-    fn populate_mapping_queue(&mut self) -> Result<()> {
-        let Ok(item) = super::domain::mapping_manifest(self) else {
+    /// Derive the existing mapping review queue while preserving controlled
+    /// interruptions before any ordinary invalid-manifest fallback.
+    fn populate_mapping_queue_with_control(
+        &mut self,
+        control: &mut dyn WorkControl,
+    ) -> WorkResult<()> {
+        control.checkpoint(Stage::SnapshotMapping, ProgressUpdate::Clear)?;
+        let declaration = super::domain::mapping_manifest(self);
+        control.checkpoint(Stage::SnapshotMapping, ProgressUpdate::Unchanged)?;
+        let Ok(item) = declaration else {
             // Ambiguous declarations cannot become an empty, apparently ready queue.
             for item in &mut self.items {
                 if item.registration.role == Role::MappingCollection
@@ -239,17 +314,24 @@ impl Snapshot {
         };
         let id = resource_id(&item.registration);
         let hash = item.captured.sha256.clone();
-        let Ok(built) = super::domain::mapping(self) else {
-            let item = self
-                .items
-                .iter_mut()
-                .find(|item| resource_id(&item.registration) == id)
-                .ok_or_else(Error::invalid)?;
-            item.validation = validation(false, Some(&id));
-            item.metadata["validation_state"] = json!("invalid");
-            return Ok(());
+        let built = match super::domain::mapping_with_control(self, control) {
+            Ok(built) => built,
+            Err(WorkError::Interrupted(reason)) => {
+                return Err(WorkError::Interrupted(reason));
+            }
+            Err(WorkError::Failed(_)) => {
+                let item = self
+                    .items
+                    .iter_mut()
+                    .find(|item| resource_id(&item.registration) == id)
+                    .ok_or_else(Error::invalid)?;
+                item.validation = validation(false, Some(&id));
+                item.metadata["validation_state"] = json!("invalid");
+                return Ok(());
+            }
         };
-        let inventory = super::domain::subject_inventory(self)?;
+        control.checkpoint(Stage::SnapshotMapping, ProgressUpdate::Unchanged)?;
+        let inventory = super::domain::subject_inventory_with_control(self, control)?;
         // An over-long identifier is a bounded display limitation, not a broken
         // snapshot: record it on the supplying resource instead of failing.
         for (resource, _count) in &inventory.truncated {
@@ -271,6 +353,7 @@ impl Snapshot {
             ("framework", "statement", &built.report.target_statements),
         ] {
             for subject in &participation.unmapped_ids {
+                control.checkpoint(Stage::SnapshotMapping, ProgressUpdate::Unchanged)?;
                 // The applicability engine already reports an eligible framework control
                 // when it uses this exact framework snapshot; do not count it twice.
                 if side == "framework"
@@ -283,7 +366,7 @@ impl Snapshot {
                     continue;
                 }
                 if self.mapping_queue.len() >= 10000 {
-                    return Err(Error::invalid());
+                    return Err(Error::invalid().into());
                 }
                 // The bounded display label is not identity: two identifiers that
                 // share a truncated label must still select their own row. The
@@ -311,6 +394,7 @@ impl Snapshot {
                     "resource_id":reference["resource_id"],"evidence_refs":[reference["provenance_ref"],opaque("prov", &[&id,&hash])]}));
             }
         }
+        control.checkpoint(Stage::SnapshotMapping, ProgressUpdate::Unchanged)?;
         Ok(())
     }
 
@@ -933,7 +1017,7 @@ mod tests {
             analysis: None,
             mapping_queue: Vec::new(),
         };
-        snapshot.populate_mapping_queue().unwrap();
+        snapshot.populate_mapping_queue_with_control(&mut NoopControl).unwrap();
         let rows: Vec<Value> = snapshot
             .queue()
             .into_iter()
@@ -945,5 +1029,207 @@ mod tests {
             rows[0]["evidence_refs"][0], rows[1]["evidence_refs"][0],
             "each subject must resolve to its own provenance reference: {rows:?}"
         );
+    }
+
+    /// Create a synthetic explicit ordered Markdown index with optional invalid
+    /// captured content. Files are real confined inputs; no authentic review
+    /// decisions or filesystem identities are fabricated.
+    fn capture_fixture(count: usize, invalid_last: bool) -> (tempfile::TempDir, Root) {
+        let dir = tempfile::tempdir().unwrap();
+        let mut resources = Vec::new();
+        for index in 0..count {
+            let path = format!("source-{index}.md");
+            let bytes = if invalid_last && index + 1 == count {
+                &b""[..]
+            } else {
+                &b"# Synthetic policy\n\nStaff must review proposed changes.\n"[..]
+            };
+            std::fs::write(dir.path().join(&path), bytes).unwrap();
+            resources
+                .push(json!({"key":format!("source-{index}"),"role":"policy-source","path":path}));
+        }
+        std::fs::write(
+            dir.path().join(super::super::index::INDEX_PATH),
+            serde_json::to_vec(&json!({"schema_version":"forge.workspace/1","label":"Synthetic checkpoint fixture","resources":resources})).unwrap(),
+        ).unwrap();
+        let root = Root::open(dir.path()).unwrap();
+        (dir, root)
+    }
+
+    /// Cancellation at the first real capture boundary prevents even malformed
+    /// index input from being opened/parsed; ordinary capture still rejects it.
+    #[test]
+    fn controlled_capture_interrupts_before_index_io() {
+        use super::super::preparation::{Interruption, test_support::Recorder};
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join(super::super::index::INDEX_PATH), "not JSON").unwrap();
+        let root = Root::open(dir.path()).unwrap();
+        let mut control = Recorder::at(Stage::ReadIndex, 1);
+        assert!(matches!(
+            Snapshot::capture_with_control(&root, &mut control),
+            Err(WorkError::Interrupted(Interruption::CancelRequested))
+        ));
+        assert_eq!(control.events, vec![(Stage::ReadIndex, ProgressUpdate::Unchanged)]);
+        let ordinary = Snapshot::capture(&root).err().unwrap();
+        assert_eq!(ordinary.code, "invalid-request");
+    }
+
+    /// Progress counts all installed registrations through the full1,000-entry
+    /// bound, including classified-invalid bytes, then clears for derived work.
+    #[test]
+    fn controlled_capture_reports_complete_registration_denominator() {
+        use super::super::preparation::test_support::Recorder;
+        for count in [0, 1, 3, 1000] {
+            let (_dir, root) = capture_fixture(count, count == 3);
+            let mut control = Recorder::default();
+            let snapshot = Snapshot::capture_with_control(&root, &mut control).unwrap();
+            assert_eq!(snapshot.items.len(), count);
+            let facts: Vec<_> = control
+                .events
+                .iter()
+                .filter_map(|(_, update)| match update {
+                    ProgressUpdate::Capture { completed, total } => Some((*completed, *total)),
+                    _ => None,
+                })
+                .collect();
+            assert_eq!(facts, (0..=count).map(|completed| (completed, count)).collect::<Vec<_>>());
+            assert_eq!(control.events.last().unwrap().1, ProgressUpdate::Clear);
+            if count == 3 {
+                assert_eq!(snapshot.items.last().unwrap().metadata["validation_state"], "invalid");
+            }
+            let ordinary = Snapshot::capture(&root).unwrap();
+            assert_eq!(snapshot.version, ordinary.version);
+            assert_eq!(snapshot.summary(), ordinary.summary());
+        }
+        let dir = tempfile::tempdir().unwrap();
+        let mut control = Recorder::default();
+        let absent =
+            Snapshot::capture_with_control(&Root::open(dir.path()).unwrap(), &mut control).unwrap();
+        assert!(!absent.index_present);
+        assert_eq!(absent.items.len(), 0);
+        assert!(control.events.contains(&(
+            Stage::CaptureResource,
+            ProgressUpdate::Capture { completed: 0, total: 0 }
+        )));
+    }
+
+    /// After one complete capture, cooperative cancellation wins before the next
+    /// declared missing input. Ordinary capture proves that next read would fail.
+    #[test]
+    fn controlled_capture_stops_before_next_registered_read() {
+        use super::super::preparation::{Interruption, test_support::Recorder};
+        let (dir, root) = capture_fixture(2, false);
+        std::fs::remove_file(dir.path().join("source-1.md")).unwrap();
+        let mut control = Recorder::before_read_after(1);
+        assert!(matches!(
+            Snapshot::capture_with_control(&root, &mut control),
+            Err(WorkError::Interrupted(Interruption::CancelRequested))
+        ));
+        assert!(control.events.contains(&(
+            Stage::CaptureResource,
+            ProgressUpdate::Capture { completed: 1, total: 2 }
+        )));
+        assert!(!control.events.contains(&(
+            Stage::CaptureResource,
+            ProgressUpdate::Capture { completed: 2, total: 2 }
+        )));
+        assert_eq!(Snapshot::capture(&root).err().unwrap().code, "not-found");
+        assert_eq!(
+            std::fs::read(dir.path().join("source-0.md")).unwrap(),
+            b"# Synthetic policy\n\nStaff must review proposed changes.\n"
+        );
+    }
+
+    /// An interruption from the controlled applicability engine's staging must
+    /// escape the snapshot's normal invalid-manifest fallback.
+    #[test]
+    fn controlled_capture_preserves_analysis_stage_interruption() {
+        use super::super::preparation::{Interruption, test_support::Recorder};
+        let dir = tempfile::tempdir().unwrap();
+        let catalog = json!({"catalog":{"uuid":"11111111-1111-4111-8111-111111111111","metadata":{"title":"Synthetic catalog","last-modified":"2026-09-10T00:00:00Z","version":"1","oscal-version":"1.2.3"},"controls":[{"id":"control-a","title":"Synthetic control"}]}});
+        std::fs::write(dir.path().join("framework.json"), serde_json::to_vec(&catalog).unwrap())
+            .unwrap();
+        let mut index = json!({"schema_version":"forge.workspace/1","label":"Synthetic analysis checkpoint","resources":[{"key":"framework","role":"oscal-catalog-artifact","path":"framework.json"}]});
+        std::fs::write(
+            dir.path().join(super::super::index::INDEX_PATH),
+            serde_json::to_vec(&index).unwrap(),
+        )
+        .unwrap();
+        let root = Root::open(dir.path()).unwrap();
+        let initial = Snapshot::capture(&root).unwrap();
+        let bytes = super::super::domain::initialize(&initial,
+            &json!({"target_path":"scope.json","framework_resource_id":initial.items[0].metadata["resource_id"]}), false).unwrap();
+        std::fs::write(dir.path().join("scope.json"), bytes).unwrap();
+        index["resources"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"key":"scope","role":"applicability-manifest","path":"scope.json"}));
+        std::fs::write(
+            dir.path().join(super::super::index::INDEX_PATH),
+            serde_json::to_vec(&index).unwrap(),
+        )
+        .unwrap();
+        let ordinary = Snapshot::capture(&root).unwrap();
+        assert!(ordinary.analysis.is_some());
+        let mut control = Recorder::at(Stage::CopyInputs, 3);
+        assert!(matches!(
+            Snapshot::capture_with_control(&root, &mut control),
+            Err(WorkError::Interrupted(Interruption::CancelRequested))
+        ));
+        assert!(control.events.contains(&(
+            Stage::CaptureResource,
+            ProgressUpdate::Capture { completed: 2, total: 2 }
+        )));
+    }
+
+    /// Normal malformed mapping input remains classified invalid, while a stop
+    /// after its declaration check bypasses that best-effort empty-queue path.
+    #[test]
+    fn controlled_capture_preserves_mapping_fallback_interruption() {
+        use super::super::preparation::{Interruption, test_support::Recorder};
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("mapping.json"), "{}\n").unwrap();
+        std::fs::write(dir.path().join(super::super::index::INDEX_PATH), serde_json::to_vec(&json!({"schema_version":"forge.workspace/1","label":"Synthetic invalid mapping","resources":[{"key":"mapping","role":"mapping-collection","path":"mapping.json"}]})).unwrap()).unwrap();
+        let root = Root::open(dir.path()).unwrap();
+        let ordinary = Snapshot::capture(&root).unwrap();
+        assert_eq!(ordinary.items[0].metadata["validation_state"], "invalid");
+        let mut control = Recorder::at(Stage::SnapshotMapping, 2);
+        assert!(matches!(
+            Snapshot::capture_with_control(&root, &mut control),
+            Err(WorkError::Interrupted(Interruption::CancelRequested))
+        ));
+    }
+
+    /// Trace freshness controls surround actual callback-free parse/matches work,
+    /// so both pre-readiness and post-comparison cancellation remain interruptions.
+    #[test]
+    fn controlled_trace_freshness_keeps_interruption_outside_fallbacks() {
+        use super::super::preparation::{Interruption, test_support::Recorder};
+        let (dir, root) = capture_fixture(1, false);
+        let initial = Snapshot::capture(&root).unwrap();
+        let report = super::super::reports::render(
+            &initial,
+            "trace",
+            super::super::domain::trace_counts(&initial).unwrap(),
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("trace.html"), report).unwrap();
+        let mut index = initial.index;
+        index.resources.push(Resource {
+            key: "trace".into(),
+            role: Role::TraceReport,
+            path: "trace.html".into(),
+        });
+        std::fs::write(dir.path().join(super::super::index::INDEX_PATH), index.bytes().unwrap())
+            .unwrap();
+        for visit in [1, 3] {
+            let mut snapshot = Snapshot::capture(&root).unwrap();
+            assert_eq!(snapshot.items[1].metadata["validation_state"], "valid");
+            let mut control = Recorder::at(Stage::SnapshotReports, visit);
+            assert!(matches!(
+                snapshot.validate_trace_reports_with_control(&mut control),
+                Err(WorkError::Interrupted(Interruption::CancelRequested))
+            ));
+        }
     }
 }

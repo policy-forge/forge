@@ -79,9 +79,12 @@ and the normative API definition is
 | CM-32 | Render loading, refresh, and empty states from documented reads | cross-cutting | US-1 | `getProjectSummary`, `listResources`, `listReviewQueueItems` | browser-read |
 | CM-33 | Recover from errors, conflicts, and lost responses | cross-cutting | US-10 | `commitEffectPreview`, `getOperation` | browser-write |
 | CM-34 | Expose machine-readable status for accessible announcements | cross-cutting | US-11 | `getOperation`, `listReviewQueueItems` | browser-read |
-| CM-35 | Drive the complete workspace through the published API | cross-cutting | US-13 | all 37 operations: `unlockSession`, `getSession`, `shutdownSession`, `getProjectSummary`, `getProjectConfigStatus`, `listResources`, `getResource`, `registerResource`, `uploadResource`, `preparePolicyConversion`, `getConversion`, `runValidation`, `getResourceValidation`, `listApplicabilityControls`, `getApplicabilityDraft`, `validateApplicabilityDraft`, `putApplicabilityDraft`, `analyzeApplicability`, `getApplicabilityReport`, `listMappingSubjects`, `getMappingDraft`, `validateMappingDraft`, `putMappingDraft`, `checkMapping`, `buildMapping`, `listReviewQueueItems`, `getReviewQueueCounts`, `listProvenanceEntries`, `getProvenanceExcerpt`, `getEffectPreview`, `commitEffectPreview`, `getOperation`, `cancelOperation`, `prepareReportExport`, `downloadExport`, `initializeApplicabilityDraft`, `initializeMappingDraft` | browser-write |
+| CM-35 | Drive the complete workspace through the published API | cross-cutting | US-13 | all 39 operations: `unlockSession`, `getSession`, `shutdownSession`, `getProjectSummary`, `getProjectConfigStatus`, `listResources`, `getResource`, `registerResource`, `uploadResource`, `preparePolicyConversion`, `getConversion`, `runValidation`, `getResourceValidation`, `listApplicabilityControls`, `getApplicabilityDraft`, `validateApplicabilityDraft`, `putApplicabilityDraft`, `analyzeApplicability`, `getApplicabilityReport`, `listMappingSubjects`, `getMappingDraft`, `validateMappingDraft`, `putMappingDraft`, `checkMapping`, `buildMapping`, `listReviewQueueItems`, `getReviewQueueCounts`, `listProvenanceEntries`, `getProvenanceExcerpt`, `getEffectPreview`, `commitEffectPreview`, `getOperation`, `cancelOperation`, `prepareReportExport`, `downloadExport`, `initializeApplicabilityDraft`, `initializeMappingDraft`, `getProjectBundlePreview`, `verifyProjectBundle` | browser-write |
 | CM-36 | Initialize scope from a selected registered Catalog | 4 | US-2, US-13 | `initializeApplicabilityDraft` | browser-write |
 | CM-37 | Initialize mapping from explicitly selected Catalogs and supplied review metadata | 5 | US-3, US-13 | `initializeMappingDraft` | browser-write |
+
+| CM-38 | Preview complete metadata and acknowledge a local JSON download | cross-cutting | US-7, US-13 | `getProjectBundlePreview` | browser-read |
+| CM-39 | Compare chosen metadata JSON bytes with registered fingerprints | cross-cutting | US-7, US-13 | `verifyProjectBundle` | browser-read |
 
 Full notes for each entry, including the UX states and acceptance criteria
 each one covers, live in [capability-matrix.json](capability-matrix.json).
@@ -96,7 +99,7 @@ each one covers, live in [capability-matrix.json](capability-matrix.json).
 - **Primary navigation views:** Overview (CM-06, CM-07, CM-16), Review Queue
   (CM-22, CM-23, CM-24), Framework Scope (CM-12, CM-13, CM-14), Mappings
   (CM-17 through CM-21), Policies & Artifacts (CM-07 through CM-11), Trace &
-  Reports (CM-16, CM-24, CM-29, CM-30).
+  Reports (CM-16, CM-24, CM-29, CM-30, CM-38, CM-39).
 - **Cross-cutting UX states:** loading/empty/refresh (CM-32), error/retry
   (CM-33), cancel (CM-28), shutdown and process-stopped (CM-03), locked and
   throttled unlock (CM-01), permission denied and read-only mode (CM-31),
