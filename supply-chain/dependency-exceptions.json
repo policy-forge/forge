@@ -1,1 +1,516 @@
-{"entries":[{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"65c35e4b699c7e15ccbe7ee35c005e4fc0a278d22238a2857e6ce2dadeda1b06","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"chacha20","owner":"brianluby","rationale":"Owner-approved temporary integration exception for the exact locked dependency. The existing agent-authored differential audit is rooted in a legacy exemption and does not supply a fully reviewed root. Full-rooted source review remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.10.2"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"d301f5bf187b3c295fce6468d3875037a0bccc5f6b151c63cac2f85babf21912","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"fancy-regex","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.19.2"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"e246562084dde8ebbcc943b261c406ce4f68e5032ec28029a251a47d6a295500","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"fraction","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.17.0"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"hashbrown","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.17.1"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"71160ed5f6dbe36a2d6be79f4ca03ee09a99d2866f340faed49458913449aefa","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"jsonschema","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.57.0"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"48d2120d8466ffcdc1b3be4b88ff0e9191bf5b6b09b1b1af1eef9aff8f465ea3","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"jsonschema-regex","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.57.0"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"3fbfa40a42415369d940b3848f3ce08099f1f1ac04d73e8580f4d652617c4f44","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"jsonschema-value","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.57.0"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"c2a86d3146ed3995b5913c414f6664344b9617457320782e64f0bb44afd49d74","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"micromap","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.3.0"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"c89e69e7e0f03bea5ef08013795c25018e101932225a656383bd384495ecc367","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"num-bigint","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.4.8"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"b06f6798be4fed305e74df8b1fb90cf59c6b8cc17aa3febeb1830c0c6b627b3e","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"referencing","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.57.0"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"f020237b6c8eed93db2e2cb53c00c60a8e1bc73da7d073199a1180401450218d","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"regex","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"1.13.1"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"ad8553b9b26413251cbf30e620595c7a41b3887f03da04579c0e6b0d6a06b4b2","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"regex-automata","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.4.18"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"regex-syntax","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.8.11"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"c841b55ecdae098c80dcae9cf767f6f8a0c2cdb3416bbef72181df4d0fe73f14","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"serde_json","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"1.0.151"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"9628de9b8791db39ceda2b119bbe13134770b56c138ec1d3af810d045c04f9bd","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"strum","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.28.0"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"ab85eea0270ee17587ed4156089e10b9e6880ee688791d45a905f5b1ca36f664","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"strum_macros","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"0.28.0"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"8593e8e72159ed2257d083c7a454a85cbf854f37a0966d8d483aff8c8a3ebcee","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"syn","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"3.0.6"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"09e52cb86a36cede5cb101bf8908837b3e4c6e5e59fe7fd85c23fb56200d189e","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"thiserror","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"2.0.21"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"fe5197923287db20a58125f0bc85c062f7f2c892de97b18c356f9efb14b28524","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"thiserror-impl","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"2.0.21"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"2ef6dac1e96601b4fb3acccccff2139741fcb757cb9a36089bf5be91cfb285ce","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"uuid","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"1.26.1"},{"approval_reference":"docs/plans/2026-10-06-merge-dependency-decisions.md","checksum":"29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b","created_on":"2026-10-06","criteria":["safe-to-deploy"],"expires_on":"2026-11-05","name":"zmij","owner":"brianluby","rationale":"Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.","review_by":"2026-10-20","source":"registry+https://github.com/rust-lang/crates.io-index","version":"1.0.23"}],"format":"forge.dependency-exceptions/1"}
+{
+  "entries": [
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "940b3a0ca603d1eade50a4846a2afffd5ef57a9feac2c0e2ec2e14f9ead76000",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "anstyle",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "1.0.14"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "134c52ddac6d63c576bef8168db10c83c49c26444ecbc68060fef078925a901c",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "argon2",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.6.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "5b5d4d889834ee8ecfc0f8426ad30faf7cdcb10f741a8e6d7224d95325479f6f",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "blake2",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.11.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "65c35e4b699c7e15ccbe7ee35c005e4fc0a278d22238a2857e6ce2dadeda1b06",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "chacha20",
+      "owner": "brianluby",
+      "rationale": "Owner-approved temporary integration exception for the exact locked dependency. The existing agent-authored differential audit is rooted in a legacy exemption and does not supply a fully reviewed root. Full-rooted source review remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.10.2"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "aa8876b300ab35ba921adea3dfd70157a46249b33f95c9084ae5709785478946",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "clap",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "4.6.7"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "ec0797fb7aeb1406c84efac526901f7ec3ead2124f946b494e72879d4b54704d",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "clap_builder",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "4.6.7"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "f9c751b79415d4e559e3d1fcf128e09e720eb673a06d26cf6f392d37d75b66e0",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy",
+        "safe-to-run"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "clap_derive",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "4.6.7"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "0c9ea0ac24bc397ab3c98583a3c9ba74fa56b09a4449bbe172b9b1ddb016027a",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "cmov",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.5.4"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "7d5515a3834141de9eafb9717ad39eea8247b5674e6066c404e8c4b365d2a29e",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "ctutils",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.4.2"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "d301f5bf187b3c295fce6468d3875037a0bccc5f6b151c63cac2f85babf21912",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "fancy-regex",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.19.2"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "e246562084dde8ebbcc943b261c406ce4f68e5032ec28029a251a47d6a295500",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "fraction",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.17.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "getrandom",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.4.3"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "ed5909b6e89a2db4456e54cd5f673791d7eca6732202bbf2a9cc504fe2f9b84a",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "hashbrown",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.17.1"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "71160ed5f6dbe36a2d6be79f4ca03ee09a99d2866f340faed49458913449aefa",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "jsonschema",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.57.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "48d2120d8466ffcdc1b3be4b88ff0e9191bf5b6b09b1b1af1eef9aff8f465ea3",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "jsonschema-regex",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.57.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "3fbfa40a42415369d940b3848f3ce08099f1f1ac04d73e8580f4d652617c4f44",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "jsonschema-value",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.57.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "c2a86d3146ed3995b5913c414f6664344b9617457320782e64f0bb44afd49d74",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "micromap",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.3.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "c89e69e7e0f03bea5ef08013795c25018e101932225a656383bd384495ecc367",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "num-bigint",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.4.8"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "aab41826031698d6ffcd9cff78ef56ef998e39dc7e5067cdfebe373842d4723b",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "password-hash",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.6.1"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "e5c4820f5811e424ce037d08493ac87752ecc54339e0f1e40c3d17da93278861",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "pdf-extract",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.12.1"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "44dc769b75f93afdddd8c7fa12d685292ddeff1e66f7f0f3a234cf1818afe892",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "phc",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.6.1"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-update-decisions.md",
+      "checksum": "fb39b166781f92d482534ef4b4b1b2568f42613b53e5b6c160e24cfbfa30926d",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "rayon",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "1.12.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "b06f6798be4fed305e74df8b1fb90cf59c6b8cc17aa3febeb1830c0c6b627b3e",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "referencing",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.57.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "f020237b6c8eed93db2e2cb53c00c60a8e1bc73da7d073199a1180401450218d",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "regex",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "1.13.1"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "ad8553b9b26413251cbf30e620595c7a41b3887f03da04579c0e6b0d6a06b4b2",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "regex-automata",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.4.18"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "regex-syntax",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.8.11"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "c841b55ecdae098c80dcae9cf767f6f8a0c2cdb3416bbef72181df4d0fe73f14",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "serde_json",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "1.0.151"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "9628de9b8791db39ceda2b119bbe13134770b56c138ec1d3af810d045c04f9bd",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "strum",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.28.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "ab85eea0270ee17587ed4156089e10b9e6880ee688791d45a905f5b1ca36f664",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "strum_macros",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.28.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "8593e8e72159ed2257d083c7a454a85cbf854f37a0966d8d483aff8c8a3ebcee",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "syn",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "3.0.6"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "09e52cb86a36cede5cb101bf8908837b3e4c6e5e59fe7fd85c23fb56200d189e",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "thiserror",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "2.0.21"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "fe5197923287db20a58125f0bc85c062f7f2c892de97b18c356f9efb14b28524",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "thiserror-impl",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "2.0.21"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "2ef6dac1e96601b4fb3acccccff2139741fcb757cb9a36089bf5be91cfb285ce",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "uuid",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "1.26.1"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-06-merge-dependency-decisions.md",
+      "checksum": "29666d0abbfad1e3dc4dcf6144730dd3a3ab225bbbdac83319345b1b44ccfc1b",
+      "created_on": "2026-10-06",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-05",
+      "name": "zmij",
+      "owner": "brianluby",
+      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance.",
+      "review_by": "2026-10-20",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "1.0.23"
+    }
+  ],
+  "format": "forge.dependency-exceptions/1"
+}
