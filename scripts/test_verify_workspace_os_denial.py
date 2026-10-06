@@ -2171,5 +2171,65 @@ class DistroSupportRootTests(unittest.TestCase):
         capture.assert_not_called()
 
 
+
+class ClientExitObservationControls(unittest.TestCase):
+    """Private diagnostic classification never reflects payloads or grants producer acceptance."""
+
+    def test_failed_actual_client_body_retains_only_closed_facts_and_original_exit(self):
+        """Exercise the real failure adapter, including unknown stderr and failed optional publication."""
+        for raw, banner, exception in (
+                (b"Traceback (most recent call last):\nPRIVATE path capability\nPermissionError: PRIVATE\n", "unrecognized", "PermissionError"),
+                (b"Maintained headless client conformance failed.\n", "conformance-failed", "unrecognized"),
+                (b"Maintained headless client receipt publication failed.\r\n", "publication-failed", "unrecognized"),
+                (b"PRIVATE unknown exception with credential\n", "unrecognized", "unrecognized")):
+            api = bare_native()
+            child = types.SimpleNamespace(captured=bytearray(raw))
+            api.launch = mock.Mock(return_value=child)
+            api.await_child = mock.Mock(return_value=(1, raw))
+            api.publish = mock.Mock()
+            self.assertEqual(api.run_client(), (1, None, None))
+            self.assertEqual(child.captured, bytearray())
+            name, published = api.publish.call_args.args
+            self.assertEqual(name, "os-denial-client-exit-observation.json")
+            self.assertNotIn(b"PRIVATE", published)
+            value = json.loads(published)
+            self.assertFalse(value["acceptance_eligible"])
+            self.assertEqual(value["producer_exit_code"], 1)
+            self.assertEqual(value["banner_outcome"], banner)
+            self.assertEqual(value["python_exception_class"], exception)
+            self.assertEqual(value["source_pins"], api.plan["source_pins"])
+            api.publish.side_effect = OSError("PRIVATE publication failure")
+            self.assertEqual(api.run_client(), (1, None, None))
+        with self.assertRaises(ValueError): native.client_exit_observation(True, b"", plan()["source_pins"])
+        with self.assertRaises(ValueError): native.client_exit_observation(0, b"", plan()["source_pins"])
+
+    def test_actual_bounded_replay_rejects_malformed_stale_and_symlink_observations(self):
+        """Read actual files; reject extra disclosure, false identity, booleans, oversize and link targets."""
+        sources = plan()["source_pins"]
+        original = native.client_exit_observation(1, b"ModuleNotFoundError: PRIVATE\n", sources)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "observation.json"
+            path.write_bytes(wrapper.shared.canonical_bytes(original))
+            self.assertEqual(wrapper.read_client_exit_observation(path, sources, 1), original)
+            for mutate in (
+                    lambda v: v.update(extra="PRIVATE"),
+                    lambda v: v.update(acceptance_eligible=True),
+                    lambda v: v.update(producer_exit_code=True),
+                    lambda v: v.update(producer_exit_code=2),
+                    lambda v: v.update(python_exception_class="PRIVATE"),
+                    lambda v: v["source_pins"][native.SOURCES[0]].update(sha256="b" * 64),
+                    lambda v: v["source_pins"][native.SOURCES[0]].update(bytes=True)):
+                value = copy.deepcopy(original);mutate(value)
+                path.write_bytes(wrapper.shared.canonical_bytes(value))
+                with self.assertRaises((ValueError, wrapper.GateError)):
+                    wrapper.read_client_exit_observation(path, sources, 1)
+            path.write_bytes(b"x" * 2049)
+            with self.assertRaises(ValueError): wrapper.read_client_exit_observation(path, sources, 1)
+            path.unlink()
+            target = Path(directory) / "private.json";target.write_bytes(wrapper.shared.canonical_bytes(original))
+            path.symlink_to(target)
+            with self.assertRaises(OSError): wrapper.read_client_exit_observation(path, sources, 1)
+
+
 if __name__ == "__main__":
     unittest.main()

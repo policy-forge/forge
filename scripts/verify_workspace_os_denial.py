@@ -1502,6 +1502,40 @@ def read_native(path, exit_code, expected_release, expected_sources, declared):
     return value, pin_bytes(raw)
 
 
+
+def read_client_exit_observation(path, expected_sources, expected_code):
+    """Replay only an unchanged small regular fixed-fact sidecar; a failed producer remains failed."""
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    try:
+        before = os.fstat(fd)
+        if not stat.S_ISREG(before.st_mode) or not 0 < before.st_size <= 2048:
+            raise ValueError("invalid observation")
+        raw = os.read(fd, 2049)
+        after = os.fstat(fd)
+        current = path.stat(follow_symlinks=False)
+        fields = ("st_dev", "st_ino", "st_mode", "st_size", "st_mtime_ns", "st_ctime_ns")
+        if (len(raw) != before.st_size or any(getattr(before, key) != getattr(after, key)
+                or getattr(before, key) != getattr(current, key) for key in fields)):
+            raise ValueError("changed observation")
+    finally:
+        os.close(fd)
+    value = strict_json(raw)
+    if (type(value) is not dict or set(value) != {"schema_version", "acceptance_eligible", "producer_exit_code",
+            "banner_outcome", "python_exception_class", "source_pins"}
+            or value["schema_version"] != "forge.os-denial-client-exit-observation/1"
+            or value["acceptance_eligible"] is not False
+            or type(value["producer_exit_code"]) is not int or value["producer_exit_code"] != expected_code or expected_code == 0
+            or value["banner_outcome"] not in ("unrecognized", "conformance-failed", "publication-failed")
+            or value["python_exception_class"] not in ("unrecognized", "ImportError", "ModuleNotFoundError",
+                "PermissionError", "FileNotFoundError", "RuntimeError", "OSError", "SyntaxError")
+            or value["source_pins"] != expected_sources or shared.canonical_bytes(value) != raw):
+        raise ValueError("invalid observation")
+    closed(value["source_pins"], SOURCE_KEYS)
+    for source in value["source_pins"].values():
+        pin(source)
+    return value
+
+
 def native_run(root, forge, identity, paths, deadline):
     """Dispatch only the verified fixed supervisor, preserve raw private receipts and reject unknown privileged cleanup."""
     row = {"status": "failed", "exit_code": None, "failure": "execution-unverified", "receipt": None, "receipt_pin": None}
@@ -1537,6 +1571,13 @@ def native_run(root, forge, identity, paths, deadline):
             value, retained = read_native(Path(private) / NATIVE_OUTPUT, completed["exit_code"],
                 plan["release_pin"], plan["source_pins"], declared)
             row.update(status=value["status"], failure=value["failure"], receipt=value, receipt_pin=retained)
+            if value["failure"] == "client-failed":
+                try:
+                    observation = read_client_exit_observation(Path(private) / "os-denial-client-exit-observation.json",
+                        plan["source_pins"], value["client"]["exit_code"])
+                    row["_client_exit_observation"] = observation
+                except Exception:
+                    pass
         except Exception:
             row["failure"] = "execution-unverified"
         return row
@@ -1584,6 +1625,12 @@ def verify(root, forge, output_dir, expected_commit=None, build_outcome="unrecor
         receipt["producer"] = {"status": "failed", "exit_code": None, "failure": "execution-unverified", "receipt": None, "receipt_pin": None}
         receipt["producer"] = native_run(root, forge, before, paths, deadline)
         producer = receipt["producer"]
+        observation = producer.pop("_client_exit_observation", None)
+        if observation is not None:
+            try:
+                shared.atomic_receipt(destination / "os-denial-client-exit-observation.json", observation)
+            except Exception:
+                pass
         receipt["status"], receipt["failure"] = producer["status"], producer["failure"]
         if producer["receipt"] is not None:
             cleanup = producer["receipt"]["cleanup"]

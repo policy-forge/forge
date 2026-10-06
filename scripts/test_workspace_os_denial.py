@@ -1148,6 +1148,35 @@ def remove_private(path, end):
         os.close(root)
 
 
+
+def client_exit_observation(code, raw, source_pins):
+    """Classify bounded output into closed authored enums; never retain exception text or paths."""
+    if not exact_int(code, -(2 ** 31), 2 ** 32 - 1) or code == 0 or type(raw) is not bytes or len(raw) > MAX_CAPTURE:
+        raise ValueError("invalid exit observation")
+    banner = "unrecognized"
+    if raw in (b"Maintained headless client conformance failed.\n", b"Maintained headless client conformance failed.\r\n"):
+        banner = "conformance-failed"
+    elif raw in (b"Maintained headless client receipt publication failed.\n", b"Maintained headless client receipt publication failed.\r\n"):
+        banner = "publication-failed"
+    tail = raw.rstrip(b"\r\n").rsplit(b"\n", 1)[-1].split(b":", 1)[0]
+    names = (b"ImportError", b"ModuleNotFoundError", b"PermissionError", b"FileNotFoundError",
+             b"RuntimeError", b"OSError", b"SyntaxError")
+    exception = tail.decode("ascii") if tail in names else "unrecognized"
+    pins = {}
+    if type(source_pins) is not dict or set(source_pins) != set(SOURCES):
+        raise ValueError("invalid source pins")
+    for name in SOURCES:
+        pin = source_pins[name]
+        if (type(pin) is not dict or set(pin) != {"bytes", "sha256"}
+                or not exact_int(pin["bytes"], 1, MAX_CAPTURE)
+                or type(pin["sha256"]) is not str or not re.fullmatch(r"[0-9a-f]{64}", pin["sha256"])):
+            raise ValueError("invalid source pin")
+        pins[name] = dict(pin)
+    return {"schema_version": "forge.os-denial-client-exit-observation/1", "acceptance_eligible": False,
+            "producer_exit_code": code, "banner_outcome": banner, "python_exception_class": exception,
+            "source_pins": pins}
+
+
 class Child:
     """Own one fork or Popen wait status, retained instance identity and pidfd."""
 
@@ -1803,9 +1832,16 @@ class Native:
                       "--receipt", str(receipt)], environment)
 
         child = self.launch("dut", execute, end)
-        code, _ = self.await_child(child, end)
+        code, raw = self.await_child(child, end)
         child.captured.clear()
         if code != 0:
+            # This separate fixed-fact observation supplies no conformance or
+            # cleanup credit and cannot replace the failed producer verdict.
+            try:
+                value = client_exit_observation(code, raw, self.plan["source_pins"])
+                self.publish("os-denial-client-exit-observation.json", canonical(value))
+            except Exception:
+                pass
             return code, None, None
         fd = os.open(receipt, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC | os.O_NONBLOCK)
         try:
