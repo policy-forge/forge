@@ -869,7 +869,12 @@ def leaf_closure(paths, deadline):
 def trusted_stdlib(end):
     """Independently derive the complete isolated proof; no supplied roots or preflight-only approval are accepted."""
     try:
-        return leaf_closure(list(sys.path), end)
+        # Debian/Ubuntu ship sitecustomize.py as a leaf alias into this fixed
+        # interpreter-version configuration root. Inventory it completely with
+        # the same UID0, no-follow, mode, byte, generation and deadline checks.
+        # This root is proof input only; it is never added to sys.path.
+        support = "/etc/python" + ".".join(map(str, sys.version_info[:2]))
+        return leaf_closure([*sys.path, support], end)
     except LeafClosureError as error:
         raise Failure("command-timeout" if error.reason == "deadline-expired" else "tool-untrusted") from None
     except (OSError, UnicodeError, ValueError):

@@ -1,0 +1,7 @@
+# Linux interpreter support-root qualification
+
+The latest hosted receipt rejects an absolute stdlib leaf target outside the complete inventory. Ubuntu's libpython3.12-minimal package lists both `/usr/lib/python3.12/sitecustomize.py` and `/etc/python3.12/sitecustomize.py` ([official file list](https://packages.ubuntu.com/noble/amd64/libpython3.12-minimal/filelist)). That layout is the repair hypothesis; the redacted prior receipt does not disclose the rejected target path.
+
+The ordinary isolated probe and privileged native qualifier now independently include the fixed `/etc/python<major>.<minor>` directory in the complete proof. The version comes from the selected interpreter. They retain all existing held no-follow traversal, UID0 and nonwritable ownership rules, leaf membership, bounded reads, duplicate accounting, complete multi-pass byte/identity proof, original budget and final fences. The support root is never added to the import search path. Missing, linked, writable or changed roots still refuse qualification; no alternative path, target-based root selection or automatic installation is introduced.
+
+The change requires actual hosted Linux qualification. Local mocked and macOS runs do not establish native IP denial, physical control or attempted-egress acceptance. Historical diagnostics, receipts and their source pins remain unchanged. The existing root-level leaf, directory-link, escaped-target, mutation and budget controls remain enabled. Product and release gates remain separate.

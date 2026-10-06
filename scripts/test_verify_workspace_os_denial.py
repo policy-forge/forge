@@ -2120,5 +2120,34 @@ class LeafEncodingAndBudgetControls(unittest.TestCase):
                 self.assertEqual(budget.uncertain_fds, 1)
             closed.assert_called_once_with(10)
 
+
+
+class DistroSupportRootTests(unittest.TestCase):
+    """Bind ordinary and native inventory roots to the same fixed interpreter version."""
+
+    def test_probe_adds_only_the_fixed_versioned_support_root(self):
+        """The proof probe does not modify the interpreter import search path."""
+        import contextlib
+        import io
+        before = list(sys.path)
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            exec(wrapper.PYTHON_PROBE, {})
+        result = json.loads(output.getvalue())
+        support = "/etc/python" + ".".join(map(str, sys.version_info[:2]))
+        self.assertEqual(result["paths"], [*before, support])
+        self.assertEqual(sys.path, before)
+
+    def test_native_derives_same_roots_without_accepting_supplied_paths(self):
+        """Native qualification independently derives and passes the complete root set."""
+        import test_workspace_os_denial as native
+        before = list(native.sys.path)
+        support = "/etc/python" + ".".join(map(str, native.sys.version_info[:2]))
+        with mock.patch.object(native, "leaf_closure", return_value=({}, {})) as capture:
+            self.assertEqual(native.trusted_stdlib(123), ({}, {}))
+        capture.assert_called_once_with([*before, support], 123)
+        self.assertEqual(native.sys.path, before)
+
+
 if __name__ == "__main__":
     unittest.main()

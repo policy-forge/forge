@@ -73,7 +73,7 @@ TOOL_REASONS = frozenset(reason for reasons in TOOL_PHASE_REASONS.values() for r
 PROBE_ORDER = tuple((phase, family, role) for phase in ("before", "after")
     for family in ("ipv4", "ipv6") for role in ("calibration-external", "dut-external", "dut-loopback"))
 PYTHON_PROBE = ("import json,sys;print(json.dumps({'version':'.'.join(map(str,sys.version_info[:3])),"
-                "'paths':sys.path},sort_keys=True,separators=(',',':')))")
+                "'paths':sys.path+['/etc/python'+'.'.join(map(str,sys.version_info[:2]))]},sort_keys=True,separators=(',',':')))")
 # This fixed bootstrap does not import checkout modules and executes only the single hash-verified buffer.
 BOOTSTRAP = """import hashlib,os,stat,sys
 p,h=sys.argv[1:];f=os.open(p,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
