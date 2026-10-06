@@ -374,9 +374,9 @@ graph LR
     end
 ```
 
-- **Requires:** [005-prd-domain-model](docs/PRD/005-prd-domain-model.md) — Citation struct extends the domain model; extraction operates on PolicyRequirement text
-- **Parallel With:** [006-prd-requirement-atomization](docs/PRD/006-prd-requirement-atomization.md) (WI-6), [007-prd-uuid-generation](docs/PRD/007-prd-uuid-generation.md) (WI-7)
-- **Blocks:** [009-prd-catalog-groups-controls](docs/PRD/009-prd-catalog-groups-controls.md) (WI-9) — Catalog generation needs citations for back matter assembly
+- **Requires:** [005-prd-domain-model](005-prd-domain-model.md) — Citation struct extends the domain model; extraction operates on PolicyRequirement text
+- **Parallel With:** [006-prd-requirement-atomization](006-prd-requirement-atomization.md) (WI-6), [007-prd-uuid-generation](007-prd-uuid-generation.md) (WI-7)
+- **Blocks:** [009-prd-catalog-groups-controls](009-prd-catalog-groups-controls.md) (WI-9) — Catalog generation needs citations for back matter assembly
 - **External:** `regex` crate, `url` crate (both well-established Rust ecosystem crates)
 
 ---

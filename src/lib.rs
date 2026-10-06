@@ -1,8 +1,8 @@
 //! FORGE — Framework for OSCAL Risk & Governance Execution
 //!
-//! Converts security policy documents (Markdown) into machine-readable
+//! Converts security policy documents (Markdown, PDF, or DOCX) into machine-readable
 //! [OSCAL](https://pages.nist.gov/OSCAL/) (Open Security Controls Assessment
-//! Language) JSON artifacts.
+//! Language) artifacts in supported JSON, XML and YAML model projections.
 //!
 //! Pipeline: Ingest → Parse → Atomize → Map → Serialize → Validate
 //!

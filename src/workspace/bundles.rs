@@ -8,7 +8,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-use super::contract::{self, Error, Result};
+use super::contract::{self, ApiMajor, Error, Result};
 use super::index::Index;
 use super::services::{Item, Snapshot};
 
@@ -24,29 +24,29 @@ const MAX_DECLARED_BYTES: usize = 50 * 1024 * 1024;
 /// Closed metadata wire model; source content and approval state are absent.
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct Bundle {
+pub(crate) struct Bundle {
     /// Exact identifier of this narrow resource-index bundle contract.
-    schema_version: String,
+    pub(crate) schema_version: String,
     /// Fixed metadata-only profile, never a source-content opt-in.
-    content_profile: String,
-    /// Existing closed resource-index contract, preserving authorial resource order.
-    index: Index,
+    pub(crate) content_profile: String,
+    /// Exact same-version closed index; original /1 role interpretation remains unchanged.
+    pub(crate) index: Index,
     /// Hash of normalized `Index::bytes`, not original index formatting.
-    index_sha256: String,
+    pub(crate) index_sha256: String,
     /// One exact-byte fingerprint for every index key, in index order.
-    pins: Vec<Pin>,
+    pub(crate) pins: Vec<Pin>,
 }
 
 /// Closed exact-byte pin for one explicitly indexed resource.
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct Pin {
+pub(crate) struct Pin {
     /// Exact index key; the index supplies role and portable path.
-    key: String,
+    pub(crate) key: String,
     /// Lowercase SHA256 of original resource bytes.
-    sha256: String,
+    pub(crate) sha256: String,
     /// Exact declared resource length, independently compared to captured bytes.
-    size_bytes: usize,
+    pub(crate) size_bytes: usize,
 }
 
 /// Return every registered resource's metadata without minting an effect receipt.
@@ -55,6 +55,13 @@ struct Pin {
 /// Returns the safe setup error for an absent index, or a contract/limit error
 /// for inconsistent captured metadata or an oversized complete bundle.
 pub(crate) fn preview(snapshot: &Snapshot) -> Result<Value> {
+    preview_for_api(snapshot, ApiMajor::V1)
+}
+
+/// Inspect complete same-version metadata for the explicitly admitted API major.
+/// V1 preserves only index1/bundle1; V2 reads index1/2 without granting import authority.
+pub(crate) fn preview_for_api(snapshot: &Snapshot, api_major: ApiMajor) -> Result<Value> {
+    admit_snapshot_major(snapshot, api_major)?;
     if !snapshot.index_present {
         return Err(Error::new("not-found", "The workspace resource index is not present.", false));
     }
@@ -73,7 +80,7 @@ pub(crate) fn preview(snapshot: &Snapshot) -> Result<Value> {
         })
         .collect::<Result<Vec<_>>>()?;
     let bundle = Bundle {
-        schema_version: "forge.workspace-index-bundle/1".into(),
+        schema_version: bundle_version(&snapshot.index)?.into(),
         content_profile: "index-and-hashes".into(),
         index: snapshot.index.clone(),
         index_sha256: normalized_index_hash(&snapshot.index)?,
@@ -81,7 +88,7 @@ pub(crate) fn preview(snapshot: &Snapshot) -> Result<Value> {
     };
     let bytes = contract::encode(&bundle, MAX_BUNDLE_BYTES, false)?;
     let value = contract::parse(&bytes, MAX_BUNDLE_BYTES, 64 * 1024)?;
-    decode_bundle(&value)?;
+    decode_bundle_for_api(&value, api_major)?;
     let reply = json!({
         "bundle": value,
         "snapshot_version": snapshot.version,
@@ -90,8 +97,18 @@ pub(crate) fn preview(snapshot: &Snapshot) -> Result<Value> {
             "project-relative-paths", "sha256-fingerprints", "byte-lengths"],
         "source_content_included": false,
     });
-    contract::validate("ProjectBundlePreview", &reply)?;
+    contract::validate_for(api_major, "ProjectBundlePreview", &reply)?;
     Ok(reply)
+}
+
+/// Encode the complete validated metadata profile for a selected-major export.
+///
+/// This consumes the same preview/decoder checks without source content or any
+/// supplied-path reads. Artifact bytes are compact JSON; the nested index hash
+/// still identifies deterministic `Index::bytes` including its newline.
+pub(crate) fn encode_metadata_for_api(snapshot: &Snapshot, api_major: ApiMajor) -> Result<Vec<u8>> {
+    let preview = preview_for_api(snapshot, api_major)?;
+    contract::encode(&preview["bundle"], MAX_BUNDLE_BYTES, false)
 }
 
 /// Compare all supplied expected pins with current registered captures only.
@@ -104,10 +121,21 @@ pub(crate) fn preview(snapshot: &Snapshot) -> Result<Value> {
 /// Returns safe contract/limit errors for malformed direct Value requests or
 /// inconsistent snapshots. Fingerprint mismatches are complete result rows.
 pub(crate) fn verify_registered(snapshot: &Snapshot, request: &Value) -> Result<Value> {
+    verify_registered_for_api(snapshot, request, ApiMajor::V1)
+}
+
+/// Compare a selected-major bundle only with captured registrations, preserving version-pair closure.
+/// Cross-version V2 comparisons report extras and index inequality without reading supplied paths.
+pub(crate) fn verify_registered_for_api(
+    snapshot: &Snapshot,
+    request: &Value,
+    api_major: ApiMajor,
+) -> Result<Value> {
+    admit_snapshot_major(snapshot, api_major)?;
     let bytes = contract::encode(request, MAX_BUNDLE_BYTES, false)?;
     let request = contract::parse(&bytes, MAX_BUNDLE_BYTES, 64 * 1024)?;
-    contract::validate("WorkspaceBundleVerificationRequest", &request)?;
-    let bundle = decode_bundle(&request["bundle"])?;
+    contract::validate_for(api_major, "WorkspaceBundleVerificationRequest", &request)?;
+    let bundle = decode_bundle_for_api(&request["bundle"], api_major)?;
     let current = current_items(snapshot)?;
     let expected_keys =
         bundle.index.resources.iter().map(|r| r.key.as_str()).collect::<BTreeSet<_>>();
@@ -162,7 +190,7 @@ pub(crate) fn verify_registered(snapshot: &Snapshot, request: &Value) -> Result<
         "unregistered_resources":unregistered, "mismatched_resources":mismatched,
         "items":items, "source_content_included":false,
     });
-    contract::validate("ProjectBundleVerification", &reply)?;
+    contract::validate_for(api_major, "ProjectBundleVerification", &reply)?;
     Ok(reply)
 }
 
@@ -171,14 +199,27 @@ pub(crate) fn verify_registered(snapshot: &Snapshot, request: &Value) -> Result<
 /// Uses the normative API validator and existing index parser, with no separate
 /// JSON Schema validator or supplied-path filesystem access.
 fn decode_bundle(value: &Value) -> Result<Bundle> {
+    decode_bundle_with_contract(value, ApiMajor::V1)
+}
+
+/// Consume the original closed decoder for V1 and the explicit version-paired decoder for V2.
+pub(crate) fn decode_bundle_for_api(value: &Value, api_major: ApiMajor) -> Result<Bundle> {
+    match api_major {
+        ApiMajor::V1 => decode_bundle(value),
+        ApiMajor::V2 => decode_bundle_with_contract(value, ApiMajor::V2),
+    }
+}
+
+/// Revalidate the entire supplied JSON tree and intrinsic bounds under its selected API contract.
+fn decode_bundle_with_contract(value: &Value, api_major: ApiMajor) -> Result<Bundle> {
     let bytes = contract::encode(value, MAX_BUNDLE_BYTES, false)?;
     let value = contract::parse(&bytes, MAX_BUNDLE_BYTES, 64 * 1024)?;
-    contract::validate("WorkspaceIndexBundle", &value)?;
+    contract::validate_for(api_major, "WorkspaceIndexBundle", &value)?;
     let bundle: Bundle = serde_json::from_value(value).map_err(|_| Error::invalid())?;
     let index_bytes = bundle.index.bytes()?;
     if bundle.index.resources.len() > MAX_RESOURCES
         || bundle.pins.len() != bundle.index.resources.len()
-        || bundle.schema_version != "forge.workspace-index-bundle/1"
+        || bundle.schema_version != bundle_version(&bundle.index)?
         || bundle.content_profile != "index-and-hashes"
         || bundle.index_sha256 != crate::hashing::sha256_hex(&index_bytes)
     {
@@ -201,7 +242,27 @@ fn decode_bundle(value: &Value) -> Result<Bundle> {
     Ok(bundle)
 }
 
-/// Hash the existing validated, deterministic index encoding including newline.
+/// Reject unsupported current index versions even for direct internal query consumers.
+/// This supplements, rather than replaces, the HTTP pre-resource-read capture fence.
+fn admit_snapshot_major(snapshot: &Snapshot, api_major: ApiMajor) -> Result<()> {
+    match (api_major, snapshot.index.schema_version.as_str()) {
+        (ApiMajor::V1, "forge.workspace/1")
+        | (ApiMajor::V2, "forge.workspace/1" | "forge.workspace/2") => Ok(()),
+        _ => Err(Error::invalid()),
+    }
+}
+
+/// Choose the only compatible metadata bundle version for a validated index.
+/// This is no content opt-in, import readiness or interpretation of new roles under /1.
+fn bundle_version(index: &Index) -> Result<&'static str> {
+    match index.schema_version.as_str() {
+        "forge.workspace/1" => Ok("forge.workspace-index-bundle/1"),
+        "forge.workspace/2" => Ok("forge.workspace-index-bundle/2"),
+        _ => Err(Error::invalid()),
+    }
+}
+
+/// Hash the validated, deterministic version-specific index encoding including newline.
 fn normalized_index_hash(index: &Index) -> Result<String> {
     Ok(crate::hashing::sha256_hex(&index.bytes()?))
 }
@@ -667,5 +728,124 @@ mod tests {
         expect_error(verify_registered(&f.snapshot, &json!({"bundle":value})), "invalid-request");
         f.snapshot.items.clear();
         expect_error(preview(&f.snapshot), "invalid-request");
+    }
+    /// Capture an explicit /2 project with actual opaque source bytes, including zero entries.
+    fn version_two_fixture(count: usize) -> Fixture {
+        let project = tempfile::tempdir().expect("private /2 fixture");
+        let mut index = Index::empty();
+        index.schema_version = "forge.workspace/2".into();
+        for n in 0..count {
+            let path = format!("source-{n:04}.bin");
+            let bytes = [0, 255, u8::try_from(n % 251).unwrap()];
+            std::fs::write(project.path().join(&path), bytes).unwrap();
+            index.resources.push(Resource {
+                key: format!("source-{n:04}"),
+                role: Role::LifecycleSource,
+                path,
+            });
+        }
+        std::fs::write(
+            project.path().join(super::super::index::INDEX_PATH),
+            index.bytes().unwrap(),
+        )
+        .unwrap();
+        let root = Root::open(project.path()).unwrap();
+        let snapshot = Snapshot::capture(&root).expect("actual /2 capture");
+        Fixture { project, snapshot }
+    }
+
+    /// Selected-major queries preserve all zero,101 and1,000 /2 resources while v1 remains closed.
+    #[test]
+    fn explicit_v2_metadata_consumers_preserve_complete_denominators() {
+        for count in [0, 101, 1000] {
+            let f = version_two_fixture(count);
+            let response = preview_for_api(&f.snapshot, ApiMajor::V2).unwrap();
+            let value = &response["bundle"];
+            assert_eq!(value["schema_version"], "forge.workspace-index-bundle/2");
+            assert_eq!(value["index"]["schema_version"], "forge.workspace/2");
+            assert_eq!(value["pins"].as_array().unwrap().len(), count);
+            let request = json!({"bundle":value});
+            let result = verify_registered_for_api(&f.snapshot, &request, ApiMajor::V2).unwrap();
+            assert_eq!(result["matched_resources"], json!(count));
+            assert_eq!(result["current_resources"], json!(count));
+            assert_eq!(result["expected_index_matches_current"], true);
+            assert_eq!(result["source_content_included"], false);
+            expect_error(preview(&f.snapshot), "invalid-request");
+            expect_error(verify_registered(&f.snapshot, &request), "invalid-request");
+            for item in &f.snapshot.items {
+                assert_eq!(item.metadata["validation_profile"], "opaque-fingerprint-bytes");
+                assert_eq!(item.metadata["validation_state"], "valid");
+            }
+        }
+    }
+
+    /// Both explicit pairs reject cross-version index interpretations and unknown bundle fields.
+    #[test]
+    fn v2_bundle_pairs_do_not_reinterpret_original_index_or_roles() {
+        let f = version_two_fixture(1);
+        let valid = preview_for_api(&f.snapshot, ApiMajor::V2).unwrap()["bundle"].clone();
+        for (key, value) in [
+            ("schema_version", json!("forge.workspace-index-bundle/1")),
+            ("schema_version", json!("forge.workspace-index-bundle/3")),
+            ("content_profile", json!("source-and-hashes")),
+            ("unknown", json!("PRIVATE SOURCE SENTINEL")),
+        ] {
+            let mut invalid = valid.clone();
+            invalid[key] = value;
+            expect_error(
+                verify_registered_for_api(&f.snapshot, &json!({"bundle":invalid}), ApiMajor::V2),
+                "invalid-request",
+            );
+        }
+        let mut wrong_index = valid.clone();
+        wrong_index["index"]["schema_version"] = json!("forge.workspace/1");
+        expect_error(
+            verify_registered_for_api(&f.snapshot, &json!({"bundle":wrong_index}), ApiMajor::V2),
+            "invalid-request",
+        );
+        assert!(
+            decode_bundle(&valid).is_err(),
+            "the original supplied-bundle decoder stays /1-only"
+        );
+    }
+
+    /// A prior /1 bundle compares registered captures in /2 without hiding extras or claiming index equality.
+    #[test]
+    fn supplied_version_one_comparison_in_v2_retains_registered_only_scope() {
+        let mut f = fixture(1, true);
+        let original = bundle(&f.snapshot);
+        let original_snapshot = f.snapshot;
+        let mut index = original_snapshot.index.clone();
+        index.schema_version = "forge.workspace/2".into();
+        index.resources.push(Resource {
+            key: "opaque-source".into(),
+            role: Role::LifecycleSource,
+            path: "opaque.bin".into(),
+        });
+        std::fs::write(f.project.path().join("opaque.bin"), b"").unwrap();
+        std::fs::write(
+            f.project.path().join(super::super::index::INDEX_PATH),
+            index.bytes().unwrap(),
+        )
+        .unwrap();
+        let root = Root::open(f.project.path()).unwrap();
+        f.snapshot = Snapshot::capture(&root).unwrap();
+        let request = json!({"bundle":original});
+        let compared = verify_registered_for_api(&f.snapshot, &request, ApiMajor::V2).unwrap();
+        assert_eq!(compared["state"], "matched");
+        assert_eq!(compared["matched_resources"], 1);
+        assert_eq!(compared["current_only_resources"], 1);
+        assert_eq!(compared["expected_index_matches_current"], false);
+        let v2_bundle = preview_for_api(&f.snapshot, ApiMajor::V2).unwrap()["bundle"].clone();
+        let reverse = verify_registered_for_api(
+            &original_snapshot,
+            &json!({"bundle":v2_bundle}),
+            ApiMajor::V2,
+        )
+        .unwrap();
+        assert_eq!(reverse["matched_resources"], 1);
+        assert_eq!(reverse["unregistered_resources"], 1);
+        assert_eq!(reverse["current_only_resources"], 0);
+        assert_eq!(reverse["expected_index_matches_current"], false);
     }
 }

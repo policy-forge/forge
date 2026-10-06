@@ -401,7 +401,7 @@ graph LR
     end
 ```
 
-- **Requires:** [001-prd-project-scaffolding](docs/PRD/001-prd-project-scaffolding.md) (project structure), [011-prd-oscal-metadata](docs/PRD/011-prd-oscal-metadata.md) (shared metadata assembly), WI-29 (export subcommand / format capability)
+- **Requires:** [001-prd-project-scaffolding](001-prd-project-scaffolding.md) (project structure), [011-prd-oscal-metadata](011-prd-oscal-metadata.md) (shared metadata assembly), WI-29 (export subcommand / format capability)
 - **Blocks:** WI-31 (Profile parameter tailoring), WI-32 (Profile validation and golden-file tests)
 - **Parallel With:** None
 - **External:** None

@@ -1,0 +1,5 @@
+{
+  "code": "bundle-restore-budget-exceeded",
+  "message": "Source restore exceeded its work budget. Check the retained operation status.",
+  "retryable": false
+}

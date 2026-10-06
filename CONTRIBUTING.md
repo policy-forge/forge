@@ -212,7 +212,7 @@ A PR that fails CI will not be reviewed. Save reviewer time by running locally f
 src/
   main.rs            # CLI entry point
   lib.rs             # Public API re-exports
-  cli/               # Subcommand handlers (convert, export, validate, profile, diff, trace)
+  cli/               # Conversion utilities and current domain command dispatch
   pipeline.rs        # Catalog pipeline orchestrator
   model/             # Core domain types
   oscal/             # OSCAL data structures (catalog, component, profile, assessment_plan)
@@ -227,6 +227,18 @@ src/
   parameter/         # Parameter extraction from policy prose
   oscal_cli/         # Profile resolution subcommand
   testing/           # Test helpers (doc(hidden))
+  applicability/     # Framework applicability and policy-gap analysis
+  assessment_results/ # Human-authored Assessment Results and review
+  authoring/         # Human-assigned plans and traceable skeletons
+  framework/         # Read-only framework revision impact
+  lifecycle/         # Local lifecycle records and review queues
+  linkage/           # Evidence and implementation linkage
+  mapping/           # Human-reviewed Control Mapping
+  migration/         # Read-only policy revision analysis
+  policy/            # Hash-pinned Markdown component composition
+  reuse/             # Read-only local corpus retrieval
+  suggest/           # Quarantined offline suggestion contracts
+  workspace/         # Confined queries, preparation and confirmed single-file effects
 
 tests/               # Integration tests
   fixtures/          # Sample input files

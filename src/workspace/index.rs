@@ -1,25 +1,85 @@
 //! The closed resource index: explicit registration, no filesystem discovery.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::LazyLock;
 
 use serde::{Deserialize, Serialize};
 
 use super::contract::{self, Error, Result};
 
+/// Fixed project-relative index target; domain resources cannot register it.
 pub(crate) const INDEX_PATH: &str = "forge.workspace.json";
+/// Raw and normalized index byte ceiling, including its final newline.
 pub(crate) const MAX_INDEX_BYTES: usize = 1024 * 1024;
 
+/// Closed registered input families; new families require an explicit /2 index.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) enum Role {
+    /// Supported human-authored Markdown conversion input.
     PolicySource,
+    /// Native OSCAL Catalog, independently schema validated.
     OscalCatalogArtifact,
+    /// Native OSCAL Component Definition, independently schema validated.
     OscalComponentArtifact,
+    /// Mapping authoring manifest or native Mapping Collection; edges constrain representation.
     MappingCollection,
+    /// Raw applicability authoring manifest, not a summarized report.
     ApplicabilityManifest,
+    /// Stored applicability report with its existing admission checks.
     ApplicabilityReport,
+    /// Existing bounded workspace trace report.
     TraceReport,
+    /// Locally declared lifecycle record; actors are not authenticated.
+    LifecycleRecord,
+    /// Opaque bounded source fingerprint bytes, with no content-reader permission.
+    LifecycleSource,
+    /// Native OSCAL Profile; no implicit resolution or remote import.
+    OscalProfileArtifact,
+    /// Native OSCAL System Security Plan.
+    OscalSspArtifact,
+    /// Intrinsic framework-impact manifest; full captured dependency closure remains a read-service prerequisite.
+    FrameworkImpactManifest,
+    /// Supplied successor map with unauthenticated declared migration assertions.
+    SuccessorMap,
+    /// Historical prior report admitted structurally, without current freshness proof.
+    FrameworkImpactReport,
+    /// Supplied framework-impact dispositions, retaining raw findings and local assertions.
+    FrameworkImpactDispositions,
+}
+
+impl Role {
+    /// Check schema-specific role admission before an unregistered file can be read.
+    pub(crate) fn admitted_by(self, schema_version: &str) -> bool {
+        match schema_version {
+            "forge.workspace/1" => matches!(
+                self,
+                Self::PolicySource
+                    | Self::OscalCatalogArtifact
+                    | Self::OscalComponentArtifact
+                    | Self::MappingCollection
+                    | Self::ApplicabilityManifest
+                    | Self::ApplicabilityReport
+                    | Self::TraceReport
+            ),
+            "forge.workspace/2" => true,
+            _ => false,
+        }
+    }
+
+    /// Name the narrower validation profile for new roles without asserting freshness.
+    pub(crate) fn validation_profile(self) -> Option<&'static str> {
+        match self {
+            Self::LifecycleRecord => Some("lifecycle-record-structure"),
+            Self::LifecycleSource => Some("opaque-fingerprint-bytes"),
+            Self::OscalProfileArtifact | Self::OscalSspArtifact => Some("native-oscal-schema"),
+            Self::FrameworkImpactManifest => Some("framework-impact-manifest"),
+            Self::SuccessorMap => Some("successor-map"),
+            Self::FrameworkImpactReport => Some("framework-impact-prior-admission"),
+            Self::FrameworkImpactDispositions => Some("framework-impact-dispositions"),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,17 +98,27 @@ pub(crate) struct Index {
     pub resources: Vec<Resource>,
 }
 
-static SCHEMA: LazyLock<jsonschema::Validator> = LazyLock::new(|| {
-    let schema: serde_json::Value =
-        serde_json::from_str(include_str!("../../schemas/forge.workspace-1.schema.json"))
-            .expect("embedded index schema is tested");
-    jsonschema::options()
-        .with_draft(jsonschema::Draft::Draft202012)
-        .build(&schema)
-        .expect("embedded index schema compiles")
+/// Independently compiled version schemas preserve the closed original /1 interpretation.
+static SCHEMAS: LazyLock<BTreeMap<&'static str, jsonschema::Validator>> = LazyLock::new(|| {
+    [
+        ("forge.workspace/1", include_str!("../../schemas/forge.workspace-1.schema.json")),
+        ("forge.workspace/2", include_str!("../../schemas/forge.workspace-2.schema.json")),
+    ]
+    .into_iter()
+    .map(|(version, bytes)| {
+        let schema: serde_json::Value =
+            serde_json::from_str(bytes).expect("embedded index schema is tested");
+        let validator = jsonschema::options()
+            .with_draft(jsonschema::Draft::Draft202012)
+            .build(&schema)
+            .expect("embedded index schema compiles");
+        (version, validator)
+    })
+    .collect()
 });
 
 impl Index {
+    /// Preserve legacy absent-index behavior until a request explicitly selects /2.
     pub(crate) fn empty() -> Self {
         Self {
             schema_version: "forge.workspace/1".into(),
@@ -57,9 +127,12 @@ impl Index {
         }
     }
 
+    /// Admit one closed version without relaxing duplicate, portable-path or alias checks.
     pub(crate) fn parse(bytes: &[u8]) -> Result<Self> {
         let value = contract::parse(bytes, MAX_INDEX_BYTES, 4096)?;
-        if !SCHEMA.is_valid(&value) {
+        let version = value["schema_version"].as_str().ok_or_else(Error::invalid)?;
+        let schema = SCHEMAS.get(version).ok_or_else(Error::invalid)?;
+        if !schema.is_valid(&value) {
             return Err(Error::invalid());
         }
         let index: Self = serde_json::from_value(value).map_err(|_| Error::invalid())?;
@@ -80,6 +153,7 @@ impl Index {
         Ok(index)
     }
 
+    /// Encode ordered authorial registrations deterministically, validate and append newline.
     pub(crate) fn bytes(&self) -> Result<Vec<u8>> {
         let mut bytes = contract::encode(self, MAX_INDEX_BYTES - 1, true)?;
         bytes.push(b'\n');
@@ -132,6 +206,7 @@ mod tests {
         );
     }
 
+    /// Unknown versions still reject after /2 admission; duplicate keys, path aliases and index self-registration remain closed.
     #[test]
     fn closed_versions_duplicates_and_aliases_fail() {
         for resources in [
@@ -142,7 +217,7 @@ mod tests {
             assert!(Index::parse(&serde_json::to_vec(&json!({"schema_version":"forge.workspace/1","label":"X","resources":resources})).unwrap()).is_err());
         }
         assert!(
-            Index::parse(br#"{"schema_version":"forge.workspace/2","label":"X","resources":[]}"#)
+            Index::parse(br#"{"schema_version":"forge.workspace/3","label":"X","resources":[]}"#)
                 .is_err()
         );
         assert!(Index::parse(br#"{"schema_version":"forge.workspace/1","label":"X","resources":[],"secret":"x"}"#).is_err());

@@ -1,0 +1,9 @@
+{
+  "stage_id": "bst_0123456789abcdef",
+  "chunk_ordinal": 320,
+  "sha256": "25024d4b0611b96930ab76204ff19a531d9abdae01f533b2e9692c65d598eda2",
+  "size_bytes": 744,
+  "received_chunk_count": 1,
+  "received_bytes": 744,
+  "expires_at": "2026-10-03T12:00:00Z"
+}

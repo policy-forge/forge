@@ -1,0 +1,709 @@
+{
+  "acceptance_eligible": false,
+  "apply_only_source_paths": [
+    "ui/tests/workspace.cjs",
+    "ui/tests/workspace_failure.test.cjs"
+  ],
+  "assertion_and_await_preservation": {
+    "assertion_calls_exact_ast_and_bytes": 136,
+    "awaits": 404,
+    "exact_await_ast_and_bytes": 402,
+    "literal_only_screenshot_adapters": [
+      389,
+      402
+    ],
+    "waits_timeouts_exact": true
+  },
+  "baseline": "011b6a5499a21a62c138382a83b842edc3c7bc28",
+  "candidate_sources": [
+    {
+      "apply": true,
+      "bytes": 56067,
+      "path": "/private/tmp/forge-f04-chrome-viewport-documents-v1/candidate/ui/tests/workspace.cjs",
+      "repository_path": "ui/tests/workspace.cjs",
+      "sha256": "4a35c925e20e127d909f12dabfd79d5e1af2d35edbd8e90003ca313d73503a41"
+    },
+    {
+      "apply": false,
+      "bytes": 4620,
+      "path": "/private/tmp/forge-f04-chrome-viewport-documents-v1/candidate/ui/tests/workspace_failure.cjs",
+      "repository_path": "ui/tests/workspace_failure.cjs",
+      "sha256": "bf370dc67fb24daf16af786b29f733bae13a69397bbc9e9726e44038f855598e"
+    },
+    {
+      "apply": true,
+      "bytes": 21904,
+      "path": "/private/tmp/forge-f04-chrome-viewport-documents-v1/candidate/ui/tests/workspace_failure.test.cjs",
+      "repository_path": "ui/tests/workspace_failure.test.cjs",
+      "sha256": "ad6bc85c66e29caefbf2d67629f2cac21e7c7ea10e5bd6de677831e7a81c0cd6"
+    }
+  ],
+  "evidence": [
+    {
+      "bytes": 867,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v1/assertion-ast.stderr.log",
+      "retained_path": "inputs/node-v1/assertion-ast.stderr.log",
+      "sha256": "bb76086ae684e5a4723445e423bc360ede34770a1a1fde2daa243312ba6a7fbd"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v1/assertion-ast.stdout.log",
+      "retained_path": "inputs/node-v1/assertion-ast.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 89117,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v1/receipt.json",
+      "retained_path": "inputs/node-v1/receipt.json",
+      "sha256": "c7eeee8cab32a0e052ade472e9412f42e1df0e0741cce68b9cf73146e3ac0319"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v1/syntax-controls.stderr.log",
+      "retained_path": "inputs/node-v1/syntax-controls.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v1/syntax-controls.stdout.log",
+      "retained_path": "inputs/node-v1/syntax-controls.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v1/syntax-helper.stderr.log",
+      "retained_path": "inputs/node-v1/syntax-helper.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v1/syntax-helper.stdout.log",
+      "retained_path": "inputs/node-v1/syntax-helper.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v1/syntax-workspace.stderr.log",
+      "retained_path": "inputs/node-v1/syntax-workspace.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v1/syntax-workspace.stdout.log",
+      "retained_path": "inputs/node-v1/syntax-workspace.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v1/version.stderr.log",
+      "retained_path": "inputs/node-v1/version.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 9,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v1/version.stdout.log",
+      "retained_path": "inputs/node-v1/version.stdout.log",
+      "sha256": "b7677d3ec37ee1897ba07dc2cfe8292fe421c9ac93396cca5bbece486d1a2a41"
+    },
+    {
+      "bytes": 6714,
+      "path": "/private/tmp/forge-f04-chrome-viewport-ast-v1.cjs",
+      "retained_path": "inputs/collectors/ast-v1.cjs",
+      "sha256": "3119e43dca5d93dd0f37fa2bc35bfccfd45787c375d9c2d2a9560475a3195336"
+    },
+    {
+      "bytes": 5332,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-coverage-v1.cjs",
+      "retained_path": "inputs/collectors/node-coverage-v1.cjs",
+      "sha256": "4ca762853868cd7ac8cad245999e170e6ef6ed96b43027345d4814fb1e8b8508"
+    },
+    {
+      "bytes": 3684,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-run-v1.py",
+      "retained_path": "inputs/collectors/node-run-v1.py",
+      "sha256": "bd2dc1696974b97ee9a3793d404d2ef87663468a8df646db536160638c06f21a"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/assertion-ast.stderr.log",
+      "retained_path": "inputs/node-v2/assertion-ast.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 358,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/assertion-ast.stdout.log",
+      "retained_path": "inputs/node-v2/assertion-ast.stdout.log",
+      "sha256": "999bea89b0d882cc208d84646b74cd90597605ffa24bcd35a3392226b0f78871"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/controls.stderr.log",
+      "retained_path": "inputs/node-v2/controls.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 3313,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/controls.stdout.log",
+      "retained_path": "inputs/node-v2/controls.stdout.log",
+      "sha256": "43c64e96f20618c818b278ff2bd44fc1d55145833060cdace46481e3ee98b521"
+    },
+    {
+      "bytes": 145706,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/coverage.json",
+      "retained_path": "inputs/node-v2/coverage.json",
+      "sha256": "ff6766780f029a2f50813211530af311f12dbecc1090cf7258bdf4ebab646dc9"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/coverage.stderr.log",
+      "retained_path": "inputs/node-v2/coverage.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 652,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/coverage.stdout.log",
+      "retained_path": "inputs/node-v2/coverage.stdout.log",
+      "sha256": "249ecdcf31f5b15d0454bc7daac8ad29eee0d7e7c2aa9feea658854c5f0a86ef"
+    },
+    {
+      "bytes": 89846,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/receipt.json",
+      "retained_path": "inputs/node-v2/receipt.json",
+      "sha256": "42de42f2cf9f1011b21bcdb28cae9ea1261aab5ac1a9f0ccd09da1fcaf2202ef"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/syntax-controls.stderr.log",
+      "retained_path": "inputs/node-v2/syntax-controls.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/syntax-controls.stdout.log",
+      "retained_path": "inputs/node-v2/syntax-controls.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/syntax-helper.stderr.log",
+      "retained_path": "inputs/node-v2/syntax-helper.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/syntax-helper.stdout.log",
+      "retained_path": "inputs/node-v2/syntax-helper.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/syntax-workspace.stderr.log",
+      "retained_path": "inputs/node-v2/syntax-workspace.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/syntax-workspace.stdout.log",
+      "retained_path": "inputs/node-v2/syntax-workspace.stdout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 2318444,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/v8/coverage-31702-1790989118887-0.json",
+      "retained_path": "inputs/node-v2/v8/coverage-31702-1790989118887-0.json",
+      "sha256": "e83d990fbad81d9cb937cccbb6c262a3d533bf317f4ed4501dab065851d5b8b7"
+    },
+    {
+      "bytes": 0,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/version.stderr.log",
+      "retained_path": "inputs/node-v2/version.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 9,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-controls-v2/version.stdout.log",
+      "retained_path": "inputs/node-v2/version.stdout.log",
+      "sha256": "b7677d3ec37ee1897ba07dc2cfe8292fe421c9ac93396cca5bbece486d1a2a41"
+    },
+    {
+      "bytes": 6710,
+      "path": "/private/tmp/forge-f04-chrome-viewport-ast-v2.cjs",
+      "retained_path": "inputs/collectors/ast-v2.cjs",
+      "sha256": "c057e59a242fdbbdaaf027cb05cb18d5a04515a7701ee333c610356a13d57368"
+    },
+    {
+      "bytes": 5332,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-coverage-v2.cjs",
+      "retained_path": "inputs/collectors/node-coverage-v2.cjs",
+      "sha256": "74c2c15e00ed190346addb4ce3d4216fe3c80a788997a1c5dfd7d6cc05b0f1fd"
+    },
+    {
+      "bytes": 3684,
+      "path": "/private/tmp/forge-f04-chrome-viewport-node-run-v2.py",
+      "retained_path": "inputs/collectors/node-run-v2.py",
+      "sha256": "5a838675e346b896ba6089bbbfcfe1177001e1618779876d69ed74bee038bccf"
+    },
+    {
+      "bytes": 9160,
+      "path": "/private/tmp/forge-f04-chrome-viewport-independent-source-review-v1/index.json",
+      "retained_path": "inputs/source-review/index.json",
+      "sha256": "1d486f11931d573b51fabd5aaf5aa793e4e5e5fb066df87a6548601b6176b17c"
+    },
+    {
+      "bytes": 14414,
+      "path": "/private/tmp/forge-f04-chrome-viewport-independent-source-review-v1/static-replay.json",
+      "retained_path": "inputs/source-review/static-replay.json",
+      "sha256": "0176b910179f7ff6947c146f98ea8d85b78e72c5ba5e16c497fba1f7aaac9b3d"
+    },
+    {
+      "bytes": 10120,
+      "path": "/private/tmp/forge-f04-chrome-viewport-independent-source-review-v1/review.json",
+      "retained_path": "inputs/source-review/review.json",
+      "sha256": "5c6a9b458f66fd677262cba6c43665ce0bc537828566d8ba4de836da426a7919"
+    },
+    {
+      "bytes": 8379,
+      "path": "/private/tmp/forge-f04-chrome-viewport-capture-candidate-v1/index.json",
+      "retained_path": "inputs/source-candidate/index.json",
+      "sha256": "bee4727239d84925a57f42091d2f5ed8ae5f2619bd0601a7517c436856c27aea"
+    },
+    {
+      "bytes": 1774637,
+      "path": "/private/tmp/forge-f04-chrome-viewport-capture-candidate-v1/cjs-assertion-ast-comparison-v2.json",
+      "retained_path": "inputs/ast-comparison-v2.json",
+      "sha256": "e417b50f3f3a7b0a7c20006cc97861b73b0f6101acddb22a0f65025b67b9427f"
+    },
+    {
+      "bytes": 11392,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-hosted-qualified-v1/index.json",
+      "retained_path": "inputs/sixth-qualified/index.json",
+      "sha256": "d043a93760309bde7975892bb12abeedf182f8a66947c427ae21f1010bfea5f6"
+    },
+    {
+      "bytes": 64607,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-hosted-qualified-v1/qualification.json",
+      "retained_path": "inputs/sixth-qualified/qualification.json",
+      "sha256": "3635cddb16199615aba842fd630a576c13ac73f288e6a0de340dde336e748e69"
+    },
+    {
+      "bytes": 2544,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-hosted-qualified-v1/readback.md",
+      "retained_path": "inputs/sixth-qualified/readback.md",
+      "sha256": "4565c97a1d35d289e10cc53558686f888f119f93ef8aca3652e7cf092d47db85"
+    },
+    {
+      "bytes": 11863,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-hosted-qualified-v1/workspace-hosted-chrome-verification.json",
+      "retained_path": "inputs/sixth-qualified/workspace-hosted-chrome-verification.json",
+      "sha256": "1e24420524a1cb24880449c7399d3c331ab776e7d541b795e2e1a653e10a4f11"
+    },
+    {
+      "bytes": 21391,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-hosted-qualified-v1/pr185-snapshot.json",
+      "retained_path": "inputs/sixth-qualified/pr185-snapshot.json",
+      "sha256": "889f3ba02301850edd3593efe1cf429ef3f74add12b04e508db1f3f80c2c7fdb"
+    },
+    {
+      "bytes": 90888,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-python-root-controls-v1/coverage.json",
+      "retained_path": "inputs/python-historical/coverage.json",
+      "sha256": "d6fd7fa6380c9b2864352e0061b83aad78285020f742e1479c6a2580dd012728"
+    },
+    {
+      "bytes": 18805,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-python-root-controls-v1/raw-unittest.log",
+      "retained_path": "inputs/python-historical/raw-unittest.log",
+      "sha256": "fc455bba21c55f68e7ee0b1f733d127f671226deac0e84e1b4f40a966c12183b"
+    },
+    {
+      "bytes": 56065,
+      "path": "/private/tmp/forge-f04-chrome-viewport-capture-candidate-v1/before/ui/tests/workspace.cjs",
+      "retained_path": "before/ui/tests/workspace.cjs",
+      "sha256": "2856924cd28c47207ccc016772b4698280377091f793d56f06849e38be4de065"
+    },
+    {
+      "bytes": 4620,
+      "path": "/private/tmp/forge-f04-chrome-viewport-capture-candidate-v1/before/ui/tests/workspace_failure.cjs",
+      "retained_path": "before/ui/tests/workspace_failure.cjs",
+      "sha256": "bf370dc67fb24daf16af786b29f733bae13a69397bbc9e9726e44038f855598e"
+    },
+    {
+      "bytes": 17184,
+      "path": "/private/tmp/forge-f04-chrome-viewport-capture-candidate-v1/before/ui/tests/workspace_failure.test.cjs",
+      "retained_path": "before/ui/tests/workspace_failure.test.cjs",
+      "sha256": "f4ca54c02d36c1743afb5b1b4dd497c628c3b4c6bc2f5751d8538c58708228e3"
+    },
+    {
+      "bytes": 56067,
+      "path": "/private/tmp/forge-f04-chrome-viewport-capture-candidate-v1/candidate/ui/tests/workspace.cjs",
+      "retained_path": "candidate/ui/tests/workspace.cjs",
+      "sha256": "4a35c925e20e127d909f12dabfd79d5e1af2d35edbd8e90003ca313d73503a41"
+    },
+    {
+      "bytes": 4620,
+      "path": "/private/tmp/forge-f04-chrome-viewport-capture-candidate-v1/candidate/ui/tests/workspace_failure.cjs",
+      "retained_path": "candidate/ui/tests/workspace_failure.cjs",
+      "sha256": "bf370dc67fb24daf16af786b29f733bae13a69397bbc9e9726e44038f855598e"
+    },
+    {
+      "bytes": 21904,
+      "path": "/private/tmp/forge-f04-chrome-viewport-capture-candidate-v1/candidate/ui/tests/workspace_failure.test.cjs",
+      "retained_path": "candidate/ui/tests/workspace_failure.test.cjs",
+      "sha256": "ad6bc85c66e29caefbf2d67629f2cac21e7c7ea10e5bd6de677831e7a81c0cd6"
+    },
+    {
+      "bytes": 3425603,
+      "path": "/private/tmp/forge-f04-chrome-viewport-capture-candidate-v1/evidence/vendor/playwright-core/lib/coreBundle.js",
+      "retained_path": "inputs/evidence/vendor/playwright-core/lib/coreBundle.js",
+      "sha256": "9393fa79e1c67c74edc26b610d65a4f7ed73d345a762465cc88340a33a2454ac"
+    },
+    {
+      "bytes": 1110840,
+      "path": "/private/tmp/forge-f04-chrome-viewport-capture-candidate-v1/evidence/vendor/playwright-core/types/types.d.ts",
+      "retained_path": "inputs/evidence/vendor/playwright-core/types/types.d.ts",
+      "sha256": "6c688250f2b7061cec3a17ab8797671137b653f8c4e81a6df3190cb112a7579a"
+    },
+    {
+      "bytes": 876,
+      "path": "/private/tmp/forge-f04-chrome-viewport-capture-candidate-v1/evidence/vendor/playwright-core/package.json",
+      "retained_path": "inputs/evidence/vendor/playwright-core/package.json",
+      "sha256": "07c47543631fef9508760365dee9fbe958c562093ec8d122543949ed231f233f"
+    },
+    {
+      "bytes": 38431,
+      "path": "immutable-git:011b6a5499a21a62c138382a83b842edc3c7bc28:scripts/test_workspace_hosted_chrome.py",
+      "retained_path": "inputs/immutable-unchanged/scripts/test_workspace_hosted_chrome.py",
+      "sha256": "c1f5ab39e1c05a7de0b16d6c24a8dea5078ddcab30cb88848cb31f6e46900e76"
+    },
+    {
+      "bytes": 14542,
+      "path": "immutable-git:011b6a5499a21a62c138382a83b842edc3c7bc28:scripts/verify_workspace_hosted_chrome.py",
+      "retained_path": "inputs/immutable-unchanged/scripts/verify_workspace_hosted_chrome.py",
+      "sha256": "a435cdee027a6aa0d058ea756194408f8db438872f4b6a82e1995bc576b62b20"
+    },
+    {
+      "bytes": 79857,
+      "path": "immutable-git:011b6a5499a21a62c138382a83b842edc3c7bc28:scripts/test_verify_workspace_hosted_chrome.py",
+      "retained_path": "inputs/immutable-unchanged/scripts/test_verify_workspace_hosted_chrome.py",
+      "sha256": "8912a9ddf4cab27c22dec322e9b1ab3c986900a4dd4a04e2b1ec715108eca523"
+    },
+    {
+      "bytes": 1010,
+      "path": "immutable-git:011b6a5499a21a62c138382a83b842edc3c7bc28:scripts/workspace_browser_fixtures.py",
+      "retained_path": "inputs/immutable-unchanged/scripts/workspace_browser_fixtures.py",
+      "sha256": "9d2e68369ded2c1dbb1df94bfa74cec15cddb4cf92b75ecec3569a268c9c1364"
+    },
+    {
+      "bytes": 31135,
+      "path": "immutable-git:011b6a5499a21a62c138382a83b842edc3c7bc28:scripts/verify_workspace.py",
+      "retained_path": "inputs/immutable-unchanged/scripts/verify_workspace.py",
+      "sha256": "0d26035645ad18e9e18a81eb3197190aa55a4c4c1d7332f6b345fad043b55ae2"
+    },
+    {
+      "bytes": 18785,
+      "path": "immutable-git:011b6a5499a21a62c138382a83b842edc3c7bc28:scripts/test_workspace_client.py",
+      "retained_path": "inputs/immutable-unchanged/scripts/test_workspace_client.py",
+      "sha256": "440e656067396dca1d2eb1e915e2a9187fc311ea4d016e24ca7b8229291dfc35"
+    },
+    {
+      "bytes": 123394,
+      "path": "immutable-git:011b6a5499a21a62c138382a83b842edc3c7bc28:docs/api/forge-workspace-v1.openapi.yaml",
+      "retained_path": "inputs/immutable-unchanged/docs/api/forge-workspace-v1.openapi.yaml",
+      "sha256": "edfbf9743eb48aef92082fd9276baea8f08413dce84f477b8683775d842b040f"
+    },
+    {
+      "bytes": 10652,
+      "path": "immutable-git:011b6a5499a21a62c138382a83b842edc3c7bc28:.github/workflows/workspace-verification.yml",
+      "retained_path": "inputs/immutable-unchanged/.github/workflows/workspace-verification.yml",
+      "sha256": "ed6c1bc2e42c925d752623aa8ace4840561941547d1b4ed307f99d95e0090145"
+    },
+    {
+      "bytes": 337,
+      "path": "immutable-git:011b6a5499a21a62c138382a83b842edc3c7bc28:ui/package.json",
+      "retained_path": "inputs/immutable-unchanged/ui/package.json",
+      "sha256": "2f64ad726fe0a5ed85bdfbe5effbca856933ffd2ebdaa7ae1479455fa18ec24b"
+    },
+    {
+      "bytes": 1861,
+      "path": "immutable-git:011b6a5499a21a62c138382a83b842edc3c7bc28:ui/package-lock.json",
+      "retained_path": "inputs/immutable-unchanged/ui/package-lock.json",
+      "sha256": "debf63acded76e173ac02f1bccd22fa883ffd9bbf588988bc3c9c1688762d3d1"
+    }
+  ],
+  "fresh_hosted_outcome": null,
+  "full_integrated_end_documentation_review_complete": false,
+  "independent_reviews": [
+    {
+      "bytes": 9160,
+      "path": "/private/tmp/forge-f04-chrome-viewport-independent-source-review-v1/index.json",
+      "scope": "Child-authored two-option/control delta only; no priorAPI/F05/OS authorship correctness or execution credit.",
+      "sha256": "1d486f11931d573b51fabd5aaf5aa793e4e5e5fb066df87a6548601b6176b17c"
+    }
+  ],
+  "limits": [
+    "V8 positive primary ranges establish entry observations, not all-body/statement/branch or nativeUI execution.",
+    "Three mapped-zero named CJS declarations and two absent runtime declarations stay distinct;30 AST callables lack exact mapped V8 records.",
+    "Viewport option does not establish a measured byte/pixel/duration bound or diagnose sixth-failure cause.",
+    "Root originalAST failure ran version/syntax/AST commands, but no mock controls/coverage/native browser or product in that attempt.",
+    "The documentation author/source reviewer receives no independent own-document or old own-source approval credit."
+  ],
+  "mandatory_hook": null,
+  "metadata_replay": {
+    "bytes": 26777,
+    "material_metadata_findings": [],
+    "path": "/private/tmp/forge-f04-chrome-viewport-documents-v1/metadata-review.json",
+    "pure_data_only": true,
+    "sha256": "9c65d2a0456a35f9b13c659d5bc1857965289394c2e3b0c679f369b6f201cc31"
+  },
+  "native_product_browser_executed_locally_by_document_author": false,
+  "node": {
+    "all_zero_primary_and_block_ranges_retained": true,
+    "approved_node": "24.19.0",
+    "cancelled": 0,
+    "failed": 0,
+    "full_body_statement_branch_or_repository_coverage_claim": false,
+    "maintained_UI_interactions_executed": false,
+    "native_browser_or_product_execution": false,
+    "package_install_performed": false,
+    "raw_callable_and_range_dimensions": [
+      {
+        "all_ranges_including_module": 43,
+        "ast_callables": 10,
+        "ast_unmapped": 0,
+        "name": "workspace_failure.cjs",
+        "named": 10,
+        "named_documented": 10,
+        "named_positive": 10,
+        "positive_primary_records": 10,
+        "raw_callable_records": 10,
+        "unobserved_named": [],
+        "zero_primary_records": 0,
+        "zero_ranges": 1
+      },
+      {
+        "all_ranges_including_module": 111,
+        "ast_callables": 90,
+        "ast_unmapped": 0,
+        "name": "workspace_failure.test.cjs",
+        "named": 31,
+        "named_documented": 31,
+        "named_positive": 31,
+        "positive_primary_records": 84,
+        "raw_callable_records": 90,
+        "unobserved_named": [],
+        "zero_primary_records": 6,
+        "zero_ranges": 8
+      },
+      {
+        "all_ranges_including_module": 64,
+        "ast_callables": 86,
+        "ast_unmapped": 30,
+        "name": "workspace.cjs",
+        "named": 5,
+        "named_documented": 5,
+        "named_positive": 0,
+        "positive_primary_records": 2,
+        "raw_callable_records": 56,
+        "unobserved_named": [
+          {
+            "documented": true,
+            "end": 3933,
+            "line": 44,
+            "name": "observeMeasuredOperation",
+            "named_declaration": true,
+            "primary_range_count": 0,
+            "start": 3098,
+            "type": "FunctionDeclaration",
+            "v8_exact_range_matches": 1
+          },
+          {
+            "documented": true,
+            "end": 4296,
+            "line": 57,
+            "name": "queueMeasuredOperation",
+            "named_declaration": true,
+            "primary_range_count": 0,
+            "start": 4023,
+            "type": "FunctionDeclaration",
+            "v8_exact_range_matches": 1
+          },
+          {
+            "documented": true,
+            "end": 6414,
+            "line": 80,
+            "name": "retainRenderedCaptureFacts",
+            "named_declaration": true,
+            "primary_range_count": null,
+            "start": 5662,
+            "type": "FunctionDeclaration",
+            "v8_exact_range_matches": 0
+          },
+          {
+            "documented": true,
+            "end": 51542,
+            "line": 409,
+            "name": "verifyMetadataConsumer",
+            "named_declaration": true,
+            "primary_range_count": 0,
+            "start": 39329,
+            "type": "FunctionDeclaration",
+            "v8_exact_range_matches": 1
+          },
+          {
+            "documented": true,
+            "end": 41959,
+            "line": 421,
+            "name": "measureMetadataLongContent",
+            "named_declaration": true,
+            "primary_range_count": null,
+            "start": 40257,
+            "type": "FunctionDeclaration",
+            "v8_exact_range_matches": 0
+          }
+        ],
+        "zero_primary_records": 54,
+        "zero_ranges": 59
+      }
+    ],
+    "scope": "three mock startup executions and actual-source post-refresh and failure screenshot VM continuations; no UI execution",
+    "selected_named_documented": 41,
+    "selected_named_function_declarations": 41,
+    "selected_named_positive_primary_ranges": 41,
+    "selected_scope": "All10 helper and31 control FunctionDeclaration names, including unchanged declarations; not a claim that41 names were introduced by this delta.",
+    "skipped": 0,
+    "source_before_after_unchanged": true,
+    "source_runtime_package_pins": 181,
+    "tests": 27,
+    "whole_named_documented": 46,
+    "whole_named_function_declarations": 46,
+    "whole_named_positive_primary_ranges": 41
+  },
+  "node_collector_history": {
+    "initial_assertion_AST_exit": 1,
+    "initial_attempt": "inputs/node-v1/receipt.json",
+    "initial_controls_or_coverage_executed": false,
+    "initial_version_and_three_syntax_checks_exit": 0,
+    "native_or_product_execution": false,
+    "old_collectors_logs_and_receipts_preserved": true,
+    "reason": "Collector expected a spaced fullPage literal; actual maintained source is unspaced. Corrected collector v2 retains strict literal/AST equality; candidate bytes unchanged.",
+    "successor_attempt": "inputs/node-v2/receipt.json"
+  },
+  "pending_gates": [
+    "Root document review/managed application/enabled mandatory hook/exact pushed successor identity",
+    "Fresh immutable four-campaign hosted viewport outcome and receipt/source/tool/release/cleanup qualification",
+    "Normative named browser/current-previous/platform/architecture matrix; human keyboard/AT/zoom/accessibility validation",
+    "RemainingAPIfunctional/cancellation/unlock, OS IPv4/IPv6 denial and attempted-egress evidence, capacity/human/security/audit/pilot/release gates",
+    "Final integrated roadmap semantic documentation review/update"
+  ],
+  "preservation": {
+    "failed_AST_collector_preserved": true,
+    "historical_documents": [
+      {
+        "bytes": 17836,
+        "immutable_commit": "011b6a5499a21a62c138382a83b842edc3c7bc28",
+        "repository_path": "docs/plans/2026-10-02-f04-hosted-chrome-control-audit-v6.json",
+        "sha256": "d0143d7687714170e41d022c3bec41b7402b92fe754c8b4931915056754b5d0e"
+      },
+      {
+        "bytes": 19105,
+        "immutable_commit": "011b6a5499a21a62c138382a83b842edc3c7bc28",
+        "repository_path": "docs/plans/2026-10-02-f04-hosted-chrome-control-audit-v7.json",
+        "sha256": "28b2b0f2b8970b2a35c141869c3e8edc034ec89145d3e6d73656be284973a208"
+      },
+      {
+        "bytes": 7197,
+        "immutable_commit": "011b6a5499a21a62c138382a83b842edc3c7bc28",
+        "repository_path": "docs/plans/2026-10-02-f04-hosted-chrome-screenshot-diagnostics.md",
+        "sha256": "3002e979a4004fbfb6c84d7c3c4ace898d33ff3b57f2dea28e3f93a01fcc901f"
+      }
+    ],
+    "historical_source_candidate_and_source_review_not_rewritten": true,
+    "qualified_sixth_receipt_not_backfilled": true,
+    "raw_V8_preserves_all_zero_and_absent_mappings": true,
+    "unchanged_helper": {
+      "bytes": 4620,
+      "sha256": "bf370dc67fb24daf16af786b29f733bae13a69397bbc9e9726e44038f855598e"
+    }
+  },
+  "protocols": {
+    "browser_failure": "forge.workspace-browser-failure/3",
+    "producer": "forge.hosted-chrome-smoke/4",
+    "shared_API_client": "unchanged API receipt and maintained-client /2",
+    "wrapper": "forge.workspace-hosted-chrome-verification/5"
+  },
+  "python": {
+    "all_zero_rows_retained": true,
+    "rerun_in_this_slice": false,
+    "source_basis": "Three Python producer/wrapper/control files and unchanged fixture retained from immutable011; prior66-control evidence is separate, with no new Node-to-Python credit.",
+    "unchanged_root_historical_scope": {
+      "calls": 138,
+      "controls": 66,
+      "docs": 140,
+      "physical_positive": 1066,
+      "physical_total": 1309,
+      "rerun_or_node_credit": false,
+      "zeros": 243
+    },
+    "whole_body_branch_thread_native_claim": false
+  },
+  "qualified_native_history": {
+    "API_sibling_separate_scope": "39 declared =23 observed+16 unobserved;9 contract/22 workflow/16 client groups. No browser or full-CI credit.",
+    "cause": "unknown",
+    "complete_prerequisite_pass": false,
+    "failed_row": {
+      "assertion_operator": null,
+      "await_step": null,
+      "category": "unclassified",
+      "node_exit_code": 1,
+      "stage": "metadata-screenshot"
+    },
+    "failed_row_cleanup_forced": true,
+    "failed_row_observation": null,
+    "failed_row_observation_credit": false,
+    "failed_rows": 1,
+    "fresh_viewport_successor_outcome": null,
+    "historical_protocols": {
+      "failure": 3,
+      "producer": 4,
+      "wrapper": 5
+    },
+    "job_id": 111082162322,
+    "ordinal": 6,
+    "passed_rows": 3,
+    "producer_actual_exit": 1,
+    "qualified_source_inputs": 28,
+    "requested_base": "058bb47b81316c4f6aecc8e855111df4709a34d2",
+    "requested_head": "011b6a5499a21a62c138382a83b842edc3c7bc28",
+    "run": 37081290058,
+    "screenshot_hypothesis_is_native_cause": false,
+    "tested_merge": "b12587551f6f71fc760ae432e660d3d30e73a62f",
+    "wrapper_actual_exit": 2
+  },
+  "role": "Documents authored by f07_manifest; pure retained-data metadata replay and bounded source review of child-authored viewport delta. Root independently reviews these documents and owns all integration/execution.",
+  "schema": "forge.f04-hosted-chrome-control-audit/8",
+  "snapshot": "TEMP viewport source/control/metadata successor before managed application or mandatory hook",
+  "source_author": "f04_receipt_reader_review",
+  "source_delta": {
+    "changed_control_documented": true,
+    "changed_existing_control": "postRefreshScreenshotSuccessKeepsOptionsAndPhase",
+    "controls": "Original24 remain:23 exact and1 documented expected-option adapter;3 new registered controls and1 new extraction helper.",
+    "main_CJS": "Only two fullPage:true literals become false at the existing optional post-refresh/failure captures; all other main bytes exact.",
+    "new_named_functions": [
+      "actualFailureCaptureFragment",
+      "failureViewportCaptureKeepsPrimaryFault",
+      "failureViewportCaptureSkipsMissingPage",
+      "postRefreshViewportCaptureIsOptional"
+    ],
+    "new_named_functions_documented": 4
+  },
+  "viewport_semantics": {
+    "meaning": "Current viewport rather than full scrollable extents; retained vendor captureBeyondViewport:false path.",
+    "native_byte_pixel_time_bound_measured": false,
+    "option": "fullPage:false",
+    "original_deadlines_cleanup_and_pass_predicates_unchanged": true,
+    "private_not_uploaded": true,
+    "screenshot_failure_success_bypass": false,
+    "screenshot_remains_awaited": true,
+    "vendor": "Pinned approved Playwright-core1.62.1 archive source"
+  }
+}

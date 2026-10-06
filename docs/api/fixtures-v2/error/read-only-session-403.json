@@ -1,0 +1,6 @@
+{
+  "code": "read-only-session",
+  "message": "This session is read-only and cannot modify project files.",
+  "retryable": false,
+  "correlation_id": "corr_2e3d4c5b6a7f"
+}

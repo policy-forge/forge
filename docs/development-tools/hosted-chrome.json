@@ -1,0 +1,135 @@
+{
+  "schema_version": "forge.development-tool-supply-chain/1",
+  "scope": "F04 hosted installed-Chrome development and test only",
+  "approval": {
+    "status": "approved",
+    "approved_by": "human user in this Codex chat",
+    "approval_date": "2026-10-02",
+    "reason": "Establish hosted named-Chrome execution of the existing embedded workspace browser suites under a confined exact development graph.",
+    "proposal_index_sha256": "88c7edb3c281453b75d76bb86f0852a08e546c36cfe2f80a163426c69046cdb1",
+    "approval_receipt_sha256": "c640c3c9743f0b68c39146825cc5f07702526349059f24ecdd7077baa36b2661",
+    "introducing_pr": "record this explicit user approval in the introducing pull request"
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "npm": "11.17.0"
+  },
+  "packages": [
+    {
+      "name": "playwright",
+      "version": "1.62.1",
+      "archive": "https://registry.npmjs.org/playwright/-/playwright-1.62.1.tgz",
+      "integrity": "sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg==",
+      "archive_sha256": "1982556a882b246ccb7c16337fab5e4e790292b69f835a2db1011dddc440ed98",
+      "license": "Apache-2.0",
+      "optional": false,
+      "installed_in_root_local_qualification": true
+    },
+    {
+      "name": "playwright-core",
+      "version": "1.62.1",
+      "archive": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.62.1.tgz",
+      "integrity": "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==",
+      "archive_sha256": "954be1e183d0ddb9748fe0d2d08b0b66a9210c74dd75c397aeb70303b9f08a00",
+      "license": "Apache-2.0",
+      "optional": false,
+      "installed_in_root_local_qualification": true
+    },
+    {
+      "name": "fsevents",
+      "version": "2.3.2",
+      "archive": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.2.tgz",
+      "integrity": "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==",
+      "archive_sha256": "e17ade950c193fe09adfc7915fe29ac26166c8782d00e7c3879e7e9de02c5428",
+      "license": "MIT",
+      "optional": true,
+      "installed_in_root_local_qualification": false
+    }
+  ],
+  "provisioning": {
+    "install": "npm ci --include=dev --omit=optional --ignore-scripts --no-audit --no-fund",
+    "node_path": "empty; actual UI-local resolved entry points and complete installed package trees required",
+    "browser": "runner-installed Google Chrome ELF /opt/google/chrome/chrome; actual product/version/hash recorded",
+    "separate_browser_downloads": false,
+    "ffmpeg_downloads": false
+  },
+  "qualification": {
+    "historical_lock": "Metadata-derived original debf63ac... retained separately; root exact npm11.17 ci subsequently accepted it without changing bytes.",
+    "source_integrity": "Root verified all three archives against declared SHA512 and all installed regular package bytes against the two authentic archives; optional fsevents was omitted.",
+    "approval_scope": "Human approval covers introduction of this development graph and installed-Chrome provisioning only.",
+    "audit_acceptance": false,
+    "remaining": [
+      "accepted dependency source audit/advisory disposition",
+      "named browser/platform/architecture matrix",
+      "actual OS IPv4/IPv6 external denial",
+      "automated accessibility engine and manual keyboard/screen reader/zoom",
+      "human product study/security acceptance",
+      "release and final integrated roadmap documentation review"
+    ]
+  },
+  "qualified_installed_package_trees": {
+    "method": "SHA256 of compact JSON rows sorted by ASCII relative path, exact row keys path/bytes/sha256; all regular archive/installed files retained",
+    "packages": [
+      {
+        "name": "playwright",
+        "files": 62,
+        "bytes": 5074152,
+        "tree_sha256": "9ee6148648dadfc07e7fee9ed2b15920ae484893274e95c288ae585a180c4854",
+        "entry": {
+          "bytes": 648,
+          "sha256": "4e98f65f0a9d9bcab8cffc0c5cfdd87fd3f5b0be74fc494ff166a466b204cd44"
+        },
+        "manifest": {
+          "bytes": 1416,
+          "sha256": "ca170ec143a88ed3043ac953eb3b2377b2b97304104f4e1e23316684ce2c35af"
+        }
+      },
+      {
+        "name": "playwright-core",
+        "files": 111,
+        "bytes": 13442086,
+        "tree_sha256": "a65256c92ef0d1e71762a541bf7bc643869b758aa900ab6c33db7362c88b7914",
+        "entry": {
+          "bytes": 697,
+          "sha256": "a58fb2cec4293e7dcf73c58a179898a4f3986666451a19da4e731fa3af63265b"
+        },
+        "manifest": {
+          "bytes": 876,
+          "sha256": "07c47543631fef9508760365dee9fbe958c562093ec8d122543949ed231f233f"
+        }
+      }
+    ],
+    "source_receipt_sha256": "ccd22ccff67ccb0cb764ef8d6f42eef4c9299c7299d1c9193699748873e2c099"
+  },
+  "advisory_snapshot": {
+    "query_completed_utc": "2026-10-02T20:44:59.668339+00:00",
+    "command_scope": "npm 11.17.0 audit --package-lock-only --include=dev --include=optional; no install or lifecycle execution",
+    "exit_code": 0,
+    "reported_vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "dependency_metadata": {
+      "prod": 1,
+      "dev": 3,
+      "optional": 1,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 3
+    },
+    "metadata_qualification": "npm categories overlap; total/dev/optional are not additive; optional fsevents is locked but not installed",
+    "receipt": {
+      "bytes": 2476,
+      "sha256": "742b786e795592d38b0db0fb1a4e8738a88e6acdb8e068d0d8126315e3cd5a66"
+    },
+    "report": {
+      "bytes": 358,
+      "sha256": "a01267e7d3023badd5d4b64f1d798707912523aeba3545b611eaaa83ee261353"
+    },
+    "acceptance": "advisory database snapshot only; no source audit, human D069 disposition or product safety claim"
+  }
+}

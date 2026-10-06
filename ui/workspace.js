@@ -1,6 +1,11 @@
 // @ts-check
 // The document contains no project data. All reads use the supported local API.
 const element = (id) => document.getElementById(id);
+// Only a server-selected supported major can own this page's local requests.
+const declaredApiMajor = document.querySelector('meta[name="forge-api-major"]')?.getAttribute("content");
+const apiMajor = declaredApiMajor === "1" ? 1 : declaredApiMajor === "2" ? 2 : null;
+const apiContractVersion = document.querySelector('meta[name="forge-api-contract-version"]')?.getAttribute("content");
+const apiPrefix = `/api/v${apiMajor}`;
 let capability = "";
 let activeView = "Overview";
 let stopped = false;
@@ -20,7 +25,13 @@ const requestRows = new Map();
 const retainedPagers = new WeakMap();
 // Installed metadata callbacks retire local disclosure ownership on every view epoch.
 const bundlePanels = new WeakMap();
-const titles = ["Overview", "Review Queue", "Framework Scope", "Mappings", "Policies & Artifacts", "Trace & Reports"];
+// Only committed metadata/source downloads retain locally revocable Blob handles.
+const metadataDownloadURLs = new Set();
+// Public outcome IDs survive view changes; no receipt or credential is persisted.
+const sourceRestoreRows = new Map();
+// Captured S3 pane reads retire independently when a parent selection/date changes.
+const inspectionReaders = new WeakMap();
+const titles = ["Overview", "Review Queue", "Framework Scope", "Mappings", "Policies & Artifacts", "Trace & Reports", ...(inspectionSupported() ? ["Lifecycle & Impact"] : [])];
 
 function node(tag, text, className) {
   const result = document.createElement(tag);
@@ -39,20 +50,21 @@ function showError(error) {
   box.focus();
 }
 
-/** Preserve ordinary JSON requests while allowing one documented bounded raw-file query. */
+/** Send declared API1/supported API2 calls; preserve exact metadata/source raw bodies and pacing fences. */
 async function api(path, method = "GET", body, key, rawBody, rawIsCurrent) {
-  if (rawBody !== undefined && (path !== "/project/bundle-verifications" || method !== "POST" || !(rawBody instanceof Blob) || rawBody.size > 1024 * 1024)) throw new Error("Unsupported raw metadata comparison request.");
+  if (![1, 2].includes(apiMajor) || apiMajor === 2 && !["2.0.0", "2.1.0", "2.2.0", "2.3.0", "2.4.0"].includes(apiContractVersion)) throw new Error("This page requires matching supported workspace API assets. Relaunch with the selected API major.");
+  if (rawBody !== undefined && (method !== "POST" || !(rawBody instanceof Blob) || rawBody.size > 1024 * 1024 || !(path === "/project/bundle-verifications" && !key || path === "/project/bundle-imports" && bundleEffectsSupported() && !!key || path === "/project/source-bundle-imports" && sourceBundleEffectsSupported() && !!key))) throw new Error("Unsupported raw metadata request.");
   const now=performance.now();const reserved=Math.max(now,nextRequestAt);nextRequestAt=reserved+60;
   if(reserved>now)await new Promise(resolve=>setTimeout(resolve,reserved-now));
   if (stopped) throw new Error("This workspace has stopped. Relaunch it from the terminal.");
-  if (rawBody !== undefined && rawIsCurrent && !rawIsCurrent()) throw new Error("The metadata comparison was superseded before sending.");
+  if (rawIsCurrent && !rawIsCurrent()) throw new Error("The metadata comparison was superseded before sending.");
   const headers = { "Accept": "application/json" };
   if (capability) headers["Authorization"] = `Bearer ${capability}`;
   if (method !== "GET") headers["Content-Type"] = "application/json";
   if (key) headers["Idempotency-Key"] = key;
   let response;
   try {
-    response = await fetch(`/api/v1${path}`, {method, headers, body: method === "GET" ? undefined : rawBody ?? JSON.stringify(body ?? {}), cache: "no-store", credentials: "omit", redirect: "error", referrerPolicy: "no-referrer"});
+    response = await fetch(`${apiPrefix}${path}`, {method, headers, body: method === "GET" ? undefined : rawBody ?? JSON.stringify(body ?? {}), cache: "no-store", credentials: "omit", redirect: "error", referrerPolicy: "no-referrer"});
   } catch {
     throw new Error("The local workspace is unavailable. Check its terminal before retrying.");
   }
@@ -184,7 +196,7 @@ async function pagedTable(path, caption, columns, filters = []) {
   await load(0, cursors, applied); return section;
 }
 
-/** Install only an owned live view; dismissed write previews cannot publish a late refresh. */
+/** Install only an owned live view, including gated S3 reads; dismissed write previews cannot publish a late refresh. */
 async function renderView(isCurrent = () => true) {
   if (stopped || !isCurrent()) return false;
   invalidateBundlePanels();
@@ -220,7 +232,7 @@ async function renderView(isCurrent = () => true) {
       const rows = await collection("/resources");
       const visible=rows.filter(row=>(!viewFilters.validation_state||row.validation_state===viewFilters.validation_state)&&(!viewFilters.stale||String(row.stale)===viewFilters.stale));
       if(Object.keys(viewFilters).length)fragment.append(node("p",`Showing ${visible.length} matching resources of ${rows.length} registered.`),button("Show all resources",()=>navigate("Policies & Artifacts")));
-      fragment.append(visible.length ? table("Registered project files", [["Key","key"],["Role","role"],["Path","path"],["Validation","validation_state"]], visible) : node("p", "No matching registered files. Unregistered files are never scanned.", "empty"));
+      fragment.append(visible.length ? table("Registered project files", [["Key","key"],["Role","role"],["Path","path"],["Validation","validation_state"],...(apiMajor === 2 ? [["Admission profile","validation_profile"]] : [])], visible) : node("p", "No matching registered files. Unregistered files are never scanned.", "empty"));
       fragment.append(evidenceList(visible.map(row=>({...row,label:row.key,provenance_ref:row.resource_id}))));
       fragment.append(resourceActions(rows));
     } else if (activeView === "Review Queue") {
@@ -236,12 +248,16 @@ async function renderView(isCurrent = () => true) {
       try {fragment.append(await pagedTable("/mapping/subjects","Policy and framework subjects",[["Side","side"],["Subject","subject_id"],["Label","label"]],[["side","Side",["policy","framework"]]]));}
       catch(error) {fragment.append(node("p",error.message));}
       fragment.append(await draftEditor("mapping"));
+    } else if (activeView === "Lifecycle & Impact") {
+      fragment.append(await lifecycleImpactView());
     } else {
       const resources = await collection("/resources");
       fragment.append(node("p", "Select a registered resource to inspect its source and decision references."));
       for (const resource of resources) fragment.append(button(`Trace ${resource.key}`, () => showProvenance(resource.resource_id)));
       if (!readOnly) fragment.append(exportForm());
       fragment.append(metadataBundlePanel());
+      if (bundleEffectsSupported()) fragment.append(bundleEffectsPanel());
+      if (sourceBundleEffectsSupported()) fragment.append(sourceBundleEffectsPanel());
     }
     if (sequence !== pending || stopped || !isCurrent()) return false;
     element("view").replaceChildren(fragment);
@@ -259,6 +275,435 @@ async function renderView(isCurrent = () => true) {
       for (const section of element("view").querySelectorAll("[data-paged-table]")) retainedPagers.get(section)?.();
     }
   } }
+}
+
+/** Keep S3 reads available across their consumed additive2.1/2.2/2.3 contracts. */
+function inspectionSupported() {
+  return apiMajor === 2 && ["2.1.0", "2.2.0", "2.3.0", "2.4.0"].includes(apiContractVersion);
+}
+
+/** Validate only the exact typed identifiers/capture hashes consumed by S3 read controls. */
+function inspectionIdentity(value, hash = false) {
+  return typeof value === "string" && (hash ? /^[0-9a-f]{64}$/.test(value) : /^res_[0-9a-z]{12,80}$/.test(value));
+}
+
+/** Require consumed nullable/metadata fields explicitly rather than treating omission as null. */
+function inspectionRequired(value, fields) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || fields.some(key => !Object.hasOwn(value, key))) throw new Error("The read omitted required captured metadata. Retry this read.");
+}
+
+/** Preserve every subject/hash pair in a bounded response using one escaped text region, not unbounded DOM rows. */
+function inspectionSubjects(caption, values) {
+  if (!Array.isArray(values) || values.length > 100000) throw new Error("The read returned unsupported subject fingerprints.");
+  if (values.some(value => typeof value?.id !== "string" || !inspectionIdentity(value.sha256, true))) throw new Error("The read returned unsupported subject fingerprint types.");
+  const section = node("section"); section.append(node("h4", `${caption}: ${values.length} fingerprints`), node("pre", values.map(value => `${inspectionValue(value.id)} · ${inspectionValue(value.sha256)}`).join("\n") || "None")); return section;
+}
+
+/** Display declared scalar metadata without serializing unknown objects or source-bearing fields. */
+function inspectionValue(value) {
+  return typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? String(value) : "—";
+}
+
+/** Display only explicit scalar identity tokens from a declared metadata array. */
+function inspectionTokens(values) {
+  return Array.isArray(values) ? values.map(inspectionValue).join(", ") || "None declared" : "—";
+}
+
+/** Build escaped labelled metadata; callers select every visible field explicitly. */
+function inspectionMetadata(caption, entries) {
+  const section = node("section"); section.append(node("h3", caption));
+  const list = node("dl");
+  for (const [label, value] of entries) list.append(node("dt", label), node("dd", inspectionValue(value)));
+  section.append(list); return section;
+}
+
+/** Validate a complete unfiltered ChangeSummary before rendering distinct integer scopes. */
+function inspectionSummary(summary) {
+  const labels = [["old_controls", "Old controls"], ["new_controls", "New controls"], ["added", "Added"], ["removed", "Removed"],
+    ["content_changed", "Content changed"], ["identity_migrated", "Identity migrated"], ["unchanged", "Unchanged"],
+    ["findings", "Findings"], ["blocking", "Blocking"], ["review_required", "Review required"], ["informational", "Informational"],
+    ["dispositioned_resolved", "Resolved dispositions"], ["dispositioned_accepted_risk", "Accepted-risk dispositions"],
+    ["dispositioned_still_open", "Still-open dispositions"], ["undispositioned", "Undispositioned"]];
+  if (!summary || labels.some(([key]) => !Number.isSafeInteger(summary[key]) || summary[key] < 0 || summary[key] > 100000)) throw new Error("The comparison returned unsupported full summary metadata. Retry this capture.");
+  return table("Complete unfiltered comparison summary", [["Measure", "measure"], ["Count", "count"]], labels.map(([key, measure]) => ({measure, count: summary[key]})));
+}
+
+/** Show only redacted captured registration provenance, never source text or parser diagnostics. */
+function inspectionProvenance(rows) {
+  if (!Array.isArray(rows) || rows.length > 1000 || rows.some(row => !inspectionIdentity(row?.resource_id) || !inspectionIdentity(row.sha256, true) || !Number.isSafeInteger(row.size_bytes) || row.size_bytes < 0 || row.size_bytes > 10485760)) throw new Error("The read returned unsupported provenance metadata.");
+  return table("Captured registered provenance", [["Resource", "resource_id"], ["Role", "role"], ["SHA-256", "sha256"], ["Bytes", "size_bytes"], ["Admission", "validation_state"]], rows);
+}
+
+/** Show declared/computed fingerprint identities without href, title, rationale or party prose. */
+function inspectionPair(label, value) {
+  if (value !== null) {
+    inspectionRequired(value, ["resource_id", "resource_type", "raw_sha256", "root_uuid", "document_version", "oscal_version", "resolved_catalog_sha256", "resolved_catalog_resource_id"]);
+    if (!inspectionIdentity(value.resource_id) || !inspectionIdentity(value.raw_sha256, true) || !["catalog", "profile"].includes(value.resource_type) ||
+        value.resource_type === "catalog" && (value.resolved_catalog_sha256 !== null || value.resolved_catalog_resource_id !== null) ||
+        value.resource_type === "profile" && (!inspectionIdentity(value.resolved_catalog_sha256, true) || !inspectionIdentity(value.resolved_catalog_resource_id))) throw new Error("The comparison returned unsupported fingerprint identity types.");
+  }
+  return inspectionMetadata(label, [["Resource", value?.resource_id], ["Type", value?.resource_type], ["Raw SHA-256", value?.raw_sha256],
+    ["Root UUID", value?.root_uuid], ["Document version", value?.document_version], ["OSCAL version", value?.oscal_version],
+    ["Resolved catalog SHA-256", value?.resolved_catalog_sha256], ["Resolved catalog resource", value?.resolved_catalog_resource_id]]);
+}
+
+/** Render only lifecycle fingerprint hashes and captured identity metadata. */
+function inspectionFingerprints(label, value) {
+  if (value === null) return node("p", `${label}: no declared fingerprint set.`);
+  const section = inspectionMetadata(label, [["Source SHA-256", value?.source_sha256]]);
+  if (value && (!inspectionIdentity(value.source_sha256, true) || !Array.isArray(value.generated_artifacts) || value.generated_artifacts.length > 128 || value.generated_artifacts.some(item => typeof item?.path !== "string" || !inspectionIdentity(item.sha256, true)))) throw new Error("The record returned unsupported fingerprint metadata.");
+  section.append(table(`${label}: generated artifacts`, [["Declared relative identity", "path"], ["SHA-256", "sha256"]], value?.generated_artifacts || []));
+  return section;
+}
+
+/** Keep unresolved lifecycle finding tokens separate from any selected impact comparison. */
+function inspectionReferences(values) {
+  if (!Array.isArray(values) || values.some(value => typeof value?.finding_id !== "string" || value.binding !== "unresolved")) throw new Error("The record returned unsupported impact references.");
+  const section = node("section"); section.append(node("h3", "Unresolved impact references"),
+    node("p", "Finding identifiers have no comparison pair here. They are not joined to a comparison or treated as approval."));
+  if (values.length > 131072) throw new Error("The record returned unsupported impact reference counts.");
+  section.append(node("pre", values.map(value => `${inspectionValue(value.finding_id)} · unresolved`).join("\n") || "None declared"));
+  return section;
+}
+
+/** Validate one page's capture/count metadata; filters use this response's complete counts only. */
+function checkedInspectionPage(response, kind, query, context) {
+  const page = checkedPage(response, 50);
+  inspectionRequired(response, ["resource_version", "snapshot_version", "availability", "page", "counts"]);
+  if (!inspectionIdentity(response.snapshot_version, true) || !inspectionIdentity(response.resource_version, true) ||
+      !["absent-index", "index-upgrade-required", "empty", "available", "needs-attention"].includes(response.availability) ||
+      page.next_cursor && page.next_cursor.length > 256) throw new Error("The inspection returned unsupported capture metadata.");
+  if (context?.snapshot_version && response.snapshot_version !== context.snapshot_version) {
+    const error = new Error("The capture changed. Reload the selected record or comparison before continuing."); error.details = {code:"version-conflict"}; throw error;
+  }
+  const ceiling = {records:1000, history:1024, queue:64000, comparisons:1000, changes:100000, findings:100000, prior:100000}[kind];
+  const keys = {records:["registered_records", "matching_records", "unavailable_records"], history:["total_events"],
+    queue:["distinct_records", "total_owner_placements", "matching_owner_placements", "total_groups", "matching_groups"],
+    comparisons:["registered_comparisons", "unavailable_comparisons"], changes:["total_changes", "matching_changes"],
+    findings:["total_findings", "matching_findings"], prior:["total_prior_dispositions"]}[kind];
+  if (!keys || keys.some(key => !Number.isSafeInteger(response.counts?.[key]) || response.counts[key] < 0 || response.counts[key] > (key === "distinct_records" ? 1000 : ceiling))) throw new Error("The inspection returned unsupported whole-scope counts.");
+  const matching = {records:"matching_records", history:"total_events", queue:"matching_owner_placements", comparisons:"registered_comparisons", changes:"matching_changes", findings:"matching_findings", prior:"total_prior_dispositions"}[kind];
+  const total = {records:"registered_records", history:"total_events", queue:"total_owner_placements", comparisons:"registered_comparisons", changes:"total_changes", findings:"total_findings", prior:"total_prior_dispositions"}[kind];
+  if (response.counts[matching] !== page.total_matching || response.counts[total] < page.total_matching ||
+      kind === "records" && response.counts.unavailable_records > response.counts.registered_records ||
+      kind === "comparisons" && response.counts.unavailable_comparisons > response.counts.registered_comparisons ||
+      kind === "queue" && (response.counts.distinct_records > response.counts.total_owner_placements || response.counts.matching_groups > response.counts.total_groups)) throw new Error("The inspection counts could not be reconciled. Retry the read.");
+  if (kind === "history" && (response.record_id !== context.record_id || response.as_of !== null)) throw new Error("The history belongs to a different registered record or date context.");
+  if ((kind === "records" || kind === "queue") && response.as_of !== (query.as_of || null)) throw new Error("The inspection returned a different explicit review date.");
+  if (kind === "records" && !query.as_of && page.items.some(item => item.derived_status !== null)) throw new Error("An inventory without a date cannot report computed lifecycle status.");
+  if (["changes", "findings", "prior"].includes(kind) && (response.comparison_id !== context.comparison_id || response.comparison_version !== context.resource_version)) throw new Error("The inspection returned a foreign comparison context.");
+  if (kind === "findings") {
+    inspectionSummary(response.full_summary);
+    const summaryKeys = ["old_controls", "new_controls", "added", "removed", "content_changed", "identity_migrated", "unchanged", "findings", "blocking", "review_required", "informational", "dispositioned_resolved", "dispositioned_accepted_risk", "dispositioned_still_open", "undispositioned"];
+    const dispositionKeys = ["resolved", "accepted_risk", "still_open", "undispositioned"];
+    if (summaryKeys.some(key => response.full_summary[key] !== context.summary[key]) || response.full_summary.findings !== response.counts.total_findings ||
+        dispositionKeys.some(key => !Number.isSafeInteger(response.emitted_dispositions?.[key]) || response.emitted_dispositions[key] < 0) ||
+        dispositionKeys.reduce((sum, key) => sum + response.emitted_dispositions[key], 0) !== response.counts.matching_findings) throw new Error("The filtered finding scope does not reconcile with the complete comparison summary.");
+    if (page.items.some(item => item.comparison_id !== context.comparison_id || item.comparison_version !== context.resource_version)) throw new Error("A finding belongs to a different comparison pair or capture.");
+  }
+  const rowFields = {records:["record_id", "record_version", "resource_id", "policy_key", "version_key", "state", "derived_status", "owner_keys", "next_review_date", "availability", "diagnostic_code", "validation_state"],
+    history:["event_id", "sequence", "timestamp", "previous_state", "next_state", "actor_key", "declared_role", "assertions", "impact_references", "replacement"],
+    queue:["record_id", "resource_id", "owner_key", "next_review_date", "policy_key", "version_key", "state", "derived_status", "blockers"],
+    comparisons:["comparison_id", "resource_id", "manifest_sha256", "old", "new", "availability", "diagnostic_code", "freshness"],
+    changes:["subject_id", "change_class", "old_sha256", "new_sha256", "old_subjects", "new_subjects", "migration"],
+    findings:["finding_id", "comparison_id", "comparison_version", "priority", "reason_code", "required_action", "subject_id", "change_class", "old_sha256", "new_sha256", "old_subjects", "new_subjects", "migration", "framework_groups", "affected_artifact_id", "dependency_id", "policy_resource_identity", "prior_gap_classification", "prior_decision_state", "owner", "policy_sources", "disposition"],
+    prior:["finding_id", "status", "decided_by", "decided_at"]};
+  for (const item of page.items) {
+    inspectionRequired(item, rowFields[kind]);
+    if (["records", "queue"].includes(kind) && (!inspectionIdentity(item.record_id) || !inspectionIdentity(item.resource_id)) ||
+        kind === "comparisons" && (!inspectionIdentity(item.comparison_id) || !inspectionIdentity(item.resource_id))) throw new Error("The inspection returned an unsupported registered identity.");
+  }
+  return page;
+}
+
+/** Label every entity-specific count without conflating distinct records, placements, groups or filtered findings. */
+function inspectionCounts(response, kind) {
+  const labels = {records:[["registered_records", "registered records"], ["matching_records", "matching records"], ["unavailable_records", "unavailable records"]],
+    history:[["total_events", "recorded events"]], queue:[["distinct_records", "distinct records"], ["total_owner_placements", "total owner placements"], ["matching_owner_placements", "matching owner placements"], ["total_groups", "total owner groups"], ["matching_groups", "matching owner groups"]],
+    comparisons:[["registered_comparisons", "registered comparisons"], ["unavailable_comparisons", "unavailable comparisons"]],
+    changes:[["total_changes", "complete changes"], ["matching_changes", "matching changes"]], findings:[["total_findings", "complete findings"], ["matching_findings", "matching findings"]], prior:[["total_prior_dispositions", "prior-only dispositions"]]};
+  return labels[kind].map(([key, label]) => `${response.counts[key]} ${label}`).join(" · ");
+}
+
+/** Render bounded selected rows from explicit metadata allowlists; all strings use textContent. */
+function inspectionRows(kind, rows, select) {
+  const display = node("div");
+  if (!rows.length) {display.append(node("p", "No matching metadata rows.", "empty")); return display;}
+  if (kind === "queue") {
+    const groups = new Map();
+    for (const row of rows) {if (!groups.has(row.owner_key)) groups.set(row.owner_key, []); groups.get(row.owner_key).push(row);}
+    for (const [owner, items] of groups) {
+      display.append(node("h3", `Declared owner ${inspectionValue(owner)} — this page's placements`),
+        table("Lifecycle owner placements on this page", [["Record", "record_id"], ["Policy", "policy_key"], ["Version", "version_key"], ["Stored state", "state"], ["Computed status", "derived_status"], ["Next review", "next_review_date"], ["Blockers", "blockers"]], items.map(item => ({...item, blockers:inspectionTokens(item.blockers)}))));
+      for (const item of items) display.append(button(`Inspect record ${item.record_id}`, () => select(item.record_id)));
+    }
+    return display;
+  }
+  for (const row of rows) {
+    const article = node("article");
+    if (kind === "records") {
+      article.append(inspectionMetadata(`Recorded lifecycle ${row.record_id}`, [["Registered resource", row.resource_id], ["Record version", row.record_version], ["Policy key", row.policy_key], ["Version key", row.version_key], ["Stored state", row.state], ["Computed status", row.derived_status === null ? "Not computed without an explicit date" : row.derived_status], ["Declared owners", inspectionTokens(row.owner_keys)], ["Next review", row.next_review_date], ["Availability", row.availability], ["Admission", row.validation_state], ["Diagnostic code", row.diagnostic_code]]), button(`Inspect record ${row.record_id}`, () => select(row.record_id)));
+    } else if (kind === "comparisons") {
+      article.append(inspectionMetadata(`Declared comparison ${row.comparison_id}`, [["Registered manifest", row.resource_id], ["Manifest SHA-256", row.manifest_sha256], ["Availability", row.availability], ["Diagnostic code", row.diagnostic_code], ["Freshness", "Not computed from inventory"]]), inspectionPair("Declared old fingerprint", row.old), inspectionPair("Declared new fingerprint", row.new), button(`Inspect comparison ${row.comparison_id}`, () => select(row.comparison_id)));
+    } else if (kind === "history") {
+      article.append(inspectionMetadata(`Recorded transition ${row.event_id}`, [["Sequence", row.sequence], ["Timestamp", row.timestamp], ["Previous state", row.previous_state], ["Next state", row.next_state], ["Declared actor", row.actor_key], ["Declared role", row.declared_role], ["Replacement policy", row.replacement?.policy_key], ["Replacement version", row.replacement?.version_key]]),
+        table("Declared transition assertions", [["Actor key", "actor_key"], ["Declared role", "declared_role"]], row.assertions || []), inspectionReferences(row.impact_references || []));
+    } else if (kind === "changes" || kind === "findings") {
+      article.append(inspectionMetadata(kind === "findings" ? `Finding ${row.finding_id}` : `Change ${row.subject_id}`, [...(kind === "findings" ? [["Comparison", row.comparison_id], ["Comparison version", row.comparison_version]] : []), ["Subject", row.subject_id], ["Change class", row.change_class], ["Old SHA-256", row.old_sha256], ["New SHA-256", row.new_sha256]]),
+        inspectionSubjects("Old subject fingerprints", row.old_subjects), inspectionSubjects("New subject fingerprints", row.new_subjects));
+      if (row.migration) article.append(inspectionMetadata("Declared migration metadata", [["Relationship", row.migration.relationship], ["Declared approver", row.migration.approved_by], ["Recorded approval time", row.migration.approved_at]]));
+      if (kind === "findings") article.append(inspectionMetadata("Finding review metadata", [["Priority", row.priority], ["Reason code", row.reason_code], ["Required action", row.required_action], ["Framework groups", inspectionTokens(row.framework_groups)], ["Affected artifact", row.affected_artifact_id], ["Dependency", row.dependency_id], ["Policy resource identity", row.policy_resource_identity], ["Prior gap classification", row.prior_gap_classification], ["Prior decision state", row.prior_decision_state], ["Declared owner", row.owner], ["Policy source identities", inspectionTokens(row.policy_sources)], ["Disposition", row.disposition?.status], ["Declared decision actor", row.disposition?.decided_by], ["Recorded decision time", row.disposition?.decided_at]]));
+    } else if (kind === "prior") article.append(inspectionMetadata(`Prior-only disposition ${row.finding_id}`, [["Status", row.status], ["Declared decision actor", row.decided_by], ["Recorded decision time", row.decided_at]]));
+    display.append(article);
+  }
+  return display;
+}
+
+/** Retire only in-flight S3 child reads when their parent starts a successor capture. */
+function retireInspectionChildren(container) {
+  for (const section of container.querySelectorAll("[data-inspection-page]")) inspectionReaders.get(section)?.();
+}
+
+/** Own one bounded S3 page chain without changing the legacy pager or its denominator rules. */
+function inspectionPage(path, caption, kind, initialQuery = {}, options = {}) {
+  let owner = pending; let generation = 0; let busy = false; let index = 0; let cursors = [null];
+  let nextCursor = null; let chainVersion = null; let chainSnapshot = null; let summary = "";
+  let applied = {...initialQuery}; let lastRequest = {index:0, cursors:[null], query:{...initialQuery}, fresh:true};
+  const section = node("section"); section.setAttribute("data-paged-table", ""); section.setAttribute("data-inspection-page", kind);
+  const heading = node("h3", caption); heading.tabIndex = -1;
+  const form = node("form"); form.addEventListener("submit", event => event.preventDefault());
+  const status = node("p"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.setAttribute("aria-atomic", "true"); status.setAttribute("data-page-status", "");
+  const error = node("div"); error.hidden = true; error.tabIndex = -1; error.setAttribute("role", "alert"); error.setAttribute("data-page-error", "");
+  const display = node("div"); display.tabIndex = -1; display.setAttribute("role", "region"); display.setAttribute("aria-label", caption); display.setAttribute("data-page-results", "");
+  const actions = []; const pane = {section, response:null, failure:null, ready:Promise.resolve(false), read:load};
+  /** Consume handled read results; preserve false only for an explicit dirty-edit cancellation. */
+  function pageAction(label, action, cancelAware = false) {
+    const control = button(label, async () => {
+      if (!busy && !stopped && owner === pending && options.current?.() !== false && section.isConnected) {
+        const outcome = await action(); if (cancelAware && outcome === false) return false;
+      }
+    });
+    actions.push(control); return control;
+  }
+  const choices = (options.filters || []).map(([key, label, values]) => {
+    const input = fieldInput(form, label, values ? "select" : "text", values ? [["", "All"], ...values.map(value => [value, value])] : undefined);
+    input.required = false; input.value = initialQuery[key] || ""; return [key, input];
+  });
+  const previous = pageAction(`Previous ${caption} page`, () => load(index - 1, cursors, applied, true)); previous.hidden = true;
+  const next = pageAction(`Next ${caption} page`, () => {const target = cursors.slice(); target[index + 1] = nextCursor; return load(index + 1, target, applied, true);}); next.hidden = true;
+  const retry = pageAction(`Retry ${caption}`, () => load(lastRequest.index, lastRequest.cursors, lastRequest.query, true, lastRequest.fresh)); retry.hidden = true;
+  const restart = pageAction(`Restart ${caption} from first page`, () => options.reload ? options.reload() : load(0, [null], lastRequest.query, true, true)); restart.hidden = true;
+  if (choices.length) form.append(pageAction(`Apply ${caption} filters`, async () => {
+    if (!await allowViewChange()) return false;
+    const query = {...initialQuery}; for (const [key, input] of choices) {if (input.value) query[key] = input.value; else delete query[key];}
+    await load(0, [null], query, true, true);
+  }, true));
+  /** Keep previous verified rows on error; obsolete reads cannot reset newer busy state or focus. */
+  async function load(targetIndex, targetCursors, query, focusResults = false, fresh = false) {
+    if (stopped || owner !== pending || options.current?.() === false) return false;
+    const sequence = ++generation; const attached = section.isConnected; const invocationOwner = owner; const invoker = document.activeElement;
+    /** Check local sequence, installed-view epoch and parent selection before every publication. */
+    const current = () => !stopped && owner === pending && invocationOwner === pending && sequence === generation && options.current?.() !== false && (!attached || section.isConnected);
+    lastRequest = {index:targetIndex, cursors:targetCursors.slice(), query:{...query}, fresh}; pane.failure = null;
+    busy = true; actions.forEach(control => control.setAttribute("aria-disabled", "true")); display.setAttribute("aria-busy", "true"); error.hidden = true;
+    status.textContent = `${caption}: Reading captured metadata…${summary ? ` Previous capture: ${summary}` : ""}`;
+    try {
+      const params = new URLSearchParams({page_size:"50"}); for (const [key, value] of Object.entries(query)) if (value) params.set(key, value);
+      if (targetCursors[targetIndex]) params.set("cursor", targetCursors[targetIndex]);
+      const response = await api(`${path}?${params}`); const page = checkedInspectionPage(response, kind, query, options.context);
+      if (!fresh && chainVersion !== null && (response.resource_version !== chainVersion || response.snapshot_version !== chainSnapshot)) {
+        const failure = new Error("The captured page chain changed. Restart this read from its first page."); failure.details = {code:"version-conflict"}; throw failure;
+      }
+      const rendered = inspectionRows(kind, page.items, options.select);
+      if (kind === "findings") rendered.prepend(inspectionSummary(response.full_summary), table("Filtered emitted disposition scope", [["Status", "status"], ["Matching findings", "count"]], ["resolved", "accepted_risk", "still_open", "undispositioned"].map(status => ({status, count:response.emitted_dispositions[status]}))));
+      if (!current()) return false;
+      if (fresh) {chainVersion = response.resource_version; chainSnapshot = response.snapshot_version;}
+      index = targetIndex; cursors = targetCursors.slice(); applied = {...query}; nextCursor = page.next_cursor;
+      const ownedFocus = document.activeElement === invoker;
+      pane.response = response; display.replaceChildren(rendered); summary = `${inspectionCounts(response, kind)} · Page ${index + 1} · Capture ${response.snapshot_version}.`;
+      if (kind === "history") summary += " Recorded events; no current status is inferred.";
+      if (kind === "findings") summary += " All five filters combine with AND. Complete summary and gates remain unfiltered.";
+      status.textContent = `${response.availability}: ${summary}`; retry.hidden = true; restart.hidden = true; previous.hidden = index === 0; next.hidden = !nextCursor;
+      if (focusResults && ownedFocus && section.isConnected) display.focus(); return true;
+    } catch (failure) {
+      if (!current()) return false;
+      pane.failure = failure; error.textContent = `${failure instanceof Error ? failure.message : "This captured metadata could not be read."}${summary ? " Previous capture retained; it does not reflect this failed read." : " No metadata was installed."}`;
+      error.hidden = false; status.textContent = `${caption}: Read failed.${summary ? ` Previous capture: ${summary}` : ""}`;
+      retry.hidden = false; restart.hidden = failure.details?.code !== "version-conflict";
+      if (section.isConnected && document.activeElement === invoker) error.focus(); return false;
+    } finally {
+      if (!stopped && sequence === generation) {busy = false; display.setAttribute("aria-busy", "false"); actions.forEach(control => control.setAttribute("aria-disabled", "false"));}
+    }
+  }
+  /** Make an older child read obsolete even when its parent's view epoch stays unchanged. */
+  function retireInspectionPage() {
+    generation++; busy = false; display.setAttribute("aria-busy", "false"); actions.forEach(control => control.setAttribute("aria-disabled", "false"));
+    if (summary) status.textContent = `Previous capture retained while its parent reloads: ${summary}`;
+  }
+  inspectionReaders.set(section, retireInspectionPage);
+  /** Recover a retained installed pane after a cancelled guarded refresh, without resurrecting an old read. */
+  function resumeInspectionPage() {
+    if (stopped || !section.isConnected || owner === pending || element("view").inert) return;
+    owner = pending; generation++; busy = false; display.setAttribute("aria-busy", "false"); actions.forEach(control => control.setAttribute("aria-disabled", "false"));
+    if (summary) status.textContent = `Previous captured metadata retained after the refresh was cancelled: ${summary}`;
+  }
+  retainedPagers.set(section, resumeInspectionPage);
+  section.append(heading, form, status, error, display, previous, next, retry, restart);
+  pane.ready = load(0, [null], applied, false, true); return pane;
+}
+
+/** Stage a selected record/comparison's whole pane group before replacing an earlier captured view. */
+function inspectionSelection(caption, build, isCurrent) {
+  let owner = pending; let generation = 0; let busy = false; let previousSummary = ""; let last; let installedGroup;
+  const section = node("section"); section.setAttribute("data-paged-table", ""); section.setAttribute("data-inspection-selection", caption);
+  const heading = node("h3", caption); heading.tabIndex = -1;
+  const status = node("p", "Choose a registered item above."); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.setAttribute("aria-atomic", "true");
+  const error = node("div"); error.hidden = true; error.tabIndex = -1; error.setAttribute("role", "alert"); error.setAttribute("data-page-error", "");
+  const display = node("div"); display.tabIndex = -1; display.setAttribute("role", "region"); display.setAttribute("aria-label", caption);
+  const retry = button(`Retry ${caption}`, async () => {if (last && !busy && current()) await read(last);}); retry.hidden = true;
+  /** Gate this installed selection independently from other lifecycle/impact lanes. */
+  function current() {return !stopped && owner === pending && section.isConnected && isCurrent();}
+  /** Invalidate older selection work; errors and retries remain local to this connected region. */
+  async function read(context) {
+    if (!current()) return false;
+    const invocationOwner = owner; const sequence = ++generation; const invoker = document.activeElement; retireInspectionChildren(display); last = {...context}; busy = true;
+    display.setAttribute("aria-busy", "true"); retry.setAttribute("aria-disabled", "true"); error.hidden = true;
+    status.textContent = `Reading ${caption}…${previousSummary ? ` Previous capture: ${previousSummary}` : ""}`;
+    /** Recheck the selection identity after every staged asynchronous read. */
+    const owned = () => current() && invocationOwner === pending && sequence === generation;
+    try {
+      const group = {};
+      /** Retained verified subpages remain usable after a cancelled refresh; only the current staged build can install a successor. */
+      const paneCurrent = () => owned() || current() && !busy && installedGroup === group;
+      const staged = await build(context, owned, () => read({...context}), paneCurrent);
+      if (!owned()) return false;
+      const ownedFocus = document.activeElement === invoker;
+      installedGroup = group; display.replaceChildren(staged); previousSummary = `${context.id}${context.as_of ? ` · as of ${context.as_of}` : context.kind === "comparison" ? " · selected old/new comparison pair" : " · recorded history only"}`;
+      status.textContent = `${caption}: ${previousSummary}. Captured metadata does not authenticate approval.`; retry.hidden = true; if (ownedFocus) heading.focus(); return true;
+    } catch (failure) {
+      if (!owned()) return false;
+      error.textContent = `${failure instanceof Error ? failure.message : "The selected metadata could not be read."}${previousSummary ? " Previous capture retained; it does not reflect this failed read." : " No selected metadata was installed."}`;
+      error.hidden = false; retry.hidden = false; status.textContent = `${caption}: Read failed.`; if (document.activeElement === invoker) error.focus(); return false;
+    } finally {
+      if (!stopped && sequence === generation) {busy = false; display.setAttribute("aria-busy", "false"); retry.setAttribute("aria-disabled", "false");}
+    }
+  }
+  /** Rebind a retained selection and invalidate its former pending build without moving focus. */
+  function resumeInspectionSelection() {
+    if (stopped || !section.isConnected || owner === pending || element("view").inert) return;
+    owner = pending; generation++; busy = false; display.setAttribute("aria-busy", "false"); retry.setAttribute("aria-disabled", "false");
+    if (previousSummary) status.textContent = `Previous capture retained after cancelled refresh: ${previousSummary}.`;
+  }
+  retainedPagers.set(section, resumeInspectionSelection); section.append(heading, status, error, display, retry);
+  return {section, read};
+}
+
+/** Read lifecycle inventory/history/status/owner queues and impact comparisons without effects or implicit dates. */
+async function lifecycleImpactView() {
+  if (!inspectionSupported()) return node("p", "Lifecycle & Impact requires negotiated API2 2.1.0, 2.2.0, 2.3.0 or 2.4.0. Relaunch with matching assets.", "empty");
+  let owner = pending; let lifecycleGeneration = 0; let selectedRecord = null; let appliedDate = null; let installedLifecycleGroup; let lifecycleStaging = false;
+  const root = node("section"); root.setAttribute("data-inspection-panel", ""); root.setAttribute("data-paged-table", "");
+  root.append(node("p", "Read-only captured lifecycle and framework-impact metadata. Keys, identities and hashes can be sensitive. Declared actors, owners, states and dispositions are unauthenticated; these views grant no transition, approval, export or write authority.", "muted"));
+  /** Keep the installed view owner separate from per-pane request sequences. */
+  const current = () => !stopped && owner === pending && root.isConnected;
+  /** Recover retained controls after a cancelled guarded view refresh without making former work current. */
+  function resumeInspectionView() {if (!stopped && root.isConnected && owner !== pending && !element("view").inert) owner = pending;}
+  retainedPagers.set(root, resumeInspectionView);
+  const lifecycle = node("section"); lifecycle.append(node("h2", "Lifecycle records and owner queue"));
+  const form = node("form"); form.addEventListener("submit", event => event.preventDefault());
+  const date = fieldInput(form, "Explicit lifecycle review date", "date"); date.required = false;
+  const lifecycleOwner = fieldInput(form, "Lifecycle owner key"); lifecycleOwner.required = false;
+  const lifecycleState = fieldInput(form, "Stored lifecycle state", "select", [["", "All"], ...["draft", "in-review", "approved", "superseded", "retired"].map(state => [state, state])]); lifecycleState.required = false;
+  const dateError = node("div"); dateError.hidden = true; dateError.tabIndex = -1; dateError.setAttribute("role", "alert");
+  const inventories = node("div"); let initialRecords;
+  /** Read the chosen record/history at one date/capture; unresolved finding IDs never select an impact pair. */
+  async function buildRecord(context, owned, reload, paneCurrent) {
+    const stage = node("div"); let detail;
+    if (context.as_of) {
+      detail = await api(`/lifecycle/records/${encodeURIComponent(context.id)}?${new URLSearchParams({as_of:context.as_of})}`);
+      inspectionRequired(detail, ["resource_version", "snapshot_version", "record_id", "resource_id", "policy_key", "version_key", "as_of", "state", "derived_status", "owner_keys", "next_review_date", "blockers", "current_fingerprints", "approved_fingerprints", "artifact_identity_changes", "replaced_by", "replacement_record_id", "impact_references", "provenance", "trust_boundary"]);
+      if (!owned()) throw new Error("The selected record read was superseded.");
+      if (detail.record_id !== context.id || detail.as_of !== context.as_of || !inspectionIdentity(detail.snapshot_version, true) || !inspectionIdentity(detail.resource_version, true)) throw new Error("The record returned a foreign capture or date.");
+      stage.append(inspectionMetadata("Captured lifecycle status", [["Record", detail.record_id], ["Registered resource", detail.resource_id], ["Policy key", detail.policy_key], ["Version key", detail.version_key], ["As of", detail.as_of], ["Stored state", detail.state], ["Computed status", detail.derived_status], ["Declared owners", inspectionTokens(detail.owner_keys)], ["Next review", detail.next_review_date], ["Blockers", inspectionTokens(detail.blockers)], ["Identity changes", inspectionTokens(detail.artifact_identity_changes)], ["Replacement policy", detail.replaced_by?.policy_key], ["Replacement version", detail.replaced_by?.version_key], ["Replacement registered record", detail.replacement_record_id]]),
+        inspectionFingerprints("Current captured fingerprints", detail.current_fingerprints), inspectionFingerprints("Declared approved fingerprints", detail.approved_fingerprints), inspectionReferences(detail.impact_references), inspectionProvenance(detail.provenance));
+    } else stage.append(node("p", "Choose an explicit review date before requesting computed lifecycle status. This selection shows recorded transition history only."));
+    const history = inspectionPage(`/lifecycle/records/${encodeURIComponent(context.id)}/history`, "Lifecycle transition history", "history", {}, {context:detail || {record_id:context.id}, current:paneCurrent, reload});
+    if (!await history.ready) throw history.failure || new Error("The transition history could not be staged at this record's capture. Retry the selected record.");
+    stage.append(history.section); return stage;
+  }
+  const record = inspectionSelection("Selected lifecycle record", buildRecord, current);
+  /** Retain the exact date and local read-error focus; false is reserved for Keep editing. */
+  async function selectRecord(id) {
+    if (!current() || lifecycleStaging) return;
+    if (!await allowViewChange()) return false;
+    selectedRecord = id; await record.read({id, as_of:appliedDate});
+  }
+  /** Replace inventory and queue together under a new explicit date/filter context. */
+  async function installLifecycle(dateValue, ownerValue, stateValue, focus = false) {
+    const generation = ++lifecycleGeneration; const invocationOwner = owner; const invoker = document.activeElement; const group = {};
+    retireInspectionChildren(inventories); lifecycleStaging = true;
+    try {
+    /** Bind new inventory/queue controls to this date/filter context and current installed view epoch. */
+    const owned = () => !stopped && owner === pending && (generation === lifecycleGeneration || !lifecycleStaging && group === installedLifecycleGroup);
+    /** Only this initiating view epoch may install the staged inventory group. */
+    const mayInstall = () => owned() && invocationOwner === pending && generation === lifecycleGeneration;
+    const query = {}; if (dateValue) query.as_of = dateValue; if (ownerValue) query.owner = ownerValue; if (stateValue) query.state = stateValue;
+    const records = inspectionPage("/lifecycle/records", "Lifecycle record inventory", "records", query, {current:owned, select:selectRecord});
+    const stage = node("div"); stage.append(records.section);
+    let queue;
+    if (dateValue) {const queueQuery = {as_of:dateValue}; if (ownerValue) queueQuery.owner = ownerValue;
+      queue = inspectionPage("/lifecycle/queue", "Lifecycle owner queue", "queue", queueQuery, {current:owned, select:selectRecord}); stage.append(queue.section);
+    } else stage.append(node("p", "Owner queue and computed status require an explicit review date. No clock date is selected automatically."));
+    const results = await Promise.all([records.ready, ...(queue ? [queue.ready] : [])]);
+    const sameCapture = !queue || records.response?.snapshot_version === queue.response?.snapshot_version;
+    if (results.some(value => !value) || !sameCapture) {
+      if (mayInstall()) {
+        if (!inventories.children.length) {installedLifecycleGroup = group; inventories.replaceChildren(stage);}
+        else {dateError.textContent = "The lifecycle inventory and owner queue could not be staged at one capture. Previous date/filter results are retained. Retry Apply lifecycle date and filters."; dateError.hidden = false; if (root.isConnected && document.activeElement === invoker) dateError.focus();}
+        if (focus && root.isConnected && !dateError.hidden && document.activeElement === invoker) dateError.focus();
+      }
+      return false;
+    }
+    if (!mayInstall()) return false;
+    installedLifecycleGroup = group; appliedDate = dateValue; inventories.replaceChildren(stage);
+    if (selectedRecord && current()) await record.read({id:selectedRecord, as_of:appliedDate});
+    if (focus && current() && document.activeElement === invoker) records.section.querySelector("[data-page-results]").focus(); return true;
+    } finally {if (generation === lifecycleGeneration) lifecycleStaging = false;}
+  }
+  const apply = button("Apply lifecycle date and filters", async () => {
+    if (!current()) return;
+    if (!await allowViewChange()) return false;
+    dateError.hidden = true;
+    if (date.value && (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date.value) || !date.reportValidity())) {dateError.textContent = "Use an explicit valid YYYY-MM-DD review date."; dateError.hidden = false; dateError.focus(); return;}
+    await installLifecycle(date.value || null, lifecycleOwner.value, lifecycleState.value, true);
+  }); form.append(apply); lifecycle.append(form, dateError, inventories, record.section);
+  const impact = node("section"); impact.append(node("h2", "Framework impact comparisons"), node("p", "Inventory old/new fingerprints are declared, not computed. Select one exact comparison to read captured changes/findings and prior-only dispositions. Unresolved lifecycle finding IDs are not joined here.", "muted"));
+  /** Stage detail and all three bounded subpages from the same capture and exact old/new comparison pair. */
+  async function buildComparison(context, owned, reload, paneCurrent) {
+    const detail = await api(`/framework-impact/comparisons/${encodeURIComponent(context.id)}`);
+    inspectionRequired(detail, ["resource_version", "snapshot_version", "comparison_id", "resource_id", "freshness", "old", "new", "summary", "provenance", "prior_report_sha256", "prior_report_admission", "trust_boundary"]);
+    if (!owned()) throw new Error("The comparison read was superseded.");
+    if (detail.comparison_id !== context.id || !inspectionIdentity(detail.snapshot_version, true) || !inspectionIdentity(detail.resource_version, true) || detail.freshness !== "captured-current") throw new Error("The comparison returned a foreign capture or freshness state.");
+    const stage = node("div"); stage.append(inspectionMetadata("Captured comparison context", [["Comparison", detail.comparison_id], ["Registered manifest", detail.resource_id], ["Comparison version", detail.resource_version], ["Snapshot", detail.snapshot_version], ["Freshness", detail.freshness], ["Prior report SHA-256", detail.prior_report_sha256], ["Prior report admission", detail.prior_report_admission]]), inspectionPair("Captured old resource", detail.old), inspectionPair("Captured new resource", detail.new), inspectionSummary(detail.summary), inspectionProvenance(detail.provenance));
+    const options = {context:detail, current:paneCurrent, reload};
+    const changes = inspectionPage(`/framework-impact/comparisons/${encodeURIComponent(context.id)}/changes`, "Framework impact changes", "changes", {}, {...options, filters:[["change_class", "Impact change class", ["added", "removed", "content-changed", "identity-migrated", "unchanged"]]]});
+    const findings = inspectionPage(`/framework-impact/comparisons/${encodeURIComponent(context.id)}/findings`, "Framework impact findings", "findings", {}, {...options, filters:[["group", "Impact framework group"], ["decision_state", "Impact prior decision state", ["applicable", "not-applicable", "deferred", "under-review"]], ["policy_source", "Impact policy source identity"], ["priority", "Impact finding priority", ["blocking", "review-required", "informational"]], ["owner", "Impact owner key"]]});
+    const prior = inspectionPage(`/framework-impact/comparisons/${encodeURIComponent(context.id)}/prior-dispositions`, "Prior-only impact dispositions", "prior", {}, options);
+    const results = await Promise.all([changes.ready, findings.ready, prior.ready]);
+    if (results.some(value => !value)) throw [changes, findings, prior].find((pane, index) => !results[index])?.failure || new Error("The comparison's changes, findings and prior history could not be staged at one capture. Retry the selected comparison.");
+    stage.append(changes.section, findings.section, prior.section); return stage;
+  }
+  const comparison = inspectionSelection("Selected framework impact comparison", buildComparison, current);
+  /** Preserve local comparison failure focus; only explicit dirty cancellation restores the trigger. */
+  async function selectComparison(id) {
+    if (!current()) return;
+    if (!await allowViewChange()) return false;
+    await comparison.read({id, kind:"comparison"});
+  }
+  const comparisons = inspectionPage("/framework-impact/comparisons", "Framework comparison inventory", "comparisons", {}, {select:selectComparison});
+  impact.append(comparisons.section, comparison.section); root.append(lifecycle, impact);
+  initialRecords = installLifecycle(null, "", ""); await Promise.all([initialRecords, comparisons.ready]);
+  return root;
 }
 
 /** Announce the locked state and place initial keyboard focus on the credential field. */
@@ -284,7 +729,7 @@ async function submitUnlock(event) {
     const response = await api("/session/unlock", "POST", {passphrase: field.value});
     field.value = "";
     if (stopped) return;
-    if (response.session.api_major !== 1) throw new Error("This UI requires API version 1. Install matching workspace assets.");
+    if (response.session.api_major !== apiMajor || apiMajor === 2 && response.session.contract_version !== apiContractVersion) throw new Error(apiMajor === 1 ? "This UI requires API version 1. Install matching workspace assets." : "This UI requires the selected API version 2. Install matching workspace assets.");
     capability = response.capability;
     readOnly = response.session.read_only;
     element("unlock-panel").hidden = true;
@@ -314,9 +759,9 @@ element("refresh").addEventListener("click", () => navigate(activeView,viewFilte
 element("stop").addEventListener("click", () => element("stop-dialog").showModal());
 element("keep-working").addEventListener("click", () => element("stop-dialog").close());
 element("confirm-stop").addEventListener("click", async () => {
-  try { await api("/session/shutdown", "POST", {}); stopped = true; invalidateBundlePanels(); pending++; capability = "";
+  try { await api("/session/shutdown", "POST", {}); stopped = true; invalidateBundlePanels(); stopSourceRestoreRows(); pending++; capability = "";
     for (const row of operationRows.values()) { row.generation++; row.status.textContent = "Workspace stopped. Operation status is no longer queryable in this session."; row.cancel.setAttribute("aria-disabled", "true"); row.check.setAttribute("aria-disabled", "true"); row.review.disabled = true; }
-    for (const row of requestRows.values()) { row.status.textContent = "Workspace stopped. The request cannot be recovered in this session."; row.retry.setAttribute("aria-disabled", "true"); row.review.setAttribute("aria-disabled", "true"); }
+    for (const row of requestRows.values()) { row.status.textContent = "Workspace stopped. The request cannot be recovered in this session."; row.retry.setAttribute("aria-disabled", "true"); row.review.setAttribute("aria-disabled", "true"); if (row.path === "/project/source-bundle-imports") { row.prepared = null; row.reviewContext = null; } }
     element("stop-dialog").close(); element("workspace").hidden = true; element("stop").hidden = true; element("connection").textContent = "Stopped"; element("status").textContent = "Workspace stopped. Relaunch it from the terminal to continue."; element("main").focus(); }
   catch (error) { element("stop-dialog").close(); showError(error); }
 });
@@ -363,14 +808,16 @@ function confirmDiscard() {
   });
 }
 
-/** An action returning false cancelled navigation: reenable and refocus its invoker. */
+/** Keep the invoking control focused while busy; guard duplicate activation and restore cancelled navigation. */
 function button(label, action) {
   const control = node("button", label); control.type = "button";
+  control.setAttribute("aria-disabled", "false");
   control.addEventListener("click", async () => {
-    control.disabled = true;
+    if (control.getAttribute("aria-disabled") === "true") return;
+    control.setAttribute("aria-disabled", "true"); control.setAttribute("aria-busy", "true");
     let cancelled = false;
     try {cancelled = await action() === false;} catch(error) {showError(error);}
-    finally {control.disabled = false;if(cancelled && control.isConnected)control.focus();}
+    finally {control.setAttribute("aria-disabled", "false");control.setAttribute("aria-busy", "false");if(cancelled && control.isConnected)control.focus();}
   });
   return control;
 }
@@ -402,7 +849,7 @@ function pendingRequestRow(key, path, retry) {
   const article = node("article"); article.hidden = true; article.setAttribute("data-pending-request-id", key);
   const status = node("p"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite"); status.setAttribute("aria-atomic", "true"); status.setAttribute("data-request-status", ""); status.tabIndex = -1; status.setAttribute("aria-label", `Preparation request ${path} status`);
   const error = node("div"); error.hidden = true; error.setAttribute("role", "alert"); error.setAttribute("data-request-error", "");
-  const row = { key, path, article, status, error, busy: false, prepared: null };
+  const row = { key, path, article, status, error, busy: false, prepared: null, reviewContext: null };
   /** Prevent duplicate activation while keeping the initiating native control focused. */
   const requestAction = (label, action) => {
     const control = node("button", label); control.type = "button"; control.setAttribute("aria-disabled", "false");
@@ -417,16 +864,18 @@ function pendingRequestRow(key, path, retry) {
   row.review = requestAction("Review prepared write", async () => {
     if (!row.prepared || !await allowViewChange()) return;
     const origin = pending;
-    const opened = await preview(row.prepared, undefined, () => !stopped && requestRows.get(key) === row && origin === pending && !document.querySelector("dialog[open]"));
+    const opened = await preview(row.prepared, undefined, () => !stopped && requestRows.get(key) === row && origin === pending && !document.querySelector("dialog[open]"), row.reviewContext);
     if (opened && !stopped && requestRows.get(key) === row) { row.error.hidden = true; row.status.textContent = "Preparation is ready for review; no write has been confirmed."; }
   }); row.review.hidden = true;
   article.append(node("h2", `Preparation request: ${path}`), status, error, row.retry, row.review); operationRegion().append(article); requestRows.set(key, row); return row;
 }
 
-/** Announce local recovery without changing a newer destination's global error or focus. */
+/** Announce owned recovery and typed bundle rejections without changing a newer view or focus. */
 function pendingRequestFailure(row, failure) {
   row.article.hidden = false; row.error.hidden = false; row.error.textContent = failure instanceof Error ? failure.message : "The preparation could not be read.";
   row.status.textContent = row.prepared ? "Preparation is ready. The prepared write could not be loaded; review it again before confirming." :
+    ["/project/bundle-imports","/project/bundle-exports","/project/source-bundle-imports","/project/source-bundle-exports"].includes(row.path) && failure.details?.code === "bundle-preparation-in-progress" ? "Preparation remains in progress. Retry the same immutable request before preparing another write." :
+    ["/project/bundle-imports","/project/bundle-exports","/project/source-bundle-imports","/project/source-bundle-exports"].includes(row.path) && typeof failure.details?.code === "string" && failure.details?.retryable === false ? "The server rejected this request. Review its inputs and prepare a new request; no write has been confirmed." :
     failure.details?.retryable === false ? "The request response is unsupported. Relaunch the workspace before preparing another write." :
     "The request outcome is unknown. No operation ID was received. Retry the same request before preparing another write.";
   row.retry.hidden = !!row.prepared || failure.details?.retryable === false; row.review.hidden = !row.prepared;
@@ -472,7 +921,7 @@ function operationRow(id, path, origin) {
     try {
       if (!await allowViewChange()) return;
       const reviewOrigin = pending; const result = row.last.result;
-      const opened = await preview(result.preview || result.report_preview, path === "/exports" ? id : undefined, () => operationCurrent(row) && reviewOrigin === pending && !document.querySelector("dialog[open]"));
+      const opened = await preview(result.preview || result.report_preview, exportDownloadContext(path, id), () => operationCurrent(row) && reviewOrigin === pending && !document.querySelector("dialog[open]"));
       if (opened && operationCurrent(row)) { row.error.hidden = true; row.status.textContent = "Operation succeeded. Preparation is ready for review; no write has been confirmed."; }
     } catch (failure) { if (operationCurrent(row)) operationPreviewFailure(row, failure); }
     finally { row.reviewing = false; if (operationCurrent(row)) refreshOperationActions(row); }
@@ -515,9 +964,9 @@ function operationPreviewFailure(row, failure) {
   refreshOperationActions(row);
 }
 
-/** Accept this ID and state; report captured-registration facts without narrowing generic counter validation. */
+/** Accept each declared preparation family and report capture facts without inventing byte publication. */
 function acceptOperation(row, value) {
-  const expectedKind = { "/conversions": "conversion", "/applicability/analyses": "applicability-analysis", "/mapping/builds": "mapping-build", "/exports": "export" }[row.path];
+  const expectedKind = { "/conversions": "conversion", "/applicability/analyses": "applicability-analysis", "/mapping/builds": "mapping-build", "/exports": "export", "/project/bundle-exports": "export", "/project/source-bundle-exports": "export", "/project/source-stream-exports": "export" }[row.path];
   if (value?.operation_id !== row.id || !expectedKind || value.kind !== expectedKind ||
       !["pending", "running", "succeeded", "failed", "cancelled"].includes(value.state) || typeof value.cancel_requested !== "boolean" ||
       !Number.isFinite(Date.parse(value.created_at)) || !Number.isFinite(Date.parse(value.updated_at))) throw new Error("The operation returned an unsupported state or identity. Check its status before continuing.");
@@ -538,7 +987,7 @@ function acceptOperation(row, value) {
   refreshOperationActions(row);
 }
 
-/** Read known work with bounded polling; response loss retains an explicit GET recovery path. */
+/** Poll known preparation with bounded GET recovery; newer previews retire source auto-opening. */
 async function pollOperation(row, checkImmediately = false) {
   if (!operationCurrent(row) || row.polling || row.terminal) return;
   row.polling = true; refreshOperationActions(row);
@@ -555,8 +1004,8 @@ async function pollOperation(row, checkImmediately = false) {
       acceptOperation(row, value);
     }
     if (operationCurrent(row) && !row.terminal) operationUnknown(row, new Error("Polling reached its supported read bound. Check operation status to continue."));
-    if (operationCurrent(row) && row.last?.state === "succeeded" && row.origin === pending && !document.querySelector("dialog[open]")) {
-      await preview(row.last.result.preview || row.last.result.report_preview, row.path === "/exports" ? row.id : undefined, () => operationCurrent(row) && row.origin === pending && !document.querySelector("dialog[open]"));
+    if (operationCurrent(row) && row.last?.state === "succeeded" && row.origin === pending && (row.autoReviewGeneration === undefined || row.autoReviewGeneration === previewGeneration) && (!row.autoReviewCurrent || row.autoReviewCurrent()) && !document.querySelector("dialog[open]")) {
+      await preview(row.last.result.preview || row.last.result.report_preview, exportDownloadContext(row.path, row.id), () => operationCurrent(row) && row.origin === pending && (!row.autoReviewCurrent || row.autoReviewCurrent()) && !document.querySelector("dialog[open]"));
     }
   } catch (failure) {
     if (operationCurrent(row)) {
@@ -566,24 +1015,34 @@ async function pollOperation(row, checkImmediately = false) {
   finally { row.polling = false; if (operationCurrent(row)) refreshOperationActions(row); }
 }
 
-/** Preparation retries reuse one key until an ID is known; known work is recovered by GET. */
-async function effect(path, method, request) {
-  const key = crypto.randomUUID(); const origin = pending; let row; let recovery; let sending = false;
+/** Recover preparation with its original body/key; source confirmation and newer-preview ownership stay separate. */
+async function effect(path, method, request, rawBody, requestIsCurrent, requestedIndexSchema, sourcePreviewOwner = previewGeneration) {
+  const key = crypto.randomUUID(); const origin = pending; const sourceImport = path === "/project/source-bundle-imports" || /^\/project\/source-transfer-stages\/bst_[0-9a-z]{12,80}\/preview$/.test(path); const sourcePreparation = sourceImport || ["/project/source-bundle-exports","/project/source-stream-exports"].includes(path); const previewOwner = sourcePreviewOwner; let row; let recovery; let sending = false; let dispatched = false;
   /** Replay only an unacknowledged request; once acknowledged, query its existing operation. */
   const send = async () => {
     if (stopped) return;
     if (row) { await pollOperation(row, true); return; }
-    const value = await api(path, method, request, key);
+    let value;
+    try {
+      value = await api(path, method, request, key, rawBody, !requestIsCurrent && rawBody === undefined ? undefined : () => {
+        const current = dispatched || (!sourcePreparation || previewOwner === previewGeneration) && (!requestIsCurrent || requestIsCurrent());
+        if (current) dispatched = true;
+        return current;
+      });
+    } catch (failure) {
+      if (!dispatched && (requestIsCurrent && !requestIsCurrent() || sourcePreparation && previewOwner !== previewGeneration)) { removePendingRequest(recovery); return; }
+      throw failure;
+    }
     if (stopped) return;
     if (value?.operation_id !== undefined || value?.state !== undefined) {
       if (typeof value.operation_id !== "string" || !/^op_[0-9a-z]{12,80}$/.test(value.operation_id)) {
         const unsupported = new Error("The operation returned an unsupported identity. Relaunch the workspace before continuing."); unsupported.details = { retryable: false }; throw unsupported;
       }
-      row = operationRow(value.operation_id, path, origin); removePendingRequest(recovery, row.status);
+      row = operationRow(value.operation_id, path, origin); row.autoReviewCurrent = requestIsCurrent; if (sourcePreparation) row.autoReviewGeneration = previewOwner; removePendingRequest(recovery, row.status);
       try {
         acceptOperation(row, value);
         if (!row.terminal) await pollOperation(row);
-        else if (row.last?.state === "succeeded" && origin === pending && !document.querySelector("dialog[open]")) await preview(row.last.result.preview || row.last.result.report_preview, path === "/exports" ? row.id : undefined, () => operationCurrent(row) && origin === pending && !document.querySelector("dialog[open]"));
+        else if (row.last?.state === "succeeded" && origin === pending && (!sourcePreparation || previewOwner === previewGeneration) && (!requestIsCurrent || requestIsCurrent()) && !document.querySelector("dialog[open]")) await preview(row.last.result.preview || row.last.result.report_preview, exportDownloadContext(path, row.id), () => operationCurrent(row) && origin === pending && (!requestIsCurrent || requestIsCurrent()) && !document.querySelector("dialog[open]"));
       } catch (failure) {
         if (operationCurrent(row)) {
           if (row.last?.state === "succeeded" && row.terminal) operationPreviewFailure(row, failure); else operationUnknown(row, failure);
@@ -591,13 +1050,20 @@ async function effect(path, method, request) {
       }
       return;
     }
-    recovery.prepared = value.preview || value.report_preview;
+    if (path === "/project/bundle-imports") {
+      const checked = await checkedBundleImportPreview(value, requestedIndexSchema);
+      recovery.prepared = checked.preview; recovery.reviewContext = checked;
+    } else if (sourceImport) {
+      const checked = await checkedSourceImportPreview(value, requestedIndexSchema);
+      recovery.prepared = checked.preview; recovery.reviewContext = checked;
+      sourceRestoreRow(checked.preview.operation_id, checked.preview);
+    } else recovery.prepared = value.preview || value.report_preview;
     if (!recovery.prepared?.preview_id) throw new Error("The operation did not return a prepared write.");
     const transferFocus = document.activeElement === recovery.retry;
     recovery.article.hidden = false; recovery.retry.hidden = true; recovery.review.hidden = false; recovery.error.hidden = true;
     recovery.status.textContent = "Preparation is ready for review; no write has been confirmed.";
     if (transferFocus && recovery.status.isConnected) recovery.status.focus();
-    const opened = await preview(recovery.prepared, undefined, () => !stopped && origin === pending && !document.querySelector("dialog[open]"));
+    const opened = (!sourcePreparation || previewOwner === previewGeneration) && await preview(recovery.prepared, undefined, () => !stopped && origin === pending && (!requestIsCurrent || requestIsCurrent()) && !document.querySelector("dialog[open]"), recovery.reviewContext);
     if (opened) removePendingRequest(recovery);
   };
   /** Keep background failures local while preserving the original request's replay identity. */
@@ -607,7 +1073,7 @@ async function effect(path, method, request) {
     try { await send(); } catch (failure) {
       if (stopped) return;
       pendingRequestFailure(recovery, failure);
-      if (origin === pending && !recovery.busy) {
+      if (origin === pending && (!sourcePreparation || previewOwner === previewGeneration) && (!requestIsCurrent || requestIsCurrent()) && !recovery.busy) {
         showError(failure);
         if (!row && !recovery.prepared && failure.details?.retryable !== false) element("error").append(button("Retry the same request", attempt));
       }
@@ -635,14 +1101,19 @@ function previewCloseLifecycle(dialog, close = false) {
   return waiting;
 }
 
-/** Open only the current receipt; confirmed writes own their refresh and native close focus. */
-async function preview(proposed, exportOperation, isCurrent = () => !stopped) {
+/** Review exact single-file receipts or delegate the isolated source batch dialog with shared close ownership. */
+async function preview(proposed, exportOperation, isCurrent = () => !stopped, reviewContext) {
   if (!isCurrent()) return false;
+  if (reviewContext?.family === "source-restore") return previewSourceRestore(reviewContext, isCurrent);
   if(!proposed?.preview_id)throw new Error("The operation did not return a prepared write.");
   const sequence = ++previewGeneration;
   const current = await api(`/effects/previews/${encodeURIComponent(proposed.preview_id)}`);
   if (previewClosePending) await previewClosePending;
   if (!isCurrent() || sequence !== previewGeneration) return false;
+  if (reviewContext && (reviewContext.preview.preview_id !== current.preview_id ||
+      reviewContext.replacement.proposed_index_sha256 !== current.exact_bytes_sha256 ||
+      current.operation_type !== "workspace-index-update" || current.target.path !== "forge.workspace.json"))
+    throw new Error("The index replacement no longer matches the exact server preview. Prepare it again.");
   const dialog = element("preview-dialog"); const content = element("preview-content");
   let viewOwner = pending;
   let closingConfirmed = false;
@@ -663,13 +1134,43 @@ async function preview(proposed, exportOperation, isCurrent = () => !stopped) {
     node("p", `Validation: ${current.validation.state}. Target version: ${current.target_version}`),node("p", `Current hash: ${current.base_sha256 || "new file"}`),node("p", `Proposed hash: ${current.exact_bytes_sha256}`),node("p", `Receipt expires: ${current.receipt.expires_at}`),
     table("Bound input hashes",[["Resource","resource_id"],["SHA-256","sha256"]],current.input_hashes),Object.assign(node("pre",current.diff_text),{tabIndex:0}));
   if(current.diff_truncated) content.append(node("p","The text diff reached its display bound. The hash binds the complete proposed bytes."));
+  if (reviewContext) appendBundleReplacement(content, reviewContext.replacement);
   const key = crypto.randomUUID();
-  /** Download only a confirmed export's bound bytes through the existing authenticated route. */
+  /** Download only the prepared family; JSON metadata/source artifacts bind media, cap, hash and view ownership. */
   async function downloadCommittedExport() {
-    const response=await fetch(`/api/v1/exports/${encodeURIComponent(exportOperation)}/download`,{headers:{Authorization:`Bearer ${capability}`},cache:"no-store",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer"});
+    const metadata = typeof exportOperation === "object" && exportOperation?.family === "metadata-bundle";
+    const staged = typeof exportOperation === "object" && exportOperation?.family === "staged-source-bundle";
+    const source = staged || typeof exportOperation === "object" && exportOperation?.family === "source-bundle";
+    const json = metadata || source;
+    const id = json ? exportOperation.operation_id : exportOperation;
+    const owner = pending;
+    if (json && (stopped || (staged ? !stagedSourceEffectsSupported() : source ? !sourceBundleEffectsSupported() : !bundleEffectsSupported()))) return;
+    try {
+    let blob;
+    if (staged) {
+      blob = await stagedSourceDownload(id, current.exact_bytes_sha256, () => !stopped && owner === pending && element("view").isConnected);
+      if (!blob) return;
+    } else {
+    const path = source ? `/project/source-bundle-exports/${encodeURIComponent(id)}/download` : metadata ? `/project/bundle-exports/${encodeURIComponent(id)}/download` : `/exports/${encodeURIComponent(id)}/download`;
+    const response=await fetch(`${apiPrefix}${path}`,{headers:{Authorization:`Bearer ${capability}`},cache:"no-store",credentials:"omit",redirect:"error",referrerPolicy:"no-referrer"});
+    if (json && (stopped || owner !== pending)) return;
     if(!response.ok)throw new Error("The committed export is no longer available or its bytes changed.");
-    const blob=await response.blob();if(blob.size>4*1024*1024)throw new Error("The export exceeds the download bound.");
-    const url=URL.createObjectURL(blob);const link=node("a","Download report");link.href=url;link.download="forge-redacted-report.html";document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    blob=await response.blob();if (json && (stopped || owner !== pending)) return;
+    if(blob.size>(source?1048429:metadata?1024*1024:4*1024*1024))throw new Error("The export exceeds the download bound.");
+    if (json) {
+      if (response.headers.get("Content-Type")?.split(";",1)[0].trim().toLowerCase() !== "application/json") throw new Error("The committed JSON bundle has an unsupported media type.");
+      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", await blob.arrayBuffer()));
+      const hash = Array.from(digest, byte => byte.toString(16).padStart(2,"0")).join("");
+      if (stopped || owner !== pending) return;
+      if (hash !== current.exact_bytes_sha256) throw new Error("The committed JSON bundle bytes do not match the prepared hash.");
+      if (stopped || owner !== pending || !element("view").isConnected) return;
+    }
+    }
+    if (json && (stopped || owner !== pending || !element("view").isConnected)) return;
+    const url=URL.createObjectURL(blob);const link=node("a",source?"Download exact source bundle":metadata?"Download metadata bundle":"Download report");link.href=url;link.download=staged?"forge-workspace-staged-index-and-source-content.json":source?"forge-workspace-index-and-source-content.json":metadata?"forge-workspace-index-and-hashes.json":"forge-redacted-report.html";document.body.append(link);link.click();link.remove();
+    if (json) { metadataDownloadURLs.add(url);setTimeout(()=>{if(metadataDownloadURLs.delete(url))URL.revokeObjectURL(url);},1000); }
+    else setTimeout(()=>URL.revokeObjectURL(url),1000);
+    } catch (failure) { if (json && (stopped || owner !== pending)) return; throw failure; }
   }
   /** Await native return-focus processing before selecting the still-owned saved result target. */
   async function closeConfirmedPreview() {
@@ -696,7 +1197,7 @@ async function preview(proposed, exportOperation, isCurrent = () => !stopped) {
       if (!previewCurrent()) return;
       const pageError = element("view").querySelector("[data-page-error]");
       const refreshError = dialog.querySelector("[role=alert]")?.textContent || (!pageError?.hidden && pageError?.textContent) || (!element("error").hidden && element("error").textContent) || "The view could not be loaded.";
-      if (exportOperation) element("view").prepend(button("Download committed redacted report", downloadCommittedExport));
+      if (exportOperation) element("view").prepend(button(exportOperation?.family === "staged-source-bundle" ? "Download committed staged source bundle" : exportOperation?.family === "source-bundle" ? "Download committed source bundle" : typeof exportOperation === "object" ? "Download committed metadata bundle" : "Download committed redacted report", downloadCommittedExport));
       dirty = false;
       await closeConfirmedPreview();
       if (!previewCurrent(false)) return;
@@ -708,16 +1209,35 @@ async function preview(proposed, exportOperation, isCurrent = () => !stopped) {
   content.append(button("Keep editing", dismissPreview), button("Confirm this exact write", confirmWrite));
   dialog.showModal();content.querySelector("h2").tabIndex=-1;content.querySelector("h2").focus();return true;
 }
+/** List closed registration roles for an explicit index version; /1 retains its original families. */
+function workspaceRoles(version) {
+  const original = ["policy-source", "oscal-catalog-artifact", "oscal-component-artifact", "mapping-collection", "applicability-manifest", "applicability-report", "trace-report"];
+  if (version === "forge.workspace/1") return original;
+  if (version === "forge.workspace/2") return [...original, "lifecycle-record", "lifecycle-source", "oscal-profile-artifact", "oscal-ssp-artifact", "framework-impact-manifest", "successor-map", "framework-impact-report", "framework-impact-dispositions"];
+  return [];
+}
+
+/** Prepare bounded registrations or an explicit version migration through ordinary exact-write confirmation. */
 function resourceActions(resources) {
   const region = node("section");region.append(node("h2","Project files"));
   region.append(button("Validate registered resources",async () => { const report = await api("/validation/runs","POST",{scope:"all"});element("status").textContent = `Validation: ${report.state}. ${report.error_count} errors.`; }));
   if(readOnly) {region.append(node("p","This session is read-only."));return region;}
-  const roles = ["policy-source","oscal-catalog-artifact","oscal-component-artifact","mapping-collection","applicability-manifest","applicability-report","trace-report"].map(value=>[value,value.replaceAll("-"," ")]);
+  const roles = workspaceRoles(apiMajor === 2 ? "forge.workspace/2" : "forge.workspace/1").map(value=>[value,value.replaceAll("-"," ")]);
   const register = node("form");register.append(node("h3","Register an existing project file"));
   const role = field(register,"Resource role","select",roles);
   const path = field(register,"Project-relative file path");
   const key = field(register,"Stable resource key");
-  register.append(button("Preview registration",async () => {if(!register.reportValidity())return;await effect("/resources/register","POST",{role:role.value,path:path.value,key:key.value});}));
+  const indexVersion = apiMajor === 2 ? field(register,"Index version for this registration","select",[["preserve","Preserve current index version"],["forge.workspace/2","Explicitly use workspace index /2"]]) : null;
+  if (apiMajor === 2) register.append(node("p","Lifecycle and framework-impact roles require an explicit /2 index. Admission profiles describe structure or fingerprints; they do not establish current freshness, dependency closure or reviewer authority."));
+  register.append(button("Preview registration",async () => {
+    if(!register.reportValidity())return;
+    const request = {role:role.value,path:path.value,key:key.value};
+    if(indexVersion?.value === "forge.workspace/2") request.index_schema_version = indexVersion.value;
+    await effect("/resources/register","POST",request);
+  }));
+  if (apiMajor === 2) register.append(button("Preview migration to workspace index /2",async () => {
+    await effect("/resources/register","POST",{migration:{from:"forge.workspace/1",to:"forge.workspace/2"}});
+  }));
   register.addEventListener("submit",event=>event.preventDefault());
   const upload = node("form");upload.append(node("h3","Upload a local file"));
   const file = field(upload,"Choose a file","file"); const uploadRole = field(upload,"Uploaded resource role","select",roles);const target = field(upload,"Destination path within project");
@@ -873,6 +1393,7 @@ async function showProvenance(anchor) {
 }
 /** Retire installed metadata reads and acknowledgments before a view epoch changes. */
 function invalidateBundlePanels() {
+  for (const url of metadataDownloadURLs) { URL.revokeObjectURL(url); metadataDownloadURLs.delete(url); }
   for (const section of element("view").querySelectorAll("[data-bundle-panel]")) bundlePanels.get(section)?.();
 }
 
@@ -882,7 +1403,7 @@ function bundleClosedObject(value, keys) {
     Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 }
 
-/** Validate complete metadata before retaining a local downloadable bundle. */
+/** Validate complete same-version /1 or /2 metadata before retaining a local downloadable bundle. */
 function checkedBundlePreview(value) {
   /** Reject unsupported preview metadata before it can become a local file. */
   const fail = () => { throw new Error("The metadata preview returned an unsupported response. Preview metadata again."); };
@@ -892,14 +1413,14 @@ function checkedBundlePreview(value) {
       JSON.stringify(value.included_metadata) !== JSON.stringify(["project-label", "resource-keys", "typed-roles", "project-relative-paths", "sha256-fingerprints", "byte-lengths"])) fail();
   const bundle = value.bundle;
   if (!bundleClosedObject(bundle, ["schema_version", "content_profile", "index", "index_sha256", "pins"]) ||
-      bundle.schema_version !== "forge.workspace-index-bundle/1" || bundle.content_profile !== "index-and-hashes" ||
+      !(apiMajor === 2 ? ["forge.workspace-index-bundle/1", "forge.workspace-index-bundle/2"] : ["forge.workspace-index-bundle/1"]).includes(bundle.schema_version) || bundle.content_profile !== "index-and-hashes" ||
       typeof bundle.index_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(bundle.index_sha256) ||
-      !bundleClosedObject(bundle.index, ["schema_version", "label", "resources"]) || bundle.index.schema_version !== "forge.workspace/1" ||
+      !bundleClosedObject(bundle.index, ["schema_version", "label", "resources"]) || bundle.index.schema_version !== (bundle.schema_version === "forge.workspace-index-bundle/1" ? "forge.workspace/1" : "forge.workspace/2") ||
       typeof bundle.index.label !== "string" || [...bundle.index.label].length < 1 || [...bundle.index.label].length > 200 ||
       !Array.isArray(bundle.index.resources) || bundle.index.resources.length > 1000 ||
       !Array.isArray(bundle.pins) || bundle.pins.length !== bundle.index.resources.length) fail();
   const keys = new Set(); const paths = new Set();
-  const roles = ["policy-source", "oscal-catalog-artifact", "oscal-component-artifact", "mapping-collection", "applicability-manifest", "applicability-report", "trace-report"];
+  const roles = workspaceRoles(bundle.index.schema_version);
   for (let index = 0; index < bundle.index.resources.length; index++) {
     const resource = bundle.index.resources[index]; const pin = bundle.pins[index];
     if (!bundleClosedObject(resource, ["key", "role", "path"]) || typeof resource.key !== "string" ||
@@ -1110,4 +1631,774 @@ async function initializeForm(kind) {
   }
   form.append(node("p","After committing, register the manifest as an applicability manifest or mapping collection. Review metadata remains an assertion, not authenticated identity."));
   form.addEventListener("submit",event=>event.preventDefault());return form;
+}
+
+
+/** Retain metadata effects on the consumed additive2.2 and2.3 contracts. */
+function bundleEffectsSupported() { return apiMajor === 2 && ["2.2.0", "2.3.0", "2.4.0"].includes(apiContractVersion); }
+
+/** Choose report/metadata/source private media family from its preparation route, never its filename. */
+function exportDownloadContext(path, id) {
+  return path === "/exports" ? id : path === "/project/bundle-exports" ? {family:"metadata-bundle", operation_id:id} : path === "/project/source-bundle-exports" ? {family:"source-bundle", operation_id:id} : path === "/project/source-stream-exports" ? {family:"staged-source-bundle", operation_id:id} : undefined;
+}
+
+/** Check complete closed index metadata without treating it as source admission or approval. */
+function checkedReplacementIndex(value) {
+  if (!bundleClosedObject(value,["schema_version","label","resources"]) || !["forge.workspace/1","forge.workspace/2"].includes(value.schema_version) ||
+      typeof value.label !== "string" || [...value.label].length < 1 || [...value.label].length > 200 || !Array.isArray(value.resources) || value.resources.length > 1000)
+    throw new Error("The replacement returned an unsupported complete index.");
+  const keys = new Set(); const paths = new Set(); const roles = workspaceRoles(value.schema_version);
+  for (const row of value.resources) {
+    if (!bundleClosedObject(row,["key","role","path"]) || typeof row.key !== "string" || !/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(row.key) ||
+        keys.has(row.key) || !roles.includes(row.role) || typeof row.path !== "string" || row.path.length > 512 ||
+        !/^[A-Za-z0-9][A-Za-z0-9._-]*(\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/.test(row.path) || paths.has(row.path))
+      throw new Error("The replacement returned unsupported or duplicate registration metadata.");
+    keys.add(row.key); paths.add(row.path);
+  }
+  return value;
+}
+
+/** Reconcile closed public validation diagnostics before retaining a supposedly valid replacement. */
+function checkedImportValidation(value) {
+  if (!bundleClosedObject(value,["state","error_count","warning_count","diagnostics"]) || value.state !== "valid" || value.error_count !== 0 ||
+      !Number.isSafeInteger(value.warning_count) || value.warning_count < 0 || value.warning_count > 500 || !Array.isArray(value.diagnostics) || value.diagnostics.length > 500) return false;
+  let warnings=0;
+  for (const item of value.diagnostics) {
+    if (!item || typeof item !== "object" || Array.isArray(item) || Object.keys(item).some(key=>!["code","severity","message","resource_id","field"].includes(key)) ||
+        !["code","severity","message"].every(key=>Object.hasOwn(item,key)) || typeof item.code !== "string" || [...item.code].length < 3 || [...item.code].length > 100 ||
+        !["warning","info"].includes(item.severity) || typeof item.message !== "string" || [...item.message].length < 1 || [...item.message].length > 1000 ||
+        item.resource_id !== undefined && item.resource_id !== null && (typeof item.resource_id !== "string" || !/^res_[0-9a-z]{12,80}$/.test(item.resource_id)) ||
+        item.field !== undefined && item.field !== null && (typeof item.field !== "string" || [...item.field].length > 256)) return false;
+    if (item.severity === "warning") warnings++;
+  }
+  return warnings === value.warning_count;
+}
+
+/** Reconcile the new wrapped preview and complete removed membership before exact receipt review. */
+async function checkedBundleImportPreview(value, requestedIndexSchema) {
+  if (!bundleClosedObject(value,["validation","preview","replacement"]) || !checkedImportValidation(value.validation) ||
+      !value.preview?.preview_id || value.preview.operation_type !== "workspace-index-update" || value.preview.target?.path !== "forge.workspace.json")
+    throw new Error("The import did not return a valid exact index-replacement preview.");
+  const replacement = value.replacement;
+  if (!bundleClosedObject(replacement,["previous_index","proposed_index","supplied_index_sha256","proposed_index_sha256","removed_resource_keys","consumed_file_count"]) ||
+      typeof replacement.supplied_index_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(replacement.supplied_index_sha256) ||
+      typeof replacement.proposed_index_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(replacement.proposed_index_sha256) ||
+      replacement.proposed_index_sha256 !== value.preview.exact_bytes_sha256 || !Number.isSafeInteger(replacement.consumed_file_count) ||
+      replacement.consumed_file_count < 0 || replacement.consumed_file_count > 100 || !Array.isArray(replacement.removed_resource_keys) || replacement.removed_resource_keys.length > 100)
+    throw new Error("The import returned unsupported replacement hashes or capacity facts.");
+  const previous = replacement.previous_index === null ? null : checkedReplacementIndex(replacement.previous_index);
+  const proposed = checkedReplacementIndex(replacement.proposed_index);
+  if (requestedIndexSchema !== undefined && proposed.schema_version !== `forge.workspace/${requestedIndexSchema}`) throw new Error("The replacement target index version differs from the chosen request.");
+  if (previous?.schema_version === "forge.workspace/2" && proposed.schema_version === "forge.workspace/1") throw new Error("Index replacement cannot downgrade index2.");
+  const proposedKeys = new Set(proposed.resources.map(row=>row.key));
+  const removed = (previous?.resources ?? []).filter(row=>!proposedKeys.has(row.key)).map(row=>row.key);
+  if (JSON.stringify(removed) !== JSON.stringify(replacement.removed_resource_keys)) throw new Error("The replacement did not retain complete ordered removed keys.");
+  const consumedPaths = new Set([...(previous?.resources ?? []),...proposed.resources].map(row=>row.path));
+  if (previous !== null) consumedPaths.add("forge.workspace.json");
+  if (replacement.consumed_file_count !== consumedPaths.size)
+    throw new Error("The replacement consumed-file facts do not reconcile with complete membership.");
+  const normalized = {schema_version:proposed.schema_version,label:proposed.label,resources:proposed.resources.map(row=>({key:row.key,role:row.role,path:row.path}))};
+  const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",await new Blob([JSON.stringify(normalized,null,2)+"\n"]).arrayBuffer()));
+  const hash=Array.from(digest,byte=>byte.toString(16).padStart(2,"0")).join("");
+  if(hash!==replacement.proposed_index_sha256)throw new Error("The complete proposed membership differs from its normalized index hash.");
+  return value;
+}
+
+/** Show every previous/proposed registration and distinct normalized hashes before confirming replacement. */
+function appendBundleReplacement(content, replacement) {
+  content.append(node("h3","Complete project index replacement"),node("p","This changes the index label and ordered registrations. Source files are not copied or deleted; local acknowledgment is not domain approval."),
+    node("p",`Supplied normalized index SHA-256: ${replacement.supplied_index_sha256}`),node("p",`Proposed normalized index SHA-256: ${replacement.proposed_index_sha256}`),
+    node("p",`Consumed physical files: ${replacement.consumed_file_count}. Removed registration keys: ${replacement.removed_resource_keys.join(", ") || "none"}.`));
+  for (const [label,index] of [["Previous index",replacement.previous_index],["Proposed index",replacement.proposed_index]]) {
+    content.append(node("h4",label));
+    if (index === null) content.append(node("p","No project index was present."));
+    else content.append(node("p",`${index.schema_version}: ${index.label} (${index.resources.length} registrations)`),table(`${label} complete membership`,[["Key","key"],["Role","role"],["Project-relative path","path"]],index.resources));
+  }
+}
+
+/** Wrap one chosen file in the 80-byte numeric-selector envelope without parsing or rewriting raw bytes. */
+async function bundleImportBody(file, target) {
+  if (![1,2].includes(target) || !file || !Number.isSafeInteger(file.size) || file.size < 0 || typeof file.arrayBuffer !== "function") throw new Error("Choose one bundle file and an explicit target index version.");
+  const prefix = '{"bundle":'; const suffix = `,"target_index_schema_version":${target},"acknowledge_index_replacement":true}`;
+  const overhead = new Blob([prefix,suffix]).size;
+  if (file.size > 1024*1024-overhead) throw new Error("Chosen bundle and its 80-byte import wrapper must fit 1MiB.");
+  let bytes;
+  try { bytes = await file.arrayBuffer(); } catch { throw new Error("The chosen bundle could not be read. Choose it again."); }
+  if (!bytes || bytes.byteLength !== file.size) throw new Error("The chosen bundle changed while being read. Choose it again.");
+  const body = new Blob([prefix,new Uint8Array(bytes),suffix],{type:"application/json"});
+  if (body.size !== file.size+overhead || body.size > 1024*1024) throw new Error("The complete import request exceeds 1MiB.");
+  return body;
+}
+
+/** Install separate metadata-write forms without granting old query panels new mutation authority. */
+function bundleEffectsPanel() {
+  const section=node("section");section.setAttribute("data-bundle-panel","");section.setAttribute("data-bundle-effects","");
+  section.append(node("h2","Export metadata or replace the index"),node("p","API2 2.2.0, 2.3.0 or 2.4.0 metadata-only writes require an exact server receipt. Resource contents, domain approval and multi-file restore are excluded."));
+  const error=node("div");error.setAttribute("role","alert");error.tabIndex=-1;error.hidden=true;
+  const status=node("p");status.setAttribute("role","status");status.setAttribute("aria-live","polite");
+  const exportFields=node("div");const target=fieldInput(exportFields,"Metadata export project-relative target");
+  const sensitive=fieldInput(exportFields,"I acknowledge that exported labels, keys, paths and hashes are sensitive metadata.","checkbox");sensitive.required=false;
+  const importFields=node("div");const file=fieldInput(importFields,"Choose a bundle for index replacement","file");file.required=false;file.accept=".json,application/json";
+  const schema=fieldInput(importFields,"Replacement target index schema","select",[["1","Index 1 (seven roles)"],["2","Index 2 (fifteen roles)"]]);
+  const replacement=fieldInput(importFields,"I acknowledge replacing the index label and all registrations; source files will not be deleted.","checkbox");replacement.required=false;
+  let generation=0;let busy=false;
+  /** Permit only this installed form, writable session and current view epoch to dispatch a preparation. */
+  function installed() { return bundleEffectsSupported() && !stopped && activeView === "Trace & Reports" && section.isConnected && element("view").contains(section) && !element("view").inert; }
+  /** Preserve focused controls and guard duplicate activation while editing or preparing. */
+  function actions() {
+    exportButton.setAttribute("aria-disabled",String(!installed() || readOnly || busy || !target.value || !sensitive.checked));
+    importButton.setAttribute("aria-disabled",String(!installed() || readOnly || busy || !file.files?.length || !replacement.checked || !["1","2"].includes(schema.value)));
+    section.setAttribute("aria-busy",String(busy));
+  }
+  /** Retire unsent local work and require a new acknowledgment after form values change. */
+  function changed(event) { generation++;busy=false;error.hidden=true;dirty=true;if(event.target===target)sensitive.checked=false;if(event.target===file || event.target===schema)replacement.checked=false;actions(); }
+  /** Retire stale form callbacks without altering the old query panel or newer focus. */
+  function invalidate() { generation++;busy=false;sensitive.checked=false;replacement.checked=false;actions(); }
+  /** Keep current local read failures focused without returning the dirty-cancellation sentinel. */
+  function localFailure(failure,invoker) { error.textContent=failure instanceof Error?failure.message:"The bundle preparation could not be started.";error.hidden=false;status.textContent="No preparation was confirmed. Review the error and retry explicitly.";if(document.activeElement===invoker && !document.querySelector("dialog[open]"))error.focus(); }
+  /** Prepare an explicit metadata destination; existing operation rows own status and receipt review. */
+  async function prepareExport() {
+    if (!installed() || readOnly || busy || !target.value || !sensitive.checked) return;
+    const sequence=++generation;const epoch=pending;const body={target_path:target.value,acknowledge_sensitive_metadata:true};busy=true;error.hidden=true;actions();
+    /** Editing, leaving this view or stopping retires an export that has not been dispatched. */
+    const current=()=>installed() && sequence===generation && epoch===pending;
+    try { await effect("/project/bundle-exports","POST",body,undefined,current); }
+    catch(failure) {if(installed() && sequence===generation && epoch===pending)localFailure(failure,exportButton);}
+    finally {if(sequence===generation){busy=false;actions();}}
+  }
+  /** Read the exact chosen file and retain its immutable raw body/key through ordinary request recovery. */
+  async function prepareImport() {
+    if (!installed() || readOnly || busy || !file.files?.length || !replacement.checked || !["1","2"].includes(schema.value)) return;
+    const selected=file.files[0];const targetVersion=Number(schema.value);const sequence=++generation;const epoch=pending;busy=true;error.hidden=true;actions();
+    /** A changed selection, navigation or shutdown cannot dispatch the old opaque bytes after pacing. */
+    const current=()=>installed() && sequence===generation && epoch===pending;
+    try {const body=await bundleImportBody(selected,targetVersion);if(!current())return;await effect("/project/bundle-imports","POST",undefined,body,current,targetVersion);}
+    catch(failure) {if(current())localFailure(failure,importButton);}
+    finally {if(sequence===generation){busy=false;actions();}}
+  }
+  const exportButton=node("button","Prepare metadata export");exportButton.type="button";exportButton.addEventListener("click",prepareExport);
+  const importButton=node("button","Prepare index replacement");importButton.type="button";importButton.addEventListener("click",prepareImport);
+  target.addEventListener("input",changed);sensitive.addEventListener("change",changed);file.addEventListener("change",changed);schema.addEventListener("change",changed);replacement.addEventListener("change",changed);
+  section.append(exportFields,exportButton,importFields,importButton,node("p",readOnly?"Read-only session: metadata inspection remains available, but preparing or confirming writes is disabled.":"A chosen file and its 80-byte numeric import wrapper must fit 1MiB. Every incoming file must already exist inside this project; no source is restored."),status,error);
+  bundlePanels.set(section,invalidate);actions();return section;
+}
+
+/** Require the consumed source contract; earlier numeric API2 sessions retain their existing views. */
+function sourceBundleEffectsSupported() { return apiMajor === 2 && ["2.3.0", "2.4.0"].includes(apiContractVersion); }
+
+/** Validate portable project-relative display facts; native confinement remains server-owned. */
+function sourceRestorePath(value) {
+  if (typeof value !== "string" || value.length < 1 || value.length > 512 || !/^[A-Za-z0-9][A-Za-z0-9._-]*(\/[A-Za-z0-9][A-Za-z0-9._-]*)*$/.test(value)) return false;
+  return value.split("/").every(segment => !segment.endsWith(".") && !/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i.test(segment.split(".",1)[0]));
+}
+
+/** Admit only exact bounded counters, never boolean/string counter substitutions. */
+function sourceRestoreCount(value, maximum = 100) { return Number.isSafeInteger(value) && value >= 0 && value <= maximum; }
+
+/** Require exact server-issued lookup/preview IDs without making the public ID authorizing. */
+function sourceRestoreId(value, prefix = "op") { return typeof value === "string" && new RegExp(`^${prefix}_[0-9a-z]{12,80}$`).test(value); }
+
+/** Check a lowercase exact-byte or normalized-index SHA-256 fact. */
+function sourceRestoreHash(value) { return typeof value === "string" && /^[0-9a-f]{64}$/.test(value); }
+
+/** Check a current/proposed file generation and explicitly nullable registration identity. */
+function checkedSourceFileFact(value, prior = false) {
+  const fields = ["key","role","sha256","size",...(prior ? ["resource_id"] : [])];
+  if (!bundleClosedObject(value,fields) || !sourceRestoreHash(value.sha256) || !sourceRestoreCount(value.size,10*1024*1024) ||
+      value.key !== null && (typeof value.key !== "string" || !/^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(value.key)) ||
+      value.role !== null && !workspaceRoles("forge.workspace/2").includes(value.role) || (value.key === null) !== (value.role === null) ||
+      prior && ((value.key === null) !== (value.resource_id === null) || value.resource_id !== null && !sourceRestoreId(value.resource_id,"res")))
+    throw new Error("The source restore returned unsupported file-generation metadata.");
+  return value;
+}
+
+/** Check every closed batch target, binding and directory before retaining a confirmation receipt. */
+function checkedSourceRestorePreview(value) {
+  if (!bundleClosedObject(value,["preview_id","operation_id","operation_type","snapshot_version","observed_batch_version","exact_manifest_sha256","targets","input_bindings","directories","validation","semantic_summary","receipt"]) ||
+      !sourceRestoreId(value.preview_id,"prev") || !sourceRestoreId(value.operation_id) || value.operation_type !== "project-source-restore" ||
+      ![value.snapshot_version,value.observed_batch_version,value.exact_manifest_sha256].every(sourceRestoreHash) || !checkedImportValidation(value.validation) ||
+      typeof value.semantic_summary !== "string" || [...value.semantic_summary].length > 4000 ||
+      !bundleClosedObject(value.receipt,["token","expires_at"]) || typeof value.receipt.token !== "string" || value.receipt.token.length < 16 || value.receipt.token.length > 512 || typeof value.receipt.expires_at !== "string" || !Number.isFinite(Date.parse(value.receipt.expires_at)) ||
+      !Array.isArray(value.targets) || !value.targets.length || value.targets.length > 100 || !Array.isArray(value.input_bindings) || value.input_bindings.length > 100 || !Array.isArray(value.directories) || value.directories.length > 100)
+    throw new Error("The source restore did not return a complete valid batch preview.");
+  const targets=new Map();let diffBytes=0;
+  for (const target of value.targets) {
+    if (!bundleClosedObject(target,["path","kind","key","role","status","base_sha256","base_size","target_version","exact_bytes_sha256","size","diff_text","diff_truncated","binary"]) ||
+        !sourceRestorePath(target.path) || targets.has(target.path.toLowerCase()) || !["index","resource"].includes(target.kind) || !["create","overwrite"].includes(target.status) ||
+        typeof target.target_version !== "string" || target.target_version.length < 8 || target.target_version.length > 128 || typeof target.diff_text !== "string" ||
+        typeof target.diff_truncated !== "boolean" || typeof target.binary !== "boolean" ||
+        (target.path === "forge.workspace.json") !== (target.kind === "index") || (target.kind === "index") !== (target.key === null))
+      throw new Error("The source restore returned unsupported or duplicate complete targets.");
+    checkedSourceFileFact({key:target.key,role:target.role,sha256:target.exact_bytes_sha256,size:target.size});
+    if (target.status === "overwrite" ? !sourceRestoreHash(target.base_sha256) || !sourceRestoreCount(target.base_size,10*1024*1024) : target.base_sha256 !== null || target.base_size !== null)
+      throw new Error("The source restore did not identify each observed target base.");
+    diffBytes += new Blob([target.diff_text]).size; targets.set(target.path.toLowerCase(),target);
+  }
+  if (value.targets.at(-1).path !== "forge.workspace.json" || diffBytes > 200000) throw new Error("The source restore order or shared diff display bound is unsupported.");
+  const bindings=new Map();
+  for (const binding of value.input_bindings) {
+    if (!bundleClosedObject(binding,["path","kind","current","proposed"]) || !sourceRestorePath(binding.path) || bindings.has(binding.path.toLowerCase()) ||
+        !["index","resource"].includes(binding.kind) || (binding.path === "forge.workspace.json") !== (binding.kind === "index") || binding.current === null && binding.proposed === null)
+      throw new Error("The source restore returned unsupported complete input bindings.");
+    if (binding.current !== null) checkedSourceFileFact(binding.current,true);
+    if (binding.proposed !== null) checkedSourceFileFact(binding.proposed);
+    bindings.set(binding.path.toLowerCase(),binding);
+  }
+  for (const target of value.targets) {
+    const binding=bindings.get(target.path.toLowerCase());
+    if (!binding || binding.path !== target.path || !binding.proposed || ["key","role","size"].some(key=>binding.proposed[key] !== target[key]) || binding.proposed.sha256 !== target.exact_bytes_sha256 ||
+        (target.status === "create" ? binding.current !== null : !binding.current || binding.current.sha256 !== target.base_sha256 || binding.current.size !== target.base_size))
+      throw new Error("The source restore targets and complete observed/proposed bindings disagree.");
+  }
+  const directories=[];
+  for (const directory of value.directories) {
+    if (!bundleClosedObject(directory,["path","status","nearest_existing_parent_version"]) || !sourceRestorePath(directory.path) || directory.status !== "create" ||
+        directories.some(path=>path.toLowerCase()===directory.path.toLowerCase()) || typeof directory.nearest_existing_parent_version !== "string" ||
+        directory.nearest_existing_parent_version.length < 8 || directory.nearest_existing_parent_version.length > 128)
+      throw new Error("The source restore returned unsupported directory intentions.");
+    directories.push(directory.path);
+  }
+  if (directories.some((path,position)=>directories.slice(position+1).some(parent=>path.startsWith(parent+"/")))) throw new Error("The source restore directory plan is not parent-first.");
+  return value;
+}
+
+/** Validate full explicit index membership and portable aliases without granting domain approval. */
+function checkedSourceReplacementIndex(value) {
+  checkedReplacementIndex(value);
+  if (/[\x00-\x1f\x7f-\x9f]/.test(value.label)) throw new Error("The source replacement label contains unsupported control characters.");
+  const paths=new Set();
+  for (const row of value.resources) {
+    const path=row.path.toLowerCase();
+    if (!sourceRestorePath(row.path) || path === "forge.workspace.json" || paths.has(path)) throw new Error("The source replacement returned nonportable or aliased paths.");
+    paths.add(path);
+  }
+  return value;
+}
+
+/** Hash admitted ordered index fields plus LF, distinct from original uploaded bundle bytes. */
+async function sourceReplacementHash(index) {
+  const ordered={schema_version:index.schema_version,label:index.label,resources:index.resources.map(row=>({key:row.key,role:row.role,path:row.path}))};
+  const blob=new Blob([JSON.stringify(ordered,null,2)+"\n"]);
+  if (blob.size > 1024*1024) throw new Error("The complete proposed index exceeds its supported byte bound.");
+  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await blob.arrayBuffer())),byte=>byte.toString(16).padStart(2,"0")).join("");
+}
+
+/** Reconcile every index/target/removal relation before a source receipt enters the UI. */
+async function checkedSourceImportPreview(value, requestedIndexSchema) {
+  if (!bundleClosedObject(value,["validation","preview","replacement"]) || !checkedImportValidation(value.validation)) throw new Error("The source import did not return a valid complete preview.");
+  const preview=checkedSourceRestorePreview(value.preview); const replacement=value.replacement;
+  if (!sourceRestoreEqual(value.validation,preview.validation) || !bundleClosedObject(replacement,["previous_index","proposed_index","supplied_index_sha256","proposed_index_sha256","removed_resource_keys","consumed_file_count"]) ||
+      !sourceRestoreHash(replacement.supplied_index_sha256) || !sourceRestoreHash(replacement.proposed_index_sha256) || !sourceRestoreCount(replacement.consumed_file_count) ||
+      replacement.consumed_file_count !== preview.input_bindings.length || !Array.isArray(replacement.removed_resource_keys)) throw new Error("The source import replacement facts do not reconcile.");
+  const previous=replacement.previous_index === null ? null : checkedSourceReplacementIndex(replacement.previous_index);
+  const proposed=checkedSourceReplacementIndex(replacement.proposed_index);
+  if (![1,2].includes(requestedIndexSchema) || proposed.schema_version !== `forge.workspace/${requestedIndexSchema}` || proposed.resources.length > 99 ||
+      previous?.schema_version === "forge.workspace/2" && proposed.schema_version === "forge.workspace/1") throw new Error("The source replacement does not match the explicit index version or would downgrade it.");
+  const oldRows=previous?.resources ?? []; const incomingKeys=new Set(proposed.resources.map(row=>row.key));
+  const removed=oldRows.filter(row=>!incomingKeys.has(row.key)).map(row=>row.key);
+  if (JSON.stringify(removed) !== JSON.stringify(replacement.removed_resource_keys)) throw new Error("The source replacement omitted or reordered removed registration keys.");
+  const expected=new Set(["forge.workspace.json",...oldRows.map(row=>row.path),...proposed.resources.map(row=>row.path)]);
+  if (expected.size !== preview.input_bindings.length || preview.input_bindings.some(row=>!expected.has(row.path))) throw new Error("The complete planned path union differs from the replacement membership.");
+  const oldByPath=new Map(oldRows.map(row=>[row.path,row])); const incomingPaths=new Set(["forge.workspace.json",...proposed.resources.map(row=>row.path)]);
+  for (const binding of preview.input_bindings) {
+    const old=oldByPath.get(binding.path);
+    if (old ? !binding.current || binding.current.key !== old.key || binding.current.role !== old.role : binding.current && (binding.current.key !== null || binding.current.role !== null || binding.current.resource_id !== null))
+      throw new Error("The source restore mislabeled a registered or unregistered observed base.");
+    if ((binding.proposed !== null) !== incomingPaths.has(binding.path)) throw new Error("The source restore proposed bindings differ from complete incoming membership.");
+  }
+  const expectedTargets=[...proposed.resources.map(row=>[row.path,"resource",row.key,row.role]),["forge.workspace.json","index",null,null]];
+  if (JSON.stringify(preview.targets.map(row=>[row.path,row.kind,row.key,row.role])) !== JSON.stringify(expectedTargets) ||
+      preview.targets.at(-1).exact_bytes_sha256 !== replacement.proposed_index_sha256 || (previous === null) !== (preview.input_bindings.find(row=>row.path==="forge.workspace.json").current === null) ||
+      await sourceReplacementHash(proposed) !== replacement.proposed_index_sha256) throw new Error("The complete index target, normalized hash or original absence differs from the replacement.");
+  return {family:"source-restore",preview,replacement};
+}
+
+/** Retain exact opaque selected bytes in the explicit 147-byte source-import envelope. */
+async function sourceBundleImportBody(file, target) {
+  if (![1,2].includes(target) || !file || !sourceRestoreCount(file.size,1048429) || typeof file.arrayBuffer !== "function") throw new Error("Choose a source bundle no larger than 1048429 bytes and an explicit index version.");
+  const prefix='{"bundle":'; const suffix=`,"target_index_schema_version":${target},"acknowledge_index_replacement":true,"acknowledge_source_content":true,"acknowledge_replace_files":true}`;
+  const overhead=new Blob([prefix,suffix]).size;
+  if (overhead !== 147) throw new Error("The source import wrapper is unsupported.");
+  let bytes;
+  try {bytes=await file.arrayBuffer();} catch {throw new Error("The selected source bundle could not be read. Select it again.");}
+  if (!bytes || bytes.byteLength !== file.size) throw new Error("The selected source bundle changed while being read. Select it again.");
+  const body=new Blob([prefix,new Uint8Array(bytes),suffix],{type:"application/json"});
+  if (body.size !== file.size+147 || body.size > 1024*1024) throw new Error("The complete source import exceeds 1MiB.");
+  return body;
+}
+
+/** Enable staged transport only for the explicitly consumed additive contract. */
+function stagedSourceEffectsSupported() {
+  return apiMajor === 2 && apiContractVersion === "2.4.0";
+}
+
+/** Hash the original byte sequence without JSON normalization or hidden truncation. */
+async function stagedSourceHash(bytes) {
+  return Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
+    byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/** Require the finite staged profile and exact full/final part arithmetic. */
+function checkedStagedManifest(value, operationId) {
+  if (!bundleClosedObject(value, ["operation_id", "schema_version", "profile", "artifact_sha256",
+      "artifact_size_bytes", "chunk_size_bytes", "chunk_count", "source_content_included"]) ||
+      value.operation_id !== operationId || !sourceRestoreId(operationId) ||
+      value.schema_version !== "forge.workspace-index-bundle/4" ||
+      value.profile !== "index-and-source-hex-staged" || value.source_content_included !== true ||
+      !sourceRestoreHash(value.artifact_sha256) ||
+      !sourceRestoreCount(value.artifact_size_bytes, 10485760) || value.artifact_size_bytes === 0 ||
+      value.chunk_size_bytes !== 32768 || !sourceRestoreCount(value.chunk_count, 320) ||
+      value.chunk_count !== Math.ceil(value.artifact_size_bytes / 32768))
+    throw new Error("The staged source manifest is unsupported or incomplete.");
+  return value;
+}
+
+/** Validate transport progress independently from the server's held memory charge. */
+function checkedSourceStage(value, expected) {
+  if (!bundleClosedObject(value, ["stage_id", "schema_version", "profile", "artifact_sha256",
+      "artifact_size_bytes", "chunk_size_bytes", "chunk_count", "received_chunk_count",
+      "received_bytes", "state", "expires_at"]) ||
+      !sourceRestoreId(value.stage_id, "bst") || value.schema_version !== "forge.workspace-index-bundle/4" ||
+      value.profile !== "index-and-source-hex-staged" || !sourceRestoreHash(value.artifact_sha256) ||
+      !sourceRestoreCount(value.artifact_size_bytes, 10485760) || value.artifact_size_bytes === 0 ||
+      value.chunk_size_bytes !== 32768 || !sourceRestoreCount(value.chunk_count, 320) ||
+      value.chunk_count !== Math.ceil(value.artifact_size_bytes / 32768) ||
+      !sourceRestoreCount(value.received_chunk_count, value.chunk_count) ||
+      !sourceRestoreCount(value.received_bytes, value.artifact_size_bytes) ||
+      !["receiving", "ready", "preparing", "prepared", "discarded"].includes(value.state) ||
+      typeof value.expires_at !== "string" || !Number.isFinite(Date.parse(value.expires_at)))
+    throw new Error("The source transfer stage returned unsupported progress.");
+  const count = value.received_chunk_count;
+  const finalSize = value.artifact_size_bytes - (value.chunk_count - 1) * 32768;
+  const withoutFinal = count < value.chunk_count && value.received_bytes === count * 32768;
+  const withFinal = count > 0 && value.received_bytes === (count - 1) * 32768 + finalSize;
+  if (!(count === 0 && value.received_bytes === 0 || withoutFinal || withFinal) ||
+      ["ready", "preparing", "prepared"].includes(value.state) &&
+        (count !== value.chunk_count || value.received_bytes !== value.artifact_size_bytes) ||
+      value.state === "receiving" && count === value.chunk_count ||
+      expected && ["stage_id", "schema_version", "profile", "artifact_sha256", "artifact_size_bytes",
+        "chunk_size_bytes", "chunk_count", "expires_at"].some(key =>
+          expected[key] !== undefined && value[key] !== expected[key]))
+    throw new Error("The source transfer stage differs from the original accepted declaration.");
+  return value;
+}
+
+/** Decode one canonical bounded hex part and verify its original byte digest. */
+async function checkedStagedPart(value, manifest, ordinal) {
+  const size = Math.min(32768, manifest.artifact_size_bytes - ordinal * 32768);
+  if (!bundleClosedObject(value, ["operation_id", "artifact_sha256", "chunk_ordinal", "sha256", "size_bytes", "hex"]) ||
+      value.operation_id !== manifest.operation_id || value.artifact_sha256 !== manifest.artifact_sha256 ||
+      value.chunk_ordinal !== ordinal || !Number.isSafeInteger(ordinal) || ordinal < 0 ||
+      ordinal >= manifest.chunk_count || value.size_bytes !== size || !sourceRestoreHash(value.sha256) ||
+      typeof value.hex !== "string" || value.hex.length !== size * 2 || !/^[0-9a-f]+$/.test(value.hex))
+    throw new Error("The source download part differs from the exact manifest.");
+  const bytes = new Uint8Array(size);
+  for (let i = 0; i < size; i++) bytes[i] = parseInt(value.hex.slice(i * 2, i * 2 + 2), 16);
+  if (await stagedSourceHash(bytes) !== value.sha256)
+    throw new Error("The source download part does not match its byte hash.");
+  return bytes;
+}
+
+/** Reconstruct only a confirmed producer-owned generation under the current view. */
+async function stagedSourceDownload(operationId, expectedHash, isCurrent) {
+  if (!stagedSourceEffectsSupported() || !sourceRestoreId(operationId) || !sourceRestoreHash(expectedHash))
+    throw new Error("Staged source download requires a known committed export.");
+  const base = `/project/source-stream-exports/${encodeURIComponent(operationId)}`;
+  const manifest = checkedStagedManifest(await api(`${base}/manifest`, "GET", undefined,
+    undefined, undefined, isCurrent), operationId);
+  if (!isCurrent()) return null;
+  if (manifest.artifact_sha256 !== expectedHash)
+    throw new Error("The source manifest differs from the confirmed export preview.");
+  const bytes = new Uint8Array(manifest.artifact_size_bytes);
+  for (let ordinal = 0; ordinal < manifest.chunk_count; ordinal++) {
+    if (!isCurrent()) return null;
+    const part = await checkedStagedPart(await api(`${base}/chunks/${ordinal}`, "GET", undefined,
+      undefined, undefined, isCurrent), manifest, ordinal);
+    if (!isCurrent()) return null;
+    bytes.set(part, ordinal * 32768);
+  }
+  if (await stagedSourceHash(bytes) !== manifest.artifact_sha256)
+    throw new Error("The complete reconstructed source bundle differs from its manifest.");
+  if (!isCurrent()) return null;
+  return new Blob([bytes], {type: "application/json"});
+}
+
+/** Retain one explicit selected artifact and its immutable create request for manual retry. */
+async function stagedSourceSelection(file, target) {
+  if (!stagedSourceEffectsSupported() || ![1, 2].includes(target) || !file ||
+      !sourceRestoreCount(file.size, 10485760) || file.size === 0 || typeof file.arrayBuffer !== "function")
+    throw new Error("Choose a staged source bundle of 1 byte to 10 MiB and an explicit index version.");
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (bytes.byteLength !== file.size)
+    throw new Error("The selected source bundle changed while being read. Select it again.");
+  const create = {schema_version: "forge.workspace-index-bundle/4", profile: "index-and-source-hex-staged",
+    artifact_sha256: await stagedSourceHash(bytes), artifact_size_bytes: bytes.length,
+    chunk_size_bytes: 32768, chunk_count: Math.ceil(bytes.length / 32768),
+    acknowledge_sensitive_metadata: true, acknowledge_source_content: true};
+  return {bytes, file, target, create, key: crypto.randomUUID(), stage: null};
+}
+
+/** Send the original stage and exact parts; failures require explicit retry and never confirm writes. */
+async function stagedSourceUpload(selection, isCurrent, observe) {
+  if (!isCurrent()) return null;
+  if (!selection.stage) {
+    selection.stage = checkedSourceStage(await api("/project/source-transfer-stages", "POST",
+      selection.create, selection.key, undefined, isCurrent), selection.create);
+    observe(selection.stage);
+  }
+  const stage = selection.stage;
+  if (!isCurrent()) return null;
+  const base = `/project/source-transfer-stages/${encodeURIComponent(stage.stage_id)}`;
+  for (let ordinal = 0; ordinal < selection.create.chunk_count; ordinal++) {
+    if (!isCurrent()) return null;
+    const bytes = selection.bytes.subarray(ordinal * 32768, (ordinal + 1) * 32768);
+    const hash = await stagedSourceHash(bytes);
+    if (!isCurrent()) return null;
+    const body = {sha256: hash, size_bytes: bytes.length,
+      hex: Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("")};
+    const ack = await api(`${base}/chunks/${ordinal}`, "PUT", body, undefined, undefined, isCurrent);
+    if (!bundleClosedObject(ack, ["stage_id", "chunk_ordinal", "sha256", "size_bytes",
+        "received_chunk_count", "received_bytes", "expires_at"]) || ack.stage_id !== stage.stage_id ||
+        ack.chunk_ordinal !== ordinal || ack.sha256 !== hash || ack.size_bytes !== bytes.length ||
+        ack.expires_at !== stage.expires_at || ack.received_chunk_count < 1 ||
+        ack.received_bytes < bytes.length || ordinal === stage.chunk_count - 1 &&
+          ack.received_bytes !== (ack.received_chunk_count - 1) * 32768 + bytes.length)
+      throw new Error("The source part acknowledgment differs from the original immutable upload.");
+    // An identical retry returns this part's original acknowledgment counters.
+    // They are checked as a legal historical prefix, never displayed as current progress.
+    checkedSourceStage({...stage, received_chunk_count: ack.received_chunk_count,
+      received_bytes: ack.received_bytes, state: ack.received_chunk_count === stage.chunk_count ? "ready" : "receiving"}, stage);
+    if (!isCurrent()) return null;
+  }
+  selection.stage = checkedSourceStage(await api(base, "GET", undefined, undefined, undefined, isCurrent), stage);
+  if (!isCurrent()) return null;
+  observe(selection.stage);
+  if (selection.stage.state !== "ready")
+    throw new Error("The original source stage is no longer ready for a new preview. Check its status explicitly.");
+  return selection.stage;
+}
+
+/** Validate complete committed byte facts separately from cleanup qualification. */
+function checkedSourceRestoreResult(value, cleanup) {
+  if (!bundleClosedObject(value,["write_committed","exact_manifest_sha256","committed_targets","cleanup_state"]) || value.write_committed !== true || !sourceRestoreHash(value.exact_manifest_sha256) ||
+      value.cleanup_state !== cleanup || !["verified","pending","unverified"].includes(cleanup) || !Array.isArray(value.committed_targets) || !value.committed_targets.length || value.committed_targets.length > 100)
+    throw new Error("The source restore returned unsupported committed byte facts.");
+  const paths=new Set();
+  for (const target of value.committed_targets) {
+    if (!bundleClosedObject(target,["path","sha256","size"]) || !sourceRestorePath(target.path) || paths.has(target.path.toLowerCase()) || !sourceRestoreHash(target.sha256) || !sourceRestoreCount(target.size,10*1024*1024)) throw new Error("The source restore returned unsupported committed target membership.");
+    paths.add(target.path.toLowerCase());
+  }
+  if (value.committed_targets.at(-1).path !== "forge.workspace.json") throw new Error("The source restore did not report the committed index last.");
+  return value;
+}
+
+/** Check staging counters and batch outcome/cleanup pairs; cancellation acknowledgment is not rollback. */
+function checkedSourceRestoreOperation(value, id) {
+  if (!bundleClosedObject(value,["operation_id","kind","state","created_at","updated_at","cancel_requested","write_outcome","progress","result","error","cleanup_state"]) || value.operation_id !== id || !sourceRestoreId(id) ||
+      value.kind !== "bundle-restore" || !["pending","running","succeeded","failed","cancelled","recovery-required"].includes(value.state) ||
+      !["unmeasured","none","committed","unknown"].includes(value.write_outcome) || !["unmeasured","verified","pending","unverified"].includes(value.cleanup_state) || typeof value.cancel_requested !== "boolean" ||
+      typeof value.created_at !== "string" || typeof value.updated_at !== "string" || !Number.isFinite(Date.parse(value.created_at)) || !Number.isFinite(Date.parse(value.updated_at))) throw new Error("The source restore returned an unsupported operation identity or state.");
+  const active=["pending","running"].includes(value.state);
+  if (value.progress !== null && (!bundleClosedObject(value.progress,["completed_files","total_files"]) || !sourceRestoreCount(value.progress.completed_files) || !sourceRestoreCount(value.progress.total_files) ||
+      value.progress.completed_files > value.progress.total_files || !active || value.cancel_requested)) throw new Error("The source restore returned unsupported staging counters.");
+  if (active) {
+    if (value.write_outcome !== "unmeasured" || value.result !== null || value.error !== null) throw new Error("The source restore acknowledgment invented a terminal write outcome.");
+  } else if (value.state === "succeeded") {
+    if (value.write_outcome !== "committed" || value.error !== null) throw new Error("The source restore success did not verify a committed outcome.");
+    checkedSourceRestoreResult(value.result,value.cleanup_state);
+  } else {
+    if (["failed","cancelled"].includes(value.state) && (value.write_outcome !== "none" || value.cleanup_state !== "verified" || value.result !== null) || value.state === "recovery-required" && value.write_outcome === "unmeasured")
+      throw new Error("The source restore terminal state does not establish its declared rollback or recovery outcome.");
+    if (value.result !== null) {
+      if (value.state !== "recovery-required" || value.write_outcome !== "committed") throw new Error("The source restore terminal result conflicts with its write outcome.");
+      checkedSourceRestoreResult(value.result,value.cleanup_state);
+    }
+    if (!(value.state === "cancelled" && value.error === null)) {
+      const error=value.error;
+      if (!error || typeof error !== "object" || Array.isArray(error) || !["code","message","retryable"].every(key=>Object.hasOwn(error,key)) || Object.keys(error).some(key=>!["code","message","retryable","correlation_id","field","resource","resource_version"].includes(key)) ||
+          typeof error.code !== "string" || !error.code.length || error.code.length > 100 || typeof error.message !== "string" || !error.message.length || [...error.message].length > 500 || typeof error.retryable !== "boolean") throw new Error("The source restore terminal error was not a supported safe error.");
+    }
+  }
+  return value;
+}
+
+/** Keep lookup rows connected across navigation; stopped pages retain IDs without reviving credentials. */
+function sourceRestoreCurrent(row) { return sourceBundleEffectsSupported() && !stopped && row.article.isConnected && sourceRestoreRows.get(row.id) === row; }
+
+/** Keep focused native controls connected while preventing duplicate reads/cancellations. */
+function sourceRestoreActions(row) {
+  row.check.setAttribute("aria-disabled",String(stopped || !sourceBundleEffectsSupported() || row.checking || row.cancelling || row.polling));
+  row.cancel.setAttribute("aria-disabled",String(readOnly || stopped || !sourceBundleEffectsSupported() || row.cancelling || row.terminal || row.cancelRequested || row.unknown || !row.last));
+}
+
+/** Preserve the known public lookup after loss;404/expiry never proves no write or authorizes resend. */
+function sourceRestoreUnknown(row, failure) {
+  if(!row.terminal) {row.unknown=true;
+  row.status.textContent="Source restore outcome is unverified. Keep this operation ID and check it explicitly in a fresh same-project API2 2.3.0 or 2.4.0 session. A missing outcome is not proof that no files changed; do not resend confirmation.";}
+  row.error.textContent=failure instanceof Error ? failure.message : "The source restore outcome could not be verified.";row.error.hidden=false;
+  sourceRestoreActions(row);
+}
+
+/** Preserve validated outcome facts and transfer only focus owned by replaced result content. */
+function acceptSourceRestore(row, value) {
+  const checked=checkedSourceRestoreOperation(value,row.id); const active=["pending","running"].includes(checked.state);
+  if (row.terminal && active) return;
+  if (row.last?.write_outcome === "committed" && checked.write_outcome !== "committed") throw new Error("The source restore returned a conflicting committed outcome. Retain the ID and inspect recovery.");
+  if(row.last && Date.parse(checked.updated_at)<Date.parse(row.last.updated_at))return;
+  if(row.last && !["pending","running","recovery-required"].includes(row.last.state) && checked.state!==row.last.state && !(row.last.state==="succeeded" && checked.state==="recovery-required" && checked.write_outcome==="committed"))return;
+  if (row.progress && checked.progress && (row.progress.total_files !== checked.progress.total_files || row.progress.completed_files > checked.progress.completed_files)) throw new Error("The source restore returned inconsistent staging counters.");
+  if (row.expected && checked.result && (checked.result.exact_manifest_sha256 !== row.expected.exact_manifest_sha256 ||
+      !sourceRestoreEqual(checked.result.committed_targets,row.expected.targets.map(target=>({path:target.path,sha256:target.exact_bytes_sha256,size:target.size}))))) throw new Error("The source restore result does not match the complete confirmed byte plan.");
+  const previousResult=row.last?.result;
+  row.commitAttempted=true;row.last=checked;row.cancelRequested ||= checked.cancel_requested;row.terminal=!active;row.unknown=false;row.error.hidden=true;if(checked.progress)row.progress=checked.progress;
+  const progress=checked.progress ? `Staged files: ${checked.progress.completed_files} of ${checked.progress.total_files} reported.` : "Progress outside measured staging is indeterminate.";
+  const cleanup=checked.cleanup_state === "verified" ? "Cleanup verified." : `Cleanup ${checked.cleanup_state}; project access may remain blocked until qualified recovery.`;
+  row.status.textContent=active ? `Source restore ${checked.state}. ${row.cancelRequested ? "Cancellation requested; awaiting terminal outcome. " : ""}${progress}` :
+    checked.state === "succeeded" ? `Exact source bytes committed. ${cleanup} Refresh the project view explicitly.` :
+    ["failed","cancelled"].includes(checked.state) ? `Source restore ${checked.state}; verified rollback reports no committed write. ${cleanup}` :
+    `Source restore requires recovery. Write outcome: ${checked.write_outcome}. ${cleanup} Keep this operation ID; do not resend confirmation.`;
+  if (checked.error) {row.error.textContent=`${checked.error.code}: ${checked.error.message}`;row.error.hidden=false;}
+  if(!sourceRestoreEqual(previousResult ?? null,checked.result)) {
+    const transferFocus=row.result.contains(document.activeElement);row.result.replaceChildren();
+    if(checked.result)row.result.append(node("p",`Committed manifest SHA-256: ${checked.result.exact_manifest_sha256}`),table("Complete committed source targets",[["Path","path"],["Exact SHA-256","sha256"],["Bytes","size"]],checked.result.committed_targets));
+    if(transferFocus && sourceRestoreCurrent(row))row.status.focus();
+  }
+  sourceRestoreActions(row);
+}
+
+/** Create one bounded persistent nonauthorizing lookup row before a confirmation can leave the page. */
+function sourceRestoreRow(id, expected) {
+  if (!sourceRestoreId(id)) throw new Error("The source restore lookup ID is unsupported.");
+  const expectedFacts=expected ? {exact_manifest_sha256:expected.exact_manifest_sha256,targets:expected.targets.map(target=>({path:target.path,exact_bytes_sha256:target.exact_bytes_sha256,size:target.size}))} : undefined;
+  const existing=sourceRestoreRows.get(id);
+  if(existing) {
+    if(expectedFacts && existing.expected && !sourceRestoreEqual(expectedFacts,existing.expected))throw new Error("The source restore reused a lookup ID for a different complete plan.");
+    if(expectedFacts)existing.expected=expectedFacts;return existing;
+  }
+  if (sourceRestoreRows.size >= 256) throw new Error("The supported source outcome display bound was reached. Retain existing IDs and open a fresh same-project session.");
+  const article=node("article");article.setAttribute("data-source-restore-row",id);
+  const heading=node("h2",`Source restore ${id}`);heading.id=`source-restore-title-${id}`;article.setAttribute("aria-labelledby",heading.id);const status=node("p",expected ? "Preparation is ready for review. No restore has been confirmed; this lookup may return not-found until an intent is accepted." : "This supplied operation ID has not yet been verified and does not authorize a restore. Check its outcome explicitly.");
+  status.setAttribute("role","status");status.setAttribute("aria-live","polite");status.setAttribute("data-source-restore-status","");status.setAttribute("aria-label",`Source restore ${id} status`);status.tabIndex=-1;
+  const error=node("div");error.setAttribute("role","alert");error.setAttribute("data-source-restore-error","");error.tabIndex=-1;error.hidden=true;
+  const result=node("div");
+  const row={id,article,status,error,result,expected:expectedFacts,last:null,generation:0,progress:null,polling:false,checking:false,cancelling:false,terminal:false,cancelRequested:false,unknown:false,commitAttempted:false};
+  row.check=node("button","Check source restore status");row.check.type="button";
+  row.check.addEventListener("click",async()=>{
+    if(!sourceRestoreCurrent(row) || row.check.getAttribute("aria-disabled")==="true")return;
+    const focused=document.activeElement===row.check;
+    await pollSourceRestore(row,true);
+    if(focused && sourceRestoreCurrent(row) && document.activeElement===row.check)row.status.focus();
+  });
+  row.cancel=node("button","Request source restore cancellation");row.cancel.type="button";
+  row.cancel.addEventListener("click",async()=>{
+    if(!sourceRestoreCurrent(row) || row.cancel.getAttribute("aria-disabled")==="true")return;
+    row.cancelling=true;const generation=++row.generation;sourceRestoreActions(row);
+    try {const value=await api(`/project/bundle-restores/${encodeURIComponent(id)}/cancel`,"POST",{});if(!sourceRestoreCurrent(row) || generation!==row.generation)return;
+      const checked=checkedSourceRestoreOperation(value,id);if(checked.cancel_requested!==true && ["pending","running"].includes(checked.state))throw new Error("The source restore cancellation was not acknowledged.");acceptSourceRestore(row,checked);
+    }catch(failure){if(sourceRestoreCurrent(row) && generation===row.generation)sourceRestoreUnknown(row,failure);}
+    finally{row.cancelling=false;if(sourceRestoreCurrent(row))sourceRestoreActions(row);}
+  });
+  article.append(heading,status,node("p","Keep this nonauthorizing operation ID for explicit lookup after reconnect. Session receipts are not restored."),error,row.check,row.cancel,result);
+  operationRegion().append(article);sourceRestoreRows.set(id,row);sourceRestoreActions(row);return row;
+}
+
+/** Poll only GET for a known ID with one65-second caller budget; obsolete errors cannot erase cancellation. */
+async function pollSourceRestore(row, once = false) {
+  if(!sourceRestoreCurrent(row) || row.polling || row.checking)return;
+  row.polling=!once;row.checking=once;sourceRestoreActions(row);const deadline=performance.now()+65000;
+  try {
+    for(let reads=0;reads<130 && sourceRestoreCurrent(row);reads++) {
+      if(!once && (row.terminal || row.unknown))return;
+      if(performance.now()>=deadline)throw new Error("Source restore polling reached its caller budget. Check the known ID explicitly; do not resend confirmation.");
+      if(reads>0)await new Promise(resolve=>setTimeout(resolve,500));
+      if(!sourceRestoreCurrent(row))return;
+      if(performance.now()>=deadline)throw new Error("Source restore polling reached its caller budget. Check this ID explicitly.");
+      const generation=row.generation;
+      let value;
+      try{value=await api(`/project/bundle-restores/${encodeURIComponent(row.id)}`,"GET",undefined,undefined,undefined,()=>sourceRestoreCurrent(row) && performance.now()<deadline);}
+      catch(failure){if(!sourceRestoreCurrent(row))return;if(generation!==row.generation)continue;throw failure;}
+      if(!sourceRestoreCurrent(row))return;if(generation!==row.generation)continue;acceptSourceRestore(row,value);if(once || row.terminal)return;
+    }
+    if(sourceRestoreCurrent(row) && !row.terminal)sourceRestoreUnknown(row,new Error("Source restore polling reached its read bound. Check this ID explicitly."));
+  }catch(failure){if(sourceRestoreCurrent(row))sourceRestoreUnknown(row,failure);}
+  finally{row.polling=false;row.checking=false;if(sourceRestoreCurrent(row))sourceRestoreActions(row);}
+}
+
+/** Retain public IDs while retiring active checks and every old-session confirmation after shutdown. */
+function stopSourceRestoreRows() {
+  for(const row of sourceRestoreRows.values()) {row.generation++;row.status.textContent="Workspace stopped. Keep this operation ID and look it up explicitly in a fresh same-project API2 2.3.0 or 2.4.0 session. Old receipts cannot be reused; not-found does not prove no write.";sourceRestoreActions(row);}
+}
+
+/** Render every captured generation using declared text fields, never hidden receipt tokens or source objects. */
+function appendSourceReplacement(content, context) {
+  const {preview,replacement}=context;
+  content.append(node("p",preview.semantic_summary),node("p",`Snapshot: ${preview.snapshot_version}. Observed batch: ${preview.observed_batch_version}. Exact manifest: ${preview.exact_manifest_sha256}.`),
+    node("p",`Outcome lookup ID: ${preview.operation_id}. Receipt expires: ${preview.receipt.expires_at}.`),
+    node("p",`Complete planned files: ${replacement.consumed_file_count} of100; index included even if absent. Removed registration keys: ${replacement.removed_resource_keys.join(", ") || "none"}. Files removed from membership are retained on disk.`));
+  content.append(node("h3","Every target in publication order; index last"));
+  for(const target of preview.targets) {
+    const section=node("section");section.append(node("h4",`${target.status}: ${target.path}`),node("p",`${target.kind}. Registration key: ${target.key ?? "none"}. Role: ${target.role ?? "none"}.`),
+      node("p",`Observed base: ${target.base_sha256 ?? "absent"}; bytes: ${target.base_size ?? "absent"}; version: ${target.target_version}.`),node("p",`Exact proposed SHA-256: ${target.exact_bytes_sha256}; bytes: ${target.size}.`),
+      node("p",target.binary ? "Binary bytes are bound by the complete hash; no text diff is available." : target.diff_truncated ? "Diff truncated within the shared display budget; the hash binds all bytes." : "Text diff; the hash binds all bytes."),Object.assign(node("pre",target.diff_text),{tabIndex:0}));content.append(section);
+  }
+  content.append(node("h3","All current and proposed input bindings"));
+  for(const binding of preview.input_bindings) {
+    content.append(node("h4",`${binding.kind}: ${binding.path}`));
+    for(const [label,fact] of [["Current",binding.current],["Proposed",binding.proposed]]) content.append(node("p",fact ? `${label}: key ${fact.key ?? "unregistered"}; role ${fact.role ?? "none"}; ${label==="Current" ? `resource ID ${fact.resource_id ?? "none"}; ` : ""}SHA-256 ${fact.sha256}; bytes ${fact.size}.` : `${label}: absent.`));
+  }
+  content.append(table("Complete new directory intentions",[["Directory","path"],["Action","status"],["Nearest existing parent version","nearest_existing_parent_version"]],preview.directories),
+    node("h3","Complete index replacement"),node("p",`Supplied normalized index SHA-256: ${replacement.supplied_index_sha256}. Proposed normalized index SHA-256: ${replacement.proposed_index_sha256}.`));
+  for(const [label,index] of [["Previous index",replacement.previous_index],["Proposed index",replacement.proposed_index]]) {
+    content.append(node("h4",label));if(index===null)content.append(node("p","No index was present."));else content.append(node("p",`${index.schema_version}: ${index.label}; ${index.resources.length} registrations.`),table(`${label} complete source restore membership`,[["Key","key"],["Role","role"],["Path","path"]],index.resources));
+  }
+  content.append(node("p","Confirmation may create directories and replace every listed file. Workspace reads are fenced during publication/recovery; external CLI or editor readers may observe mixed whole-file generations. This receipt is not domain approval."));
+}
+
+/** Own one complete batch dialog; dismissal/new views invalidate the receipt UI, never the persistent lookup. */
+async function previewSourceRestore(context, isCurrent) {
+  if(!sourceBundleEffectsSupported() || !isCurrent() || stopped)return false;
+  const sequence=++previewGeneration;const epoch=pending;
+  const checked=await checkedSourceImportPreview({validation:context.preview.validation,preview:context.preview,replacement:context.replacement},Number(context.replacement.proposed_index.schema_version.at(-1)));
+  if(!isCurrent() || stopped || sequence!==previewGeneration || epoch!==pending)return false;
+  if(previewClosePending)await previewClosePending;
+  if(!isCurrent() || stopped || sequence!==previewGeneration || epoch!==pending)return false;
+  const row=sourceRestoreRow(checked.preview.operation_id,checked.preview);const dialog=element("preview-dialog");const content=element("preview-content");
+  let attempted=row.commitAttempted;let busy=false;let closingConfirmed=false;const key=crypto.randomUUID();
+  /** Only this open dialog may consume its receipt or publish its close/error/focus result. */
+  function current(requireOpen=true) {return !stopped && sourceBundleEffectsSupported() && sequence===previewGeneration && epoch===pending && dialog.isConnected && (requireOpen ? dialog.open : !document.querySelector("dialog[open]"));}
+  /** Native Escape retires immediately; queued closes cannot invalidate a later preview. */
+  function invalidate(event) {
+    if(event.type==="cancel")previewCloseLifecycle(dialog);
+    if(event.type==="close" && dialog.open)return;
+    if(event.type==="close"){dialog.removeEventListener("cancel",invalidate);dialog.removeEventListener("close",invalidate);}
+    if(sequence===previewGeneration && (!closingConfirmed || event.type==="cancel"))previewGeneration++;
+  }
+  /** Require complete acknowledgment, keep focused native controls enabled and prevent repeated commit. */
+  function actions() {confirm.setAttribute("aria-disabled",String(readOnly || attempted || row.commitAttempted || busy || !ack.checked || !current()));ack.disabled=attempted;}
+  /** Display only this still-owned dialog's safe failure, retaining the known ID after uncertain dispatch. */
+  function localFailure(failure) {if(!current())return;error.textContent=failure instanceof Error?failure.message:"The restore confirmation could not be verified.";error.hidden=false;error.focus();}
+  /** Dismiss immediately retires this UI receipt and waits for the native invoking-element lifecycle. */
+  function dismiss() {if(sequence===previewGeneration)previewGeneration++;return previewCloseLifecycle(dialog,true);}
+  /** Send one acknowledged batch; accepted/lost replies retain GET-only recovery without clearing newer forms. */
+  async function confirmRestore() {
+    if(!current() || readOnly || attempted || row.commitAttempted || busy || !ack.checked)return;
+    row.commitAttempted=true;attempted=true;busy=true;error.hidden=true;actions();row.generation++;
+    row.status.textContent="Confirmation sent or awaiting transport; outcome not yet verified. Keep this operation ID and never automatically resend.";
+    const request={receipt:checked.preview.receipt.token,observed_batch_version:checked.preview.observed_batch_version,acknowledge_exact_restore:true};
+    try {
+      const value=await api(`/project/bundle-restores/${encodeURIComponent(checked.preview.preview_id)}/commit`,"POST",request,key,undefined,()=>current());
+      if(!sourceRestoreCurrent(row))return;acceptSourceRestore(row,value);
+      if(current()){closingConfirmed=true;await previewCloseLifecycle(dialog,true);if(current(false))row.status.focus();}
+      if(sourceRestoreCurrent(row) && !row.terminal)void pollSourceRestore(row);
+    }catch(failure){if(sourceRestoreCurrent(row))sourceRestoreUnknown(row,failure);localFailure(new Error("The restore reply was not verified. Keep the displayed operation ID, check its status explicitly, and do not resend confirmation."));}
+    finally{busy=false;if(current())actions();}
+  }
+  dialog.addEventListener("cancel",invalidate);dialog.addEventListener("close",invalidate);dialog.querySelector("[role=alert]")?.remove();
+  content.replaceChildren(Object.assign(node("h2","Review complete exact source restore"),{id:"preview-title"}));
+  const facts=node("section");facts.setAttribute("data-bundle-panel","");appendSourceReplacement(facts,checked);content.append(facts);
+  if(attempted)content.append(node("p","This preview already has a confirmation attempt. Only check the known outcome ID; reopening this dialog cannot resend the receipt."));
+  const error=node("div");error.setAttribute("role","alert");error.tabIndex=-1;error.hidden=true;
+  const ack=fieldInput(content,"I reviewed every target, input binding, directory and index replacement; restore these exact bytes","checkbox");ack.required=false;
+  const confirm=node("button","Confirm this exact source restore");confirm.type="button";confirm.addEventListener("click",confirmRestore);
+  ack.addEventListener("change",actions);content.append(error,button("Keep editing",dismiss),confirm);dialog.showModal();content.querySelector("h2").tabIndex=-1;content.querySelector("h2").focus();actions();return true;
+}
+
+/** Install opt-in source preparation and explicit fresh-session lookup without changing metadata query authority. */
+function sourceBundleEffectsPanel() {
+  const section=node("section");section.setAttribute("data-bundle-panel","");section.setAttribute("data-source-bundle-effects","");
+  section.append(node("h2","Export or restore exact sources"),node("p","Source bytes, labels, keys, relative paths and hashes may be sensitive. Preparing a bundle does not approve domain data. Restore requires review and explicit confirmation of every target, directory and index."));
+  const error=node("div");error.setAttribute("role","alert");error.tabIndex=-1;error.hidden=true;const status=node("p");status.setAttribute("role","status");status.setAttribute("aria-live","polite");
+  const profileFields=node("div");
+  const profile=stagedSourceEffectsSupported() ? fieldInput(profileFields,"Source transfer profile","select",[["inline","Inline source bundle (existing profile)"],["staged","Staged source bundle (up to 10 MiB declaration)"]]) : null;
+  const exportFields=node("div");const target=fieldInput(exportFields,"Source export project-relative target");
+  const exportAck=fieldInput(exportFields,"Include exact source bytes and sensitive metadata in this export","checkbox");exportAck.required=false;
+  const importFields=node("div");const file=fieldInput(importFields,"Choose an exact source bundle JSON file","file");file.required=false;file.accept=".json,application/json";
+  const schema=fieldInput(importFields,"Source restore target index schema","select",[["1","Index 1 (seven roles)"],["2","Index 2 (fifteen roles)"]]);
+  const indexAck=fieldInput(importFields,"I acknowledge replacing the complete project index label and registrations","checkbox");indexAck.required=false;
+  const sourceAck=fieldInput(importFields,"I acknowledge including exact source bytes and sensitive metadata","checkbox");sourceAck.required=false;
+  const filesAck=fieldInput(importFields,"I understand the complete preview may create or overwrite project files","checkbox");filesAck.required=false;
+  const lookupFields=node("div");const lookup=fieldInput(lookupFields,"Source restore outcome operation ID");lookup.required=false;let generation=0;let busy=false;let selection=null;
+  const stageFields=node("div");const stageId=stagedSourceEffectsSupported() ? fieldInput(stageFields,"Unconfirmed source transfer stage ID") : null;
+  if(stageId)stageId.required=false;
+  /** Installed view ownership fences raw file reads and delayed preparation dispatch. */
+  function installed() {return sourceBundleEffectsSupported() && !stopped && activeView==="Trace & Reports" && section.isConnected && element("view").contains(section) && !element("view").inert;}
+  /** Keep native focus while guarding duplicate or unacknowledged preparation and explicit read actions. */
+  function actions() {
+    exportButton.setAttribute("aria-disabled",String(!installed() || readOnly || busy || !sourceRestorePath(target.value) || !exportAck.checked));
+    importButton.setAttribute("aria-disabled",String(!installed() || readOnly || busy || !file.files?.length || !["1","2"].includes(schema.value) || !indexAck.checked || !sourceAck.checked || !filesAck.checked));
+    lookupButton.setAttribute("aria-disabled",String(!installed() || busy || !sourceRestoreId(lookup.value)));section.setAttribute("aria-busy",String(busy));
+    if(stageId){retryStageButton.hidden=!selection?.bytes;retryStageButton.setAttribute("aria-disabled",String(!installed() || readOnly || busy || profile.value!=="staged" || !selection?.bytes || selection.file!==file.files?.[0] || selection.target!==Number(schema.value) || !indexAck.checked || !sourceAck.checked || !filesAck.checked));
+      stageStatusButton.setAttribute("aria-disabled",String(!installed() || busy || !sourceRestoreId(stageId.value,"bst")));stageDiscardButton.setAttribute("aria-disabled",String(!installed() || readOnly || busy || !sourceRestoreId(stageId.value,"bst")));}
+  }
+  /** Every authored selection retires unsent work and requires fresh relevant acknowledgments. */
+  function changed(event) {generation++;busy=false;error.hidden=true;if(event.target!==lookup)dirty=true;if(event.target===target)exportAck.checked=false;if(event.target===file || event.target===schema || event.target===profile){selection=null;indexAck.checked=false;sourceAck.checked=false;filesAck.checked=false;if(event.target===profile)exportAck.checked=false;}actions();}
+  /** Navigation/refresh/provenance retires all local acknowledgment and preparation ownership. */
+  function invalidate() {generation++;busy=false;selection=null;exportAck.checked=false;indexAck.checked=false;sourceAck.checked=false;filesAck.checked=false;actions();}
+  /** Keep current local failure focus only when the invoker still owns it. */
+  function localFailure(failure,invoker) {error.textContent=failure instanceof Error?failure.message:"The source preparation could not be started.";error.hidden=false;status.textContent="No source preparation was confirmed. Review the error and retry explicitly.";if(document.activeElement===invoker && !document.querySelector("dialog[open]"))error.focus();}
+  /** Source export opts into exact bytes and reserves its complete planning target slot. */
+  async function prepareExport() {
+    if(!installed() || readOnly || busy || !sourceRestorePath(target.value) || !exportAck.checked)return;
+    const sequence=++generation;const epoch=pending;const previewOwner=previewGeneration;const body={target_path:target.value,acknowledge_sensitive_metadata:true,acknowledge_source_content:true};busy=true;error.hidden=true;actions();
+    /** This selection must still own the view after the shared request pacing wait. */
+    const current=()=>installed() && sequence===generation && epoch===pending;
+    try{await effect(profile?.value==="staged" ? "/project/source-stream-exports" : "/project/source-bundle-exports","POST",body,undefined,current,undefined,previewOwner);}catch(failure){if(current())localFailure(failure,exportButton);}finally{if(sequence===generation){busy=false;actions();}}
+  }
+  /** Preserve exact chosen JSON bytes and every explicit acknowledgment through delayed raw admission. */
+  async function prepareImport() {
+    if(!installed() || readOnly || busy || !file.files?.length || !["1","2"].includes(schema.value) || !indexAck.checked || !sourceAck.checked || !filesAck.checked)return;
+    const selected=file.files[0];const targetVersion=Number(schema.value);const sequence=++generation;const epoch=pending;const previewOwner=previewGeneration;busy=true;error.hidden=true;actions();
+    /** Retire old selected bytes after file changes, navigation, refresh or shutdown. */
+    const current=()=>installed() && sequence===generation && epoch===pending;
+    try{
+      if(profile?.value==="staged"){
+        if(!selection){const chosen=await stagedSourceSelection(selected,targetVersion);if(!current() || previewOwner!==previewGeneration)return;selection=chosen;}
+        if(selection.file!==selected || selection.target!==targetVersion || !selection.bytes)throw new Error("Select the original staged file again or check the retained preparation request.");
+        /** Show actual stage progress and retain its public ID before preview admission. */
+        const observe=value=>{if(current()){stageId.value=value.stage_id;status.textContent=`Stage ${value.stage_id}: ${value.state}; received ${value.received_chunk_count}/${value.chunk_count} parts, ${value.received_bytes}/${value.artifact_size_bytes} bytes. Original expiry: ${value.expires_at}. No write confirmed.`;}};
+        const stage=await stagedSourceUpload(selection,current,observe);
+        if(!stage || !current() || previewOwner!==previewGeneration)return;
+        const body={target_index_schema_version:targetVersion,acknowledge_index_replacement:true,acknowledge_source_content:true,acknowledge_replace_files:true};
+        selection.bytes=null;
+        await effect(`/project/source-transfer-stages/${encodeURIComponent(stage.stage_id)}/preview`,"POST",body,undefined,current,targetVersion,previewOwner);
+      }else{const body=await sourceBundleImportBody(selected,targetVersion);if(!current() || previewOwner!==previewGeneration)return;await effect("/project/source-bundle-imports","POST",undefined,body,current,targetVersion,previewOwner);}
+    }catch(failure){if(current())localFailure(failure,importButton);}finally{if(sequence===generation){busy=false;actions();}}
+  }
+  /** Look up one explicitly supplied public ID; no old receipt or session authority is revived. */
+  async function lookupOutcome() {
+    if(!installed() || busy || !sourceRestoreId(lookup.value))return;
+    const row=sourceRestoreRow(lookup.value);const epoch=pending;const sequence=++generation;busy=true;error.hidden=true;actions();
+    try{await pollSourceRestore(row,true);if(installed() && sequence===generation && epoch===pending && document.activeElement===lookupButton)row.status.focus();}catch(failure){if(installed() && sequence===generation && epoch===pending)localFailure(failure,lookupButton);}finally{if(sequence===generation){busy=false;actions();}}
+  }
+  /** Observe or retire only unconfirmed transport; confirmed outcomes keep their separate lookup. */
+  async function inspectStage(discard=false){
+    if(!stageId || !installed() || busy || discard && readOnly || !sourceRestoreId(stageId.value,"bst"))return;
+    const id=stageId.value;const sequence=++generation;const epoch=pending;busy=true;error.hidden=true;actions();
+    /** Retire delayed stage transport results when their installed view loses ownership. */
+    const current=()=>installed() && sequence===generation && epoch===pending;
+    try{const value=await api(`/project/source-transfer-stages/${encodeURIComponent(id)}`,discard?"DELETE":"GET",undefined,undefined,undefined,current);if(!current())return;
+      if(discard){if(!bundleClosedObject(value,["stage_id","discarded"]) || value.stage_id!==id || value.discarded!==true)throw new Error("The source stage discard was not verified.");if(selection?.stage?.stage_id===id)selection=null;status.textContent=`Stage ${id}: unconfirmed transport discarded. This does not cancel a restore receipt or accepted operation.`;}
+      else{const valueStage=checkedSourceStage(value,selection?.stage?.stage_id===id?selection.stage:undefined);if(valueStage.stage_id!==id)throw new Error("The stage status differs from the requested ID.");status.textContent=`Stage ${id}: ${valueStage.state}; received ${valueStage.received_chunk_count}/${valueStage.chunk_count} parts, ${valueStage.received_bytes}/${valueStage.artifact_size_bytes} bytes. Original expiry: ${valueStage.expires_at}. Transport progress does not establish a restore outcome.`;}
+    }catch(failure){if(current())localFailure(failure,discard?stageDiscardButton:stageStatusButton);}finally{if(sequence===generation){busy=false;actions();}}
+  }
+  const retryStageButton=node("button","Retry the same staged upload");retryStageButton.type="button";retryStageButton.addEventListener("click",prepareImport);
+  const stageStatusButton=node("button","Check source stage status");stageStatusButton.type="button";stageStatusButton.addEventListener("click",()=>inspectStage());
+  const stageDiscardButton=node("button","Discard unconfirmed source stage");stageDiscardButton.type="button";stageDiscardButton.addEventListener("click",()=>inspectStage(true));
+  const exportButton=node("button","Prepare source export");exportButton.type="button";exportButton.addEventListener("click",prepareExport);
+  const importButton=node("button","Prepare source restore");importButton.type="button";importButton.addEventListener("click",prepareImport);
+  const lookupButton=node("button","Look up source restore outcome");lookupButton.type="button";lookupButton.addEventListener("click",lookupOutcome);
+  for(const control of [target,lookup,...(stageId?[stageId]:[])])control.addEventListener("input",changed);
+  for(const control of [exportAck,file,schema,indexAck,sourceAck,filesAck,...(profile?[profile]:[])])control.addEventListener("change",changed);
+  section.append(profileFields,exportFields,exportButton,importFields,importButton,node("p",readOnly ? "Read-only session: source preparation/confirmation and cancellation are unavailable; known outcome lookup remains available." : "Exact source bundle bytes must fit1048429 bytes plus the147-byte acknowledged wrapper. Inline restore allows at most99 incoming resources with the index in the complete100-file union. Distinct export target plus present index allows at most98 registered resources."),lookupFields,lookupButton,node("p","After a lost reply or restart, launch a fresh same-project API2 2.3.0 or 2.4.0 session and explicitly look up the known ID. Not-found is not proof of no write and never authorizes a blind resend."),status,error);
+  if(stageId)section.append(node("p","Staged transport declares up to 10 MiB in exact 32 KiB parts. The shared session and native preparation peak can refuse smaller artifacts. A lost reply requires an explicit same-upload retry; preview still requires complete review and one confirmation."),retryStageButton,stageFields,stageStatusButton,stageDiscardButton);
+  bundlePanels.set(section,invalidate);actions();return section;
+}
+
+/** Compare validated bounded DTO trees without treating JSON member order as semantic authority. */
+function sourceRestoreEqual(left, right) {
+  if(left===right)return true;
+  if(!left || !right || typeof left!=="object" || typeof right!=="object" || Array.isArray(left)!==Array.isArray(right))return false;
+  if(Array.isArray(left))return left.length===right.length && left.every((value,index)=>sourceRestoreEqual(value,right[index]));
+  const keys=Object.keys(left).sort();const others=Object.keys(right).sort();
+  return keys.length===others.length && keys.every((key,index)=>key===others[index] && sourceRestoreEqual(left[key],right[key]));
 }

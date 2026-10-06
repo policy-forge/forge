@@ -1,0 +1,30 @@
+{
+  "as_of": "2026-10-02",
+  "availability": "available",
+  "counts": {
+    "distinct_records": 1,
+    "matching_groups": 1,
+    "matching_owner_placements": 1,
+    "total_groups": 1,
+    "total_owner_placements": 1
+  },
+  "page": {
+    "items": [
+      {
+        "blockers": [],
+        "derived_status": "approved",
+        "next_review_date": "2026-11-02",
+        "owner_key": "owner-a",
+        "policy_key": "policy-a",
+        "record_id": "res_11111111111111111111111111111111",
+        "resource_id": "res_11111111111111111111111111111111",
+        "state": "approved",
+        "version_key": "v1"
+      }
+    ],
+    "next_cursor": null,
+    "total_matching": 1
+  },
+  "resource_version": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "snapshot_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

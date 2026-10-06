@@ -922,3 +922,116 @@ fn transition_rejects_hard_link_alias_without_changing_record() {
     assert_eq!(std::fs::read(&fixture.record).expect("record"), before);
     assert_eq!(std::fs::read(alias).expect("alias"), before);
 }
+
+/// Preserve complete check/status/queue reports, repeated bytes, and original captured sources.
+#[test]
+fn captured_status_projector_preserves_cli_reports_and_sources() {
+    let fixture = Fixture::new("captured-cli-policy", false);
+    let source_before = std::fs::read(&fixture.source).expect("source bytes");
+    let artifact_before = std::fs::read(&fixture.artifact).expect("artifact bytes");
+    let record_before = std::fs::read(&fixture.record).expect("record bytes");
+    let record: Value = serde_json::from_slice(&record_before).expect("record value");
+    let fingerprints = json!({
+        "source_sha256": record["policy"]["source"]["sha256"],
+        "generated_artifacts": [{
+            "path": record["policy"]["generated_artifacts"][0]["path"],
+            "sha256": record["policy"]["generated_artifacts"][0]["sha256"]
+        }]
+    });
+    let trust =
+        "actor identities and authority are declared locally and are not authenticated by FORGE";
+    for command in ["check", "status", "queue"] {
+        let mut args = vec![
+            "lifecycle",
+            command,
+            "--record",
+            fixture.record.to_str().expect("record path"),
+            "--format",
+            "json",
+        ];
+        if command != "check" {
+            args.extend(["--as-of", "2026-10-01", "--gate", "none"]);
+        }
+        let first = run(&args);
+        let repeated = run(&args);
+        assert_eq!(first.status.code(), Some(0), "{}", String::from_utf8_lossy(&first.stderr));
+        assert_eq!(repeated.status.code(), Some(0));
+        assert_eq!(first.stdout, repeated.stdout);
+        let report: Value = serde_json::from_slice(&first.stdout).expect("complete report");
+        let expected = if command == "queue" {
+            json!({
+                "schema_version": "forge.policy-lifecycle-queue/1", "as_of": "2026-10-01",
+                "groups": [{
+                    "owner_key": "owner", "next_review_date": "2026-09-24",
+                    "items": [{
+                        "policy_key": "captured-cli-policy", "version_key": "v1",
+                        "state": "draft", "derived_status": "overdue", "blockers": ["overdue"],
+                        "impact_finding_ids": []
+                    }]
+                }],
+                "trust_boundary": trust
+            })
+        } else {
+            json!([{
+                "schema_version": "forge.policy-lifecycle-status/1",
+                "policy_key": "captured-cli-policy", "version_key": "v1", "state": "draft",
+                "derived_status": if command == "check" { "draft" } else { "overdue" },
+                "owner_keys": ["owner"], "next_review_date": "2026-09-24",
+                "as_of": if command == "check" { Value::Null } else { json!("2026-10-01") },
+                "blockers": if command == "check" { json!([]) } else { json!(["overdue"]) },
+                "current_fingerprints": fingerprints, "approved_fingerprints": null,
+                "artifact_identity_changes": [], "event_ids": [], "impact_finding_ids": [],
+                "replaced_by": null, "trust_boundary": trust
+            }])
+        };
+        assert_eq!(report, expected, "complete {command} report");
+    }
+    assert_eq!(std::fs::read(&fixture.source).unwrap(), source_before);
+    assert_eq!(std::fs::read(&fixture.artifact).unwrap(), artifact_before);
+    assert_eq!(std::fs::read(&fixture.record).unwrap(), record_before);
+}
+
+/// Keep ordinary required artifact reads and reject before stdout or destination publication.
+#[test]
+fn captured_status_cli_requires_artifact_reads_before_publication() {
+    let fixture = Fixture::new("captured-missing-artifact", false);
+    let source_before = std::fs::read(&fixture.source).expect("source bytes");
+    let record_before = std::fs::read(&fixture.record).expect("record bytes");
+    std::fs::remove_file(&fixture.artifact).expect("remove synthetic artifact");
+    let directory = fixture.record.parent().expect("fixture directory");
+    for command in ["check", "status", "queue"] {
+        for existing in [false, true] {
+            let output = directory.join(format!("{command}-{existing}-report.json"));
+            let sentinel = b"existing destination must survive\n";
+            if existing {
+                std::fs::write(&output, sentinel).expect("destination sentinel");
+            }
+            let mut args = vec![
+                "lifecycle",
+                command,
+                "--record",
+                fixture.record.to_str().expect("record path"),
+                "--format",
+                "json",
+                "--output",
+                output.to_str().expect("output path"),
+            ];
+            if command != "check" {
+                args.extend(["--as-of", "2026-10-01", "--gate", "none"]);
+            }
+            let result = run(&args);
+            assert_eq!(result.status.code(), Some(2));
+            assert_eq!(result.stdout.as_slice(), [] as [u8; 0]);
+            assert!(
+                String::from_utf8_lossy(&result.stderr).contains("captured-missing-artifact.json")
+            );
+            if existing {
+                assert_eq!(std::fs::read(&output).unwrap(), sentinel);
+            } else {
+                assert!(!output.exists());
+            }
+        }
+    }
+    assert_eq!(std::fs::read(&fixture.source).unwrap(), source_before);
+    assert_eq!(std::fs::read(&fixture.record).unwrap(), record_before);
+}

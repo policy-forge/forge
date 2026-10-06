@@ -1,0 +1,464 @@
+{
+  "baseline": "cffbb70b4d6a50e73eaf430867bb18f5b0369329",
+  "candidate_sources": [
+    {
+      "bytes": 38431,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-candidate-v1/candidate/scripts/test_workspace_hosted_chrome.py",
+      "repository_path": "scripts/test_workspace_hosted_chrome.py",
+      "sha256": "c1f5ab39e1c05a7de0b16d6c24a8dea5078ddcab30cb88848cb31f6e46900e76"
+    },
+    {
+      "bytes": 14542,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-candidate-v1/candidate/scripts/verify_workspace_hosted_chrome.py",
+      "repository_path": "scripts/verify_workspace_hosted_chrome.py",
+      "sha256": "a435cdee027a6aa0d058ea756194408f8db438872f4b6a82e1995bc576b62b20"
+    },
+    {
+      "bytes": 79857,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-candidate-v1/candidate/scripts/test_verify_workspace_hosted_chrome.py",
+      "repository_path": "scripts/test_verify_workspace_hosted_chrome.py",
+      "sha256": "8912a9ddf4cab27c22dec322e9b1ab3c986900a4dd4a04e2b1ec715108eca523"
+    },
+    {
+      "bytes": 56065,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-candidate-v1/candidate/ui/tests/workspace.cjs",
+      "repository_path": "ui/tests/workspace.cjs",
+      "sha256": "2856924cd28c47207ccc016772b4698280377091f793d56f06849e38be4de065"
+    },
+    {
+      "bytes": 4620,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-candidate-v1/candidate/ui/tests/workspace_failure.cjs",
+      "repository_path": "ui/tests/workspace_failure.cjs",
+      "sha256": "bf370dc67fb24daf16af786b29f733bae13a69397bbc9e9726e44038f855598e"
+    },
+    {
+      "bytes": 17184,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-candidate-v1/candidate/ui/tests/workspace_failure.test.cjs",
+      "repository_path": "ui/tests/workspace_failure.test.cjs",
+      "sha256": "f4ca54c02d36c1743afb5b1b4dd497c628c3b4c6bc2f5751d8538c58708228e3"
+    }
+  ],
+  "evidence": [
+    {
+      "bytes": 90888,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-python-root-controls-v1/coverage.json",
+      "retained_path": "inputs/python-root/coverage.json",
+      "sha256": "d6fd7fa6380c9b2864352e0061b83aad78285020f742e1479c6a2580dd012728"
+    },
+    {
+      "bytes": 18805,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-python-root-controls-v1/raw-unittest.log",
+      "retained_path": "inputs/python-root/raw-unittest.log",
+      "sha256": "fc455bba21c55f68e7ee0b1f733d127f671226deac0e84e1b4f40a966c12183b"
+    },
+    {
+      "bytes": 6272,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-python-author-v1/index.json",
+      "retained_path": "inputs/python-author/index.json",
+      "sha256": "1f01a27ab6851c917e6cade1a61831834d083c71e7632c3903aac9e25feb8176"
+    },
+    {
+      "bytes": 4792,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-python-author-v1/packet.json",
+      "retained_path": "inputs/python-author/packet.json",
+      "sha256": "d5a6179dbc74a5df94f07a77813e040294087e4eeb0c080137aeefe5c61fd792"
+    },
+    {
+      "bytes": 174270,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-python-author-v1/coverage.json",
+      "retained_path": "inputs/python-author/coverage.json",
+      "sha256": "c8b6b833cef8ecf6f96a1ce6a356db517b09405befc5abf32ac261c38a093702"
+    },
+    {
+      "bytes": 23273,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-python-author-v1/source-delta.json",
+      "retained_path": "inputs/python-author/source-delta.json",
+      "sha256": "5baddc6703b2ce2e851cb3baed142152aa04e4aa7b34783ce3a931a93b45abad"
+    },
+    {
+      "bytes": 17749,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-python-author-v1/controls.log",
+      "retained_path": "inputs/python-author/controls.log",
+      "sha256": "69f5eb1d98cd347f8a21f6708f686342f5e7b2ca2a49891fe2fe0a6857375531"
+    },
+    {
+      "bytes": 89892,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-node-controls-v1/receipt.json",
+      "retained_path": "inputs/node-root/receipt.json",
+      "sha256": "8f736d7a6ab9baf02fea5e14290c16bb92a7bd8731db98b494532164565e1bfe"
+    },
+    {
+      "bytes": 135185,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-node-controls-v1/coverage.json",
+      "retained_path": "inputs/node-root/coverage.json",
+      "sha256": "74b0dcf19f11a917efd3c0e1f651c0fb500658d7ed5627c820cc13a50dfaf444"
+    },
+    {
+      "bytes": 2868,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-node-controls-v1/controls.stdout.log",
+      "retained_path": "inputs/node-root/controls.stdout.log",
+      "sha256": "c224a7de662adc62e274d27c720fd0010635a06befd950b451ed0a4f3cab5439"
+    },
+    {
+      "bytes": 652,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-node-controls-v1/coverage.stdout.log",
+      "retained_path": "inputs/node-root/coverage.stdout.log",
+      "sha256": "9e9d88f1c7eec1beef0a1c37cd56e0567f94f6a682b147a413be9d8f130af2c2"
+    },
+    {
+      "bytes": 2316126,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-node-controls-v1/v8/coverage-45134-1790984577954-0.json",
+      "retained_path": "inputs/node-root/v8/coverage-45134-1790984577954-0.json",
+      "sha256": "a411bbe54e92186677f2ee15ad3eced72869ade63410cb9833c7cae21dabf301"
+    },
+    {
+      "bytes": 2113,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-candidate-v1/baseline.json",
+      "retained_path": "inputs/candidate/baseline.json",
+      "sha256": "bb2579e9a3dda421479331511a2a892be559736aec128a83e437bd708fb4cc29"
+    },
+    {
+      "bytes": 12523,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-candidate-v1/python-root-independent-source-review-v1.json",
+      "retained_path": "inputs/candidate/python-root-independent-source-review-v1.json",
+      "sha256": "aa649e3f36977a4b80938bdafbda1e7b8bc793e9918e0d59fcdb5b3ddc8cdb42"
+    },
+    {
+      "bytes": 1773783,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-candidate-v1/cjs-assertion-ast-comparison-v1.json",
+      "retained_path": "inputs/candidate/cjs-assertion-ast-comparison-v1.json",
+      "sha256": "19e50fe90512b8c491002aebca9693aba74a927c27bfdb7afed99f570e853450"
+    },
+    {
+      "bytes": 18371,
+      "path": "/private/tmp/forge-f04-chrome-await-hosted-readback-v1/index.json",
+      "retained_path": "inputs/fifth-hosted/index.json",
+      "sha256": "65641d9df8819cc5e0c6c3bfb43843a4ddef14a90f87ad573bfea47912024817"
+    },
+    {
+      "bytes": 73980,
+      "path": "/private/tmp/forge-f04-chrome-await-hosted-readback-v1/qualification.json",
+      "retained_path": "inputs/fifth-hosted/qualification.json",
+      "sha256": "fe9b6a68134624eec58ecdff05f57acd172e687d101036df604bbe73ac8a37cf"
+    },
+    {
+      "bytes": 11860,
+      "path": "/private/tmp/forge-f04-chrome-await-hosted-readback-v1/workspace-hosted-chrome-verification.json",
+      "retained_path": "inputs/fifth-hosted/workspace-hosted-chrome-verification.json",
+      "sha256": "4b7a36dd729993a6ce10bee6db7d23496422bad05fdcbae82cc40a0c04ef810f"
+    },
+    {
+      "bytes": 4148,
+      "path": "/private/tmp/forge-f04-chrome-await-hosted-readback-v1/chrome-artifact.zip",
+      "retained_path": "inputs/fifth-hosted/chrome-artifact.zip",
+      "sha256": "5607c47f8858db13a4f1d0fe62ba16e514c78f87272f6b2c66d3da05350cfa24"
+    },
+    {
+      "bytes": 3100,
+      "path": "/private/tmp/forge-f04-chrome-await-hosted-readback-v1/readback.md",
+      "retained_path": "inputs/fifth-hosted/readback.md",
+      "sha256": "5253835b925f5402d48c1db7ea4992fd85d4e9c6a25124e5378a438dc3a926fb"
+    },
+    {
+      "bytes": 58672,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-js-independent-review-v1/index.json",
+      "retained_path": "inputs/js-independent/index.json",
+      "sha256": "34329500a41e73816060c830eeea249e75a1233cd4ab895ef61149ebcc36d1e3"
+    },
+    {
+      "bytes": 20978,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-js-independent-review-v1/review.json",
+      "retained_path": "inputs/js-independent/review.json",
+      "sha256": "ad3d9c7b3288c29f62a014a77be717fe3c584e60db5e5e8720bb29ce9bb3c218"
+    },
+    {
+      "bytes": 4311,
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-candidate-v1/python-coverage-scope-comparison-v1.json",
+      "retained_path": "inputs/candidate/python-coverage-scope-comparison-v1.json",
+      "sha256": "602739f196f785de799f761fb867134d63e8ff3ffccdfdf4c3b04c5918ccdf58"
+    },
+    {
+      "path": "/private/tmp/forge-f04-chrome-screenshot-metadata-correction-v1/python-coverage-scope-comparison-v2.json",
+      "bytes": 4927,
+      "sha256": "fc4284eec67eac4f3274b71b81025cc89c606c8720b4732f5eb32c0f0de6675f",
+      "retained_path": "inputs/metadata-correction/python-coverage-scope-comparison-v2.json"
+    }
+  ],
+  "fresh_hosted_outcome": null,
+  "full_integrated_end_documentation_review_complete": false,
+  "independent_reviews": [
+    {
+      "kind": "Python root independent source review",
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-candidate-v1/python-root-independent-source-review-v1.json",
+      "scope": "Python author excluded from own-source correctness credit."
+    },
+    {
+      "kind": "Root JS parent independent review",
+      "path": "/private/tmp/forge-f04-chrome-screenshot-stage-js-independent-review-v1/index.json",
+      "scope": "No duplicate JS review or execution by documentation author."
+    }
+  ],
+  "limits": [
+    "Root and author Python counters use distinct file/import scopes and must not be numerically combined or reconciled as identical denominators.",
+    "Node selected named declarations are entry-range observations, not full UI/native/body/branch/platform coverage. All zero and AST-unmapped dimensions are separately retained.",
+    "Fifth historical receipt remains wrapper/4 producer/3 failure/2; no backfill of metadata-screenshot or hypothesis into actual evidence.",
+    "No new dependencies, installations, tool approval, source-audit acceptance, human/security/AT/release/full F04 acceptance or integration completion.",
+    "This is a narrow TEMP documentation successor; historical plan/audit v5 unchanged, source code and authentic evidence unchanged."
+  ],
+  "mandatory_hook": null,
+  "native_product_browser_executed_locally_by_document_author": false,
+  "node": {
+    "cancelled": 0,
+    "failed": 0,
+    "full_body_or_branch_coverage_claim": false,
+    "maintained_ui_interactions_executed": false,
+    "native_browser_or_product_execution": false,
+    "raw_callable_and_range_dimensions": [
+      {
+        "ast_callable_nodes": 10,
+        "ast_unmapped_nodes": 0,
+        "name": "workspace_failure.cjs",
+        "named_declarations": 10,
+        "named_documented": 10,
+        "named_positive_primary": 10,
+        "raw_callable_records": 10,
+        "raw_primary_positive": 10,
+        "raw_ranges_including_module": 43,
+        "raw_zero_primary": 0,
+        "raw_zero_ranges": 1
+      },
+      {
+        "ast_callable_nodes": 76,
+        "ast_unmapped_nodes": 0,
+        "name": "workspace_failure.test.cjs",
+        "named_declarations": 27,
+        "named_documented": 27,
+        "named_positive_primary": 27,
+        "raw_callable_records": 76,
+        "raw_primary_positive": 72,
+        "raw_ranges_including_module": 93,
+        "raw_zero_primary": 4,
+        "raw_zero_ranges": 6
+      },
+      {
+        "ast_callable_nodes": 86,
+        "ast_unmapped_nodes": 30,
+        "name": "workspace.cjs",
+        "named_declarations": 5,
+        "named_documented": 5,
+        "named_positive_primary": 0,
+        "raw_callable_records": 56,
+        "raw_primary_positive": 2,
+        "raw_ranges_including_module": 64,
+        "raw_zero_primary": 54,
+        "raw_zero_ranges": 59
+      }
+    ],
+    "scope": "three mock startup executions and two actual-source post-refresh VM continuations; no UI execution",
+    "selected_named_documented": 37,
+    "selected_named_function_declarations": 37,
+    "selected_named_positive_primary_ranges": 37,
+    "skipped": 0,
+    "source_before_after_unchanged": true,
+    "source_runtime_package_pins": 181,
+    "tests": 24
+  },
+  "pending_gates": [
+    "supported-browser-products-and-versions",
+    "packaged-runtime-os-network-denial",
+    "complete-api-cli-parity",
+    "automated-accessibility-rule-engine",
+    "manual-keyboard-screen-reader-and-zoom",
+    "independent-security-acceptance",
+    "dependency-audit-and-owner-disposition",
+    "five-user-product-study",
+    "release-package-and-provenance",
+    "final-roadmap-documentation-review"
+  ],
+  "preservation": {
+    "added_js_controls": 2,
+    "added_python_controls": 6,
+    "assertion_ast_and_bytes_equal": true,
+    "await_ast_and_bytes_equal": true,
+    "await_expressions": 404,
+    "browser_assertions": 136,
+    "explicit_waits_default_timeout_AST_equal": true,
+    "fixture_failure_schema_doc_adapter": 1,
+    "historical_plan_and_audit_v5_byte_preserved": true,
+    "old_direct_python_AST_equal": 58,
+    "old_js_protocol_literal_adapters": 5,
+    "old_js_registration_AST_equal": 17,
+    "old_python_protocol_literal_adapters": 2,
+    "prior_js_registered_controls": 22,
+    "prior_python_assertion_calls_or_statements": 267,
+    "prior_python_tests": 60
+  },
+  "protocols": {
+    "await_step_stage": "metadata-refresh",
+    "await_steps": 8,
+    "byte_bound": 1024,
+    "failure": 3,
+    "failure_fields": [
+      "stage",
+      "category",
+      "assertion_operator",
+      "node_exit_code",
+      "await_step"
+    ],
+    "metadata_screenshot_await_step": null,
+    "producer": 4,
+    "shared_api": 2,
+    "source_inputs": 28,
+    "stages": 24,
+    "wrapper": 5
+  },
+  "python": {
+    "author_pre_import_three_files": {
+      "called_functions": 136,
+      "classes": 3,
+      "compiler_physical_lines": 1295,
+      "documented_classes": 3,
+      "documented_functions": 138,
+      "documented_modules": 3,
+      "errors": 0,
+      "failures": 0,
+      "functions": 138,
+      "modules": 3,
+      "owned_body_observed_functions": 136,
+      "positive_lines": 1243,
+      "scope": "Three changed Python files; tracing starts before imports; all52 zero mapped entries retained; author-owned direct body observations exclude own docstrings/signatures/nested declarations.",
+      "skips": 0,
+      "source_before_after_unchanged": true,
+      "tests": 66,
+      "zero_lines": 52
+    },
+    "counts_not_combined": true,
+    "root_post_import_four_files": {
+      "class_docs": 3,
+      "classes": 3,
+      "compiler_physical_lines": 1309,
+      "function_docs": 140,
+      "functions": 140,
+      "functions_with_primary_thread_calls": 138,
+      "module_docs": 4,
+      "modules": 4,
+      "positive_lines": 1066,
+      "scope": "Four files including unchanged fixture module; imports precede primary-thread tracing; all243 zero physical mapped entries retained; no all-body/branch/thread/native/browser claim.",
+      "source_before_after_unchanged": true,
+      "tests": {
+        "errors": 0,
+        "failed": 0,
+        "run": 66,
+        "skipped": 0
+      },
+      "zero_lines": 243
+    },
+    "root_scope_comparison": {
+      "path": "/private/tmp/forge-f04-chrome-screenshot-metadata-correction-v1/python-coverage-scope-comparison-v2.json",
+      "bytes": 4927,
+      "sha256": "fc4284eec67eac4f3274b71b81025cc89c606c8720b4732f5eb32c0f0de6675f",
+      "facts": "All three shared compiler line sets, named call counts and common positive event counts match. Fixture adds14 mapped lines11positive3zero; author observes188 import/declaration/doc-line positives absent from root post-import trace. Denominators remain distinct."
+    },
+    "selected_author_changed_names": {
+      "called": 11,
+      "documented": 11,
+      "functions": 11,
+      "owned_body_observed": 11
+    },
+    "unobserved_functions": [
+      "OwnedTree.settle",
+      "file_limits"
+    ]
+  },
+  "qualified_native_history": {
+    "artifact": {
+      "artifact_id": 11257346242,
+      "artifact_name": "workspace-installed-chrome-fef6e3ce0664b623775dfbc793b1a6b491098bb0",
+      "digest_matches": true,
+      "receipt": {
+        "bytes": 11860,
+        "sha256": "4b7a36dd729993a6ce10bee6db7d23496422bad05fdcbae82cc40a0c04ef810f"
+      },
+      "singleton_member": "workspace-hosted-chrome-verification.json",
+      "zip": {
+        "bytes": 4148,
+        "sha256": "5607c47f8858db13a4f1d0fe62ba16e514c78f87272f6b2c66d3da05350cfa24"
+      }
+    },
+    "attempted_egress_credit": false,
+    "cause": "unknown",
+    "complete_prerequisite_pass": false,
+    "counter_running_cancellation_credit": false,
+    "failed_row": {
+      "browser_failure": {
+        "assertion_operator": null,
+        "await_step": null,
+        "category": "unclassified",
+        "node_exit_code": 1,
+        "stage": "metadata-refresh"
+      },
+      "cleanup": {
+        "forced": true,
+        "forge_exit_zero": false,
+        "node_exit_zero": false,
+        "terminal_eof": false,
+        "tree_empty": true
+      },
+      "failure": "browser-failed",
+      "name": "long-writable",
+      "no_echo_modes": 2,
+      "observation": null,
+      "status": "failed",
+      "terminal_bytes": 313
+    },
+    "failed_row_observation_credit": false,
+    "failed_rows": 1,
+    "historical_protocols": {
+      "failure": 2,
+      "producer": 3,
+      "wrapper": 4
+    },
+    "job_id": 111067980979,
+    "ordinal": "fifth",
+    "passed_rows": 3,
+    "producer_actual_exit": 1,
+    "requested_base": "058bb47b81316c4f6aecc8e855111df4709a34d2",
+    "requested_head": "cffbb70b4d6a50e73eaf430867bb18f5b0369329",
+    "run": 37076658672,
+    "screenshot_hypothesis": "Source-supported possible location only; actual screenshot failure/cause unconfirmed.",
+    "tested_merge": "fef6e3ce0664b623775dfbc793b1a6b491098bb0",
+    "wrapper_actual_exit": 2
+  },
+  "role": "Documentation and Python implementation author; own Python correctness cannot earn independent review/acceptance credit. Root independently reviewed Python; parent independently reviewed root JS.",
+  "schema": "forge.f04-hosted-chrome-control-audit/7",
+  "snapshot": "Metadata correction over local diagnostic commit ff0c52fd; underlying TEMP controls/maps unchanged; final corrected commit and fresh hosted qualification separate.",
+  "metadata_corrections": {
+    "preserved_audit_v6": {
+      "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/docs/plans/2026-10-02-f04-hosted-chrome-control-audit-v6.json",
+      "bytes": 17836,
+      "sha256": "d0143d7687714170e41d022c3bec41b7402b92fe754c8b4931915056754b5d0e"
+    },
+    "fixture_previous_incorrect": [
+      8,
+      6
+    ],
+    "fixture_derived_correct": [
+      11,
+      3
+    ],
+    "shared_line_difference_previous_incorrect": 185,
+    "shared_line_difference_derived_correct": 188,
+    "whole_source_maps_calls_and_coverage_totals_unchanged": true,
+    "maintained_cjs_named_unobserved": {
+      "mapped_zero_names": [
+        "observeMeasuredOperation",
+        "queueMeasuredOperation",
+        "verifyMetadataConsumer"
+      ],
+      "absent_mapping_names": [
+        "retainRenderedCaptureFacts",
+        "measureMetadataLongContent"
+      ]
+    }
+  }
+}

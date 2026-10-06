@@ -60,3 +60,5 @@ section button, article button { margin: 8px 8px 8px 0; }
 button[aria-disabled=true] { cursor: default; }
 
 [data-bundle-panel] { overflow-wrap: anywhere; }
+
+[data-inspection-panel] { overflow-wrap: anywhere; }

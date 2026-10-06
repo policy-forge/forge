@@ -1,0 +1,92 @@
+# Installed Google Chrome verification prerequisite
+
+This F04 slice provides a Linux hosted job for the maintained workspace browser suite, an explicitly approved development graph and a bounded producer/receipt wrapper. The first two attempts failed before producer startup. The third through sixth attempted all four campaigns: three passed and long writable failed. The sixth at immutable `011b6a5499a21a62c138382a83b842edc3c7bc28` retained `metadata-screenshot / null await_step / unclassified / actual Node exit 1`; the cause remains unknown. The [viewport capture plan](../plans/2026-10-02-f04-hosted-chrome-viewport-capture.md) records that qualified history and the current two-option successor. The [screenshot-stage plan](../plans/2026-10-02-f04-hosted-chrome-screenshot-diagnostics.md), [await diagnostic guide](../plans/2026-10-02-f04-hosted-chrome-await-diagnostics.md), [browser failure guide](../plans/2026-10-02-f04-hosted-chrome-browser-failure-diagnostics.md), [dual-pipe guide](../plans/2026-10-02-f04-hosted-chrome-dualpipe.md) and [startup guide](../plans/2026-10-02-f04-hosted-chrome-diagnostics.md) preserve historical snapshots. Shared API `/2`, POSIX launcher and embedded assets retain their contracts/bytes. Local controls do not qualify Linux/Chrome, accessibility or product acceptance.
+
+The human user approved Playwright and playwright-core **1.62.1**, optional **fsevents 2.3.2** recorded in the lock but omitted from installation, **Node 24.19.0/npm 11.17.0**, and runner-installed named Google Chrome only. The introducing PR must name that approval, reason and exact graph. The [development-tool ledger](hosted-chrome.json) retains the approval receipt/proposal hashes, registry archive URLs and integrity, and the separate source-audit boundary. No browser, FFmpeg, Firefox or WebKit download is authorized by this approval.
+
+The original metadata-derived lock was subsequently accepted byte-for-byte by root's exact npm 11.17.0 `ci` qualification. Both installed package trees were independently compared with their authentic archives: Playwright 62 regular files/5,074,152 bytes and core 111/13,442,086 bytes. The current manifest changes only its historical proposal description; the lock and approved graph remain identical. An advisory query retained in the approval packet reported zero vulnerabilities across its lock graph. This is a time-bound advisory database result, not an accepted source audit or human D069 disposition; npm's dependency category counts overlap.
+
+The job pins checkout/Rust/Python/Node/artifact actions, uses ordinary pull requests (including stacked bases), main pushes and manual dispatch with contents-read permissions, and disables checkout credential persistence. It provisions only the exact lock using fresh separate npm configurations/cache, omits optional modules and lifecycle scripts, fetches locked Cargo inputs, then builds release/default features with `--locked --offline`. Provisioning network access is distinct from runtime OS network denial. Build/install outcomes are explicit workflow assertions; a matching provided executable hash alone does not prove its startup-loaded bytes or reproducible build provenance.
+
+The producer requires Linux subreaper and pidfd support, exact Node/npm versions, empty global Node overrides, actual UI-local package entry resolution and complete installed package trees matching the qualified archive trees. It requires the canonical runner engine `/opt/google/chrome/chrome`, its ELF signature and actual `Google Chrome` product/version/bytes. There is no bundled Chromium, headless-shell, browser download or alternate executable fallback. Tool/source/release bytes and checkout head/base/ordered parents are captured before and after. Mutable runner Chrome updates are observed at execution time rather than asserted as a fixed version.
+
+The four fixed campaigns are `default-read-only`, `default-writable`, `long-read-only`, and `long-writable`. Fixtures preserve the exact two helper bodies from immutable `a7fc14960027f2820805db838e2243588cd01765`: 53 catalog controls and the literal 200-character long project label. Default writable starts without an index; long writable starts with an explicit empty index. Read-only starts with two registered resources. The maintained real CJS suite retains all 136 original assertion calls and performs its own workflow, source/style binding, request, keyboard focus, raw bundle verification and download assertions. Successful comparison denominators are two resources in read-only and six in writable; local download bytes plus the exact 11-byte raw envelope remain bounded. Default campaigns contain two final 640/320 width records; long campaigns contain four metadata measurements plus two final width records, in `[640,320]` order repeated three times. Zero captured-operation counters are retained as zero and prove no running-operation observation.
+
+The new fixture module deliberately copies those two exact helpers instead of importing the old unbounded launcher's side effects or changing it. Consolidation remains a later integrated documentation/refactor follow-through. This slice does not retroactively qualify the POSIX launcher as bounded.
+
+The new producer bounds its full terminal stream to 65,536 bytes, tool/browser pipe output to 262,144 bytes, startup to 30 seconds, each CJS campaign to 240 seconds and natural termination to five seconds. No-echo mode and complete credential writes are checked before both synthetic submissions; secret echo detection spans chunk boundaries. Linux child per-file writes are limited to 16 MiB. Private artifact totals are observed at polling fences with 128 MiB/10,000-entry bounds; this is not a kernel aggregate disk quota or general filesystem denial. Screenshots/downloads, Chrome temporary profiles and arbitrary stdout/stderr remain in private temporary storage and are not uploaded. Only allowlisted failure-phase codes, bounded numeric/hash facts and the canonical engine path are published.
+
+Each observed owned descendant retains an instance-bound pidfd within the 128-slot process bound. Failure cleanup signals those verified instances even if later global process scanning fails; direct child owners retain actual wait statuses. Unknown/unobserved descendants or unavailable visibility cannot receive empty-tree proof. No forced cleanup, unknown status, failed/nonzero child, missing receipt, partial campaign prefix, changed input or skipped provision earns pass. The forked Forge child always exits immediately after failed setup/exec and cannot publish controller receipts.
+
+The producer publishes `hosted-chrome-smoke.json` (`forge.hosted-chrome-smoke/4`): passed/failed/incomplete exits **0/1/2**. Its wrapper publishes `workspace-hosted-chrome-verification.json` (`forge.workspace-hosted-chrome-verification/5`): passed/incomplete/failed exits **0/1/2**. Unsupported non-Linux execution is incomplete with no native tool/campaign observations. Missing or malformed tools, receipts, source identities and cleanup evidence fail closed. Atomic publication never replaces existing evidence; a publication exception returns nonzero even if a post-link cleanup error leaves a passed-looking file. The wrapper reconciles both receipt status and actual producer exit.
+
+The original before-draft snapshot consisted of **30 stdlib mocked controls**, no failures/errors/skips, using synthetic native/tool outcomes and actual bounded temporary files. All **81/81** introduced named Python functions, **2/2** classes and **4/4** modules have docstrings. Primary-thread actual calls observed **76/81** named functions; physical compiler-mapped lines observed **571/840**, with all **269** zero entries retained. Five production functions were unobserved: `OwnedTree.__init__`, `OwnedTree.settle`, `command`, `file_limits`, and `campaign`. Imports precede tracing; background threads/subprocess/native paths are outside that metric. The seven named CJS probe helpers have adjacent JSDoc. The author checked syntax; root subsequently executed the exact source probe with approved Node against the managed approved install, returning 0 with both authentic package-tree hashes. No per-function call or V8 coverage metric is claimed. Source/call/physical-line dimensions are separate, with no branch or all-function-body assertion.
+
+The fifth qualified [run 37076658672](https://github.com/policy-forge/forge/actions/runs/37076658672) requested `cffbb70b4d6a50e73eaf430867bb18f5b0369329`, base `058bb47b81316c4f6aecc8e855111df4709a34d2`, and tested merge `fef6e3ce0664b623775dfbc793b1a6b491098bb0`. Its historical wrapper `/4` and producer `/3` exits are 2/1; failure `/2` identifies metadata refresh with null await step. Three rows pass; long writable has null observation and forced cleanup. No resource/focus/reflow/download/comparison or counter credit comes from that failed row. The source continuation clears its refresh tag and then awaits a private screenshot; this is a possible location for a null tag, not observed screenshot execution or cause. A complete four-campaign pass and a fresh hosted receipt for this screenshot-stage successor remain required. This prerequisite does not close the named browser/OS/architecture matrix, patched Firefox/WebKit versus named Firefox/Safari, accessibility/manual keyboard/screen reader/zoom, IPv4/IPv6 OS external denial and attempted-egress observation, capacity, human/security studies, dependency source audits, release or final integrated documentation gates. Page request blocking cannot establish OS network denial.
+
+## Screenshot-stage diagnostic snapshot
+
+The fixed `forge.workspace-browser-failure/3` envelope has 24 stages, adding `metadata-screenshot` immediately after the existing metadata consumer and before the unchanged optional full-page screenshot await. It retains the same five fields. The eight fixed `await_step` labels remain legal only at `metadata-refresh`; screenshot requires null. Stage transitions clear stale steps and the first fault remains sticky through later faults and cleanup. Actual nonzero Node status supplies the public exit fact. Malformed, unknown, older or mismatched envelopes retain the original failed campaign with null diagnostic. No error text, stack, DOM, input, URL, path or screenshot is added to uploaded receipts. Pass criteria, 1,024-byte failure bound, source/tool/lifecycle/cleanup gates and approved dependencies are unchanged.
+
+The [v7 scoped audit](../plans/2026-10-02-f04-hosted-chrome-control-audit-v7.json) records actual 66/0/0/0 Python mocks under two separate primary-thread scopes. Root traces four files after imports: 140/140 named-function docstrings, 138 calls, 3/3 class and 4/4 module docstrings, 1,066/1,309 compiler-mapped physical lines and all 243 zeros. The author traces three changed files before imports: 138/138 docs, 136 calls, 3/3 classes and 3/3 modules, 1,243/1,295 mapped lines and all 52 zeros. These file/import denominators are not combined. All 11 selected changed/new Python names have docstrings and calls; `OwnedTree.settle` and `file_limits` remain uncalled. No all-body, branch, background-thread or native/browser coverage follows.
+
+Actual approved Node mock controls pass 24/24 with 181 source/runtime/package pins unchanged. The 37 selected helper/control function declarations have JSDoc and positive V8 primary ranges. Raw callable records are 10/10 helper, 72/76 control and 2/56 maintained CJS; corresponding zero block ranges 1/6/59 remain retained. Maintained CJS has 86 AST callables, 30 without mapped V8 callable records, and five unobserved named declarations (three mapped zero and two absent). The scope is three mocked CJS startups and two actual-source post-refresh VM continuations with fake metadata/screenshot adapters. There is no UI/native execution or full-function-body coverage claim.
+
+All 136 original browser assertion calls and 404 awaits preserve AST and exact source bytes, with the same wait/default-timeout syntax. The original 60 Python controls retain 267 assertion calls/statements: 58 direct ASTs are identical, two use disclosed expected-schema literal adapters; the failure fixture helper has its own schema/doc adapter. Six new controls exercise screenshot null-step forwarding/drop, actual failed receipt/outer reconciliation and older-schema refusal through mocked native adapters. All 22 preceding JS registrations remain: 17 exact and five with disclosed protocol/count/expected-stage adapters; two new controls cover successful screenshot options/following stage and rejection of stale refresh steps. Historical receipts, the await plan and v5 audit remain byte-preserved. This audit records TEMP control evidence; applied checks, the mandatory hook, a fresh native hosted result and final integrated documentation review remain separate evidence and gates.
+
+## Current private viewport capture successor
+
+The two existing post-refresh/failure captures now propose explicit `fullPage:false`. Approved Playwright-core 1.62.1 source selects the current viewport, preserving the same private paths, awaited calls, first-fault handling, waits/timeouts, cleanup and pass criteria. This changes capture area only; it neither diagnoses the sixth failure nor measures a byte, pixel or duration bound. No new viewport native outcome is available. The unchanged helper, Python/shared contracts, embedded UI, workflow and dependency graph receive no change or rerun credit.
+
+The [v8 audit](../plans/2026-10-02-f04-hosted-chrome-control-audit-v8.json) records actual approved Node mock controls 27/27, with 181 source/runtime/package pins unchanged. All 41 selected helper/control function declarations have JSDoc and positive V8 primary ranges. Raw helper/control/maintained-CJS callable observations are10/10,84/90 and2/56; zero ranges1/8/59 remain retained. Maintained CJS has86 AST callables, 30 without mapped records, and five unobserved named declarations (three mapped zero, two absent). The scope is mocked startup and actual-source screenshot continuations with fake page/cleanup adapters, with no UI/browser/Forge/full-body/branch execution claim.
+
+All136 original assertion calls preserve exact AST/bytes; 402 of 404 awaits are exact and two retain only the explicit `fullPage:true`→`false` literal adapter. Original waits/timeouts remain exact. The first root AST collector failed its own spaced-literal expectation before controls/coverage; its receipt/logs remain preserved. Corrected collector v2 and successful27-control evidence are separate. Earlier Python 66 controls/140 docs/138 calls/1,066 of 1,309 lines/all 243 zeros remain a separate unchanged historical scope, with no rerun or combined coverage credit. The screenshot-stage plan and audits 6/7 remain byte-identical. Root document review/application, mandatory hook and authentic four-campaign viewport receipt remain separate gates.
+
+## Original applied integration and precommit evidence
+
+Root locally fast-forwarded the Chrome branch to corrected Windows prerequisite
+`19232d667e726b24701f5dc555149bd1ab92ef09`. It preserved the complete
+Windows/API workflow prefix and appended only the frozen installed-Chrome job.
+The frozen candidate's foundation remains `a7fc14960027f2820805db838e2243588cd01765`.
+No GitHub merge was performed. `/ui/node_modules/` is ignored so installed
+development packages stay out of the source commit.
+
+Root reproduced the 30 controls, 81/81 function docstrings, 76 named calls
+and 571/840 mapped lines against exact applied sources, with all 269 zeros
+retained. The exact managed npm 11.17 install left manifest/lock bytes unchanged,
+installed only Playwright/core, omitted fsevents and suppressed lifecycle scripts.
+All 173 installed package files match their authentic archive bytes; the actual
+source probe confirms the expected full tree digests. The unchanged embedded
+asset also passed 105 Node fake-DOM controls. These checks start no browser.
+
+[The applied precommit audit](../plans/2026-10-02-f04-hosted-chrome-control-audit-v1.json)
+retains exact sources, counts, raw checks and independent review identities.
+The mandatory enabled hook and actual Linux four-campaign hosted receipt remain
+pending at that snapshot. Task #31 is Doing under F04 #6 until draft delivery.
+The introducing PR will preserve the human user's explicit development-tool
+approval and distinguish hosted runtime evidence from these local checks.
+
+## Qualified viewport checkpoint — 2026-10-02
+
+The [installed-Chrome job](https://github.com/policy-forge/forge/actions/runs/37086410737/job/111097541863)
+at requested head `0e2b803836dec2ee603e3593c7475cb515e67c51` has a qualified
+wrapper/5 and producer/4 receipt. All four campaigns pass, including long
+writable. Each records two no-echo checks, zero page errors and non-loopback
+browser requests, natural nonforced Forge and Node zero exits, terminal EOF and
+an empty process tree. All 28 source hashes match immutable head bytes; tested
+merge `ff2d3252e0f6804d8a25a9f57f812de8d4c8471a` has authenticated ordered requested base/head
+parents and the same tree. Input and tool stability are unchanged.
+
+The producer observed installed Chrome 154.0.8037.57, approved Node 24.19.0,
+npm 11.17.0 and Playwright/playwright-core 1.62.1, with optional packages omitted.
+Provisioning used no browser downloads or npm lifecycle scripts. All observation
+rows and zeros remain retained; zero capture counters earn no counter-correlation
+coverage. Tool and release hashes are producer observations, with no independent
+binary download/rehash here. Only the JSON verification receipt was uploaded.
+
+This completes the installed-Chrome prerequisite at this exact checkpoint.
+The earlier screenshot failure's cause remains unknown. Overall workspace run
+failure, sibling metadata, the remaining browser/platform/architecture matrix,
+native external denial/attempted-egress, human/audit/owner, release and final
+integrated documentation gates remain separate. Prior plans and audits retain
+their historical pending/failed snapshots.

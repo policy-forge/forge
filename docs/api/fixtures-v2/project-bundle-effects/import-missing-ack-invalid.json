@@ -1,0 +1,14 @@
+{
+  "bundle": {
+    "schema_version": "forge.workspace-index-bundle/1",
+    "content_profile": "index-and-hashes",
+    "index": {
+      "schema_version": "forge.workspace/1",
+      "label": "Synthetic metadata",
+      "resources": []
+    },
+    "index_sha256": "d5fc4b2a9bdbbba142a035afdc5b75b9ef8593f7f44078fb2e7398a02998584a",
+    "pins": []
+  },
+  "target_index_schema_version": 1
+}

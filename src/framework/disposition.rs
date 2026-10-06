@@ -73,7 +73,9 @@ pub fn load(path: &Path) -> Result<DispositionFile, ForgeError> {
     parse(&bytes)
 }
 
-fn parse(bytes: &[u8]) -> Result<DispositionFile, ForgeError> {
+/// Admit captured disposition bytes with the same bounds and normalization as the CLI.
+/// This does not establish the prior-report hash match, comparison pair or reviewer authority.
+pub(crate) fn parse(bytes: &[u8]) -> Result<DispositionFile, ForgeError> {
     if bytes.len() as u64 > MAX_DISPOSITION_BYTES {
         return Err(error(format!(
             "disposition file exceeds the {MAX_DISPOSITION_BYTES} byte limit"

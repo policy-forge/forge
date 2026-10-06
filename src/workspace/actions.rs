@@ -1,7 +1,9 @@
 //! Material requests prepare a single effect; this adapter never writes files.
-use super::contract::{Error, Result};
+use super::contract::{self, ApiMajor, Error, Result};
 use super::effects::{Reply, Store};
-use super::index::{INDEX_PATH, Index, Resource, Role};
+#[cfg(test)]
+use super::index::Index;
+use super::index::{INDEX_PATH, Resource, Role};
 use super::preparation::{NoopControl, ProgressUpdate, Stage, WorkControl, WorkError, WorkResult};
 use super::root::{Root, conflict};
 use super::services::{Item, Snapshot};
@@ -29,7 +31,8 @@ fn preview_reply(preview: Value) -> Reply {
 fn operation_reply(value: Value) -> Reply {
     Reply { value, schema: "Operation", status: 202 }
 }
-fn output_target(snapshot: &Snapshot, path: &str, allowed: Option<Role>) -> Result<()> {
+/// Reject index/source destinations before any producer reads or previews an output target.
+pub(crate) fn output_target(snapshot: &Snapshot, path: &str, allowed: Option<Role>) -> Result<()> {
     if path.eq_ignore_ascii_case(INDEX_PATH)
         || snapshot.items.iter().any(|item| {
             item.registration.path.eq_ignore_ascii_case(path)
@@ -110,6 +113,68 @@ fn mapping_references(
         .collect()
 }
 
+/// Prepare a compatible registration or explicit /1-to-/2 index migration.
+///
+/// All variants retain the existing index effect/conditional commit and never change
+/// domain records. Version/role checks happen before an unregistered path read;
+/// migration-only consumes the captured index and preserves authorial resource order.
+fn prepare_registration(
+    store: &mut Store,
+    root: &Root,
+    snapshot: &Snapshot,
+    request: &Value,
+    api_major: ApiMajor,
+) -> Result<Reply> {
+    contract::validate_for(api_major, "RegisterResourceRequest", request)?;
+    let mut index = snapshot.index.clone();
+    if request.get("migration").is_some() {
+        if !snapshot.index_present || index.schema_version != "forge.workspace/1" {
+            return Err(validation_error());
+        }
+        index.schema_version = "forge.workspace/2".into();
+        let bytes = index.bytes()?;
+        return Ok(preview_reply(store.preview(
+            root,
+            snapshot,
+            INDEX_PATH,
+            "workspace-index-update",
+            bytes,
+            &[],
+        )?));
+    }
+    if request.get("index_schema_version").is_some() {
+        index.schema_version = "forge.workspace/2".into();
+    }
+    let role: Role =
+        serde_json::from_value(request["role"].clone()).map_err(|_| Error::invalid())?;
+    if !role.admitted_by(&index.schema_version) {
+        return Err(Error::invalid());
+    }
+    let path = text(request, "path")?;
+    let captured = root.read(path, 10 * 1024 * 1024)?;
+    if snapshot.items.iter().any(|item| item.captured.identity == captured.identity) {
+        return Err(Error::containment());
+    }
+    let key = request["key"].as_str().map_or_else(|| registration_key(path), str::to_owned);
+    let registration = Resource { key, role, path: path.to_owned() };
+    if !(super::services::validate_bytes(&registration, &captured.bytes)
+        || (role == Role::ApplicabilityReport
+            && snapshot.analysis.as_ref().is_some_and(|analysis| {
+                serde_json::to_value(analysis).ok()
+                    == super::contract::parse(&captured.bytes, 10 * 1024 * 1024, 64 * 1024).ok()
+            })))
+    {
+        return Err(validation_error());
+    }
+    index.resources.push(registration.clone());
+    let bytes = index.bytes()?;
+    let mut preview =
+        store.preview(root, snapshot, INDEX_PATH, "workspace-index-update", bytes, &[])?;
+    // The selected unregistered file remains an exact-byte external dependency.
+    store.bind_external(&mut preview, &registration, captured)?;
+    Ok(preview_reply(preview))
+}
+
 /// Prepare ordinary direct effects without a callback that could relock their Store.
 pub(crate) fn prepare(
     store: &mut Store,
@@ -119,12 +184,33 @@ pub(crate) fn prepare(
     path: &str,
     request: &Value,
 ) -> Result<Reply> {
-    prepare_with_control(store, root, snapshot, method, path, request, &mut NoopControl)
-        .map_err(WorkError::into_error)
+    prepare_for_api(store, root, snapshot, method, path, request, ApiMajor::V1)
 }
 
-/// Prepare against captured inputs, discarding local proposals on cooperative stop.
-#[allow(clippy::too_many_lines)] // One audited route-to-effect table.
+/// Prepare direct effects for an admitted public major using the private canonical route.
+/// The HTTP integration retains the original public path in its replay and idempotency key.
+pub(crate) fn prepare_for_api(
+    store: &mut Store,
+    root: &Root,
+    snapshot: &mut Snapshot,
+    method: &str,
+    path: &str,
+    request: &Value,
+    api_major: ApiMajor,
+) -> Result<Reply> {
+    prepare_with_control_for_api(
+        store,
+        root,
+        snapshot,
+        method,
+        (api_major, path),
+        request,
+        &mut NoopControl,
+    )
+    .map_err(WorkError::into_error)
+}
+
+/// Preserve the original v1 controlled-preparation entry point and stop semantics.
 pub(crate) fn prepare_with_control(
     store: &mut Store,
     root: &Root,
@@ -134,8 +220,54 @@ pub(crate) fn prepare_with_control(
     request: &Value,
     control: &mut dyn WorkControl,
 ) -> WorkResult<Reply> {
+    prepare_with_control_for_api(
+        store,
+        root,
+        snapshot,
+        method,
+        (ApiMajor::V1, path),
+        request,
+        control,
+    )
+}
+
+/// Prepare a selected-major request after public admission, with the existing real stop fences.
+/// The tuple carries the selected major and private canonical path; it is never a wire alias.
+#[allow(clippy::too_many_lines)] // One audited route-to-effect table, unchanged domain branches.
+pub(crate) fn prepare_with_control_for_api(
+    store: &mut Store,
+    root: &Root,
+    snapshot: &mut Snapshot,
+    method: &str,
+    api_path: (ApiMajor, &str),
+    request: &Value,
+    control: &mut dyn WorkControl,
+) -> WorkResult<Reply> {
+    let (api_major, path) = api_path;
     control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Clear)?;
+    if !matches!(
+        (api_major, snapshot.index.schema_version.as_str()),
+        (ApiMajor::V1, "forge.workspace/1")
+            | (ApiMajor::V2, "forge.workspace/1" | "forge.workspace/2")
+    ) {
+        return Err(Error::invalid().into());
+    }
     let reply: WorkResult<Reply> = match (method, path) {
+        ("POST", "/api/v1/project/bundle-exports") if api_major == ApiMajor::V2 => {
+            let plan = super::bundle_effects::prepare_export(root, snapshot, request, control)?;
+            control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
+            let preview = store.preview_bundle(plan)?;
+            let reply = operation_reply(store.completed(
+                "export",
+                json!({
+                    "operation_id":"op_000000000000", "preview":preview,
+                    "redaction_summary":{"removed_categories":["source-excerpts"]}
+                }),
+            )?);
+            // Metadata labels/paths are sensitive; charge the entire retained wrapper too.
+            store.charge_reply(&reply)?;
+            Ok(reply)
+        }
         ("POST", "/api/v1/applicability/initializations" | "/api/v1/mapping/initializations") => {
             let target = text(request, "target_path")?;
             output_target(snapshot, target, None)?;
@@ -160,41 +292,16 @@ pub(crate) fn prepare_with_control(
             )?))
         }
         ("POST", "/api/v1/resources/register") => {
-            let path = text(request, "path")?;
-            let role: Role =
-                serde_json::from_value(request["role"].clone()).map_err(|_| Error::invalid())?;
-            let captured = root.read(path, 10 * 1024 * 1024)?;
-            if snapshot.items.iter().any(|item| item.captured.identity == captured.identity) {
-                return Err(Error::containment().into());
-            }
-            let key = request["key"].as_str().map_or_else(|| registration_key(path), str::to_owned);
-            let registration = Resource { key, role, path: path.to_owned() };
-            if !(super::services::validate_bytes(&registration, &captured.bytes)
-                || (role == Role::ApplicabilityReport
-                    && snapshot.analysis.as_ref().is_some_and(|analysis| {
-                        serde_json::to_value(analysis).ok()
-                            == super::contract::parse(&captured.bytes, 10 * 1024 * 1024, 64 * 1024)
-                                .ok()
-                    })))
-            {
-                return Err(validation_error().into());
-            }
-            let mut index = snapshot.index.clone();
-            index.resources.push(registration.clone());
-            let bytes = index.bytes()?;
-            Index::parse(&bytes)?;
-            let mut preview =
-                store.preview(root, snapshot, INDEX_PATH, "workspace-index-update", bytes, &[])?;
-            // The selected unregistered file is separately bound as an extra
-            // dependency by the preview store, before any index can be committed.
-            store.bind_external(&mut preview, &registration, captured)?;
-            Ok(preview_reply(preview))
+            Ok(prepare_registration(store, root, snapshot, request, api_major)?)
         }
         ("POST", "/api/v1/resources/upload") => {
             let path = text(request, "target_path")?;
             output_target(snapshot, path, None)?;
-            let role =
+            let role: Role =
                 serde_json::from_value(request["role"].clone()).map_err(|_| Error::invalid())?;
+            if api_major == ApiMajor::V1 && !role.admitted_by("forge.workspace/1") {
+                return Err(Error::invalid().into());
+            }
             let encoded = text(request, "content_base64")?;
             if encoded.len() > 13_981_016 {
                 return Err(Error::invalid().into());
@@ -919,5 +1026,63 @@ mod tests {
                 assert_eq!(checkpoint_action_project_bytes(directory.path()), before);
             }
         }
+    }
+    /// Default V1 preparation rejects index2 before unregistered reads; explicit V2 consumes it without an implicit commit.
+    #[test]
+    fn selected_major_guards_direct_preparation_before_resource_io() {
+        let project = tempfile::tempdir().expect("synthetic project");
+        let index =
+            json!({"schema_version":"forge.workspace/2","label":"Explicit version","resources":[]});
+        let original = serde_json::to_vec(&index).expect("fixture index");
+        std::fs::write(project.path().join(INDEX_PATH), &original).expect("write index2");
+        let root = Root::open(project.path()).expect("confined root");
+        let mut snapshot = Snapshot::capture(&root).expect("explicit internal capture");
+        let mut store = Store::default();
+        let missing = json!({"role":"policy-source","path":"missing.md"});
+        let error = super::prepare(
+            &mut store,
+            &root,
+            &mut snapshot,
+            "POST",
+            "/api/v1/resources/register",
+            &missing,
+        )
+        .err()
+        .expect("V1 must reject index2");
+        assert_eq!(error.code, "invalid-request");
+        let error = super::prepare_with_control(
+            &mut store,
+            &root,
+            &mut snapshot,
+            "POST",
+            "/api/v1/resources/register",
+            &missing,
+            &mut NoopControl,
+        )
+        .err()
+        .expect("controlled V1 must reject index2")
+        .into_error();
+        assert_eq!(error.code, "invalid-request");
+        std::fs::write(project.path().join("opaque.bin"), [0xff, 0x00]).expect("opaque bytes");
+        let reply = super::prepare_for_api(
+            &mut store,
+            &root,
+            &mut snapshot,
+            "POST",
+            "/api/v1/resources/register",
+            &json!({"role":"lifecycle-source","path":"opaque.bin"}),
+            ApiMajor::V2,
+        )
+        .expect("selected major2 canonical admitted registration");
+        assert_eq!(reply.value["preview"]["operation_type"], "workspace-index-update");
+        assert_eq!(
+            std::fs::read(project.path().join(INDEX_PATH)).expect("unchanged index"),
+            original
+        );
+        assert_eq!(
+            std::fs::read(project.path().join("opaque.bin")).expect("unchanged source"),
+            [0xff, 0x00]
+        );
+        assert!(!project.path().join("missing.md").exists());
     }
 }

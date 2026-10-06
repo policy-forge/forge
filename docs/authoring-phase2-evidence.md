@@ -1,5 +1,11 @@
 # PRD-061 Phase 2 acceptance evidence
 
+> Gate statements below retain the original technical-evidence checkpoint. The
+> [owner register](authoring-gates.md#status) records the 2026-09-11 public Rust
+> API/release-version, product, compliance, legal and engineering dispositions,
+> plus partner readiness. Measured pilots and release approval remain open.
+> Those specific dispositions do not close all PRD requirements or prove a release.
+
 This record maps every row of the
 [Phase 2 interface freeze and acceptance matrix](authoring-phase2-plan.md#acceptance-matrix)
 to named executable cases merged into `main`. It is technical evidence only:

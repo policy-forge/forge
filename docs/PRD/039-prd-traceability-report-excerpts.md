@@ -399,7 +399,7 @@ graph LR
     end
 ```
 
-- **Requires:** [WI-38: Traceability Report — Core](docs/PRD/038-prd-traceability-report.md) (core trace subcommand and report structure)
+- **Requires:** [WI-38: Traceability Report — Core](038-prd-traceability-report.md) (core trace subcommand and report structure)
 - **Blocks:** None directly
 - **Parallel With:** [WI-40: Batch Conversion], [WI-44: Summary Dashboard]
 - **External:** None

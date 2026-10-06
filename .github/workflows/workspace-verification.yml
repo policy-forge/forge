@@ -51,6 +51,27 @@ jobs:
       - name: Test receipt tooling
         run: python -B scripts/test_verify_workspace.py
 
+      - name: Test maintained-client extension controls
+        run: python -B scripts/test_workspace_client_extension.py
+
+      - name: Test maintained-client version controls
+        run: python -B scripts/test_workspace_client_versions.py
+
+      - name: Test lifecycle and impact client controls
+        run: python -B scripts/test_workspace_lifecycle_client.py
+
+      - name: Test metadata bundle client controls
+        run: python -B scripts/test_workspace_bundle_client.py
+
+      - name: Test source bundle client controls
+        run: python -B scripts/test_workspace_source_bundle_client.py
+
+      - name: Test staged source client controls
+        run: python -B scripts/test_workspace_staged_source_client.py
+
+      - name: Test metadata workflow version controls
+        run: python -B scripts/test_workspace_bundle_workflow_controls.py
+
       # Provisioning may use the network. Subsequent Cargo checks use only these
       # locked inputs. This does not establish OS runtime network denial.
       - name: Fetch locked Cargo inputs
@@ -59,6 +80,53 @@ jobs:
       - name: Build the tested release binary
         id: release-build
         run: cargo build --locked --offline --release
+
+      - name: Verify native API2 metadata bundle boundaries
+        env:
+          FORGE_TEST_BINARY: target/release/forge${{ runner.os == 'Windows' && '.exe' || '' }}
+        shell: bash
+        run: python -B scripts/test_workspace_bundle_workflow.py --forge "$FORGE_TEST_BINARY" > workspace-bundle-boundaries.json
+
+      - name: Verify native Unix source restore and known outcome lookup
+        if: runner.os != 'Windows'
+        env:
+          FORGE_TEST_BINARY: target/release/forge
+        shell: bash
+        run: python -B scripts/test_workspace_source_workflow.py --forge "$FORGE_TEST_BINARY" --out workspace-source-flow
+
+      - name: Verify native Unix staged source transfer and confirmed restore
+        if: runner.os != 'Windows'
+        env:
+          FORGE_TEST_BINARY: target/release/forge
+        shell: bash
+        run: python -B scripts/test_workspace_staged_source_workflow.py --forge "$FORGE_TEST_BINARY" --out workspace-staged-source-flow
+
+      - name: Retain native Unix staged source flow outcome
+        if: ${{ always() && runner.os != 'Windows' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-staged-source-flow-${{ matrix.os }}-${{ github.sha }}
+          path: workspace-staged-source-flow/receipt.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Retain native Unix source flow outcome
+        if: ${{ always() && runner.os != 'Windows' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-source-flow-${{ matrix.os }}-${{ github.sha }}
+          path: workspace-source-flow/receipt.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Retain native metadata bundle boundary outcome
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-metadata-bundle-${{ matrix.os }}-${{ github.sha }}
+          path: workspace-bundle-boundaries.json
+          if-no-files-found: error
+          retention-days: 14
 
       # Independent from the existing CI strict Clippy gate: failed lint must
       # not suppress these receipts, and these results do not waive failed lint.
@@ -90,5 +158,362 @@ jobs:
         with:
           name: workspace-api-${{ matrix.os }}-${{ github.sha }}
           path: workspace-evidence/workspace-verification.json
+          if-no-files-found: error
+          retention-days: 14
+
+  windows-console:
+    name: Windows controlling-terminal prerequisite
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+
+      - name: Select Python 3.11
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+
+      # These standard-library controls are not native Windows acceptance.
+      - name: Check native console receipt controls
+        run: python -B scripts/test_workspace_windows_console_controls.py
+
+      - name: Check orchestrator receipt controls
+        run: python -B scripts/test_verify_workspace_windows_console.py
+
+      # This existing build-tool provisioning may use the network. Neither it
+      # nor locked/offline Cargo proves OS denial for the running product.
+      - name: Fetch locked Cargo inputs
+        run: cargo fetch --locked
+
+      - name: Build the tested release binary
+        id: release-build
+        run: cargo build --locked --offline --release
+
+      - name: Verify native console prerequisite against exact release bytes
+        if: always()
+        env:
+          FORGE_TEST_COMMIT: ${{ github.sha }}
+          FORGE_TEST_EVENT: ${{ github.event_name }}
+          FORGE_TEST_CHECKOUT: ${{ github.event_name == 'pull_request' && 'pull-request-merge' || 'head' }}
+          FORGE_TEST_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          FORGE_TEST_BASE: ${{ github.event.pull_request.base.sha || '' }}
+          FORGE_TEST_BUILD: ${{ steps.release-build.outcome }}
+        shell: bash
+        run: |
+          checkout_context_args=(--event "$FORGE_TEST_EVENT" --checkout-kind "$FORGE_TEST_CHECKOUT" --requested-head "$FORGE_TEST_HEAD")
+          if [ -n "$FORGE_TEST_BASE" ]; then checkout_context_args+=(--requested-base "$FORGE_TEST_BASE"); fi
+          python -B scripts/verify_workspace_windows_console.py \
+            --forge target/release/forge.exe \
+            --output-dir windows-console-evidence \
+            --expected-commit "$FORGE_TEST_COMMIT" \
+            --build-outcome "$FORGE_TEST_BUILD" \
+            "${checkout_context_args[@]}"
+
+      - name: Retain redacted native console verification
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-windows-console-${{ github.sha }}
+          path: windows-console-evidence/workspace-windows-console-verification.json
+          if-no-files-found: error
+          retention-days: 14
+
+  installed-chrome:
+    name: Installed Google Chrome prerequisite (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NODE_PATH: ''
+      NODE_OPTIONS: ''
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+
+      - name: Select Python 3.11
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+
+      - name: Select approved Node 24.19.0
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24.19.0'
+
+      - name: Check bounded browser receipt controls
+        run: python -B scripts/test_verify_workspace_hosted_chrome.py
+
+      # Approved development graph only. Both configurations/cache are fresh;
+      # optional native modules/lifecycle scripts/browser downloads are omitted.
+      - name: Provision approved browser development graph
+        id: browser-tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          private="$(mktemp -d "$RUNNER_TEMP/forge-browser-provision.XXXXXX")"
+          trap 'rm -rf -- "$private"' EXIT
+          : > "$private/user.rc"
+          : > "$private/global.rc"
+          node_bin="$(command -v node)"
+          npm_cli="$(node -p 'require("node:fs").realpathSync(process.argv[1])' "$(command -v npm)")"
+          test "$("$node_bin" --version)" = 'v24.19.0'
+          test "$("$node_bin" "$npm_cli" --version)" = '11.17.0'
+          "$node_bin" "$npm_cli" ci --prefix ui --include=dev --omit=optional \
+            --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org \
+            --cache "$private/cache" --userconfig "$private/user.rc" --globalconfig "$private/global.rc"
+
+      # Mock diagnostics use only the approved installed Playwright graph.
+      # They preserve failure attribution; they do not establish browser acceptance.
+      - name: Check redacted browser failure diagnostics
+        run: node --test ui/tests/workspace_failure.test.cjs
+
+      - name: Check browser navigation and metadata receipt controls
+        run: node --test ui/tests/workspace-navigation.cjs
+
+      # Build provisioning is distinct from runtime OS network denial.
+      - name: Fetch locked Cargo inputs
+        run: cargo fetch --locked
+
+      - name: Build the tested release binary
+        id: release-build
+        run: cargo build --locked --offline --release
+
+      # No Playwright install command or Chromium/headless-shell fallback exists.
+      - name: Verify four installed-Chrome fixture campaigns
+        if: always()
+        env:
+          FORGE_TEST_COMMIT: ${{ github.sha }}
+          FORGE_TEST_EVENT: ${{ github.event_name }}
+          FORGE_TEST_CHECKOUT: ${{ github.event_name == 'pull_request' && 'pull-request-merge' || 'head' }}
+          FORGE_TEST_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          FORGE_TEST_BASE: ${{ github.event.pull_request.base.sha || '' }}
+          FORGE_TEST_BUILD: ${{ steps.release-build.outcome }}
+          FORGE_TEST_NPM: ${{ steps.browser-tools.outcome }}
+        shell: bash
+        run: |
+          checkout_context_args=(--event "$FORGE_TEST_EVENT" --checkout-kind "$FORGE_TEST_CHECKOUT" --requested-head "$FORGE_TEST_HEAD")
+          if [ -n "$FORGE_TEST_BASE" ]; then checkout_context_args+=(--requested-base "$FORGE_TEST_BASE"); fi
+          node_bin="$(command -v node || true)"
+          npm_cli="$(command -v npm || true)"
+          python -B scripts/verify_workspace_hosted_chrome.py \
+            --forge target/release/forge --node "$node_bin" --npm "$npm_cli" \
+            --chrome /opt/google/chrome/chrome --output-dir hosted-chrome-evidence \
+            --expected-commit "$FORGE_TEST_COMMIT" --build-outcome "$FORGE_TEST_BUILD" \
+            --npm-outcome "$FORGE_TEST_NPM" "${checkout_context_args[@]}"
+
+      - name: Verify installed-Chrome source export, restore and read-only lookup
+        id: source-browser
+        if: ${{ always() && steps.release-build.outcome == 'success' && steps.browser-tools.outcome == 'success' }}
+        shell: bash
+        run: |
+          node_bin="$(command -v node)"
+          python -B scripts/test_workspace_source_browser.py \
+            --forge target/release/forge --node "$node_bin" --chrome /opt/google/chrome/chrome \
+            --driver ui/tests/workspace-source-browser.cjs \
+            --source-root "$GITHUB_WORKSPACE" --out source-browser-evidence
+
+      - name: Retain source browser receipts and synthetic screenshots
+        if: ${{ always() && steps.source-browser.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-source-browser-${{ github.sha }}
+          path: |
+            source-browser-evidence/receipt.json
+            source-browser-evidence/*/launch-receipt.json
+            source-browser-evidence/*/browser/receipt.json
+            source-browser-evidence/*/browser/*.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Verify installed-Chrome staged source export, restore and read-only lookup
+        id: staged-source-browser
+        if: ${{ always() && steps.release-build.outcome == 'success' && steps.browser-tools.outcome == 'success' }}
+        shell: bash
+        run: |
+          node_bin="$(command -v node)"
+          python -B scripts/test_workspace_staged_source_browser.py \
+            --forge target/release/forge --node "$node_bin" --chrome /opt/google/chrome/chrome \
+            --driver ui/tests/workspace-staged-source-browser.cjs \
+            --source-root "$GITHUB_WORKSPACE" --out staged-source-browser-evidence
+
+      - name: Retain staged source browser receipts and synthetic screenshots
+        if: ${{ always() && steps.staged-source-browser.outcome != 'skipped' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-staged-source-browser-${{ github.sha }}
+          path: |
+            staged-source-browser-evidence/receipt.json
+            staged-source-browser-evidence/*/launch-receipt.json
+            staged-source-browser-evidence/*/browser/receipt.json
+            staged-source-browser-evidence/*/browser/*.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Retain bounded redacted hosted-Chrome receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-installed-chrome-${{ github.sha }}
+          path: hosted-chrome-evidence/workspace-hosted-chrome-verification.json
+          if-no-files-found: error
+          retention-days: 14
+
+  headless-ip-denial:
+    name: Linux headless IP-denial prerequisite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+
+      # Ordinary controls use the existing action interpreter. Privileged work
+      # separately qualifies the already-present root-owned distro interpreter.
+      - name: Select Python 3.11
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+
+      - name: Check closed OS-denial receipt and ownership controls
+        run: python -B scripts/test_verify_workspace_os_denial.py
+
+      - name: Check fixed stdlib rejection-site controls
+        run: python -B scripts/test_workspace_stdlib_link_diagnostic.py
+
+      - name: Check separate stdlib-gate observation controls
+        run: python -B scripts/test_observe_workspace_stdlib_gate.py
+
+      - name: Check protected physical dispatcher receipt controls
+        run: python -B scripts/test_run_workspace_stdlib_closure.py
+
+      # This separate synthetic UID0 campaign does not qualify real stdlib,
+      # interpreter bootstrap/loaded bytes or the later IP-denial experiment.
+      - name: Run protected Linux synthetic stdlib closure controls
+        id: protected-stdlib-controls
+        timeout-minutes: 8
+        env:
+          FORGE_TEST_COMMIT: ${{ github.sha }}
+          FORGE_TEST_EVENT: ${{ github.event_name }}
+          FORGE_TEST_CHECKOUT: ${{ github.event_name == 'pull_request' && 'pull-request-merge' || 'head' }}
+          FORGE_TEST_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          FORGE_TEST_BASE: ${{ github.event.pull_request.base.sha || '' }}
+        shell: bash
+        run: |
+          checkout_context_args=(--event "$FORGE_TEST_EVENT" --checkout-kind "$FORGE_TEST_CHECKOUT" --requested-head "$FORGE_TEST_HEAD")
+          if [ -n "$FORGE_TEST_BASE" ]; then checkout_context_args+=(--requested-base "$FORGE_TEST_BASE"); fi
+          python -B scripts/run_workspace_stdlib_closure.py \
+            --output-dir protected-stdlib-controls-evidence \
+            --expected-commit "$FORGE_TEST_COMMIT" "${checkout_context_args[@]}"
+
+      - name: Retain separate redacted synthetic physical control receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-stdlib-closure-physical-controls-${{ github.sha }}
+          path: protected-stdlib-controls-evidence/workspace-stdlib-closure-physical-controls.json
+          if-no-files-found: error
+          retention-days: 14
+
+      # Host provisioning remains network-enabled. There is no ip/sudo/package
+      # installation or administrative fallback; absence yields an incomplete
+      # uncreated experiment. Cargo offline does not establish runtime denial.
+      - name: Fetch locked Cargo inputs
+        run: cargo fetch --locked
+
+      - name: Build the tested release binary
+        id: release-build
+        run: cargo build --locked --offline --release
+
+      - name: Check bounded distro support observation
+        run: python -B scripts/test_observe_python_support_layout.py
+
+      - name: Observe fixed public distro support names without qualification credit
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/distro-support"
+          /usr/bin/python3 -I -S -B scripts/observe_python_support_layout.py > "$RUNNER_TEMP/distro-support/observation.json"
+
+      - name: Retain separate finite distro support observation
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-distro-support-${{ github.sha }}
+          path: ${{ runner.temp }}/distro-support/observation.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Verify calibrated headless denial with the unchanged client
+        id: headless-denial-verification
+        if: always()
+        env:
+          FORGE_TEST_COMMIT: ${{ github.sha }}
+          FORGE_TEST_EVENT: ${{ github.event_name }}
+          FORGE_TEST_CHECKOUT: ${{ github.event_name == 'pull_request' && 'pull-request-merge' || 'head' }}
+          FORGE_TEST_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          FORGE_TEST_BASE: ${{ github.event.pull_request.base.sha || '' }}
+          FORGE_TEST_BUILD: ${{ steps.release-build.outcome }}
+        shell: bash
+        run: |
+          checkout_context_args=(--event "$FORGE_TEST_EVENT" --checkout-kind "$FORGE_TEST_CHECKOUT" --requested-head "$FORGE_TEST_HEAD")
+          if [ -n "$FORGE_TEST_BASE" ]; then checkout_context_args+=(--requested-base "$FORGE_TEST_BASE"); fi
+          python -B scripts/verify_workspace_os_denial.py \
+            --forge target/release/forge --output-dir headless-ip-denial-evidence \
+            --expected-commit "$FORGE_TEST_COMMIT" --build-outcome "$FORGE_TEST_BUILD" \
+            "${checkout_context_args[@]}"
+
+      - name: Retain bounded redacted IP-denial prerequisite receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-headless-ip-denial-${{ github.sha }}
+          path: |
+            headless-ip-denial-evidence/workspace-os-denial-verification.json
+            headless-ip-denial-evidence/os-denial-client-exit-observation.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Retain actual fixed stdlib rejection-site inventory detail v2
+        if: ${{ failure() && steps.headless-denial-verification.outcome == 'failure' && steps.headless-denial-verification.outputs.stdlib_link_detail_published == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-stdlib-link-detail-v2-${{ github.sha }}
+          path: headless-ip-denial-evidence/stdlib-unsupported-link-diagnostic-v2.json
+          if-no-files-found: error
+          retention-days: 14
+
+      # A separate ordinary-user observation cannot retry or downgrade the failed
+      # native verification, qualify stdlib inventory, or change its receipt.
+      - name: Observe one rejected stdlib stat predicate
+        id: stdlib-gate-observation
+        if: ${{ failure() && steps.headless-denial-verification.outcome == 'failure' }}
+        timeout-minutes: 11
+        env:
+          FORGE_TEST_REQUESTED: ${{ github.event.pull_request.head.sha || github.sha }}
+          FORGE_TEST_COMMIT: ${{ github.sha }}
+        shell: bash
+        run: |
+          python -B scripts/observe_workspace_stdlib_gate.py \
+            --output-dir stdlib-gate-evidence \
+            --requested-commit "$FORGE_TEST_REQUESTED" --tested-commit "$FORGE_TEST_COMMIT"
+
+      - name: Retain separate bounded stat-predicate sidecar
+        if: ${{ failure() && steps.headless-denial-verification.outcome == 'failure' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-stdlib-gate-${{ github.sha }}
+          path: stdlib-gate-evidence/stdlib-gate-observation.json
           if-no-files-found: error
           retention-days: 14

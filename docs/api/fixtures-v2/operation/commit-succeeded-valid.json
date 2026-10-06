@@ -1,0 +1,14 @@
+{
+  "operation_id": "op_5f6e7d8c9b0a1f2e",
+  "kind": "commit",
+  "state": "succeeded",
+  "created_at": "2026-09-08T14:05:11Z",
+  "updated_at": "2026-09-08T14:05:11Z",
+  "cancel_requested": false,
+  "result": {
+    "write_committed": true,
+    "committed_sha256": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "target_path": "applicability/decisions.json",
+    "new_version": "88552277ff0011aa"
+  }
+}

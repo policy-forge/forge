@@ -1,0 +1,8 @@
+{
+  "operation_id": "op_0123456789abcdef",
+  "artifact_sha256": "25024d4b0611b96930ab76204ff19a531d9abdae01f533b2e9692c65d598eda2",
+  "chunk_ordinal": 0,
+  "sha256": "25024d4b0611b96930ab76204ff19a531d9abdae01f533b2e9692c65d598eda2",
+  "size_bytes": 744,
+  "hex": "0"
+}

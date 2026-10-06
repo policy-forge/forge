@@ -9,7 +9,16 @@
 
 ---
 
-## Reconciliation Summary
+
+## Dated development checkpoint
+
+The following reconciliation, counts and status tables retain the 2026-09-11
+checkpoint. The [2026-10-03 integrated documentation successor](plans/2026-10-03-integrated-documentation-staged-successor.md)
+separately records current captured source, draft separation and all 327
+Must/Should acceptance gates. Technical work, draft PRs and tests do not update
+these historical statuses or supply human, audit or release acceptance.
+
+## Historical reconciliation summary: 2026-09-11
 
 This document is the canonical reconciled roadmap for FORGE. Earlier roadmap
 snapshots treated Phase 2 as current and Phase 3 as partially incomplete. The

@@ -139,7 +139,7 @@ version matters.
 | UUIDs | `uuid 1` (v4, v5, serde) |
 | Timestamps | `chrono 0.4` |
 | Hashing | `sha2 0.11` through the shared `src/hashing.rs` helper |
-| Schema validation | `jsonschema 0.45` (resolver defaults disabled) |
+| Schema validation | `jsonschema 0.57` (resolver defaults disabled) |
 | Parallel execution | `rayon 1` |
 | Project configuration | `toml 1.1` (parse and serde features) |
 | PDF ingestion | `pdf-extract 0.12` |

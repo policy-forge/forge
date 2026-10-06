@@ -111,9 +111,15 @@ jobs:
           BUILD_TARGET: ${{ matrix.target }}
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          cd "target/${BUILD_TARGET}/release"
-          tar czf "../../../forge-${TAG_NAME}-${BUILD_TARGET}.tar.gz" forge
-          cd ../../..
+          set -euo pipefail
+          release_path="target/${BUILD_TARGET}/release"
+          package_path="$(mktemp -d "${RUNNER_TEMP}/forge-release.XXXXXX")"
+          trap 'rm -rf "$package_path"' EXIT
+          mkdir -p "$package_path/docs" "$package_path/schemas"
+          cp "$release_path/forge" "$package_path/forge"
+          cp -R docs/api "$package_path/docs/"
+          cp schemas/forge.workspace-1.schema.json schemas/forge.workspace-2.schema.json schemas/forge.workspace-source-bundle-3.schema.json schemas/forge.workspace-source-bundle-4.schema.json "$package_path/schemas/"
+          tar czf "$GITHUB_WORKSPACE/forge-${TAG_NAME}-${BUILD_TARGET}.tar.gz" -C "$package_path" forge docs/api schemas
 
       - name: Package (Windows)
         if: matrix.archive == 'zip'
@@ -122,7 +128,19 @@ jobs:
           TAG_NAME: ${{ github.ref_name }}
         shell: pwsh
         run: |
-          Compress-Archive -Path "target/${env:BUILD_TARGET}/release/forge.exe" -DestinationPath "forge-${env:TAG_NAME}-${env:BUILD_TARGET}.zip"
+          $ErrorActionPreference = 'Stop'
+          $releasePath = "target/${env:BUILD_TARGET}/release"
+          $packagePath = Join-Path $env:RUNNER_TEMP ("forge-release-" + [guid]::NewGuid().ToString("N"))
+          New-Item -ItemType Directory -Path $packagePath | Out-Null
+          try {
+            New-Item -ItemType Directory -Path "$packagePath/docs", "$packagePath/schemas" | Out-Null
+            Copy-Item -LiteralPath "$releasePath/forge.exe" -Destination "$packagePath/forge.exe"
+            Copy-Item -Path "docs/api" -Destination "$packagePath/docs" -Recurse -Force
+            Copy-Item -Path "schemas/forge.workspace-1.schema.json", "schemas/forge.workspace-2.schema.json", "schemas/forge.workspace-source-bundle-3.schema.json", "schemas/forge.workspace-source-bundle-4.schema.json" -Destination "$packagePath/schemas"
+            Compress-Archive -Path "$packagePath/forge.exe", "$packagePath/docs", "$packagePath/schemas" -DestinationPath "$env:GITHUB_WORKSPACE/forge-${env:TAG_NAME}-${env:BUILD_TARGET}.zip"
+          } finally {
+            Remove-Item -LiteralPath $packagePath -Recurse -Force
+          }
 
       - name: Upload artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1

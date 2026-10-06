@@ -9,7 +9,7 @@ src/
   main.rs                  CLI entry point (anyhow error handling)
   lib.rs                   Public API re-exports
   pipeline.rs              Pipeline orchestration (catalog + component)
-  error.rs                 ForgeError enum (16 variants)
+  error.rs                 Categorized ForgeError enum
   uuid.rs                  Deterministic UUID v5 + stable ID assignment
   citation.rs              URL/reference extraction + deduplication
 
@@ -44,7 +44,10 @@ src/
     test_utils.rs          Shared test helpers for OSCAL tests
 
   export/                  Output serialization
-    mod.rs                 JSON export (XML/YAML planned)
+    mod.rs                 XML/YAML module declarations and re-exports
+    xml_serializer.rs      Typed OSCAL model to XML
+    xml_deserializer.rs    XML to typed OSCAL model
+    yaml.rs                Generic serde-based YAML serialization/deserialization
 
   validate/                Validation layer
     mod.rs                 Orchestration (schema + semantic)
@@ -53,6 +56,61 @@ src/
     report.rs              Validation report generation
     semantic.rs            Semantic checks (orphan links, missing fields)
 ```
+
+## Current domain and workspace entrypoints
+
+The diagram below describes conversion. The CLI also exposes domain workflows;
+see `src/cli/mod.rs` for the current command tree. These modules are implemented
+technical surfaces, not claims that their full PRD acceptance gates are complete.
+
+| Module | Purpose |
+|---|---|
+| `applicability/` | Human-reviewed framework applicability and policy-gap analysis |
+| `assessment_results/` | Human-authored Assessment Results and revision review |
+| `authoring/` | Human assignments, drafting plans and traceable skeletons |
+| `framework/` | Read-only framework revision impact |
+| `lifecycle/` | Deterministic local lifecycle records and review queues |
+| `linkage/` | Evidence/implementation indexes and maintenance reports |
+| `mapping/` | Human-reviewed Control Mapping workflows |
+| `migration/` | Read-only source-policy revision analysis |
+| `policy/` | Composition of local, hash-pinned Markdown components |
+| `reuse/` | Read-only retrieval of operator-supplied local corpus excerpts |
+| `suggest/` | Bounded, quarantined offline suggestion artifacts |
+| `workspace/` | Confined selected-major queries, single-file receipts and confirmed source restore |
+
+Within `workspace/`, `services.rs` captures registered inputs; `domain.rs` stages
+private copies for domain engines; and `actions.rs` prepares effects without
+project publication. `inspection.rs`, `lifecycle.rs`, `impact.rs` and
+`provenance.rs` project read-only registered views. `effects.rs` retains session
+receipts and confirms exact-byte single-file writes. Metadata bundle comparison
+does not authorize import; source restore has a separate complete preview and
+batch-confirmation path. See the [workspace guide](local-workspace.md) and
+[workspace runtime architecture](architecture.md#local-workspace-runtime).
+
+POA&M and suggestion-evaluation modules are absent at the reviewed `532c9e8`
+head. Separate draft implementations must not be inferred from this map.
+
+### Workspace source-bundle paths
+
+These are consumed modules in the current source branch, including nested modules
+declared with `#[path]`; the map does not establish platform or PRD acceptance.
+
+| Entry point | Responsibility |
+| --- | --- |
+| [`http.rs`](../src/workspace/http.rs), [`http::source`](../src/workspace/http_source.rs), [`http::staged`](../src/workspace/http_staged.rs) | Selected-major admission, original deadlines, project leases, six retained inline source routes and eight staged routes in the separately captured API2.4 working tree |
+| [`services.rs`](../src/workspace/services.rs), [`root.rs`](../src/workspace/root.rs) | Complete planned-path preflight, captured registered generations and held-object confinement |
+| [`source_bundles.rs`](../src/workspace/source_bundles.rs) | Strict bounded Bundle3 codec with ordered pin/content/index bijection and exact source bytes |
+| [`source_validation.rs`](../src/workspace/source_validation.rs) | Intrinsic role admission and complete proposed registered dependency closure; not universal freshness or human approval |
+| [`source_bundle_effects.rs`](../src/workspace/source_bundle_effects.rs) | Off-Store source export and restore planning, full replacement projection and preallocated nonauthorizing outcome ID |
+| [`effects.rs`](../src/workspace/effects.rs), [`effects::source_receipts`](../src/workspace/source_receipts.rs) | Shared bounded retention, one-time session receipts, exact-request replay and separate private download families |
+| [`root::root_transaction`](../src/workspace/root_transaction.rs), [`root::transaction_state`](../src/workspace/transaction_state.rs) | Qualified Unix durable intent, index-last publication, owned conditional rollback, recovery and safe persisted outcomes |
+| [`effects::source_transfers`](../src/workspace/source_transfers.rs), [`source_stream_reads.rs`](../src/workspace/source_stream_reads.rs) | Separately captured API2.4 WIP: session-owned raw stages and same-session committed private manifest/part reads; presence is not execution qualification |
+
+The [source workflow guide](workspace-source-bundles.md) covers explicit opt-in,
+all six routes, confirmation, known-ID recovery and finite capacity. The native
+Windows restore port is unavailable. See the [staged guide](workspace-staged-source-bundles.md)
+for the separately captured API2.4 working-tree proposal; larger capacity and full
+cross-platform qualification remain open.
 
 ## Data Flow
 
@@ -124,7 +182,7 @@ Output (.json file or stdout)
 
 ### Error Types (`src/error.rs`)
 
-`ForgeError` has 16 variants covering: IO, Parse, Serialization, Validation, CatalogBuild, ComponentDefinitionBuild, BackMatter, Schema, Semantic, and more. Uses `thiserror` for `Display`/`Error` derivation.
+`ForgeError` categorizes input, parsing, serialization, validation and domain workflow failures. See [`src/error.rs`](../src/error.rs) for the current declared variants and exit-code mapping; this reference does not freeze a variant count. It uses `thiserror` for `Display`/`Error` derivation.
 
 ### OSCAL Output
 
@@ -134,7 +192,7 @@ All OSCAL types use `serde::Serialize` for JSON output. Key envelopes:
 
 ## Testing
 
-- **660 total tests** (529 unit + 131 integration), all passing
+- **Historical codemap inventory:** 660 tests (529 unit + 131 integration). This retained count is not a current executed suite result; use the dated [source verification checkpoint](workspace-source-bundle-verification.md) and its exact receipts for separately measured scopes.
 - **Inline unit tests**: `#[cfg(test)]` modules in every source file
 - **Integration tests**: `tests/` directory (pipeline, CLI, adversarial, golden files, traceability)
 - **Benchmarks**: `benches/` (atomize, uuid, pipeline) using Criterion

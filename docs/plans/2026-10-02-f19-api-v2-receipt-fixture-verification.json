@@ -1,0 +1,162 @@
+{
+  "basis": "702fab68a804708ae55542f34a89fe1fe9c5879b",
+  "changed_function": {
+    "documented": true,
+    "limits": "Stock trace statements in a synthetic unstarted recorder; no whole-file or branch claim.",
+    "name": "ReceiptTests.recording_instance",
+    "statement_lines": [
+      {
+        "count": 4,
+        "line": 362
+      },
+      {
+        "count": 4,
+        "line": 363
+      },
+      {
+        "count": 4,
+        "line": 364
+      },
+      {
+        "count": 4,
+        "line": 365
+      }
+    ]
+  },
+  "cover": {
+    "bytes": 61976,
+    "path": "/private/tmp/forge-f19-api2-receipt-trace-v1/test_verify_workspace.cover",
+    "sha256": "c292b65752e2d2c9adafc0f443ce42ed604d5bd6443866cc70b719a9735cbc3f"
+  },
+  "format": "forge.api2-receipt-fixture-verification/1",
+  "hook_delivery_and_hosted_successor": "separate pending gates at this source snapshot",
+  "hosted_api_receipts": "failed verification-input-invalid; checkout/identity null, all suites not-run; no execution credit",
+  "hosted_requested_head": "702fab68a804708ae55542f34a89fe1fe9c5879b",
+  "hosted_run": 37100568423,
+  "independent_source_review": "Bounded three-line fixture review found no material concern; production negotiation, delegates, exception handlers, sticky accounting and assertions unchanged.",
+  "job": {
+    "bytes": 4058,
+    "path": "/private/tmp/forge-f19-browser-api2-receipt-trace-v1.json",
+    "sha256": "729f2e7bc5ce28bc7a7c56493b4f0e36333a7c4f155c4189da15fcb56fbea010"
+  },
+  "local_before_fix": {
+    "bytes": 3565,
+    "path": "/private/tmp/forge-f19-browser-api2-receipt-before-fix-v1.json",
+    "sha256": "a802ab80571db38277c8a482a638a163beaad2457f9d08800bed3919cff3ad95"
+  },
+  "log": {
+    "bytes": 30226,
+    "path": "/private/tmp/forge-f19-browser-api2-receipt-trace-v1.log",
+    "sha256": "472de621bf4cee261f8272af78959861500e01cfcb620d644723c8f3b001a17f"
+  },
+  "observed_tests": {
+    "failed": 0,
+    "passed": 51
+  },
+  "repair": {
+    "after_sha256": "ca7758904273415b43d2561ddb24bd2efb276671ba983bdaaf20fed8bb4a338d",
+    "before_sha256": "b3a44ce43a5953aaf58515b3b13b9642e176f8413d790138d163952fa320d7c4",
+    "head": "702fab68a804708ae55542f34a89fe1fe9c5879b",
+    "path": "scripts/test_verify_workspace.py",
+    "production_source_changed": false,
+    "reason": "Existing synthetic fixture bypasses client initialization; initialize its explicit original API1 prefix without a production fallback or weakening delegated-error accounting."
+  },
+  "unchanged_selected_rust_source_pins": [
+    {
+      "bytes": 103322,
+      "matches_v2_during_command_pin": true,
+      "path": "src/cli/mod.rs",
+      "sha256": "c69092d224b416bb38af988675d6d5917a5bd87cd719c2a92d49fe4cc7d0bd30"
+    },
+    {
+      "bytes": 69730,
+      "matches_v2_during_command_pin": true,
+      "path": "src/framework/analysis.rs",
+      "sha256": "b7babf659aaf92a2a1ed96e4d3dd8b70dc7fd82958f4a862c21ec5adbc04bffd"
+    },
+    {
+      "bytes": 12159,
+      "matches_v2_during_command_pin": true,
+      "path": "src/framework/disposition.rs",
+      "sha256": "450e9ae0443189f2b5b322b09b974233f44034315b352b8df8488e74018cfed8"
+    },
+    {
+      "bytes": 2738,
+      "matches_v2_during_command_pin": true,
+      "path": "src/migration/mod.rs",
+      "sha256": "13417e0d282c561d60f25eba5b789c7fd99cbce430e541b3421cf878181bc4f0"
+    },
+    {
+      "bytes": 48418,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/actions.rs",
+      "sha256": "280659047ad5bc050b29e8fc5d1b826ac6f6a8e5cda5c83c79503cb965b474d5"
+    },
+    {
+      "bytes": 2928,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/assets.rs",
+      "sha256": "2cb4805490cb2f6cf6dd333894fa0afa3424897c0c1e169568e10d909aed5f90"
+    },
+    {
+      "bytes": 38740,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/bundles.rs",
+      "sha256": "6709c8f50150f22e5d20fcbac16efa99c6e8c60c2720ce0519ccf6367b030641"
+    },
+    {
+      "bytes": 22628,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/contract.rs",
+      "sha256": "acb957ca2fcdea2d58438fec8455d1d3ce72f11a5afdd935e88cad86e60ff990"
+    },
+    {
+      "bytes": 52283,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/effects.rs",
+      "sha256": "80fa3206c91a3bfe13735466bfecf06040bafd98bb4472dcaf0ec1037d88e34c"
+    },
+    {
+      "bytes": 50281,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/http.rs",
+      "sha256": "daac522321f190ed2124f5170c0960c6e3b455e90268391ea9c07fbba339e8da"
+    },
+    {
+      "bytes": 9787,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/index.rs",
+      "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020"
+    },
+    {
+      "bytes": 1056,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/mod.rs",
+      "sha256": "8ce8802b70074e4ce072939918f2cbc651f3ae17b5772e7bc4dd0b75cc8ed099"
+    },
+    {
+      "bytes": 9459,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/reports.rs",
+      "sha256": "19cb812973503f5cc81737b2e3f812626119bcb2fd9c4b0780ea29ea0261a1ed"
+    },
+    {
+      "bytes": 62397,
+      "matches_v2_during_command_pin": true,
+      "path": "src/workspace/services.rs",
+      "sha256": "906aa7b2776233b1e1dceb0b4a09e5060e103c7ce4847f3bb87b5964f45b67cf"
+    },
+    {
+      "bytes": 70904,
+      "matches_v2_during_command_pin": true,
+      "path": "tests/api_contract_validation.rs",
+      "sha256": "0e0e9ba62834a6f66e1d10a0a3d03785c3dc7a7a527d1e80588db71bb65ab5be"
+    },
+    {
+      "bytes": 143247,
+      "matches_v2_during_command_pin": true,
+      "path": "tests/workspace_cli_test.rs",
+      "sha256": "19ab0860b7c98905665968b37ac15e8a769760ca4406e6d9e607cf1e21945a63"
+    }
+  ]
+}

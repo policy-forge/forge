@@ -1,0 +1,1935 @@
+{
+  "format": "forge.f19-source-bundle-development-verification/2",
+  "created_utc": "2026-10-03T16:58:14.070309+00:00",
+  "basis": "8c898e5251a37cb4b82315ac42a0be411547717d",
+  "scope": "Consumed bounded inline source export/restore and durable native Unix outcomes; full PRD062 S6 remains open.",
+  "contract": {
+    "api2_version": "2.3.0",
+    "api2_operations": 57,
+    "source_operations": 6,
+    "api1_version": "1.2.0",
+    "api1_operations": 39,
+    "product_release_target": "2.0.0"
+  },
+  "jobs": [
+    {
+      "label": "s6-source-llvm-whole-test-successor-v4",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-llvm-whole-test-successor-v4.json",
+        "sha256": "7deaf38d9943a4ccc75f7e8df0cc3d7455f700e743dab6133906b3280b563ad6",
+        "bytes": 28965
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "CARGO_LLVM_COV_TARGET_DIR=/private/tmp/forge-f19-lifecycle-s3-llvm-v1",
+        "CARGO_PROFILE_DEV_DEBUG=0",
+        "CARGO_PROFILE_TEST_DEBUG=0",
+        "CARGO_INCREMENTAL=0",
+        "cargo",
+        "llvm-cov",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--json",
+        "--output-path",
+        "/private/tmp/forge-f19-s6-source-llvm-whole-v4.json"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 68,
+        "passed": 2931,
+        "failed": 0,
+        "ignored": 3
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-llvm-whole-test-successor-v4.log",
+        "sha256": "10af30bd91c4864e3403479b446ea30001c7a56b656ed43a58af02346efdd044",
+        "bytes": 241733
+      }
+    },
+    {
+      "label": "s6-source-llvm-combined-report-v5",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-llvm-combined-report-v5.json",
+        "sha256": "79d91647fbdfd6e06d6abf555ce48a87b6be21a57b36c2f6a7ef06c65c7ccbbd",
+        "bytes": 28907
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "CARGO_LLVM_COV_TARGET_DIR=/private/tmp/forge-f19-lifecycle-s3-llvm-v1",
+        "CARGO_PROFILE_DEV_DEBUG=0",
+        "CARGO_PROFILE_TEST_DEBUG=0",
+        "CARGO_INCREMENTAL=0",
+        "cargo",
+        "llvm-cov",
+        "report",
+        "--json",
+        "--output-path",
+        "/private/tmp/forge-f19-s6-source-llvm-combined-v5.json"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-llvm-combined-report-v5.log",
+        "sha256": "f4aa6a19507b3421a29201a8aa7272fdaa33d47fcacde8893f92db93d39c90f7",
+        "bytes": 85
+      }
+    },
+    {
+      "label": "s6-source-strict-clippy-final-v8",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-strict-clippy-final-v8.json",
+        "sha256": "d6c71738342364ad44393e2e52c60294f3622581a0d4b0d65a832ca5d9bf47da",
+        "bytes": 28811
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "CARGO_PROFILE_DEV_DEBUG=0",
+        "CARGO_PROFILE_TEST_DEBUG=0",
+        "CARGO_INCREMENTAL=0",
+        "cargo",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--all-features",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-strict-clippy-final-v8.log",
+        "sha256": "341f865f12c82a908efd43525d351a5bc67330151cf124a912149afab532c127",
+        "bytes": 148
+      }
+    },
+    {
+      "label": "s6-source-type-doc-format-v8",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-type-doc-format-v8.json",
+        "sha256": "d94a9751da9bc18858e452ecebf96f886631c57e20543340b346323b35360dfa",
+        "bytes": 28598
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-type-doc-format-v8.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    {
+      "label": "s6-source-current-client-baseline-v4",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-current-client-baseline-v4.json",
+        "sha256": "42ec27af48d8ecd734aa9b9cacc875a63807040231b1d42f34302fdf143db9e6",
+        "bytes": 28681
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "/private/tmp/forge-f19-s6-source-client-baseline-v4.py"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-current-client-baseline-v4.log",
+        "sha256": "c4d5da3e36160ae144933de01604ec2ddd4d12e00deee32a53aee961b99a6902",
+        "bytes": 35663
+      }
+    },
+    {
+      "label": "s6-source-browser-native-successor-v2",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-browser-native-successor-v2.json",
+        "sha256": "5672ce046dfec831355b46964b96867c599c3c52a0450c95990230620b3f0881",
+        "bytes": 22862
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "env",
+        "NODE_V8_COVERAGE=/private/tmp/forge-f19-s6-source-browser-v8-v2",
+        "FORGE_TEST_WORKSPACE_JS=/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/ui/workspace.js",
+        "/private/tmp/forge-f04-approved-node-runtime-v2/node-v24.19.0-darwin-arm64/bin/node",
+        "--test",
+        "ui/tests/workspace-navigation.cjs"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-browser-native-successor-v2.log",
+        "sha256": "c8ebc40597c3ea1174f588342afdc7037677f5031be2c796a854d561c438f399",
+        "bytes": 25762
+      }
+    },
+    {
+      "label": "s6-maintained-native-source-final-v1",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-maintained-native-source-final-v1.json",
+        "sha256": "f157bc1f77b54e7a6cda45f29d81734c6daf0acee9dd585c95de4ac85fd82f34",
+        "bytes": 29321
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "-m",
+        "trace",
+        "--count",
+        "--coverdir",
+        "/private/tmp/forge-f19-s6-maintained-native-source-trace-v1",
+        "scripts/test_workspace_source_workflow.py",
+        "--forge",
+        "/private/tmp/forge-f03-hook-target-1.98.1/debug/forge",
+        "--out",
+        "/private/tmp/forge-f19-s6-maintained-native-source-final-v1"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-maintained-native-source-final-v1.log",
+        "sha256": "83c9a32a287025a588d077822d12f07d60fa22b83e53f918c45b822566876811",
+        "bytes": 127
+      }
+    },
+    {
+      "label": "s6-source-native-browser-final-v6",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-native-browser-final-v6.json",
+        "sha256": "617f2fbc0cf375f5061ad12c1019829717fc387239a23858f6fd94f18da9bd05",
+        "bytes": 30447
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "-m",
+        "trace",
+        "--count",
+        "--coverdir",
+        "/private/tmp/forge-f19-s6-source-native-browser-trace-v6",
+        "scripts/test_workspace_source_browser.py",
+        "--forge",
+        "/private/tmp/forge-f03-hook-target-1.98.1/debug/forge",
+        "--node",
+        "/private/tmp/forge-f04-approved-node-runtime-v2/node-v24.19.0-darwin-arm64/bin/node",
+        "--chrome",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "--source-root",
+        "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+        "--driver",
+        "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/ui/tests/workspace-source-browser.cjs",
+        "--out",
+        "/private/tmp/forge-f19-s6-source-native-browser-final-v6"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-native-browser-final-v6.log",
+        "sha256": "a1a37f8858c0ab7fb76352f1ac05b6262c06cb6e6cc0c835fccdb1e2cfb1c87d",
+        "bytes": 37
+      }
+    },
+    {
+      "label": "s6-current-native-metadata-browser-writable-v5",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-current-native-metadata-browser-writable-v5.json",
+        "sha256": "e6b8dee1cea29276446061f689347c8bd747b893b98494de24d2ee53c2010ac1",
+        "bytes": 30317
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "-m",
+        "trace",
+        "--count",
+        "--coverdir",
+        "/private/tmp/forge-f19-s6-metadata-browser-writable-trace-v5",
+        "scripts/test_workspace_bundle_browser.py",
+        "--forge",
+        "/private/tmp/forge-f03-hook-target-1.98.1/debug/forge",
+        "--node",
+        "/private/tmp/forge-f04-approved-node-runtime-v2/node-v24.19.0-darwin-arm64/bin/node",
+        "--source-root",
+        "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+        "--out",
+        "/private/tmp/forge-f19-s6-current-native-metadata-browser-writable-v5",
+        "--mode",
+        "writable"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-current-native-metadata-browser-writable-v5.log",
+        "sha256": "3364dc3030e2ab55db956629b2b79eac611e654766b538673f9d56429bfbc4db",
+        "bytes": 267
+      }
+    },
+    {
+      "label": "s6-current-native-metadata-browser-readonly-v5",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-current-native-metadata-browser-readonly-v5.json",
+        "sha256": "14381e410fe21922afe67ce1a495f71e3a80034001b394bd13a1e9fc73b5bba6",
+        "bytes": 30318
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "-m",
+        "trace",
+        "--count",
+        "--coverdir",
+        "/private/tmp/forge-f19-s6-metadata-browser-readonly-trace-v5",
+        "scripts/test_workspace_bundle_browser.py",
+        "--forge",
+        "/private/tmp/forge-f03-hook-target-1.98.1/debug/forge",
+        "--node",
+        "/private/tmp/forge-f04-approved-node-runtime-v2/node-v24.19.0-darwin-arm64/bin/node",
+        "--source-root",
+        "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+        "--out",
+        "/private/tmp/forge-f19-s6-current-native-metadata-browser-readonly-v5",
+        "--mode",
+        "read-only"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-current-native-metadata-browser-readonly-v5.log",
+        "sha256": "79dad1e6674dd41e8e77b013481ed35aee90a725c5896fe6b8ca1f26b12794c0",
+        "bytes": 267
+      }
+    },
+    {
+      "label": "s6-current-native-metadata-workflow-final-v4",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-current-native-metadata-workflow-final-v4.json",
+        "sha256": "238406f874aa84e6e6a094d9e6d57417b094ea55a5f76ba1c9e63eb7d8a8f3f7",
+        "bytes": 30001
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "-m",
+        "trace",
+        "--count",
+        "--coverdir",
+        "/private/tmp/forge-f19-s6-native-metadata-workflow-trace-v4",
+        "scripts/test_workspace_bundle_workflow.py",
+        "--forge",
+        "/private/tmp/forge-f03-hook-target-1.98.1/debug/forge"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-current-native-metadata-workflow-final-v4.log",
+        "sha256": "9be5f5aa1202fa1bfba3cffc8656af0e272ec01dd55ccf77f6b89c332fbb2d49",
+        "bytes": 801
+      }
+    },
+    {
+      "label": "s6-metadata-version-controls-guarded-trace-v3",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-metadata-version-controls-guarded-trace-v3.json",
+        "sha256": "726b190646678d12eb07be39e5fa211407b8989da6bfcc7a203d5f8514dc5a95",
+        "bytes": 30076
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "-m",
+        "trace",
+        "--count",
+        "--coverdir",
+        "/private/tmp/forge-f19-s6-metadata-version-controls-guarded-trace-v3",
+        "/private/tmp/forge-f19-s6-guarded-compatibility-trace-v3.py",
+        "--suite",
+        "metadata",
+        "--out",
+        "/private/tmp/forge-f19-s6-metadata-version-controls-guarded-native-v3"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-metadata-version-controls-guarded-trace-v3.log",
+        "sha256": "fa0f31f9bd743415a2cbc53960c5b16c783068392df39243af91871b8ec68df9",
+        "bytes": 1064
+      }
+    },
+    {
+      "label": "s6-lifecycle-client-controls-guarded-trace-v3",
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-lifecycle-client-controls-guarded-trace-v3.json",
+        "sha256": "c1a964a017d069163fd58874b9b5a0118b9447d8ac85a1f4485d399625fc0cb4",
+        "bytes": 30077
+      },
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "-B",
+        "-m",
+        "trace",
+        "--count",
+        "--coverdir",
+        "/private/tmp/forge-f19-s6-lifecycle-client-controls-guarded-trace-v3",
+        "/private/tmp/forge-f19-s6-guarded-compatibility-trace-v3.py",
+        "--suite",
+        "lifecycle",
+        "--out",
+        "/private/tmp/forge-f19-s6-lifecycle-client-controls-guarded-native-v3"
+      ],
+      "source_unchanged": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-lifecycle-client-controls-guarded-trace-v3.log",
+        "sha256": "10caaa5d890db17e4c8f3808f203d652e57f634c976db96ee9cf59e6fd33b96d",
+        "bytes": 2157
+      }
+    }
+  ],
+  "documentation": {
+    "rust": {
+      "cohort": "15 exact-source Rust files, named lexical changes versus basis",
+      "functions": 313,
+      "documented_functions": 313,
+      "types": 39,
+      "documented_types": 39,
+      "scopes": {
+        "cfg-test": {
+          "selected": 98,
+          "documented": 98,
+          "positive": 96,
+          "zero": 2,
+          "unmapped": 0
+        },
+        "integration-test": {
+          "selected": 15,
+          "documented": 15,
+          "positive": 15,
+          "zero": 0,
+          "unmapped": 0
+        },
+        "production-lexical": {
+          "selected": 200,
+          "documented": 200,
+          "positive": 195,
+          "zero": 5,
+          "unmapped": 0
+        }
+      },
+      "census": {
+        "path": "/private/tmp/forge-f19-s6-source-rustdoc-census-v6/census.json",
+        "sha256": "6e69327bb0d0f89f722f4d3232e6d37ec3254798ba1c9601fc56644624ce944f",
+        "bytes": 1268180
+      }
+    },
+    "python": {
+      "cohort": "8 changed/new scripts plus unchanged version companion; complete AST named declaration census",
+      "selected": {
+        "named_functions": 106,
+        "documented": 106,
+        "missing_docs": [],
+        "partial_entry_bindings": {
+          "zero-line-observation": 2,
+          "positive-line-observation": 104
+        },
+        "zero_entries": [
+          {
+            "path": "scripts/test_workspace_bundle_browser.py",
+            "name": "wait_owned",
+            "line": 44,
+            "entry_line": 46
+          },
+          {
+            "path": "scripts/test_workspace_source_browser.py",
+            "name": "wait_owned",
+            "line": 69,
+            "entry_line": 71
+          }
+        ],
+        "unmeasured_entries": []
+      },
+      "broader": {
+        "named_functions": 200,
+        "documented": 200,
+        "missing_docs": [],
+        "partial_entry_bindings": {
+          "positive-line-observation": 149,
+          "zero-line-observation": 4,
+          "unmeasured": 47
+        },
+        "zero_entries": [
+          {
+            "path": "scripts/test_workspace_bundle_browser.py",
+            "name": "wait_owned",
+            "line": 44,
+            "entry_line": 46
+          },
+          {
+            "path": "scripts/test_workspace_lifecycle_client.py",
+            "name": "DescriptorProcess.kill",
+            "line": 43,
+            "entry_line": 45
+          },
+          {
+            "path": "scripts/workspace_client.py",
+            "name": "Workspace.verify_bundle",
+            "line": 166,
+            "entry_line": 176
+          },
+          {
+            "path": "scripts/test_workspace_source_browser.py",
+            "name": "wait_owned",
+            "line": 69,
+            "entry_line": 71
+          }
+        ],
+        "unmeasured_entries": [
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "descriptor",
+            "line": 27
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "session",
+            "line": 37
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "FakeResponse.__init__",
+            "line": 47
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "FakeResponse.read",
+            "line": 53
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "DescriptorPipe.__init__",
+            "line": 62
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "DescriptorPipe.readline",
+            "line": 67
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "FakeProcess.__init__",
+            "line": 76
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "FakeProcess.poll",
+            "line": 84
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "FakeProcess.wait",
+            "line": 88
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "FakeProcess.kill",
+            "line": 98
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "FakeConnection.__init__",
+            "line": 107
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "FakeConnection.request",
+            "line": 114
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "FakeConnection.getresponse",
+            "line": 120
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "FakeConnection.close",
+            "line": 126
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "Harness.__init__",
+            "line": 134
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "Harness.spawn",
+            "line": 147
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "Harness.connection",
+            "line": 152
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "Harness.response_for",
+            "line": 158
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "Harness.enqueue",
+            "line": 169
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "Harness.__enter__",
+            "line": 175
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "Harness.launch",
+            "line": 183
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "Harness.__exit__",
+            "line": 191
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_invalid_major_abstains_before_popen",
+            "line": 205
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_default_v1_original_argv_and_no_session_read",
+            "line": 214
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_explicit_v1_writable_does_not_add_version_flag",
+            "line": 228
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_matching_v2_bootstrap_and_explicit_argv",
+            "line": 235
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_v2_writable_scope_bootstrap",
+            "line": 248
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_unknown_optional_descriptor_and_session_fields_tolerated",
+            "line": 256
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_v2_missing_required_descriptor_fields_fail_before_http",
+            "line": 267
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_v2_descriptor_major_version_pid_and_session_id_rejected",
+            "line": 279
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_v2_descriptor_url_capability_mode_and_scope_rejected",
+            "line": 296
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_descriptor_size_bound_precedes_bootstrap_http",
+            "line": 311
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_malformed_descriptor_is_safe_and_precedes_http",
+            "line": 322
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_v2_session_mismatch_never_reaches_project_route",
+            "line": 333
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_v2_session_shape_or_missing_fields_fail_closed",
+            "line": 348
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_minor_version_requires_matching_session_not_silent_rewrite",
+            "line": 364
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_foreign_prefix_rejected_before_pacing_or_transport",
+            "line": 373
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_relative_api_path_guard_and_selected_prefix",
+            "line": 388
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_bundle_helpers_use_selected_routes_and_preserve_supplied_value",
+            "line": 397
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_wait_polls_same_selected_operation_id",
+            "line": 412
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_wait_timeout_abstains_from_operation_poll",
+            "line": 425
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_commit_routes_exact_confirmation_preview_and_key",
+            "line": 434
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_close_selected_shutdown_and_original_owner_cleanup",
+            "line": 453
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_close_retains_original_wait_timeout_fallback",
+            "line": 470
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_raw_response_ceiling_and_connection_cleanup",
+            "line": 481
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_typed_error_payload_and_http_close_preserved",
+            "line": 496
+          },
+          {
+            "path": "scripts/test_workspace_client_versions.py",
+            "name": "ClientVersionControls.test_json_request_bound_and_nonfinite_values_precede_http",
+            "line": 508
+          }
+        ]
+      },
+      "types": {
+        "selected_classes": 7,
+        "selected_documented": 7,
+        "whole_classes": 16,
+        "whole_documented": 16
+      },
+      "census": {
+        "path": "/private/tmp/forge-f19-s6-python-doc-census-independent-v3/census.json",
+        "sha256": "9afc78851d5164052885d645fdab9927530e59de0905ba1bd7233396c89106d6",
+        "bytes": 1131683
+      },
+      "index": {
+        "path": "/private/tmp/forge-f19-s6-python-doc-census-independent-v3/index.json",
+        "sha256": "6dc247d0cd6f03b678b8b127244a6c88b050c9f6d77f0c53f86910d59b1fb776",
+        "bytes": 18656
+      }
+    },
+    "javascript": {
+      "cohort": "Changed named lexical production UI functions",
+      "selected": 55,
+      "documented": 55,
+      "source_sha256": "51096fdb61daf30214f4e0067373790a5b91bba5d89ce46281c9211c5bc1228f"
+    }
+  },
+  "coverage": {
+    "rust": {
+      "selected_function_entries": {
+        "positive": 306,
+        "total": 313,
+        "zero": 7,
+        "unmapped": 0
+      },
+      "zero_entries": [
+        {
+          "path": "src/workspace/http.rs",
+          "qualified_name": "crate::workspace::http::read_query_response",
+          "line": 423,
+          "scope": "production-lexical",
+          "documented": true,
+          "positive": false,
+          "mapping": "zero"
+        },
+        {
+          "path": "src/workspace/http_source.rs",
+          "qualified_name": "crate::workspace::http_source::SourceControl::interruption",
+          "line": 95,
+          "scope": "production-lexical",
+          "documented": true,
+          "positive": false,
+          "mapping": "zero"
+        },
+        {
+          "path": "src/workspace/root_transaction.rs",
+          "qualified_name": "crate::workspace::root_transaction::tests::StopControl::interruption",
+          "line": 2323,
+          "scope": "cfg-test",
+          "documented": true,
+          "positive": false,
+          "mapping": "zero"
+        },
+        {
+          "path": "src/workspace/root_transaction.rs",
+          "qualified_name": "crate::workspace::root_transaction::tests::AfterPublish::interruption",
+          "line": 2434,
+          "scope": "cfg-test",
+          "documented": true,
+          "positive": false,
+          "mapping": "zero"
+        },
+        {
+          "path": "src/workspace/source_validation.rs",
+          "qualified_name": "crate::workspace::source_validation::Sources::native_mapping",
+          "line": 65,
+          "scope": "production-lexical",
+          "documented": true,
+          "positive": false,
+          "mapping": "zero"
+        },
+        {
+          "path": "src/workspace/transaction_state.rs",
+          "qualified_name": "crate::workspace::transaction_state::capacity",
+          "line": 359,
+          "scope": "production-lexical",
+          "documented": true,
+          "positive": false,
+          "mapping": "zero"
+        },
+        {
+          "path": "src/workspace/transaction_state.rs",
+          "qualified_name": "crate::workspace::transaction_state::unavailable",
+          "line": 373,
+          "scope": "production-lexical",
+          "documented": true,
+          "positive": false,
+          "mapping": "zero"
+        }
+      ],
+      "llvm_reported_totals": {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 7360,
+          "covered": 6283,
+          "percent": 85.36684782608695
+        },
+        "instantiations": {
+          "count": 12689,
+          "covered": 8789,
+          "percent": 69.26471747182599
+        },
+        "lines": {
+          "count": 75953,
+          "covered": 69437,
+          "percent": 91.42101036167102
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 131754,
+          "covered": 120013,
+          "notcovered": 11741,
+          "percent": 91.08869559937459
+        }
+      },
+      "branch_mcdc": {
+        "branches": "unavailable: zero exported denominator; no coverage percentage inferred",
+        "mcdc": "unavailable: zero exported denominator; no coverage percentage inferred"
+      },
+      "report": {
+        "path": "/private/tmp/forge-f19-s6-source-rust-coverage-final-v5.json",
+        "sha256": "8ea87f3318644ab7cdbf924c8f2408641bbf51288b1b6a55dd9b871693cf0f25",
+        "bytes": 510947
+      },
+      "instrumented_export": {
+        "path": "/private/tmp/forge-f19-s6-source-llvm-combined-v5.json",
+        "sha256": "9dd368e6f1dc6c5cb02529bd1b093f07d3358aa366b098232eb83eb047b57482",
+        "bytes": 18532026
+      }
+    },
+    "python": {
+      "selected_partial_entries": {
+        "zero-line-observation": 2,
+        "positive-line-observation": 104
+      },
+      "broader_partial_entries": {
+        "positive-line-observation": 149,
+        "zero-line-observation": 4,
+        "unmeasured": 47
+      },
+      "zero_selected": [
+        {
+          "path": "scripts/test_workspace_bundle_browser.py",
+          "name": "wait_owned",
+          "line": 44,
+          "entry_line": 46
+        },
+        {
+          "path": "scripts/test_workspace_source_browser.py",
+          "name": "wait_owned",
+          "line": 69,
+          "entry_line": 71
+        }
+      ],
+      "unmeasured_selected": [],
+      "scope": "First executable body-line observations only; missing trace is unmeasured even when a separate untraced test passed."
+    },
+    "javascript": {
+      "selected_named_entries_positive": 55,
+      "selected_named_entries_total": 55,
+      "mock_node_counters": {
+        "tests": 248,
+        "pass": 248,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "report": {
+        "path": "/private/tmp/forge-f19-s6-source-ui-coverage-v2/coverage.json",
+        "sha256": "e4a692dcd834a5e7fdfb428280f0eaab9beb2629858970d1f8ec869c2e3f06cc",
+        "bytes": 610690
+      },
+      "scope": "V8 first-range entries under248 Node/FakeDOM controls; no whole-body/branch/Chrome coverage inference."
+    }
+  },
+  "maintained_native_source": {
+    "record": {
+      "path": "/private/tmp/forge-f19-s6-maintained-native-source-final-v1/receipt.json",
+      "sha256": "e528e73a3167562b339c53e2b14ab3c9439d85ea223e116c7bf9f8dac80106bc",
+      "bytes": 1864
+    },
+    "result": {
+      "format": "forge.s6-real-source-workflow/1",
+      "started_utc": "2026-10-03T16:02:46.868528+00:00",
+      "binary": {
+        "sha256": "d0d524401727d037ab01220f674b307d7300b477b5dac2e3477ea77340c9d658",
+        "bytes": 63175504
+      },
+      "source_client": {
+        "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+        "bytes": 52926
+      },
+      "source_workflow": {
+        "sha256": "9d767cbca19854b033f26201a78b17c8922e6ab0244c675a25ff743e72919840",
+        "bytes": 11070
+      },
+      "normal_session_exits": 4,
+      "checks": [
+        "source-export-original202-replay",
+        "source-export-preview-no-write",
+        "source-export-exact-committed-download",
+        "source-download-normative-header-and-exact-bytes",
+        "private-source-family-and-original-inputs-preserved",
+        "complete-source-preview-replay-and-explicit-directories-no-write",
+        "preallocated-id-before-acceptance-not-found",
+        "durable-original-pending202-and-one-time-replay",
+        "exact-source-and-complete-index-replacement",
+        "removed-registrations-retain-files",
+        "terminal-cancel-preserves-committed-facts",
+        "fresh-same-root-read-only-outcome-no-old-authority",
+        "fresh-writable-session-does-not-revive-old-receipt"
+      ],
+      "platform": "darwin",
+      "qualification": "actual native Unix binary and maintained client over authenticated HTTP; no browser/Windows/power-loss/AT/human acceptance",
+      "export_outcome": {
+        "state": "succeeded",
+        "error": null
+      },
+      "outcome": {
+        "operation_id": "op_5eb39664c5a4c9db75fee51ddba3b138766be90f928a5c0a8bcc3c3f77a13acb",
+        "state": "succeeded",
+        "write_outcome": "committed",
+        "cleanup_state": "verified"
+      },
+      "artifact": {
+        "sha256": "91da7288f9c6cc464cc64a7f60f18c890a6ce5ca2608f883f379cadb70e23ab3",
+        "bytes": 922
+      },
+      "status": "passed",
+      "finished_utc": "2026-10-03T16:02:50.249494+00:00",
+      "check_count": 13
+    }
+  },
+  "installed_chrome_source": {
+    "record": {
+      "path": "/private/tmp/forge-f19-s6-source-native-browser-final-v6/receipt.json",
+      "sha256": "ada45f249b090bad41ea134c3539333cb307a9205d926996f258570352c448d6",
+      "bytes": 3158
+    },
+    "campaigns": [
+      {
+        "stage": "export",
+        "launch": {
+          "path": "/private/tmp/forge-f19-s6-source-native-browser-final-v6/export/launch-receipt.json",
+          "sha256": "8e0d52d511c02bdbc3c44cf69973a5f10264598245478f6f415911688c2fb164",
+          "bytes": 504
+        },
+        "observation": {
+          "path": "/private/tmp/forge-f19-s6-source-native-browser-final-v6/export/browser/receipt.json",
+          "sha256": "62c5e2f4b03ac1aef9b8877b16621418ee860ffadaaf75802203a6b67785c69d",
+          "bytes": 3464
+        },
+        "launch_result": {
+          "stage": "export",
+          "status": "passed",
+          "read_only": false,
+          "node_exit": 0,
+          "forge_exit": 0,
+          "startup_bytes": 186,
+          "prompt_submissions": 2,
+          "forced_cleanup": false,
+          "direct_children_reaped": true,
+          "descendant_tree_cleanup": "unmeasured",
+          "failure_class": null,
+          "owned_child_kind": "forge",
+          "owned_child_pid": 5372,
+          "owned_child_wait_status": 0,
+          "driver_receipt_sha256": "62c5e2f4b03ac1aef9b8877b16621418ee860ffadaaf75802203a6b67785c69d",
+          "shutdown_terminal_bytes": 127
+        },
+        "observation_summary": {
+          "api_version": "2.3.0",
+          "phase": "complete",
+          "restore_commit_requests": 0,
+          "page_errors": 0,
+          "non_loopback_page_requests": 0,
+          "reflow": [
+            {
+              "phase": "source-export-preview",
+              "viewport": 1440,
+              "page": 1440
+            },
+            {
+              "phase": "source-export-preview",
+              "viewport": 320,
+              "page": 320
+            }
+          ],
+          "screenshots": [
+            "source-export-preview-1440.png",
+            "source-export-preview-320.png"
+          ],
+          "browser_close_verified": true,
+          "context_close_verified": true,
+          "download_exact_bytes": true,
+          "complete_project_effects_verified": null,
+          "removed_source_retained": null,
+          "readonly_project_unchanged": null
+        }
+      },
+      {
+        "stage": "restore",
+        "launch": {
+          "path": "/private/tmp/forge-f19-s6-source-native-browser-final-v6/restore/launch-receipt.json",
+          "sha256": "c97abd15c24c106393fdb3c421bdc7810ca70dc22625a25797b6b889929fa16b",
+          "bytes": 505
+        },
+        "observation": {
+          "path": "/private/tmp/forge-f19-s6-source-native-browser-final-v6/restore/browser/receipt.json",
+          "sha256": "6877c020e93a0675bc93577ea43f2dcc86c923b556a1e9c1cad08b11ed574dfd",
+          "bytes": 5131
+        },
+        "launch_result": {
+          "stage": "restore",
+          "status": "passed",
+          "read_only": false,
+          "node_exit": 0,
+          "forge_exit": 0,
+          "startup_bytes": 186,
+          "prompt_submissions": 2,
+          "forced_cleanup": false,
+          "direct_children_reaped": true,
+          "descendant_tree_cleanup": "unmeasured",
+          "failure_class": null,
+          "owned_child_kind": "forge",
+          "owned_child_pid": 5396,
+          "owned_child_wait_status": 0,
+          "driver_receipt_sha256": "6877c020e93a0675bc93577ea43f2dcc86c923b556a1e9c1cad08b11ed574dfd",
+          "shutdown_terminal_bytes": 127
+        },
+        "observation_summary": {
+          "api_version": "2.3.0",
+          "phase": "complete",
+          "restore_commit_requests": 1,
+          "page_errors": 0,
+          "non_loopback_page_requests": 0,
+          "reflow": [
+            {
+              "phase": "source-restore-preview",
+              "viewport": 1440,
+              "page": 1440
+            },
+            {
+              "phase": "source-restore-preview",
+              "viewport": 320,
+              "page": 320
+            },
+            {
+              "phase": "source-restore-status",
+              "viewport": 1440,
+              "page": 1440
+            },
+            {
+              "phase": "source-restore-status",
+              "viewport": 320,
+              "page": 320
+            }
+          ],
+          "screenshots": [
+            "source-restore-preview-1440.png",
+            "source-restore-preview-320.png",
+            "source-restore-status-1440.png",
+            "source-restore-status-320.png"
+          ],
+          "browser_close_verified": true,
+          "context_close_verified": true,
+          "download_exact_bytes": null,
+          "complete_project_effects_verified": true,
+          "removed_source_retained": true,
+          "readonly_project_unchanged": null
+        }
+      },
+      {
+        "stage": "lookup",
+        "launch": {
+          "path": "/private/tmp/forge-f19-s6-source-native-browser-final-v6/lookup/launch-receipt.json",
+          "sha256": "4f03b33b0331d583239be68cb1dc1238bbed145972ce478395894ccb61d8afe9",
+          "bytes": 503
+        },
+        "observation": {
+          "path": "/private/tmp/forge-f19-s6-source-native-browser-final-v6/lookup/browser/receipt.json",
+          "sha256": "84f2c009f250f8c631894b0a76dc6bf1d00b18a1fd49c845b437da249ad3504b",
+          "bytes": 4213
+        },
+        "launch_result": {
+          "stage": "lookup",
+          "status": "passed",
+          "read_only": true,
+          "node_exit": 0,
+          "forge_exit": 0,
+          "startup_bytes": 186,
+          "prompt_submissions": 2,
+          "forced_cleanup": false,
+          "direct_children_reaped": true,
+          "descendant_tree_cleanup": "unmeasured",
+          "failure_class": null,
+          "owned_child_kind": "forge",
+          "owned_child_pid": 5420,
+          "owned_child_wait_status": 0,
+          "driver_receipt_sha256": "84f2c009f250f8c631894b0a76dc6bf1d00b18a1fd49c845b437da249ad3504b",
+          "shutdown_terminal_bytes": 127
+        },
+        "observation_summary": {
+          "api_version": "2.3.0",
+          "phase": "complete",
+          "restore_commit_requests": 0,
+          "page_errors": 0,
+          "non_loopback_page_requests": 0,
+          "reflow": [
+            {
+              "phase": "fresh-read-only-outcome",
+              "viewport": 1440,
+              "page": 1440
+            },
+            {
+              "phase": "fresh-read-only-outcome",
+              "viewport": 320,
+              "page": 320
+            }
+          ],
+          "screenshots": [
+            "fresh-read-only-outcome-1440.png",
+            "fresh-read-only-outcome-320.png"
+          ],
+          "browser_close_verified": true,
+          "context_close_verified": true,
+          "download_exact_bytes": null,
+          "complete_project_effects_verified": null,
+          "removed_source_retained": null,
+          "readonly_project_unchanged": true
+        }
+      }
+    ],
+    "screenshots": {
+      "path": "/Users/bluby/.codex/visualizations/2026/10/02/01a0fb85-621c-7670-b7b9-3d9d2c26f560/forge-source-bundle-screens-v3/index.json",
+      "sha256": "84da77f9c886d4e0319f26899f421a5e2da823423353a80321f6a46c67fc74b5",
+      "bytes": 3761
+    }
+  },
+  "installed_chrome_metadata": [
+    {
+      "mode": "writable",
+      "launch": {
+        "path": "/private/tmp/forge-f19-s6-current-native-metadata-browser-writable-v5/launch-receipt.json",
+        "sha256": "a8130341bcb05a51e4f9b18e9035412bbcd34aab9c2fe3f394d2fc6a297dce33",
+        "bytes": 929
+      },
+      "observation": {
+        "path": "/private/tmp/forge-f19-s6-current-native-metadata-browser-writable-v5/browser/receipt.json",
+        "sha256": "cdb7ef364bc15fd4675c171ffb73bf75fa555cee0f5bad8178b51975a803a8aa",
+        "bytes": 4864
+      },
+      "result": {
+        "format": "forge.s6-native-browser-launch/1",
+        "status": "passed",
+        "mode": "writable",
+        "api_major": 2,
+        "contract_version": "2.3.0",
+        "forge_sha256": "d0d524401727d037ab01220f674b307d7300b477b5dac2e3477ea77340c9d658",
+        "node_sha256": "27db838bb204ef7c21df2931f5656e4c8fb32e6e947f363a402b49714d32b5b1",
+        "driver_sha256": "3ea49b8d8000840ee2972addd06cc54021ed9a681ffae4b75cc9fd2f2145c899",
+        "launcher_sha256": "2462536cb98752803caf5f458b27513498f4e893cb8719e39427bbfbfec3294e",
+        "native_driver_exit": 0,
+        "normal_server_exit": true,
+        "forced_cleanup": false,
+        "limitations": [
+          "POSIX PTY browser launch only; no machine-session capability sharing.",
+          "Page request restrictions do not establish OS network denial."
+        ],
+        "owned_child_kind": "forge",
+        "owned_child_pid": 4697,
+        "server_wait_status": 0,
+        "shutdown_terminal_bytes": 127,
+        "owned_child_wait_status": 0,
+        "direct_children_reaped": true
+      }
+    },
+    {
+      "mode": "readonly",
+      "launch": {
+        "path": "/private/tmp/forge-f19-s6-current-native-metadata-browser-readonly-v5/launch-receipt.json",
+        "sha256": "14e467d1ac13edf92bca7569898c65cdc130b7f490c7a3630efeb24706e2eb9f",
+        "bytes": 930
+      },
+      "observation": {
+        "path": "/private/tmp/forge-f19-s6-current-native-metadata-browser-readonly-v5/browser/receipt.json",
+        "sha256": "2ce341943d8343f0ba2f7b6f45191b1aeaf46b18ae158f7b6ac8021041fff330",
+        "bytes": 3407
+      },
+      "result": {
+        "format": "forge.s6-native-browser-launch/1",
+        "status": "passed",
+        "mode": "read-only",
+        "api_major": 2,
+        "contract_version": "2.3.0",
+        "forge_sha256": "d0d524401727d037ab01220f674b307d7300b477b5dac2e3477ea77340c9d658",
+        "node_sha256": "27db838bb204ef7c21df2931f5656e4c8fb32e6e947f363a402b49714d32b5b1",
+        "driver_sha256": "3ea49b8d8000840ee2972addd06cc54021ed9a681ffae4b75cc9fd2f2145c899",
+        "launcher_sha256": "2462536cb98752803caf5f458b27513498f4e893cb8719e39427bbfbfec3294e",
+        "native_driver_exit": 0,
+        "normal_server_exit": true,
+        "forced_cleanup": false,
+        "limitations": [
+          "POSIX PTY browser launch only; no machine-session capability sharing.",
+          "Page request restrictions do not establish OS network denial."
+        ],
+        "owned_child_kind": "forge",
+        "owned_child_pid": 5764,
+        "server_wait_status": 0,
+        "shutdown_terminal_bytes": 127,
+        "owned_child_wait_status": 0,
+        "direct_children_reaped": true
+      }
+    }
+  ],
+  "preserved_failure_history": [
+    {
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-source-native-browser-final-v4.json",
+        "sha256": "c3db69e5eba24cae88a70cc237eb2cab70966026b7d19dd1bc87b8c034975233",
+        "bytes": 29332
+      },
+      "explanation": "Actual export UI passed, but prematurely closed native PTY produced SIGHUP; no overall pass. V5/V6 hold and drain through actual normal reap."
+    },
+    {
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-current-native-metadata-browser-writable-v3.json",
+        "sha256": "55cd4af59fd06d52eb23614900d4e637f985e964bc6244f5e44617ea1690ef63",
+        "bytes": 29180
+      },
+      "explanation": "Old launcher stalled in blocking final wait; exact owned-launcher interruption preserved. V5 uses bounded waits and actual normal exit."
+    },
+    {
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-browser-pty-shutdown-probe-v1.json",
+        "sha256": "1626f70f737cccbfc1e87ffbe9b396036959ae3372d60ddd3ca8ba1d8de6d733",
+        "bytes": 28674
+      },
+      "explanation": "Minimal probe omitted required Fetch Metadata destination; failed before shutdown. Corrected V2 authenticated shutdown exited normally."
+    },
+    {
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-metadata-version-controls-trace-v2.json",
+        "sha256": "33ae1650be995f35c943d89f30879dfd514766962e44ac1422c613de26f39585",
+        "bytes": 29921
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-metadata-version-controls-trace-v2.log",
+        "sha256": "e70fec2825d9bf206d27463a792768195039599cb39bcca66339f47283f84cce",
+        "bytes": 108
+      },
+      "explanation": "Exit zero with zero unittest discovery; incomplete and receives no test/coverage credit. Guarded V3 asserts discovery and actual result counts."
+    },
+    {
+      "record": {
+        "path": "/private/tmp/forge-f19-browser-s6-lifecycle-client-controls-trace-v2.json",
+        "sha256": "a1b29b5207c885a905be246d293be35c636007054f01fbd6348c1475a03d2bf3",
+        "bytes": 29913
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-browser-s6-lifecycle-client-controls-trace-v2.log",
+        "sha256": "e70fec2825d9bf206d27463a792768195039599cb39bcca66339f47283f84cce",
+        "bytes": 108
+      },
+      "explanation": "Exit zero with zero unittest discovery; incomplete and receives no test/coverage credit. Guarded V3 asserts discovery and actual result counts."
+    }
+  ],
+  "remaining_gates": [
+    "Larger staged transfer and complete shared-capacity qualification.",
+    "Consumed Windows native source transaction and cross-platform crash/rollback/recovery qualification.",
+    "Independent security/privacy, assistive-technology/WCAG, participant and owner acceptance.",
+    "Exact committed/pushed source head and hosted source/contract/platform checks.",
+    "Dependency audit/approval and Linux OS-wide IP-denial qualification; inherited gates remain separate.",
+    "Full final integrated documentation review across all completed roadmap packages.",
+    "Verified2.0.0 release-candidate provenance and separate merge/publication authorization."
+  ],
+  "limits": [
+    "Before-commit source-hash checkpoint; local passing checks do not establish hosted results, independent acceptance or release readiness.",
+    "Named documentation and selected entry cohorts do not imply whole-repository documentation, full function bodies, physical-line deduplication, branch or MC/DC coverage.",
+    "Raw LLVM aggregate lines69437/75953 are retained as reported, including production/test/generated records; do not reinterpret them as production-only coverage.",
+    "Repeated sourceV5/V6 and metadata modes are separately retained, not additional unique native source cases.",
+    "Source/browser fixtures are genuine synthetic confined local data with real HTTP and no response/application-state injection.",
+    "Page request routing, screenshots and direct-child reap do not establish OS-wide network denial, human/AT review or an empty descendant tree.",
+    "Historical receipts/uncertainties and untracked local tracker configuration remain unchanged."
+  ],
+  "successor_of": {
+    "path": "/private/tmp/forge-f19-s6-source-verification-report-candidate-v1/report.json",
+    "sha256": "0415eecb4812e86556249058fb7cf92cf4d8ac1d3e1d56b4b30be4aec27a7fbd",
+    "bytes": 55799
+  },
+  "maintained_native_metadata": {
+    "result": {
+      "format": "forge-s6-native-client-proposed/3",
+      "status": "passed",
+      "contract_version": "2.3.0",
+      "checks": [
+        "actual_complete_bundle_query",
+        "export_preview_no_write",
+        "confirmed_export_exact_json_download",
+        "native_plain_duplicate_bundle_rejected",
+        "native_decoded_duplicate_bundle_rejected",
+        "native_chosen_BOM_rejected_without_stripping",
+        "native_exact1MiB_whole_request_prepares_without_write",
+        "maintained_client_one_excess_chosen_byte_rejected",
+        "native_declared_length_one_excess_rejected",
+        "native_chunked_actual_body_one_excess_rejected",
+        "direct_import_full_replacement_no_write",
+        "confirmed_index_only_migration_source_preservation",
+        "native_current_index2_to1_rejected",
+        "native_supplied_index2_to1_rejected",
+        "readonly_both_preparations_rejected",
+        "readonly_and_shutdown_preserve_files"
+      ]
+    },
+    "scope": "Sixteen actual authenticated native compatibility checks on the same final normal macOS binary; no Windows/human acceptance."
+  },
+  "guarded_compatibility_trace_controls": [
+    {
+      "record": {
+        "path": "/private/tmp/forge-f19-s6-metadata-version-controls-guarded-native-v3/receipt.json",
+        "sha256": "b4d6f4cde58103ad79ebeb3c8ae0056ca601f28ed426b5994f12f4febdcdcc56",
+        "bytes": 1793
+      },
+      "result": {
+        "format": "forge.guarded-compatibility-controls/1",
+        "suite": "test_workspace_bundle_workflow_controls.py",
+        "discovered": 3,
+        "tests_run": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "source_pins_before": [
+          {
+            "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_bundle_workflow_controls.py",
+            "sha256": "ab465c4cd16b37b19bed0571e67ecd30634ad9518c2272db7d1eedab06a55f5f",
+            "bytes": 2167
+          },
+          {
+            "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/workspace_client.py",
+            "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+            "bytes": 52926
+          },
+          {
+            "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_bundle_workflow.py",
+            "sha256": "dd86bf5015cc04a4c582c2af033209c1804974dc7fa2ce2e5a0d174219dfbb8f",
+            "bytes": 14388
+          }
+        ],
+        "source_pins_after": [
+          {
+            "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_bundle_workflow_controls.py",
+            "sha256": "ab465c4cd16b37b19bed0571e67ecd30634ad9518c2272db7d1eedab06a55f5f",
+            "bytes": 2167
+          },
+          {
+            "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/workspace_client.py",
+            "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+            "bytes": 52926
+          },
+          {
+            "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_bundle_workflow.py",
+            "sha256": "dd86bf5015cc04a4c582c2af033209c1804974dc7fa2ce2e5a0d174219dfbb8f",
+            "bytes": 14388
+          }
+        ],
+        "status": "passed",
+        "qualification": "Mocked compatibility controls; no native/backend acceptance or complete body coverage."
+      }
+    },
+    {
+      "record": {
+        "path": "/private/tmp/forge-f19-s6-lifecycle-client-controls-guarded-native-v3/receipt.json",
+        "sha256": "96801cc9dd5be924145d77856dfac346b4897aaec714f13446f2a9f04adb295f",
+        "bytes": 1769
+      },
+      "result": {
+        "format": "forge.guarded-compatibility-controls/1",
+        "suite": "test_workspace_lifecycle_client.py",
+        "discovered": 7,
+        "tests_run": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "source_pins_before": [
+          {
+            "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_lifecycle_client.py",
+            "sha256": "535a67a3170bb69562e93fbc0d629c65e5f879d6293ee5a55a6dd3f1322eca25",
+            "bytes": 9592
+          },
+          {
+            "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/workspace_client.py",
+            "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+            "bytes": 52926
+          },
+          {
+            "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_bundle_workflow.py",
+            "sha256": "dd86bf5015cc04a4c582c2af033209c1804974dc7fa2ce2e5a0d174219dfbb8f",
+            "bytes": 14388
+          }
+        ],
+        "source_pins_after": [
+          {
+            "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_lifecycle_client.py",
+            "sha256": "535a67a3170bb69562e93fbc0d629c65e5f879d6293ee5a55a6dd3f1322eca25",
+            "bytes": 9592
+          },
+          {
+            "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/workspace_client.py",
+            "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+            "bytes": 52926
+          },
+          {
+            "path": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge/scripts/test_workspace_bundle_workflow.py",
+            "sha256": "dd86bf5015cc04a4c582c2af033209c1804974dc7fa2ce2e5a0d174219dfbb8f",
+            "bytes": 14388
+          }
+        ],
+        "status": "passed",
+        "qualification": "Mocked compatibility controls; no native/backend acceptance or complete body coverage."
+      }
+    }
+  ],
+  "source_pins": [
+    {
+      "repository_path": ".github/workflows/release.yml",
+      "sha256": "aa93335c3905a5c08b3c74f30a5e6945e98f069efc5010831f09d5fb1323530f",
+      "bytes": 8806
+    },
+    {
+      "repository_path": ".github/workflows/workspace-verification.yml",
+      "sha256": "f5e14c7cb82f563cee291e7151a3ca6979977c8f70fc1c065b2ca1403e9202e4",
+      "bytes": 18264
+    },
+    {
+      "repository_path": "Cargo.lock",
+      "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+      "bytes": 74338
+    },
+    {
+      "repository_path": "Cargo.toml",
+      "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+      "bytes": 2344
+    },
+    {
+      "repository_path": "docs/CODEMAPS.md",
+      "sha256": "dacf1b8cb8b06d7b8425a1af5466a6ef0aad3bd69215b4bffae7b9805541a5f9",
+      "bytes": 10963
+    },
+    {
+      "repository_path": "docs/api/capability-matrix-v2.json",
+      "sha256": "28ded61e010df193d672bdfa8b6971b181ee07322386a55248dc9b24ebf3afd4",
+      "bytes": 26130
+    },
+    {
+      "repository_path": "docs/api/capability-matrix-v2.md",
+      "sha256": "b8c44d9024571729f7df30f74fa769b6eba074c83d6a5f459e3c14e206835f78",
+      "bytes": 13487
+    },
+    {
+      "repository_path": "docs/api/compatibility.md",
+      "sha256": "16f627b2bb5605621d12457e22d120f232f1682b639b2b65da0e07216b14cc95",
+      "bytes": 15624
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/README.md",
+      "sha256": "56c09f186eef4f539fd0e828c1d9f9fbeadfc92ed1767cdc6e6ded208c53d5c3",
+      "bytes": 2069
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/index.json",
+      "sha256": "9084ef42b469c226cc194477ea38b0f06f0ba8fe5b7728050a722d3783a19c6b",
+      "bytes": 43616
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-empty-valid.json",
+      "sha256": "54ab5ad4cd5f2b7cb86aad06c5a5fc3abc364c77bcc0009a4b09cd9c2573c7b7",
+      "bytes": 378
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-opaque-grammar-valid.json",
+      "sha256": "7cdef69ed258381f72bb8363950213e449ce0230e1a7ceaa8b05a46b8556f97c",
+      "bytes": 739
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-profile-invalid.json",
+      "sha256": "1b3e762d3f2031a21d4de7763d8e205dceea7ded33b33adf651a1a411f9ad433",
+      "bytes": 374
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-source-flag-invalid.json",
+      "sha256": "fb7c0f9663426447b5b3a905efb168d25c3f051a0ac9b7f49efb5edca017c33b",
+      "bytes": 379
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-unknown-field-invalid.json",
+      "sha256": "71758401d786519688829ce37e0e60055c9eee4b7f13167670093f99533b2811",
+      "bytes": 412
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-uppercase-hex-invalid.json",
+      "sha256": "f59d6954e68f48d15ac10d2b98a405b56c33d8c6f23c33236a7d11186930ce15",
+      "bytes": 735
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/bundle-wrong-hash-native-invalid.json",
+      "sha256": "3a9001f4fce941d69131e53a546647597dfec61829c324f7b0d77b8b53f163cb",
+      "bytes": 739
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-budget-exceeded.json",
+      "sha256": "683d7e18a30cd5edf5d95c9fe2b0f4c17529657844e660d50bbc1a0bcd770b61",
+      "bytes": 163
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-in-progress.json",
+      "sha256": "fec8737bc0285ccc9a865af7d73210afe5b79d78ce11402a98200008beb7f3fa",
+      "bytes": 148
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-recovery-required.json",
+      "sha256": "c1f102e0de49ab3dff76e79148f8a3952af629c87d6f8ca2dba1ab155a7ce953",
+      "bytes": 151
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/error-bundle-restore-unavailable.json",
+      "sha256": "fcc1ea010c82a4bd70c647f12c595331276f77e79239f544f9fdc1259a9dade6",
+      "bytes": 153
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/export-acknowledgments-valid.json",
+      "sha256": "c7595e9b5538b7268ed879b502a9f207153870d7e9fc44db10a3363a9dda038f",
+      "bytes": 123
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-explicit-upgrade-valid.json",
+      "sha256": "42d18ee19580074d84caa9ab1006710743e8f4abc630aa23e97f102f6623c670",
+      "bytes": 570
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-index2-downgrade-invalid.json",
+      "sha256": "0afe0a7b23edc97e2a0c3611ca2aed4520d4402c082f1645f9075cc81b6cff64",
+      "bytes": 570
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/import-response-valid.json",
+      "sha256": "6bacf1576c74ca52d4fd355481771a48129ef0c05950486c0b1dff48d2b4b3f9",
+      "bytes": 2217
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-commit-valid.json",
+      "sha256": "03eaee4ee6987157344863b2f77362f01a5cf33eb98260ab0746f47f0447c557",
+      "bytes": 185
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-legacy-kind-invalid.json",
+      "sha256": "5e6c91eb89103fb22c40c99d8d32b7633ceca27b98fcf7426e686d71d7350561",
+      "bytes": 312
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-pending-valid.json",
+      "sha256": "00230f32d8440cc554c4f54f9b36e57408c843728c56aabd8eb11cd19bbeda88",
+      "bytes": 320
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-missing-lookup-invalid.json",
+      "sha256": "0077cbfaedac8eebc621adbcaee279d86c3917b66631de3267ec6aec448deeb6",
+      "bytes": 1494
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-preview-preknown-id-valid.json",
+      "sha256": "4d95d585565b83607e58c4370220136affbed50945e116496a04cec1abe3cf2c",
+      "bytes": 1531
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-recovery-valid.json",
+      "sha256": "986c3d1e972d532bba0342c58a02551954ed689cf6a5e36e41ba2733a11b5376",
+      "bytes": 481
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/project-source-bundle/restore-succeeded-valid.json",
+      "sha256": "637e2d7e4b74dba84bb94478b5859fda808c0ff9dbf391250ca67f5fd8d3e09d",
+      "bytes": 674
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/session/get-session-response-valid.json",
+      "sha256": "229dcfff726fdf3cce6dbc4ef30948699036d4ee78c2664b266e682de924d7fb",
+      "bytes": 213
+    },
+    {
+      "repository_path": "docs/api/fixtures-v2/session/unlock-response-valid.json",
+      "sha256": "32c593c0bbc9001cc7105b8beed302733276e9e6fc7ddcdb75b182b58a825b0a",
+      "bytes": 334
+    },
+    {
+      "repository_path": "docs/api/forge-workspace-v2.openapi.yaml",
+      "sha256": "6367cd349659825db6f2c86a68c851b167c2ea4ad351ebf741da562a970c7854",
+      "bytes": 325449
+    },
+    {
+      "repository_path": "docs/api/migration-v2.md",
+      "sha256": "633ff9b380756e26dd890b64ac1e64470c824f881c6a71a9a4ff8ca5cd1382c3",
+      "bytes": 9820
+    },
+    {
+      "repository_path": "docs/api/release-artifacts.json",
+      "sha256": "b1c3a11cc494df8b6324e701cf0b606f095dadf6c59d226872640aac48b61cf5",
+      "bytes": 1529
+    },
+    {
+      "repository_path": "docs/architecture.md",
+      "sha256": "5400669dc7a2693afefb4044474fc0038eb1e210b24ddd7956c2a1bbbe22fd7d",
+      "bytes": 28627
+    },
+    {
+      "repository_path": "docs/local-workspace.md",
+      "sha256": "2f7fcced322d13f276b61a2a0bc9b2fb29220d4338e53fab8d2c9ddcbbd71e0f",
+      "bytes": 23381
+    },
+    {
+      "repository_path": "docs/usage-guide.md",
+      "sha256": "8715b591d592b63ffd645f67b16f3dfb4c95a4aaef3e3c52d31ddeee6a4e1ffd",
+      "bytes": 38492
+    },
+    {
+      "repository_path": "docs/workspace-bundle-receipts.md",
+      "sha256": "b57d5f4af0687fcbe79d6ae54ebd73ba9a30b322a0c0f22fd287c026a8d122b9",
+      "bytes": 11937
+    },
+    {
+      "repository_path": "docs/workspace-index-bundles.md",
+      "sha256": "68490045be17ee245cba75a7b01f929c5c04ec1c5c1f5a028e511daa5f2e570b",
+      "bytes": 14286
+    },
+    {
+      "repository_path": "docs/workspace-lifecycle-impact.md",
+      "sha256": "ea049372149a64cdf07914781933774f7003e8dc9e3d78b7a0130d72552d482e",
+      "bytes": 5437
+    },
+    {
+      "repository_path": "docs/workspace-source-bundle-verification.md",
+      "sha256": "bd03b3ef1457e44e8e887c3283d61259a4ac4118832632cb8c0d2abbfc749bcb",
+      "bytes": 7163
+    },
+    {
+      "repository_path": "docs/workspace-source-bundles.md",
+      "sha256": "d516b2612d11610e000c6477846875308879159eb7fda32c9947fe82afc50d0f",
+      "bytes": 12565
+    },
+    {
+      "repository_path": "schemas/forge.workspace-1.schema.json",
+      "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+      "bytes": 4223
+    },
+    {
+      "repository_path": "schemas/forge.workspace-source-bundle-3.schema.json",
+      "sha256": "a54223cd63a5aec3f0dd7eac40e5f596ad85dbe26345bcf0984854e9df5cddfc",
+      "bytes": 11859
+    },
+    {
+      "repository_path": "scripts/test_workspace_bundle_browser.py",
+      "sha256": "2462536cb98752803caf5f458b27513498f4e893cb8719e39427bbfbfec3294e",
+      "bytes": 12059
+    },
+    {
+      "repository_path": "scripts/test_workspace_bundle_workflow.py",
+      "sha256": "dd86bf5015cc04a4c582c2af033209c1804974dc7fa2ce2e5a0d174219dfbb8f",
+      "bytes": 14388
+    },
+    {
+      "repository_path": "scripts/test_workspace_bundle_workflow_controls.py",
+      "sha256": "ab465c4cd16b37b19bed0571e67ecd30634ad9518c2272db7d1eedab06a55f5f",
+      "bytes": 2167
+    },
+    {
+      "repository_path": "scripts/test_workspace_lifecycle_client.py",
+      "sha256": "535a67a3170bb69562e93fbc0d629c65e5f879d6293ee5a55a6dd3f1322eca25",
+      "bytes": 9592
+    },
+    {
+      "repository_path": "scripts/test_workspace_source_browser.py",
+      "sha256": "36d793beafbc127a7a11ea66a5ca2fb13ab4851362e60b4e2535b187a356f977",
+      "bytes": 16273
+    },
+    {
+      "repository_path": "scripts/test_workspace_source_bundle_client.py",
+      "sha256": "429fd5474ac7a13a17a2b1c5a6145a1e6edd66540995ffe4b9f151e14f0d3b1a",
+      "bytes": 34381
+    },
+    {
+      "repository_path": "scripts/test_workspace_source_workflow.py",
+      "sha256": "9d767cbca19854b033f26201a78b17c8922e6ab0244c675a25ff743e72919840",
+      "bytes": 11070
+    },
+    {
+      "repository_path": "scripts/workspace_client.py",
+      "sha256": "8432363027242a84daf38a2b1276ae89351040d97e07e1b18f781dc9a4c16f94",
+      "bytes": 52926
+    },
+    {
+      "repository_path": "src/applicability/mod.rs",
+      "sha256": "5d1c246314497af08c33882a3cda7ce27a390181a066c77b0cfd6fda3a1cff72",
+      "bytes": 75602
+    },
+    {
+      "repository_path": "src/workspace/contract.rs",
+      "sha256": "839fdc1e2a40788833b8d6900f994217ec4e0650a62add1ffeec4679d3c8adad",
+      "bytes": 22628
+    },
+    {
+      "repository_path": "src/workspace/effects.rs",
+      "sha256": "74a590df798d4154b59c76c9c5ab92e2ca4add69490d33e0004be4df3a7c8435",
+      "bytes": 72296
+    },
+    {
+      "repository_path": "src/workspace/http.rs",
+      "sha256": "bf76471ff232102da0fcfa8b1ac95c7f08811a15c1b91234bdedcf00352178d7",
+      "bytes": 83790
+    },
+    {
+      "repository_path": "src/workspace/http_source.rs",
+      "sha256": "8de98accde46f5f61bbcab0e0918700cbd23034b7bad439c6190353b26932829",
+      "bytes": 21744
+    },
+    {
+      "repository_path": "src/workspace/index.rs",
+      "sha256": "cacd1fd4582cf8210841dac0cfd5529c2c2ca8431bb7ae1f7fc44ad2f0bf4020",
+      "bytes": 9787
+    },
+    {
+      "repository_path": "src/workspace/mod.rs",
+      "sha256": "519258aeff9c87be99d5d2b249106a7c6e79aba5d7330b11c1a06dbda673a723",
+      "bytes": 1267
+    },
+    {
+      "repository_path": "src/workspace/root.rs",
+      "sha256": "d453e67d019310f9f8d1f1b6b92b8259d3dc3a6c6261d8e6b9a9921d91cf4cee",
+      "bytes": 31066
+    },
+    {
+      "repository_path": "src/workspace/root_transaction.rs",
+      "sha256": "3c812c5c085d9cc8a80ad91d9cdaacfbffa05aafb34f1c7411e47c42d77b89f9",
+      "bytes": 115771
+    },
+    {
+      "repository_path": "src/workspace/services.rs",
+      "sha256": "45ee938bc6852b27ef9c9ea32fda303c7373aac968a4a64f41574d172bccd334",
+      "bytes": 78888
+    },
+    {
+      "repository_path": "src/workspace/source_bundle_effects.rs",
+      "sha256": "0af871bb0022732560b65ad40041b361bd48f803c2eb9c734a2d775593c2a819",
+      "bytes": 40663
+    },
+    {
+      "repository_path": "src/workspace/source_bundles.rs",
+      "sha256": "41f8e6c340f3aa658eacc24172880c8fa7e960fe8a65b66038fa5e9f250ddc32",
+      "bytes": 34590
+    },
+    {
+      "repository_path": "src/workspace/source_receipts.rs",
+      "sha256": "60c54e2e306030a52bed604d9695b284f6cccd37a5fa943ca06d8eeca1d8243d",
+      "bytes": 34271
+    },
+    {
+      "repository_path": "src/workspace/source_validation.rs",
+      "sha256": "8246fdd193b9e06f99d72f419c65ebfde6f95bc2c3677fd39dda1a58c0c38af3",
+      "bytes": 31189
+    },
+    {
+      "repository_path": "src/workspace/transaction_state.rs",
+      "sha256": "1410f898e3a4e84f1d5011456f496e345116ad5023f000cec2b43e347c092fe3",
+      "bytes": 39255
+    },
+    {
+      "repository_path": "tests/api_contract_validation.rs",
+      "sha256": "b58ac9eddbe40e3b5901e83582de8f32ed2402f38194d4a05b89247f827756e8",
+      "bytes": 92597
+    },
+    {
+      "repository_path": "tests/workspace_cli_test.rs",
+      "sha256": "9c295a61299b8abb25f3bfcc0b9e4799bee086b0ecfd4351fdd24300606e12ee",
+      "bytes": 173941
+    },
+    {
+      "repository_path": "ui/tests/workspace-bundle-browser.cjs",
+      "sha256": "3ea49b8d8000840ee2972addd06cc54021ed9a681ffae4b75cc9fd2f2145c899",
+      "bytes": 15940
+    },
+    {
+      "repository_path": "ui/tests/workspace-navigation.cjs",
+      "sha256": "5022233a12fe2c920640c29e692212bfaadccf973371a6365d6e617f718c1b2e",
+      "bytes": 262569
+    },
+    {
+      "repository_path": "ui/tests/workspace-source-browser.cjs",
+      "sha256": "96b7d7207db75cf0e91cada7f5dc46778f30ba0b43450cd328eb7a938ee6931c",
+      "bytes": 23786
+    },
+    {
+      "repository_path": "ui/workspace.js",
+      "sha256": "51096fdb61daf30214f4e0067373790a5b91bba5d89ce46281c9211c5bc1228f",
+      "bytes": 203307
+    }
+  ],
+  "source_pin_scope": "Owned changed/new paths plus seven context inputs; this receipt excludes itself to avoid a recursive hash, and excludes unrelated local tracker configuration. Documentation overrides bind the exact proposed guide bytes."
+}

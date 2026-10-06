@@ -478,9 +478,9 @@ graph LR
     end
 ```
 
-- **Requires:** [007-prd-uuid-generation](docs/PRD/007-prd-uuid-generation.md) (D-2: stable UUIDs for controls), [008-prd-citation-extraction](docs/PRD/008-prd-citation-extraction.md) (D-3: citation model available in domain model)
+- **Requires:** [007-prd-uuid-generation](007-prd-uuid-generation.md) (D-2: stable UUIDs for controls), [008-prd-citation-extraction](008-prd-citation-extraction.md) (D-3: citation model available in domain model)
 - **Parallel With:** WI-11 (OSCAL metadata), WI-12 (back matter) — these run in parallel and integrate with the Catalog structure built here
-- **Blocks:** [010-prd-catalog-statement-parts](docs/PRD/010-prd-catalog-statement-parts.md) (adds control parts/prose to controls built here), [014-prd-component-definition](docs/PRD/014-prd-component-definition.md) (uses Catalog structure as reference for component mapping)
+- **Blocks:** [010-prd-catalog-statement-parts](010-prd-catalog-statement-parts.md) (adds control parts/prose to controls built here), [014-prd-component-definition](docs/PRD/014-prd-component-definition.md) (uses Catalog structure as reference for component mapping)
 - **External:** None
 
 ---
