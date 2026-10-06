@@ -18,18 +18,21 @@
   `max_size_bytes` (`src/ingest/mod.rs`), and DOCX decompression is bounded.
 
 
-## Offline dependency inventory (F02, proposed policy)
+## Offline dependency inventory (F02, approved incremental policy)
 
 Use Python 3.11+ and the standard library. No crate or Python package is added.
-The committed `dependency-policy.json` remains **proposed** while the PRD-069
-owner decisions are unresolved. Native Cargo files and audit history remain
-intact. Real exception and review sidecars are empty; fixture signoffs are tests.
+The owner approved the committed incremental policy and 20 exact temporary
+exceptions on October 6, 2026. See the [recorded decision](../docs/plans/2026-10-06-merge-dependency-decisions.md)
+for the locked identities, rationale, review and expiry dates, and approval scope.
+Existing audit history and the frozen legacy baseline remain intact. The
+`chacha20` 0.10.2 runtime gap still requires a separate accepted audit or owned
+exception. Fixture signoffs are tests; no source-audit signoff is inferred.
 
 ```sh
-python3 scripts/dependency_inventory.py inventory --as-of 2026-10-02
-python3 scripts/dependency_inventory.py gate --as-of 2026-10-02
-python3 scripts/dependency_inventory.py gate --strict --as-of 2026-10-02
-python3 scripts/dependency_inventory.py validate-store --as-of 2026-10-02
+python3 scripts/dependency_inventory.py inventory --as-of 2026-10-06
+python3 scripts/dependency_inventory.py gate --as-of 2026-10-06
+python3 scripts/dependency_inventory.py gate --strict --as-of 2026-10-06
+python3 scripts/dependency_inventory.py validate-store --as-of 2026-10-06
 ```
 
 Consumption reads only this checkout's bounded committed inputs. It never invokes
@@ -92,7 +95,7 @@ canonical native record digest in `dependency-reviews.json`, naming the exact
 source, method, version checksums and genuine signoff. A full audit binds its
 version checksum. A delta binds both old and new checksums, requires a full-rooted
 reviewed base and matches each local chain endpoint. A native exemption cannot
-seed a delta. Agent-assisted records require the proposed explicit human signoff;
+seed a delta. Agent-assisted records require the approved explicit human signoff;
 `human-only` policy rejects that method. No signoff may be future-dated.
 
 The sidecar is an asserted attribution, not authentication of the named person or
@@ -108,7 +111,7 @@ An exception binds an exact locked name, version, source and non-null content
 checksum. Record owner, rationale, created date, review date, expiry and approval
 reference in `dependency-exceptions.json`; keep the native cargo-vet exemption
 only while needed for that same identity/criteria. All criteria must be covered.
-The proposed limit is 90 days, with creation <= review <= expiry. Dates equal to
+The approved limit is 90 days, with creation <= review <= expiry. Dates equal to
 review/expiry remain current; later dates are action required. A changed checksum,
 version or source receives no legacy credit. External path/Git content binding is
 unsupported. Retired/duplicate entries and absent metadata invalidate store checks.
@@ -116,9 +119,8 @@ A stale exception always requires action even when an audit also exists.
 
 ### Imports, cadence and remaining gates
 
-`dependency-policy.json` proposes exact existing Embark/Mozilla source names and
-URLs, pinning the complete `imports.lock` digest. No proposal becomes trusted
-before owner disposition. Imports prove crates.io identities only and start at a
+`dependency-policy.json` records the approved existing Embark/Mozilla source
+names and URLs, pinning the complete `imports.lock` digest. Imports prove crates.io identities only and start at a
 full audit; pinned deltas may cross the explicitly approved sources. Refresh
 imports explicitly, inspect the diff and full-rooted chain, and update pins through
 normal review. A source/URL/pin change is invalid until reconciled.
