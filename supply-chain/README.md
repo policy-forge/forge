@@ -21,7 +21,7 @@
 ## Offline dependency inventory (F02, approved incremental policy)
 
 Use Python 3.11+ and the standard library. No crate or Python package is added.
-The owner approved the committed incremental policy and 20 exact temporary
+The owner approved the committed incremental policy and 21 exact temporary
 exceptions on October 6, 2026. See the [recorded decision](../docs/plans/2026-10-06-merge-dependency-decisions.md)
 for the locked identities, rationale, review and expiry dates, and approval scope.
 Existing audit history and the frozen legacy baseline remain intact. The
