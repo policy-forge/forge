@@ -246,3 +246,26 @@ release, and (c) no critical accessibility blocker is open (PRD Launch Gates).
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-09-08 | ZCode (LLM) | Initial accessible interaction requirements, UX-state rules, AT/browser matrix (with explicit JAWS disposition), and verification mapping for PRD 062 Slice 0 |
+
+## Source checkpoint — 2026-10-05 (not accessibility acceptance)
+
+The statement that Slice 0 has no UI implementation describes that original
+design stage. The pinned `main` (`aef0ab24`) and candidate (`304b31f8`) now have
+an embedded workspace shell with a skip link, alert/status regions and preview
+and stop dialogs (`src/workspace/assets.rs`), plus content-addressed script and
+style references. Static hook presence is not proof of focus behavior, keyboard
+operation, contrast, zoom/reflow or assistive-technology conformance.
+
+The candidate selects its API major explicitly; the original v1 requirements
+remain the default contract context. Later operation states such as source
+restore `recovery-required` and unknown write outcome need an understandable
+accessible recovery path; failure text must not imply unchanged files when the
+retained outcome cannot establish that fact. This checkpoint does not change
+the normative UX-state rules or claim they have been satisfied.
+
+The current-release manual NVDA/Chrome, NVDA/Firefox and VoiceOver/Safari matrix,
+keyboard/zoom checks, security/rendering joint review and AC-15 release gate
+remain required. JAWS remains explicitly excluded until its own retained
+evaluation. This review read bounded source interfaces and documents only; it
+did not execute browser checks, inspect the complete UI implementation or
+obtain human accessibility acceptance.

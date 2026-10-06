@@ -359,7 +359,7 @@ graph LR
     end
 ```
 
-- **Requires:** [WI-35: Phase 2 Integration Testing](docs/PRD/035-prd-phase2-integration.md) — Phase 2 outputs (Catalog, Profile, Component Definition) must be stable before building SSP templates on top of them
+- **Requires:** [WI-35: Phase 2 Integration Testing](035-prd-phase2-release.md) — Phase 2 outputs (Catalog, Profile, Component Definition) must be stable before building SSP templates on top of them
 - **Parallel With:** [WI-43: Diff Report](043-prd-diff-report.md), [WI-44: Summary Dashboard](044-prd-summary-dashboard.md), [WI-47: Community Examples](047-prd-community-examples.md) — runs in the same Phase 3 timeframe
 - **Blocks:** [WI-46: SSP Template — System Placeholders](046-prd-ssp-template-placeholders.md) — WI-46 extends the template with detailed system-specific placeholder sections
 - **External:** OSCAL v1.2.0 SSP JSON schema (published, stable)
@@ -481,3 +481,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation (OQ-1 and OQ-2 are non-blocking design preferences)
+
+## Source checkpoint — 2026-10-05
+
+The current CLI entrypoint is forge convert INPUT --to ssp --format json. It builds a Catalog then a skeleton SSP without component inputs; implemented requirements retain TODO descriptions and empty props/links rather than the Draft policy-prose and TraceLink example. An explicit source profile or TODO-profile.json fallback remains required context. This skeleton is not a completed or approved SSP.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/cli/convert.rs](../../src/cli/convert.rs), [src/oscal/ssp.rs](../../src/oscal/ssp.rs).

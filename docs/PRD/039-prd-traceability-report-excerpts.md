@@ -155,7 +155,7 @@ A developer or automation tool consumes the traceability report in JSON format f
 | R-1 | Source text extraction by line number does not capture full requirement text (e.g., requirement spans implicit continuation lines) | Med | Med | Use line range (start + end) from trace metadata; fall back to paragraph-level extraction if line range is insufficient |
 | R-2 | Excerpt-to-prose comparison produces false mismatches due to normalization differences (whitespace, punctuation) | Med | Low | Normalize both excerpt and prose before comparison (trim whitespace, collapse multiple spaces) |
 | R-3 | Long excerpts make the text table output unwieldy | Med | Low | Truncate excerpts in table output with ellipsis; full text available in JSON output |
-| R-4 | Source policy has been modified since conversion, causing excerpt extraction to return wrong text | Med | Med | Check file hash (from WI-38 S-3) and warn if source has been modified; proceed but flag results as potentially inaccurate |
+| R-4 | Source policy has been modified since conversion, causing excerpt extraction to return wrong text | Med | Med | Compare source modification time (the WI-38 S-3 advisory check) and warn if source may have been modified; proceed but flag results as potentially inaccurate |
 
 ---
 
@@ -518,3 +518,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+The retained main and stack-219 Trace command does not expose --format json, --excerpt-length or the proposed complete excerpt helpers. Those examples remain historical proposed interfaces. The WI38 source check compares modification time, not a cryptographic file hash. This discrepancy note preserves the original WI1–50 completion record rather than reopening it.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/cli/mod.rs](../../src/cli/mod.rs), [src/cli/trace.rs](../../src/cli/trace.rs), [src/trace/report.rs](../../src/trace/report.rs), [src/trace/mod.rs](../../src/trace/mod.rs).

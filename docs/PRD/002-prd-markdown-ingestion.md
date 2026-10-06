@@ -398,3 +398,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+The maintained ingestion pipeline accepts Markdown, extractable-text PDF and DOCX. Empty files return EmptyInput, and PDF OCR is unsupported. The original Markdown-only scope, empty-document example and skeleton CLI remain historical planning, rather than current support instructions.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/ingest/mod.rs](../../src/ingest/mod.rs), [src/cli/convert.rs](../../src/cli/convert.rs), [src/pipeline.rs](../../src/pipeline.rs).

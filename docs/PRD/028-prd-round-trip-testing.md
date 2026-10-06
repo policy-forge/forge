@@ -493,3 +493,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+The plain semantic_eq comparator treats object key order as irrelevant and array order as positional, with recursion bounded at 128. The later oscal-cli round-trip comparator has separate OSCAL-aware rules. Test-file presence and Draft fidelity/coverage targets do not establish a fresh full-format or cross-tool qualification.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/testing/semantic_eq.rs](../../src/testing/semantic_eq.rs), [src/round_trip/comparator.rs](../../src/round_trip/comparator.rs), [src/round_trip/chain.rs](../../src/round_trip/chain.rs).

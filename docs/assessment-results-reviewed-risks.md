@@ -4,8 +4,9 @@ The `assessment results export-poam` command turns explicitly selected,
 caller-reviewed risks and a complete authored workflow into a `forge.poam/1`
 declaration. You supply every owner, date, milestone, actor, history event and work
 description. The output can then be checked and built with the maintained POA&M
-commands. Recorded owner, assessor, pilot and interoperability acceptance remain
-open, as does F10's separate multiple-epoch work.
+commands. The separate [sealed epoch append command](assessment-results-epochs.md)
+delivers a bounded same-context multiple-epoch profile. Broader epoch workflows
+and recorded owner, assessor, pilot and interoperability acceptance remain open.
 
 ## Prepare and consume the workflow
 

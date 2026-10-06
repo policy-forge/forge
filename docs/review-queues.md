@@ -1,5 +1,10 @@
 # Portable review queues
 
+> Integration update — October 6, 2026: the applicable workspace, MCP, assessment
+> and review implementations are now on main. See the [merge reconciliation](plans/2026-10-06-merge-documentation-reconciliation.md)
+> for exact commits and qualification scopes. Earlier draft states and failed
+> receipts below retain their dated meanings; human and release gates remain separate.
+
 This guide describes the F12 implementation candidate. Its current CLI supports
 re-review of selected OSCAL Mapping assertions and explicit applicability
 decisions in recorded Approved/current closures. Team evaluation, reviewer
@@ -14,8 +19,8 @@ decision, lifecycle record or other domain artifact.
 
 [Lifecycle re-review](lifecycle-review-exchange.md) uses a separately closed `/2`
 family. Its implementation candidate registers `forge review lifecycle
-init/respond/merge/status`; use the linked instructions after candidate code and
-docs integration. It does not extend the `/1` Mapping/applicability inputs or the
+init/respond/merge/status`; the linked guide records open-draft integration and
+remaining acceptance gates. It does not extend the `/1` Mapping/applicability inputs or the
 seven commands documented below. Currentness depends on the complete actual
 native source closure; asserted review quorum grants no Lifecycle transition or
 reviewer authority.
@@ -28,8 +33,9 @@ receiver regenerates the complete applicability baseline and saved
 `forge.authoring-plan/1`; it does not require an Approved Lifecycle record or
 change authoring state. A completed compiled CLI campaign exercised all four
 routes in the TEMP candidate; the linked guide records full-test, strict-lint,
-Rustdoc and physical LLVM scopes. Final integrated checks and hosted/platform/human
-acceptance remain open. This candidate leaves the seven `/1` commands below and
+Rustdoc and physical LLVM scopes. Its dated draft-source checkpoint records
+integration separately; final hosted/platform/human acceptance remains open.
+This candidate leaves the seven `/1` commands below and
 Lifecycle `/2` unchanged.
 
 ## Prepare the private inputs

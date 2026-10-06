@@ -1,9 +1,16 @@
 # Confirmed metadata bundles and index replacement
 
+> Integration update — October 6, 2026: the applicable workspace, MCP, assessment
+> and review implementations are now on main. See the [merge reconciliation](plans/2026-10-06-merge-documentation-reconciliation.md)
+> for exact commits and qualification scopes. Earlier draft states and failed
+> receipts below retain their dated meanings; human and release gates remain separate.
+
 This guide describes metadata receipts introduced in workspace API **2.2.0 / 51
-operations**, also admitted in **2.3.0 / 57** and the separately captured
-**2.4.0 / 65** working-tree successor under integration. No compiled, merged or
-hosted result for that successor is inferred here. Select API v2 explicitly at launch.
+operations**, also admitted in **2.3.0 / 57** and **2.4.0 / 65**. The retained open
+draft stack at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4` advertises 2.4.0;
+it is no longer merely an uncommitted working-tree proposal. This source checkpoint
+adds no compiled or hosted result to the earlier verification records and grants
+no merge, release or acceptance. Select API v2 explicitly at launch.
 API v1 remains **1.2.0 / 39 operations**. The three metadata operations and their
 existing semantics are distinct from the six opt-in source operations in 2.3.0. This contract version does not announce a product
 release or establish execution, platform, accessibility or human acceptance.
@@ -160,8 +167,10 @@ session-local previews, operation IDs or committed download records.
 ## Use the maintained client
 
 Launch `Workspace` with `api_major=2` and `read_only=False` for preparation. Its
-matching numeric API-major-2 bootstrap negotiation remains in place. Metadata receipt methods require 2.2.0 or 2.3.0; the nine captured inspection
-methods admit 2.1.0, 2.2.0 or 2.3.0. Source methods require exactly 2.3.0.
+matching numeric API-major-2 bootstrap negotiation remains in place. In the
+retained 2.4.0 draft source, metadata receipt methods admit 2.2.0, 2.3.0 or 2.4.0;
+the nine captured inspection methods admit 2.1.0, 2.2.0, 2.3.0 or 2.4.0. Inline
+source methods admit 2.3.0 or 2.4.0; staged methods require exactly 2.4.0.
 
 | Method | Result |
 |---|---|
@@ -179,9 +188,10 @@ decision sends no new request.
 This metadata prerequisite does not complete full S-6 bundle import/export.
 The separate [source workflow](workspace-source-bundles.md) describes the finite
 opt-in source profile, complete batch confirmation and durable known-ID recovery.
-Larger staged transfers, complete capacity and cross-platform crash/rollback
-qualification remain required work; source implementation is not full S-6
-acceptance.
+The bounded [staged transfer implementation](workspace-staged-source-bundles.md)
+is a separate draft-source workflow. Complete capacity and cross-platform
+crash/rollback qualification remain required work; source implementation is not
+full S-6 acceptance.
 Native browser/platform interoperability, human accessibility and workflow
 acceptance, security/release gates and the final integrated documentation review
 remain open. Historical receipts for query-only bundles, API 2.0 or API 2.1

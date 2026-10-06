@@ -1,5 +1,10 @@
 # Authored POA&M commands
 
+> Integration update — October 6, 2026: the applicable workspace, MCP, assessment
+> and review implementations are now on main. See the [merge reconciliation](plans/2026-10-06-merge-documentation-reconciliation.md)
+> for exact commits and qualification scopes. Earlier draft states and failed
+> receipts below retain their dated meanings; human and release gates remain separate.
+
 The integrated commands check explicitly authored nonterminal work and generate
 a native schema-validated POA&M. The original foundation init and source-only
 checks retain their scope. Full F08, D064 closure disposition, independent consumer
@@ -87,6 +92,10 @@ The [adapter proposal](plans/2026-10-03-f08-workflow-cli-adapter-proposal.md) re
 precise source guards, required nested-href and compact native-declaration repairs,
 and historical proposal guards. The integration applies the nested producer/consumer
 path correction, compact bounded native declarations and explicit clap conflicts
-for every workflow-only option in source-only mode. Full baseline impacts/reopening, closure disposition,
-fresh evidence, portfolio/HTML/connector packages, independent-tool interpretation,
+for every workflow-only option in source-only mode. The same open implementation stack
+also provides [baseline comparison](poam-baseline-comparison.md), [portfolio JSON/static HTML](poam-portfolio.md),
+[local outbound handoffs](poam-outbound.md) and [local evidence inspection](poam-evidence-inspection.md).
+These commands report bounded comparisons, handoffs and local observations; they do
+not accept terminal/reopening revisions, establish evidence sufficiency or authorize
+remote connectors. D064 closure disposition, independent-tool interpretation,
 representative plans and owner/human/platform acceptance remain open.

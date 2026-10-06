@@ -300,3 +300,9 @@ human release gate.
 | 0.3 | 2026-08-25 | Codex | Integrated Profile companions, PRD 056 applicability blast radius, and PRD 058 finding-ID handoff |
 | 0.4 | 2026-08-25 | Codex | Added shared successor declarations, durable dispositions, and GitHub-compatible annotations; completed Must Have engineering scope |
 | 0.5 | 2026-08-25 | Codex | Added deterministic Markdown/HTML, exact detail filters, path-safety hardening, and executable requirement traceability; completed Should Have engineering scope |
+
+## Source checkpoint — 2026-10-05
+
+The 2026-08-25 initial decision about unavailable applicability and migration inputs is historical. The retained Impact analyzer now consumes declared Mapping/applicability portfolios and explicit successor, prior-report and disposition inputs. Filtered views preserve complete counts and gates; unchanged structural content does not establish compliance. Release and partner acceptance remain separate.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/framework/mod.rs](../../src/framework/mod.rs), [src/framework/analysis.rs](../../src/framework/analysis.rs), [src/framework/manifest.rs](../../src/framework/manifest.rs).

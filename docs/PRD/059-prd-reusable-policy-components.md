@@ -256,3 +256,9 @@ Secrets must not be supplied as parameters. Reports and lock files hash paramete
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-08-24 | Codex | Initial draft for pinned reusable Markdown policy components |
+
+## Source checkpoint — 2026-10-05
+
+The retained source implements native policy component checking, composition scaffold/compose, impact and trace interfaces with forge.policy-component/1 and forge.policy-composition/1. Declared bindings and source provenance remain explicit. This is an engineering checkpoint, not approval of the Draft ownership/reuse decisions, representative customer inputs or interoperability and pilot gates.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/policy/mod.rs](../../src/policy/mod.rs), [src/policy/manifest.rs](../../src/policy/manifest.rs), [src/cli/mod.rs](../../src/cli/mod.rs).

@@ -539,3 +539,9 @@ The feature provides integrity checks, not authorization, confidentiality, digit
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-08-22 | Codex | Initial draft for human-reviewed OSCAL Control Mapping and deterministic change-impact reporting |
+
+## Source checkpoint — 2026-10-05
+
+The repository-evidence observation about pre-Mapping model support describes the original planning checkpoint. The retained Mapping source now provides native inventory, build and baseline checks. Explicit Profile companions, asserted reviewer provenance and human review remain required; participation counts do not establish equivalence, compliance or approval.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/mapping/mod.rs](../../src/mapping/mod.rs), [src/mapping/manifest.rs](../../src/mapping/manifest.rs), [src/mapping/inventory.rs](../../src/mapping/inventory.rs), [src/cli/mod.rs](../../src/cli/mod.rs).

@@ -413,8 +413,8 @@ graph LR
     end
 ```
 
-- **Requires:** [016-prd-traceability](docs/PRD/016-prd-traceability.md) (WI-16, internal dependency D-5), OSCAL v1.2.0 JSON schemas (external dependency D-8)
-- **Blocks:** [020-prd-schema-validation-error-reporting](docs/PRD/020-prd-schema-validation-error-reporting.md) (WI-20), [021-prd-golden-file-tests](021-prd-golden-file-tests.md) (WI-21)
+- **Requires:** [016-prd-traceability](016-prd-traceability-model.md) (WI-16, internal dependency D-5), OSCAL v1.2.0 JSON schemas (external dependency D-8)
+- **Blocks:** [020-prd-schema-validation-error-reporting](020-prd-validation-error-reporting.md) (WI-20), [021-prd-golden-file-tests](021-prd-golden-file-tests.md) (WI-21)
 - **External:** OSCAL v1.2.0 JSON schemas from NIST GitHub releases (available, stable — dependency D-8 in roadmap)
 
 ---
@@ -534,3 +534,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete (pending Spike-2)
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+The embedded baseline is OSCAL 1.2.3, with Catalog, Component Definition, Profile, SSP, Mapping and POA&M model detection. The CLI performs bounded JSON reading and full schema/semantic reporting. Root UUID must be distinguished from the Draft metadata.uuid example. Original two-model signatures, Spike readiness and numerical targets do not establish fresh runtime acceptance.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/validate/mod.rs](../../src/validate/mod.rs), [src/cli/validate.rs](../../src/cli/validate.rs), [src/oscal/metadata.rs](../../src/oscal/metadata.rs).

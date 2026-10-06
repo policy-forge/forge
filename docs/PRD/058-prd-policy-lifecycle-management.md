@@ -274,3 +274,9 @@ Actors are local manifest parties with stable keys and roles such as author, rev
 | 0.2 | 2026-08-25 | Codex | Implemented and tested the Must Have technical MVP; human release gates remain pending |
 | 0.3 | 2026-08-25 | Codex | Completed portfolio status, review queues, framework-impact links, and unsigned attestation Should Haves |
 | 0.4 | 2026-08-25 | Codex | Remediated adversarial review findings for separation evidence, publication gating, versioned context-bound event IDs with `/1` migration, deterministic assertions, artifact identity drift, and durable writes |
+
+## Source checkpoint — 2026-10-05
+
+The Background describes the original planning baseline. The retained native Lifecycle commands now expose record state and deterministic schedule checks. Native Lifecycle records and portable Lifecycle review Queue/Response/Disposition /2 are separate contracts. Asserted actors, quorum and recorded currentness do not authenticate identity or authorize a transition.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/lifecycle/mod.rs](../../src/lifecycle/mod.rs), [src/lifecycle/record.rs](../../src/lifecycle/record.rs), [src/lifecycle/status.rs](../../src/lifecycle/status.rs).

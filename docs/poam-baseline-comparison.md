@@ -1,5 +1,10 @@
 # POA&M baseline comparison
 
+> Integration update — October 6, 2026: the applicable workspace, MCP, assessment
+> and review implementations are now on main. See the [merge reconciliation](plans/2026-10-06-merge-documentation-reconciliation.md)
+> for exact commits and qualification scopes. Earlier draft states and failed
+> receipts below retain their dated meanings; human and release gates remain separate.
+
 Compare two explicit authoring declarations with the current captured source
 bundle. The report preserves added, removed and changed item/milestone identities,
 including revisions that the ordinary native producer refuses.
@@ -97,7 +102,10 @@ File publication uses the existing Linux/macOS support. Unsupported platform
 publication fails closed; no Windows result is inferred from local tests.
 
 The [authored command guide](poam-cli-workflow.md) covers native production and
-schedule reports. Full F08 still requires accepted closure/reopening semantics,
-portfolio/HTML/outbound adapters, fresh evidence links, independent consumer
-qualification, representative plans and real pilot judgments. The full goal-wide
-documentation review and release gates remain open.
+schedule reports. The open implementation stack also provides [portfolio JSON/static HTML](poam-portfolio.md),
+[local outbound handoffs](poam-outbound.md) and [local evidence inspection](poam-evidence-inspection.md).
+Those commands do not turn comparison compatibility or local byte/date observations
+into accepted closure/reopening semantics, evidence sufficiency or remote connector
+authority. Full F08 acceptance still requires the D064 disposition, independent
+consumer qualification, representative plans and real pilot judgments. The full
+goal-wide documentation review and release gates remain open.

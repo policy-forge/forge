@@ -443,3 +443,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+PolicyDocument and its requirement types now include RequirementId and later enrichment fields. Assembly validates source-line and sibling ordering and can create Preamble content. The original minimal structs and deferred enrichment examples describe this WI’s original design, not the full present model.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/model/mod.rs](../../src/model/mod.rs), [src/model/assemble.rs](../../src/model/assemble.rs).

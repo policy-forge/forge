@@ -381,3 +381,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+The maintained heading extractor retains H1–H6 nesting and source lines. With no headings it returns an empty extraction; later assembly can place unheaded list requirements in a Preamble section. Accuracy and coverage figures in this PRD remain targets rather than current measurements.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/parse/mod.rs](../../src/parse/mod.rs), [src/model/assemble.rs](../../src/model/assemble.rs).

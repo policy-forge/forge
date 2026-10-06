@@ -462,3 +462,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+The current pipeline already assigns stable IDs. Document assignment frames normalized text and an occurrence ordinal to distinguish duplicates; the standalone generate_stable_id helper receives normalized text. These deterministic UUIDv5 identifiers are best-effort identity tags, not integrity or authorization evidence. The original integration deferral and signatures remain historical.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/uuid.rs](../../src/uuid.rs), [src/pipeline.rs](../../src/pipeline.rs).

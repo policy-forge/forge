@@ -1,5 +1,10 @@
 # API Compatibility and Deprecation Policy
 
+> Integration update — October 6, 2026: the applicable workspace, MCP, assessment
+> and review implementations are now on main. See the [merge reconciliation](../plans/2026-10-06-merge-documentation-reconciliation.md)
+> for exact commits and qualification scopes. Earlier draft states and failed
+> receipts below retain their dated meanings; human and release gates remain separate.
+
 > **Document Type:** Compatibility Policy
 > **Audience:** Engineering, LLM agents, local client developers, human reviewers
 > **Status:** Draft
@@ -239,12 +244,12 @@ This additive API contract does not establish larger staged-transfer support,
 complete platform/crash/capacity qualification, security/audit, accessibility,
 human workflow acceptance, a release or the final integrated documentation gate.
 
-## API2.4.0 working-tree integration checkpoint
+## API2.4.0 current draft source
 
-The captured working tree declares API2.4.0 with eight staged-source operations and 65 total. The captured committed checkpoint `2064e293` still declares 2.3.0/57; working source is not merged, hosted or release qualification. API1 stays1.2.0/39; historical2.3/57 and its receipts remain bound to their original bytes. Matching numeric-major2 descriptor/Session bootstrap still does not imply a feature gate. The consumed successor must explicitly admit S3 on2.1/2.2/2.3/2.4, metadata receipts on2.2/2.3/2.4, inline source on2.3/2.4, and staged methods only on2.4. Earlier gate paragraphs above describe their captured checkpoints.
+The selected committed draft source (`304b31f8`) declares API2.4.0 with eight staged-source operations and 65 total. The dated `2064e293` checkpoint remains 2.3.0/57; current source does not establish a published release or acceptance. API1 stays 1.2.0/39 and historical receipts remain bound to their original bytes. Numeric-major-2 descriptor/Session bootstrap alone does not imply a feature gate. The maintained client explicitly admits inspection on 2.1/2.2/2.3/2.4, metadata receipts on 2.2/2.3/2.4, inline source on 2.3/2.4 and staged methods only on 2.4. Earlier paragraphs retain their captured checkpoint meanings.
 
 Bundle4 (`forge.workspace-index-bundle/4`, `index-and-source-hex-staged`) is separately closed alongside unchanged Bundle3, metadata bundles1/2 and indices1/2. Its logical raw artifact ceiling is10MiB; ordinary requests remain1MiB, exact parts<=32768bytes (canonical lowercase hex), at most320parts. Declared part count, exact ordinal/remainder, per-part/full SHA and size, raw duplicate/escaped-duplicate rejection, pin/content/index bijection and full native closure are separate consumed checks. JSON Schema alone does not establish these facts.
 
 Stage create/PUT/status/preview/discard never confirms a restore. Whole reservations and actual held raw bytes remain charged until release under shared20MiB and aggregate256-entity retention;600-second stage/replay lifetimes do not renew. Source export counts its output slot; all complete planned paths<=100 and capture<=50MiB retain their original boundaries. Smaller artifacts may be refused by complete conservative preparation peaks. No second pool, hidden capacity increase, partial admission or accepted-authority eviction is authorized.
 
-Staged preview returns the existing complete source restore DTO and preknown nonauthorizing ID. Existing explicit confirmation, durable accepted intent before202, known-ID recovery, no automatic uncertain resend and404-not-no-write rules remain. Manifest/part reads require the same-session committed private staged-source family and recapture/verify the complete exact target every time. No arbitrary path, default source inclusion, writable import from transport status or family fallback. See [the staged proposal guide](../workspace-staged-source-bundles.md). The working-tree declaration is an integration checkpoint, not evidence that all eight routes and consumers have passed actual conformance or that a product/hosted release advertises 2.4. Larger finite capacity, Windows native transaction, crash/interruption, accessibility, security/audit, human, release and final integrated documentation gates remain separate.
+Staged preview returns the existing complete source restore DTO and preknown nonauthorizing ID. Existing explicit confirmation, durable accepted intent before202, known-ID recovery, no automatic uncertain resend and404-not-no-write rules remain. Manifest/part reads require the same-session committed private staged-source family and recapture/verify the complete exact target every time. No arbitrary path, default source inclusion, writable import from transport status or family fallback. See [the staged workflow guide](../workspace-staged-source-bundles.md). Current draft source availability is separate from actual conformance evidence for a selected head or a product/hosted release advertising 2.4. Larger finite capacity, Windows native transaction, crash/interruption, accessibility, security/audit, human, release and final integrated documentation gates remain separate.

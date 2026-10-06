@@ -195,7 +195,7 @@ Extracted parameters must be linked to the OSCAL control that contains them.
 | R-1 | Heuristic patterns miss uncommon parameter phrasings (e.g., "not to exceed 72 hours", "a period of no less than one year") | Med | Med | Start with common patterns; expand pattern library iteratively; log unmatched potential parameters for review |
 | R-2 | False positive extraction — detecting numeric values that are not parameters (e.g., "Section 3.2", "NIST SP 800-53") | Med | Med | Use contextual cues: require proximity to normative verbs and qualifier words ("within", "at least", "minimum"); exclude known non-parameter patterns (section numbers, standard references) |
 | R-3 | Parameter insertion placeholders break prose readability when parameters are not resolved | Low | Low | Provide a human-readable label in the placeholder; ensure downstream rendering resolves placeholders |
-| R-4 | Multiple parameters in a single requirement create ambiguous extraction results | Low | Med | Extract each parameter independently; assign unique IDs based on position and content; test with multi-parameter fixtures |
+| R-4 | Multiple parameters in a single requirement create ambiguous extraction results | Low | Med | Extract each parameter independently; assign unique IDs based on the parent requirement ID and position; test with multi-parameter fixtures |
 
 ---
 
@@ -467,8 +467,8 @@ graph LR
 ```
 
 - **Requires:** [005-prd-domain-model](005-prd-domain-model.md) — provides `PolicyDocument`, `PolicyRequirement`, `PolicyParameter` structs
-- **Depends On:** [033-prd-normative-detection](docs/PRD/033-prd-normative-detection.md) (WI-33) — normative detection provides modality tagging that informs parameter extraction context
-- **Parallel With:** [033-prd-normative-detection](docs/PRD/033-prd-normative-detection.md) (WI-33) — can proceed concurrently; consumes modality tags when available
+- **Depends On:** [033-prd-normative-detection](033-prd-normative-advisory-detection.md) (WI-33) — normative detection provides modality tagging that informs parameter extraction context
+- **Parallel With:** [033-prd-normative-detection](033-prd-normative-advisory-detection.md) (WI-33) — can proceed concurrently; consumes modality tags when available
 - **Blocks:** [035-prd-phase2-release](035-prd-phase2-release.md) (WI-35) — Phase 2 integration testing and v0.2.0 release depends on parameter extraction being complete
 - **External:** `regex` crate (well-established Rust ecosystem crate)
 
@@ -502,7 +502,7 @@ Implement parameter extraction as an enrichment pass in the pipeline, following 
 
 2. **Infer constraint types**: Map qualifier words to constraint types — "at least"/"minimum"/"no fewer than"/"no less than" to Minimum; "no more than"/"maximum"/"at most" to Maximum; bare values to Exact.
 
-3. **Generate parameter IDs**: Compute deterministic IDs from the parent requirement's stable_id, the parameter value, and its position index within the requirement. Use a content-based hash consistent with the preliminary ID scheme from WI-7.
+3. **Generate parameter IDs**: Derive deterministic IDs from the parent requirement's stable_id and the parameter's position index within that requirement. The parameter value is excluded from identity, consistent with S-3 and the recorded parameter_id interface.
 
 4. **Replace values with insertion placeholders**: After extracting a parameter, replace the matched text in the requirement prose with `{{ insert: param, id-ref: <param-id> }}`, preserving surrounding context.
 
@@ -604,3 +604,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+Parameter identity is derived from the parent requirement ID and position, excluding the parameter value. Extraction records completed state and checks identifier uniqueness. OSCAL output uses values[] and constraints[].description rather than the Draft singular fields. The existing within-to-Minimum fixture convention is preserved; no compliance judgment is inferred.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/parameter/mod.rs](../../src/parameter/mod.rs), [src/parameter/matchers.rs](../../src/parameter/matchers.rs).

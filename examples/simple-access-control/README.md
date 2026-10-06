@@ -30,7 +30,7 @@ Convert the Markdown policy into an OSCAL Catalog (JSON):
 forge convert policy.md --strategy catalog --format json --output output/catalog.json
 ```
 
-**What this does:** FORGE reads `policy.md`, extracts headings as OSCAL groups, list items as controls, and produces a fully structured OSCAL v1.2.3 Catalog. Each control gets a deterministic UUID v5 identifier (e.g., `POL-AC-001`) and source traceability links back to the original Markdown file.
+**What this does:** FORGE reads `policy.md`, extracts headings as OSCAL groups, list items as controls, and produces a fully structured OSCAL v1.2.3 Catalog. Each control gets a readable control ID (e.g., `POL-AC-001`), a separate stable UUID v5, and source traceability links back to the original Markdown file.
 
 **Output:** `output/catalog.json` — an OSCAL Catalog containing 9 atomized controls organized under the "Access Control" group. A fresh run uses the current generated version; any older declaration in checked-in example output remains historical.
 
@@ -94,10 +94,10 @@ examples/simple-access-control/
 
 ## Why FORGE Produces These Outputs
 
-- **Catalog**: The catalog is the machine-readable representation of your entire policy. Every heading becomes a group, every bullet becomes a control, and compound requirements are atomized into individual enforceable statements. This is what downstream tools (compliance scanners, AI agents, CI/CD gates) consume.
+- **Catalog**: The catalog is the machine-readable representation of your entire policy. Every heading becomes a group, every bullet becomes a control, and compound requirements are atomized into separate structured statements for review. Separately configured downstream tools can consume the artifact; conversion alone does not enforce those statements.
 
 - **Profile**: Organizations rarely implement every control from a catalog. A profile selects a subset — your "baseline." FORGE generates the profile from the catalog so you can iteratively refine which controls matter for your environment.
 
 - **Deterministic IDs**: FORGE uses UUID v5 to generate stable identifiers. Re-converting the same policy text always produces the same IDs, enabling change detection and version comparison via `forge diff`.
 
-- **Traceability**: Every OSCAL element carries `source-section`, `source-line`, and `source-file` properties linking it back to the original Markdown. This is critical for audits — you can always show the human-readable policy that produced a given machine rule.
+- **Traceability**: Mapped controls with trace entries carry `source-section`, `source-line`, and `source-file` properties plus source links. Groups can carry `source-section` derived from a traceable child control; these properties are not present on every OSCAL element. Review the linked source when assessing a generated control.

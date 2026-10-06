@@ -20,6 +20,6 @@ See [the source workflow](../../workspace-source-bundles.md) for explicit review
 sensitivity, finite profile bounds and recovery. Dated verification records
 retain their original source/contract scope.
 
-## Staged2.4 proposal cohort
+## Staged2.4 fixture cohort
 
-63 parser-valid synthetic JSON fixtures are added for eight API2.4 routes and independently packaged Bundle4. Proposed current operation denominator65; the prior source cohort remains the2.3/57 checkpoint, and its Session literal adaptation is explicit. Schema expectations are authoring inputs awaiting actual compiler execution. The separate native-reject partition contains 8 schema-valid shapes with wrong hash/ceil/bijection/chunk relationships; they do not count as accepted artifacts. Raw duplicate/BOM/trailing controls remain decoder-only and are not malformed entries in this catalog. No source/native/consumer or human acceptance is inferred.
+The staged cohort records 63 synthetic JSON shapes for eight API2.4 routes and independently packaged Bundle4. The current declared operation denominator is 65; the prior source cohort retains its 2.3/57 checkpoint and explicit Session-literal adaptation. Valid/invalid labels are expected wire-shape classifications, not native acceptance or a new compiler receipt supplied by this guide. The separate native-reject partition contains 8 schema-valid shapes with wrong hash/ceil/bijection/chunk relationships; they do not count as accepted artifacts. Raw duplicate/BOM/trailing controls remain decoder-only and are not malformed entries in this catalog. Source/native/consumer and human acceptance remain separately evidenced.

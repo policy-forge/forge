@@ -518,3 +518,9 @@ Before marking as Approved:
 - [x] Security considerations documented
 - [x] Definition of Ready checklist is complete
 - [x] No open questions blocking implementation
+
+## Source checkpoint — 2026-10-05
+
+Profile generation now includes parameter tailoring, XML/YAML output and explicit timestamp paths. It derives deterministic UUIDv5, sanitizes the Catalog href and emits include-all:{} for exclusion mode. The CLI checks the Catalog path as a regular UTF-8 file without fully parsing its schema. The recorded as-is-href decision is historical and differs from the present sanitized output.
+
+This bounded source reference uses the retained stack-219 snapshot at `304b31f8ea3913eba4a7d776b833b9b3db4ad3a4`; it is a draft candidate, not a published-release or acceptance claim. Original WI completion records, MoSCoW requirements, owner decisions and readiness checklists are unchanged. Source interfaces: [src/cli/profile.rs](../../src/cli/profile.rs), [src/oscal/profile.rs](../../src/oscal/profile.rs), [src/oscal/metadata.rs](../../src/oscal/metadata.rs).
