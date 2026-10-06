@@ -2,6 +2,8 @@
 
 /// Private current-domain semantics over genuine caller-captured original bytes.
 pub(crate) mod captured;
+/// Non-authorizing legacy applicability facts over supplied borrowed originals.
+pub(crate) mod legacy_borrowed;
 pub mod manifest;
 pub mod model;
 
@@ -256,7 +258,7 @@ pub(crate) fn prepare_analysis(
     }
     evidence.sort_by(|left, right| left.uuid.cmp(&right.uuid));
 
-    let report = model::build_report(
+    let report = finish_report(
         &parsed,
         sha256_hex(&manifest_bytes),
         framework.evidence,
@@ -264,8 +266,7 @@ pub(crate) fn prepare_analysis(
         evidence,
         &mapping_facts,
         filters,
-    );
-    validate_classification_counts(&report.counts)?;
+    )?;
     let input_paths = input_fingerprints.iter().map(|input| input.path.clone()).collect();
     Ok(PreparedAnalysis { report, manifest: parsed, input_paths, input_fingerprints })
 }
@@ -318,13 +319,37 @@ fn load_mapping(
     let label = format!("$.mapping_collections[{index}]");
     let bytes = io::read_bounded(path, io::MAX_FILE_SIZE)
         .map_err(|cause| error(format!("{label} cannot be read: {cause}")))?;
-    let value: Value = serde_json::from_slice(&bytes)
-        .map_err(|cause| error(format!("{label} is not valid JSON: {cause}")))?;
-    let collection = decode_mapping_value(&label, value)?;
-    validate_mapping_collection(
+    let value = parse_mapping_value(&label, &bytes)?;
+    record_mapping_value(
         &label,
-        &collection,
+        value,
         &sha256_hex(&bytes),
+        framework,
+        mapping_facts,
+        validation_state,
+    )
+}
+
+/// Share the maintained Mapping JSON diagnostic before any native semantic validation.
+fn parse_mapping_value(label: &str, bytes: &[u8]) -> Result<Value, ForgeError> {
+    serde_json::from_slice(bytes)
+        .map_err(|cause| error(format!("{label} is not valid JSON: {cause}")))
+}
+
+/// Share complete native validation and once-per-target participation with borrowed callers.
+fn record_mapping_value(
+    label: &str,
+    value: Value,
+    raw_sha256: &str,
+    framework: &LoadedResource,
+    mapping_facts: &mut BTreeMap<String, model::ControlMappingFacts>,
+    validation_state: &mut MappingValidationState,
+) -> Result<model::MappingEvidence, ForgeError> {
+    let collection = decode_mapping_value(label, value)?;
+    validate_mapping_collection(
+        label,
+        &collection,
+        raw_sha256,
         framework,
         validation_state,
         &mut |_, id, positive, href| {
@@ -337,6 +362,29 @@ fn load_mapping(
             facts.policy_sources.insert(href.to_owned());
         },
     )
+}
+
+/// Share the unchanged full private report builder and complete six-category reconciliation.
+fn finish_report(
+    parsed: &manifest::ApplicabilityManifest,
+    manifest_sha256: String,
+    framework: ResourceEvidence,
+    inventory: &inventory::Inventory,
+    evidence: Vec<model::MappingEvidence>,
+    mapping_facts: &BTreeMap<String, model::ControlMappingFacts>,
+    filters: model::ReportFilters,
+) -> Result<model::ApplicabilityReport, ForgeError> {
+    let report = model::build_report(
+        parsed,
+        manifest_sha256,
+        framework,
+        inventory,
+        evidence,
+        mapping_facts,
+        filters,
+    );
+    validate_classification_counts(&report.counts)?;
+    Ok(report)
 }
 
 /// Reuse the maintained official schema/model/version admission without performing IO.

@@ -19,6 +19,13 @@ arms. The recorded release target is `2.0.0`; see the
 the recorded release approval and downstream review. This technical tranche does
 not claim source compatibility for those exhaustive matches.
 
+The [Authoring review exchange candidate](authoring-review-exchange.md) adds a
+separate local `/3` review of one complete current saved Phase 1 plan. Its TEMP
+candidate has completed full-test, strict-lint and compiled-CLI evidence, with
+Rustdoc and physical LLVM scopes in the linked guide. Final integrated checks
+and hosted/platform/human acceptance remain open. Asserted review policy does
+not update the plan, answers, clauses, authoring state or Lifecycle record.
+
 ## Commands
 
 ```sh

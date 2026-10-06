@@ -469,6 +469,11 @@ impl ExpansionBudget {
     }
 }
 
+// Additive admitted plain evaluator; unchanged public file/pure plan path above.
+#[path = "plan_admitted.rs"]
+pub(super) mod admitted;
+pub(super) use admitted::build_plan_admitted_inner;
+
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;

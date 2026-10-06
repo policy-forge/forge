@@ -508,6 +508,7 @@ fn parse_role(value: &str) -> Result<DeclaredRole, ForgeError> {
     }
 }
 
+/// Inspect the full confined original and retain its exact raw digest and optional native identity.
 fn fingerprint(
     path: &Path,
     record_dir: &Path,
@@ -516,8 +517,36 @@ fn fingerprint(
     reject_symlink_components(path)?;
     let bytes = io::read_bounded(path, io::MAX_FILE_SIZE)
         .map_err(|source| error(format!("artifact '{}': {source}", path.display())))?;
+    let (oscal_type, root_uuid) = artifact_identity_from_bytes(path, &bytes, require_oscal)?;
+    Ok(ArtifactFingerprint {
+        path: relative_path(
+            record_dir,
+            &path.canonicalize().map_err(|source| {
+                error(format!("cannot resolve '{}': {source}", path.display()))
+            })?,
+        )?,
+        sha256: sha256_hex(&bytes),
+        oscal_type,
+        root_uuid,
+    })
+}
+
+/// Inspect only maintained generated model/root/UUID identity from actual borrowed bytes.
+///
+/// This ordinary value creates no capture, schema-validity, approval or currentness
+/// authority. Opaque originals accept all bytes. Generated JSON keeps maintained
+/// serde duplicate semantics and the original UUID spelling. The diagnostic path
+/// is used only in private native errors and is never opened here. A portable
+/// consumer must admit its complete raw/tree/string/native work on its original
+/// ledger before this synchronous parser and preserve its ordinary result through
+/// the same post-phase control fence.
+pub(crate) fn artifact_identity_from_bytes(
+    path: &Path,
+    bytes: &[u8],
+    require_oscal: bool,
+) -> Result<(Option<String>, Option<String>), ForgeError> {
     let (oscal_type, root_uuid) = if require_oscal {
-        let value: Value = serde_json::from_slice(&bytes).map_err(|source| {
+        let value: Value = serde_json::from_slice(bytes).map_err(|source| {
             error(format!("generated artifact '{}' is not JSON: {source}", path.display()))
         })?;
         let model = validate::detect_model_type(&value).map_err(|source| {
@@ -535,17 +564,7 @@ fn fingerprint(
     } else {
         (None, None)
     };
-    Ok(ArtifactFingerprint {
-        path: relative_path(
-            record_dir,
-            &path.canonicalize().map_err(|source| {
-                error(format!("cannot resolve '{}': {source}", path.display()))
-            })?,
-        )?,
-        sha256: sha256_hex(&bytes),
-        oscal_type,
-        root_uuid,
-    })
+    Ok((oscal_type, root_uuid))
 }
 
 /// Map each detected native model to its exact root for recorded lifecycle identity.
@@ -1047,6 +1066,11 @@ mod windows_file_identity {
 fn error(message: impl Into<String>) -> ForgeError {
     ForgeError::Lifecycle(message.into())
 }
+
+/// Component controls for maintained borrowed identity semantics, not native approval.
+#[cfg(test)]
+#[path = "captured_identity_tests.rs"]
+mod captured_identity_tests;
 
 #[cfg(test)]
 mod tests {

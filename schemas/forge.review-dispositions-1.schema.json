@@ -1,0 +1,462 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forge.review-dispositions/1",
+  "title": "forge.review-dispositions/1",
+  "description": "Inert asserted declarations; schema admission is not authentication, currentness, quorum or domain approval. UTF-8 byte limits and complete structural correlations are enforced by the typed contract.",
+  "$ref": "#/$defs/DispositionsDocument",
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "time": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "SourceModel": {
+      "type": "string",
+      "enum": [
+        "mapping",
+        "catalog",
+        "profile",
+        "resolved-catalog",
+        "component-definition",
+        "mapping-manifest",
+        "applicability-manifest",
+        "applicability-report",
+        "lifecycle-record"
+      ]
+    },
+    "Disposition": {
+      "type": "string",
+      "enum": [
+        "approve",
+        "reject",
+        "request-changes",
+        "abstain",
+        "superseded"
+      ]
+    },
+    "ResponseClassification": {
+      "type": "string",
+      "enum": [
+        "current",
+        "stale",
+        "foreign",
+        "future",
+        "late",
+        "unassigned",
+        "superseded",
+        "conflicted"
+      ]
+    },
+    "ItemState": {
+      "type": "string",
+      "enum": [
+        "unassigned",
+        "assigned",
+        "in-review",
+        "conflicted",
+        "changes-requested",
+        "quorum-met",
+        "expired",
+        "stale"
+      ]
+    },
+    "RecordedCurrentness": {
+      "type": "string",
+      "enum": [
+        "unverified",
+        "recorded-current"
+      ]
+    },
+    "SourcePin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_key",
+        "model",
+        "native_root_uuid",
+        "raw_sha256",
+        "byte_length",
+        "schema_identity"
+      ],
+      "properties": {
+        "artifact_key": {
+          "$ref": "#/$defs/key"
+        },
+        "model": {
+          "$ref": "#/$defs/SourceModel"
+        },
+        "native_root_uuid": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "schema_identity": {
+          "$ref": "#/$defs/version"
+        }
+      }
+    },
+    "RecordedResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "response_id",
+        "raw_sha256",
+        "byte_length",
+        "item_key",
+        "reviewer_key",
+        "reviewer_role",
+        "disposition",
+        "responded_at",
+        "classification"
+      ],
+      "properties": {
+        "response_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        },
+        "item_key": {
+          "$ref": "#/$defs/key"
+        },
+        "reviewer_key": {
+          "$ref": "#/$defs/key"
+        },
+        "reviewer_role": {
+          "$ref": "#/$defs/key"
+        },
+        "disposition": {
+          "$ref": "#/$defs/Disposition"
+        },
+        "responded_at": {
+          "$ref": "#/$defs/time"
+        },
+        "classification": {
+          "$ref": "#/$defs/ResponseClassification"
+        }
+      }
+    },
+    "MetSeat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role_key",
+        "ordinal",
+        "reviewer_key",
+        "response_id"
+      ],
+      "properties": {
+        "role_key": {
+          "$ref": "#/$defs/key"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 99
+        },
+        "reviewer_key": {
+          "$ref": "#/$defs/key"
+        },
+        "response_id": {
+          "$ref": "#/$defs/uuid"
+        }
+      }
+    },
+    "UnmetSeat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role_key",
+        "ordinal"
+      ],
+      "properties": {
+        "role_key": {
+          "$ref": "#/$defs/key"
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 99
+        }
+      }
+    },
+    "ItemDisposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item_key",
+        "item_id",
+        "state",
+        "reason_codes",
+        "required_seats",
+        "met_seats",
+        "unmet_seats",
+        "response_ids",
+        "dissent_ids",
+        "blocking"
+      ],
+      "properties": {
+        "item_key": {
+          "$ref": "#/$defs/key"
+        },
+        "item_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "state": {
+          "$ref": "#/$defs/ItemState"
+        },
+        "reason_codes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/key"
+          },
+          "minItems": 0,
+          "maxItems": 32
+        },
+        "required_seats": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "met_seats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MetSeat"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "unmet_seats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UnmetSeat"
+          },
+          "minItems": 0,
+          "maxItems": 100
+        },
+        "response_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/uuid"
+          },
+          "minItems": 0,
+          "maxItems": 10000
+        },
+        "dissent_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/uuid"
+          },
+          "minItems": 0,
+          "maxItems": 10000
+        },
+        "blocking": {
+          "type": "boolean"
+        }
+      }
+    },
+    "StateCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unassigned",
+        "assigned",
+        "in_review",
+        "conflicted",
+        "changes_requested",
+        "quorum_met",
+        "expired",
+        "stale"
+      ],
+      "properties": {
+        "unassigned": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "assigned": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "in_review": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "conflicted": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "changes_requested": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "quorum_met": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "expired": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "stale": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        }
+      }
+    },
+    "DispositionCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "response_files",
+        "unique_responses",
+        "exact_duplicates",
+        "states"
+      ],
+      "properties": {
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "response_files": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "unique_responses": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "exact_duplicates": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "states": {
+          "$ref": "#/$defs/StateCounts"
+        }
+      }
+    },
+    "DispositionsDocument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "identity_disclaimer",
+        "queue_id",
+        "queue_raw_sha256",
+        "as_of",
+        "currentness",
+        "closure_generation",
+        "source_pins",
+        "responses",
+        "items",
+        "counts"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "forge.review-dispositions/1"
+        },
+        "identity_disclaimer": {
+          "const": "keys-roles-authors-and-times-are-asserted-not-authenticated-signed-or-non-repudiable"
+        },
+        "queue_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "queue_raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "as_of": {
+          "$ref": "#/$defs/time"
+        },
+        "currentness": {
+          "$ref": "#/$defs/RecordedCurrentness"
+        },
+        "closure_generation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_pins": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourcePin"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "responses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RecordedResponse"
+          },
+          "minItems": 0,
+          "maxItems": 10000
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ItemDisposition"
+          },
+          "minItems": 1,
+          "maxItems": 10000
+        },
+        "counts": {
+          "$ref": "#/$defs/DispositionCounts"
+        }
+      }
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+    }
+  }
+}

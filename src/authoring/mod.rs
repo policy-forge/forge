@@ -11,6 +11,8 @@ pub(crate) mod input;
 pub use generation::{execute_extended, execute_handoff, execute_impact};
 mod scaffold;
 pub use scaffold::execute as execute_scaffold;
+mod admitted;
+pub(crate) mod borrowed;
 pub mod manifest;
 pub mod model;
 pub mod output;

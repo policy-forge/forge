@@ -17,6 +17,19 @@
 
 FORGE will expose approved, local governance artifacts through a read-only Model Context Protocol server. Agents can discover policies, search requirements, inspect applicability and gaps, and follow traceability to exact source/artifact identifiers with bounded citations. The server uses stdio in the MVP, receives one explicit project root, performs no model calls or network access, and exposes no mutation, command execution, evidence content, or automatic compliance decision.
 
+## Engineering candidate checkpoint: 2026-10-05
+
+The [MCP guide](../mcp.md) documents the existing seven-tool engineering slice
+and the separate `/2` offline native-input candidate. The App candidate at
+this October 5 checkpoint had 25 passing selected native/controller controls
+and two failures; that interval is not accepted. The later qualified candidate
+in the guide records its subsequent implementation and results separately.
+Raw declaration admission and hash-pinned profiles alone do not activate native App closure, evidence-metadata trace, report resources or an index.
+The optional deterministic index builder and server/client coupling remain open.
+Existing design approval does not provide real project-owner disclosure records,
+two-client interoperability, the agent corpus/raw-document comparison or human
+acceptance. The requirements and Ready gates below retain their recorded state.
+
 ## Context
 
 ### Background :red_circle: `@human-required`
@@ -32,7 +45,7 @@ FORGE's machine-readable artifacts can help coding and operations agents answer 
 | Security boundary | Policy prose and retrieved content are untrusted data, not instructions. | Responses must separate data from protocol guidance and never execute embedded directives. |
 | Product hypothesis | Citation-grounded governance queries reduce agent policy mistakes and token use. | Evaluate answer support and abstention, not model self-confidence. |
 
-No MCP client study, threat model, approved tool schema, latency benchmark, or agent evaluation corpus was supplied. Targets are hypotheses.
+At the 2026-08-24 planning checkpoint, no MCP client study, threat model, approved tool schema, latency benchmark or agent evaluation corpus was supplied. The later engineering implementation is described in [the MCP guide](../mcp.md); client/corpus targets remain hypotheses and acceptance remains open.
 
 ### Scope Boundaries :yellow_circle: `@human-review`
 
