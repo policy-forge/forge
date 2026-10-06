@@ -636,7 +636,7 @@ review, preview/commit, recovery, API contracts, bounds, and remaining release g
 
 
 The [2026-10-03 documentation snapshot](docs/plans/2026-10-03-integrated-documentation-staged-successor.md)
-retains its historical committed/working-tree distinction. The current captured
+retains its historical committed/working-tree distinction. The historical captured
 F12 `c2fa4cd` source declares API1 1.2.0/39 and API2 2.4.0/65 operations. Exact-tree
 hosted API, Chrome and staged-source development workflows have successful scoped
 receipts; the same hosted run retains dependency-audit and headless failures.

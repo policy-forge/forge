@@ -1110,8 +1110,9 @@ Negotiated API2.2, 2.3 or 2.4 sessions offer [confirmed metadata receipts and in
 replacement](workspace-bundle-receipts.md); API2.3 and 2.4 admit [opt-in exact-source
 export and complete source restore](workspace-source-bundles.md). The current captured API2.4 source adds
 [bounded staged part transfer](workspace-staged-source-bundles.md). Exact-tree
-hosted API and Chrome staged-source development workflows have scoped successful
-receipts; separate headless and dependency-audit jobs failed. This does not
+hosted API and Chrome staged-source development workflows at the historical
+F12 `c2fa4cd` checkpoint have scoped successful receipts; that same run
+retains its headless and dependency-audit failures. This does not
 establish full S-6, network-denial, platform or human acceptance. These writes require
 preparation and a separate confirmation, with distinct known-ID recovery for
 source restore. Full S-6 capacity, larger transfer and platform/crash/batch

@@ -20,10 +20,11 @@ FORGE will expose approved, local governance artifacts through a read-only Model
 ## Engineering candidate checkpoint: 2026-10-05
 
 The [MCP guide](../mcp.md) documents the existing seven-tool engineering slice
-and the separate `/2` offline native-input candidate. The App candidate currently
-has 25 passing selected native/controller controls and two failures; it is not
-accepted. Raw declaration admission and hash-pinned profiles alone do not
-activate native App closure, evidence-metadata trace, report resources or an index.
+and the separate `/2` offline native-input candidate. The App candidate at
+this October 5 checkpoint had 25 passing selected native/controller controls
+and two failures; that interval is not accepted. The later qualified candidate
+in the guide records its subsequent implementation and results separately.
+Raw declaration admission and hash-pinned profiles alone do not activate native App closure, evidence-metadata trace, report resources or an index.
 The optional deterministic index builder and server/client coupling remain open.
 Existing design approval does not provide real project-owner disclosure records,
 two-client interoperability, the agent corpus/raw-document comparison or human

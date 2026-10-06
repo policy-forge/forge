@@ -109,11 +109,17 @@ End of input shuts down the worker, drops queued responses and stops active work
 
 ## F20 `/2` development checkpoint
 
+The paragraphs in this section retain the **2026-10-05** measured interval,
+including its command-registration gap and failed App controls. The later
+[qualified `/2` candidate](#supported-candidate-queries) below records the
+subsequent implementation and qualification; its results do not relabel this
+earlier interval.
+
 The separate `/2` candidate adds closed server-decision and offline build-intent
 declarations, one held input owner and shared admission accounting. The intended
-read-only `forge mcp check-index-inputs` consumer is not registered in this
-checkout. Checking complete inputs would not build or publish an index, nor add
-a server resource or tool. The existing `/1` worker examples above remain the
+read-only `forge mcp check-index-inputs` consumer was not registered at that
+measured checkpoint. Checking complete inputs would not build or publish an
+index, nor add a server resource or tool. The existing `/1` worker examples above remain the
 current CLI contract.
 
 The offline native Catalog/Component slice has been exercised separately. The
