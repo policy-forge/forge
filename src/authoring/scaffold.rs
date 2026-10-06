@@ -130,12 +130,18 @@ mod tests {
         assert_eq!(pack.pack_key, project.project_key);
         assert_eq!(pack.version, SCAFFOLD_PACK_VERSION);
         assert_eq!(pack.baseline, project.baseline);
-        assert!(pack.reviewers.is_empty());
-        assert!(pack.topics.is_empty());
-        assert!(pack.policy_families.is_empty());
-        assert!(pack.questions.is_empty());
-        assert!(pack.control_assignments.is_empty());
-        assert!(pack.family_assignments.is_empty());
+        assert_eq!(pack.reviewers, [] as [crate::authoring::manifest::Reviewer; 0]);
+        assert_eq!(pack.topics, [] as [crate::authoring::manifest::Topic; 0]);
+        assert_eq!(pack.policy_families, [] as [crate::authoring::manifest::PolicyFamily; 0]);
+        assert_eq!(pack.questions, [] as [crate::authoring::manifest::Question; 0]);
+        assert_eq!(
+            pack.control_assignments,
+            [] as [crate::authoring::manifest::ControlAssignment; 0]
+        );
+        assert_eq!(
+            pack.family_assignments,
+            [] as [crate::authoring::manifest::FamilyAssignment; 0]
+        );
         assert_eq!(pack.content_rights.review.reviewer_key, "");
         assert_eq!(pack.content_rights.review.reviewed_at, "");
         assert_eq!(pack.content_rights.review.rationale, "");

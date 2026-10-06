@@ -1049,7 +1049,7 @@ mod tests {
             RenderState { lines: Vec::new(), spans: Vec::new(), bytes: 0, limit: 3, span_limit: 1 };
         let error = state.push_line("abc".to_owned()).unwrap_err();
         assert!(error.to_string().contains("3 byte limit"));
-        assert!(state.lines.is_empty());
+        assert_eq!(state.lines, [] as [std::string::String; 0]);
         assert_eq!(state.bytes, 0);
 
         let mut line = "ab".to_owned();

@@ -1,0 +1,166 @@
+[
+  {
+    "id": "RUSTSEC-2019-0029",
+    "package": "chacha20",
+    "locked_versions": [
+      "0.10.2"
+    ],
+    "patched": [
+      ">= 0.2.3"
+    ],
+    "unaffected": [],
+    "informational": null,
+    "withdrawn": null,
+    "url": "https://github.com/RustCrypto/stream-ciphers/pull/64"
+  },
+  {
+    "id": "RUSTSEC-2020-0146",
+    "package": "generic-array",
+    "locked_versions": [
+      "0.14.7"
+    ],
+    "patched": [
+      ">= 0.8.4, < 0.9.0",
+      ">= 0.9.1, < 0.10.0",
+      ">= 0.10.1, < 0.11.0",
+      ">= 0.11.2, < 0.12.0",
+      ">= 0.12.4, < 0.13.0",
+      ">= 0.13.3"
+    ],
+    "unaffected": [
+      "< 0.8.0"
+    ],
+    "informational": null,
+    "withdrawn": null,
+    "url": "https://github.com/fizyk20/generic-array/issues/98"
+  },
+  {
+    "id": "RUSTSEC-2024-0402",
+    "package": "hashbrown",
+    "locked_versions": [
+      "0.15.5",
+      "0.16.1",
+      "0.17.1"
+    ],
+    "patched": [
+      ">= 0.15.1"
+    ],
+    "unaffected": [
+      "< 0.15.0"
+    ],
+    "informational": null,
+    "withdrawn": null,
+    "url": "https://github.com/rust-lang/hashbrown/issues/576"
+  },
+  {
+    "id": "RUSTSEC-2026-0187",
+    "package": "lopdf",
+    "locked_versions": [
+      "0.42.0"
+    ],
+    "patched": [
+      ">= 0.42.0"
+    ],
+    "unaffected": [],
+    "informational": null,
+    "withdrawn": null,
+    "url": null
+  },
+  {
+    "id": "RUSTSEC-2021-0017",
+    "package": "postscript",
+    "locked_versions": [
+      "0.14.1"
+    ],
+    "patched": [
+      ">= 0.14.0"
+    ],
+    "unaffected": [],
+    "informational": null,
+    "withdrawn": null,
+    "url": "https://github.com/bodoni/postscript/issues/1"
+  },
+  {
+    "id": "RUSTSEC-2026-0097",
+    "package": "rand",
+    "locked_versions": [
+      "0.10.2",
+      "0.9.4"
+    ],
+    "patched": [
+      ">= 0.10.1",
+      "< 0.10.0, >= 0.9.3",
+      "< 0.9.0, >= 0.8.6"
+    ],
+    "unaffected": [
+      "< 0.7.0"
+    ],
+    "informational": "unsound",
+    "withdrawn": null,
+    "url": "https://github.com/rust-random/rand/pull/1763"
+  },
+  {
+    "id": "RUSTSEC-2019-0035",
+    "package": "rand_core",
+    "locked_versions": [
+      "0.10.1",
+      "0.6.4",
+      "0.9.5"
+    ],
+    "patched": [
+      "^ 0.3.1",
+      ">= 0.4.2"
+    ],
+    "unaffected": [],
+    "informational": "unsound",
+    "withdrawn": null,
+    "url": "https://github.com/rust-random/rand/blob/master/rand_core/CHANGELOG.md#050---2019-06-06"
+  },
+  {
+    "id": "RUSTSEC-2021-0023",
+    "package": "rand_core",
+    "locked_versions": [
+      "0.10.1",
+      "0.6.4",
+      "0.9.5"
+    ],
+    "patched": [
+      ">= 0.6.2"
+    ],
+    "unaffected": [
+      "< 0.6.0"
+    ],
+    "informational": null,
+    "withdrawn": null,
+    "url": "https://github.com/rust-random/rand/pull/1096"
+  },
+  {
+    "id": "RUSTSEC-2021-0100",
+    "package": "sha2",
+    "locked_versions": [
+      "0.10.9",
+      "0.11.0"
+    ],
+    "patched": [
+      ">= 0.9.8"
+    ],
+    "unaffected": [
+      "< 0.9.7"
+    ],
+    "informational": null,
+    "withdrawn": null,
+    "url": "https://github.com/RustCrypto/hashes/pull/314"
+  },
+  {
+    "id": "RUSTSEC-2026-0192",
+    "package": "ttf-parser",
+    "locked_versions": [
+      "0.25.1"
+    ],
+    "patched": [],
+    "unaffected": [],
+    "informational": "unmaintained",
+    "withdrawn": null,
+    "url": "https://github.com/harfbuzz/ttf-parser/issues/217"
+  }
+]

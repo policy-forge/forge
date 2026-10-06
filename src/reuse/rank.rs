@@ -676,7 +676,7 @@ mod tests {
             &RankOptions { min_score: FLOOR, ..RankOptions::default() },
         )
         .unwrap();
-        assert!(only(results).is_empty());
+        assert_eq!(only(results), [] as [crate::reuse::rank::Candidate; 0]);
     }
 
     #[test]

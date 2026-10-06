@@ -703,7 +703,7 @@ mod tests {
         .unwrap();
         let report = run_full_validation("test.json", &json, OscalModelType::Catalog).unwrap();
         assert!(report.is_valid());
-        assert!(report.errors().is_empty());
+        assert_eq!(report.errors(), []);
         assert_eq!(report.model_type(), "catalog");
         assert_eq!(report.declared_oscal_version(), Some("1.2.0"));
         assert_eq!(report.schema_version_used(), "1.2.3");

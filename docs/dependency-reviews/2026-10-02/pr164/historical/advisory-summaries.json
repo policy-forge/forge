@@ -1,0 +1,37 @@
+[
+  {
+    "id": "RUSTSEC-2019-0035",
+    "package": "rand_core",
+    "locked_versions": [
+      "0.10.1",
+      "0.6.4",
+      "0.9.5"
+    ],
+    "patched": [
+      "^ 0.3.1",
+      ">= 0.4.2"
+    ],
+    "unaffected": [],
+    "informational": "unsound",
+    "withdrawn": null,
+    "url": "https://github.com/rust-random/rand/blob/master/rand_core/CHANGELOG.md#050---2019-06-06"
+  },
+  {
+    "id": "RUSTSEC-2021-0023",
+    "package": "rand_core",
+    "locked_versions": [
+      "0.10.1",
+      "0.6.4",
+      "0.9.5"
+    ],
+    "patched": [
+      ">= 0.6.2"
+    ],
+    "unaffected": [
+      "< 0.6.0"
+    ],
+    "informational": null,
+    "withdrawn": null,
+    "url": "https://github.com/rust-random/rand/pull/1096"
+  }
+]

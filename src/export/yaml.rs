@@ -59,6 +59,6 @@ mod tests {
         };
 
         assert_eq!(context, "YAML deserialization failed");
-        assert!(!source.to_string().is_empty());
+        assert_ne!(source.to_string(), "");
     }
 }

@@ -1,0 +1,16 @@
+{
+  "format": "forge.agent-assisted-dependency-review/1",
+  "reviewed_at_utc": "2026-10-02T09:35:59.609375+00:00",
+  "pr": 162,
+  "head": "eee2916fd7a2b52ea313cf309e4a1550cf4cbe53",
+  "base": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+  "state": "OPEN",
+  "merge_state": "BLOCKED",
+  "accepted_audit": false,
+  "human_signoff": null,
+  "ci_run_url": "https://github.com/policy-forge/forge/actions/runs/36143871707",
+  "vet_unvetted_count": 26,
+  "source_receipt_sha256": "d914fc818eefa7c00b024ae23784eb6c2b22f69c5498caa893eba065ee0d4412",
+  "source_notes": "review-notes.md",
+  "runtime_feature_graph": "Baseline F02 context only; candidate graph still requires regeneration."
+}

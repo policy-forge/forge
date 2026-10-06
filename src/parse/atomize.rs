@@ -777,7 +777,7 @@ mod tests {
         let result = atomize_requirement(&req).unwrap();
         for r in &result.requirements {
             let id = r.stable_id.as_ref().expect("stable_id should be Some");
-            assert!(!id.is_empty());
+            assert_ne!(id, "");
             assert_eq!(id.len(), 64);
         }
 
@@ -785,7 +785,7 @@ mod tests {
         let req2 = make_req("All systems must enforce MFA", 10);
         let result2 = atomize_requirement(&req2).unwrap();
         let id2 = result2.requirements[0].stable_id.as_ref().expect("stable_id should be Some");
-        assert!(!id2.is_empty());
+        assert_ne!(id2, "");
         assert_eq!(id2.len(), 64);
     }
 
@@ -1008,7 +1008,7 @@ mod tests {
         let result = atomize_requirement(&req).unwrap();
         // Zero-width space breaks the \s+ match, so no split
         // (or it may still split if \s matches ZWS — either way, no panic)
-        assert!(!result.requirements.is_empty());
+        assert_ne!(result.requirements, [] as [crate::model::PolicyRequirement; 0]);
     }
 
     #[test]

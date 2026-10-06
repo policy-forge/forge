@@ -1,0 +1,87 @@
+[package]
+name = "forge"
+version = "1.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+description = "Convert Markdown security policies into OSCAL artifacts."
+repository = "https://github.com/policy-forge/forge"
+readme = "README.md"
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+pulldown-cmark = "0.13"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = { package = "serde_yaml_ng", version = "0.10" }
+sha2 = "0.11"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+url = "2"
+uuid = { version = "1", features = ["serde", "v4", "v5"] }
+# Embedded local schemas do not require HTTP or filesystem resolvers, so keep
+# resolver defaults disabled to preserve FORGE's offline-only validation path.
+jsonschema = { version = "0.57", default-features = false }
+quick-xml = { version = "0.41", features = ["serialize"] }
+rayon = "1"
+tempfile = "3"
+pdf-extract = "0.12"
+zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
+toml = { version = "1.1", default-features = false, features = ["parse", "serde"] }
+# Local workspace transport and ephemeral session authentication (no outbound client).
+argon2 = { version = "0.5", features = ["zeroize"] }
+base64 = "0.22"
+getrandom = "0.4"
+http-body-util = "0.1"
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+rpassword = "7"
+subtle = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "net", "signal", "time", "sync"] }
+zeroize = "1"
+
+[features]
+# Exposes test helpers to optimized downstream test harnesses when explicitly requested.
+testing = []
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"
+
+[lints.rust]
+unsafe_code = "warn"
+
+[dev-dependencies]
+criterion = { version = "0.8", features = ["html_reports"] }
+insta = { version = "1", features = ["json"] }
+proptest = "1"
+
+[[bench]]
+name = "atomize"
+harness = false
+
+[[bench]]
+name = "uuid_benchmark"
+harness = false
+
+[[bench]]
+name = "pipeline_benchmark"
+harness = false
+
+[[bench]]
+name = "xml_benchmark"
+harness = false
+
+[[bench]]
+name = "export_bench"
+harness = false
+
+[[bench]]
+name = "parameter_extraction"
+harness = false

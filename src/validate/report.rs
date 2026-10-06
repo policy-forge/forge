@@ -224,7 +224,7 @@ mod tests {
         let json = render_json_report(&report);
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed["is_valid"], true);
-        assert!(parsed["errors"].as_array().unwrap().is_empty());
+        assert_eq!(parsed["errors"].as_array().unwrap().as_slice(), [] as [serde_json::Value; 0]);
     }
 
     #[test]

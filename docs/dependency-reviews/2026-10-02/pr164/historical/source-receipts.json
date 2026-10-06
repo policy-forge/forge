@@ -1,0 +1,60 @@
+{
+  "format": "forge.agent-assisted-source-review/1",
+  "authority": "No human audit, accepted cargo-vet certification or owner signoff is asserted.",
+  "receipts": [
+    {
+      "pr": 164,
+      "name": "getrandom",
+      "version": "0.4.2",
+      "checksum": "0de51e6874e94e7bf76d726fc5d13ba782deca734ff60d5bb2fb2607c7406555",
+      "compressed_bytes": 53905,
+      "source_files": 48,
+      "source_bytes": 190385,
+      "rust_version": "1.85",
+      "build": "build.rs",
+      "features": {
+        "std": [],
+        "sys_rng": [
+          "dep:rand_core"
+        ],
+        "wasm_js": [
+          "dep:wasm-bindgen",
+          "dep:js-sys"
+        ]
+      },
+      "vcs": {
+        "git": {
+          "sha1": "4d826731b20a09e69cca91c66aea57ab3cf00072"
+        },
+        "path_in_vcs": ""
+      }
+    },
+    {
+      "pr": 164,
+      "name": "getrandom",
+      "version": "0.4.3",
+      "checksum": "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099",
+      "compressed_bytes": 52437,
+      "source_files": 48,
+      "source_bytes": 184542,
+      "rust_version": "1.85",
+      "build": "build.rs",
+      "features": {
+        "std": [],
+        "sys_rng": [
+          "dep:rand_core"
+        ],
+        "wasm_js": [
+          "dep:wasm-bindgen",
+          "dep:js-sys"
+        ]
+      },
+      "vcs": {
+        "git": {
+          "sha1": "5e7cd5733536844a9856dc7259bd4696bbe5e3ae"
+        },
+        "path_in_vcs": ""
+      }
+    }
+  ]
+}

@@ -809,7 +809,7 @@ mod tests {
         assert_eq!(cd_meta.version, cat_metadata.version);
 
         // (4) Both have non-empty last-modified timestamps
-        assert!(!cd_meta.last_modified.is_empty());
+        assert_ne!(cd_meta.last_modified, "");
     }
 
     // ─── T015: Version Default Consistency (US2) ────────────────────────
@@ -973,7 +973,7 @@ mod tests {
         let implemented_requirement = &envelope.component_definition.components[0]
             .control_implementations[0]
             .implemented_requirements[0];
-        assert!(implemented_requirement.props.is_empty());
+        assert_eq!(implemented_requirement.props, [] as [crate::oscal::parts::OscalProp; 0]);
         assert!(implemented_requirement.links.is_empty());
     }
 
@@ -1107,7 +1107,7 @@ mod tests {
         };
 
         let ids = collect_control_ids_from_component_def(&envelope);
-        assert!(ids.is_empty());
+        assert_eq!(ids, [] as [std::string::String; 0]);
     }
 
     // ── collect_control_ids includes capabilities ─

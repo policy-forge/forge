@@ -536,7 +536,7 @@ mod tests {
         assert_eq!(catalog.groups[0].controls[0].links.len(), 1);
 
         // Second control NOT annotated
-        assert!(catalog.groups[0].controls[1].props.is_empty());
+        assert_eq!(catalog.groups[0].controls[1].props, [] as [crate::oscal::parts::OscalProp; 0]);
         assert!(catalog.groups[0].controls[1].links.is_empty());
     }
 
@@ -583,7 +583,7 @@ mod tests {
         embed_trace_in_catalog(&mut catalog, &tl);
 
         // Group should have NO props (EC-4)
-        assert!(catalog.groups[0].props.is_empty());
+        assert_eq!(catalog.groups[0].props, [] as [crate::oscal::parts::OscalProp; 0]);
     }
 
     #[test]
@@ -606,7 +606,7 @@ mod tests {
         let control = &catalog.groups[0].controls[0];
         assert_eq!(control.props[0].value, "unknown-file");
         assert_eq!(control.props[1].value, "unknown-section");
-        assert!(catalog.groups[0].props.is_empty());
+        assert_eq!(catalog.groups[0].props, [] as [crate::oscal::parts::OscalProp; 0]);
     }
 
     #[test]

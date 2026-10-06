@@ -1,0 +1,53 @@
+1006: Supply-chain audits	UNKNOWN STEP	2026-09-25T13:56:55.7221495Z ^[[0m^[[0m^[[1m^[[33mCrate:    ^[[0m ttf-parser
+1007: Supply-chain audits	UNKNOWN STEP	2026-09-25T13:56:55.7222104Z ^[[0m^[[0m^[[1m^[[33mVersion:  ^[[0m 0.25.1
+1008: Supply-chain audits	UNKNOWN STEP	2026-09-25T13:56:55.7222610Z ^[[0m^[[0m^[[1m^[[33mWarning:  ^[[0m unmaintained
+1009: Supply-chain audits	UNKNOWN STEP	2026-09-25T13:56:55.7223385Z ^[[0m^[[0m^[[1m^[[33mTitle:    ^[[0m `ttf-parser` is unmaintained
+1010: Supply-chain audits	UNKNOWN STEP	2026-09-25T13:56:55.7224226Z ^[[0m^[[0m^[[1m^[[33mDate:     ^[[0m 2026-06-28
+1011: Supply-chain audits	UNKNOWN STEP	2026-09-25T13:56:55.7224762Z ^[[0m^[[0m^[[1m^[[33mID:       ^[[0m RUSTSEC-2026-0192
+1012: Supply-chain audits	UNKNOWN STEP	2026-09-25T13:56:55.7225476Z ^[[0m^[[0m^[[1m^[[33mURL:      ^[[0m https://rustsec.org/advisories/RUSTSEC-2026-0192
+1013: Supply-chain audits	UNKNOWN STEP	2026-09-25T13:56:55.7225936Z 
+1014: Supply-chain audits	UNKNOWN STEP	2026-09-25T13:56:55.7351451Z ##[group]Run cargo install cargo-deny --locked --force
+2079: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:43.9174351Z   CARGO_HOME: /home/runner/.cargo
+2080: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:43.9174599Z   CARGO_INCREMENTAL: 0
+2081: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:43.9174807Z ##[endgroup]
+2082: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1447310Z Vetting Failed!
+2083: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1447689Z 
+2084: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1448005Z 21 unvetted dependencies:
+2085: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1448559Z   fancy-regex:0.19.2 missing ["safe-to-deploy"]
+2086: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1451659Z   fraction:0.17.0 missing ["safe-to-deploy"]
+2087: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1452848Z   hashbrown:0.17.1 missing ["safe-to-deploy"]
+2088: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1454265Z   jsonschema:0.57.0 missing ["safe-to-deploy"]
+2089: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1455253Z   jsonschema-regex:0.57.0 missing ["safe-to-deploy"]
+2090: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1456095Z   jsonschema-value:0.57.0 missing ["safe-to-deploy"]
+2091: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1456717Z   micromap:0.3.0 missing ["safe-to-deploy"]
+2092: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1457232Z   num-bigint:0.4.8 missing ["safe-to-deploy"]
+2093: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1457756Z   pdf-extract:0.12.1 missing ["safe-to-deploy"]
+2094: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1458282Z   referencing:0.57.0 missing ["safe-to-deploy"]
+2095: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1458771Z   regex:1.13.1 missing ["safe-to-deploy"]
+2096: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1459284Z   regex-automata:0.4.18 missing ["safe-to-deploy"]
+2097: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1459826Z   regex-syntax:0.8.11 missing ["safe-to-deploy"]
+2098: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1460349Z   serde_json:1.0.151 missing ["safe-to-deploy"]
+2099: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1460840Z   strum:0.28.0 missing ["safe-to-deploy"]
+2100: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1461406Z   strum_macros:0.28.0 missing ["safe-to-deploy"]
+2101: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1461929Z   syn:3.0.6 missing ["safe-to-deploy"]
+2102: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1462415Z   thiserror:2.0.21 missing ["safe-to-deploy"]
+2103: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1462965Z   thiserror-impl:2.0.21 missing ["safe-to-deploy"]
+2104: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1463526Z   uuid:1.26.1 missing ["safe-to-deploy"]
+2105: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1464141Z   zmij:1.0.23 missing ["safe-to-deploy"]
+2106: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1487527Z ##[error]Process completed with exit code 255.
+2107: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.1601634Z Post job cleanup.
+2108: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.2474736Z [command]/usr/bin/git version
+2109: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.2521009Z git version 2.55.0
+2110: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.2559583Z Temporarily overriding HOME='/home/runner/work/_temp/3a82c3a3-285b-45c5-8ec0-0a026b1a2436' before making global git config changes
+2111: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.2563087Z Adding repository directory to the temporary git global config as a safe directory
+2112: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.2567027Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/forge/forge
+2113: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.2598970Z Removing SSH command configuration
+2114: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.2606386Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2115: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.2644736Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2116: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.2888309Z Removing HTTP extra header
+2117: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.2896363Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2118: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.2936183Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2119: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.3192473Z Removing includeIf entries pointing to credentials config files
+2120: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.3199478Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2121: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.3238378Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2122: Supply-chain audits	UNKNOWN STEP	2026-09-25T14:00:44.3641856Z Cleaning up orphan processes

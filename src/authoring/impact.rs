@@ -2155,7 +2155,10 @@ mod tests {
             .iter()
             .find(|f| f.category == ChangeCategory::QuestionDefinitionChanged)
             .unwrap();
-        assert!(definition.affected_sections.is_empty());
+        assert_eq!(
+            definition.affected_sections,
+            [] as [crate::authoring::impact::SectionReference; 0]
+        );
         assert!(
             report
                 .sections
@@ -2521,7 +2524,10 @@ mod tests {
         assert_eq!(finding.old_sha256, old.component_manifest_sha256);
         assert_eq!(finding.new_sha256, new.component_manifest_sha256);
         assert_eq!(finding.axes, axes(false, true, false));
-        assert!(finding.affected_sections.is_empty());
+        assert_eq!(
+            finding.affected_sections,
+            [] as [crate::authoring::impact::SectionReference; 0]
+        );
         assert!(report.sections.iter().all(|s| s.unaffected));
         assert!(report.policies.iter().all(|p| p.unaffected));
         assert!(report.action_required());
@@ -2775,14 +2781,14 @@ mod tests {
         loaded.baseline_report.counts.not_applicable += 1;
         refresh(&mut loaded, true);
         let old = snapshot(loaded.clone());
-        assert!(
+        assert_eq!(
             old.plan.policies[0]
                 .sections
                 .iter()
                 .find(|s| s.topic_key == "independent-topic")
                 .unwrap()
-                .gap_ids
-                .is_empty()
+                .gap_ids,
+            [] as [String; 0]
         );
         revised_framework(&mut loaded);
         let mut new = snapshot(loaded);

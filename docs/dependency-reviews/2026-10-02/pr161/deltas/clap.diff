@@ -1,0 +1,705 @@
+--- clap-4.6.1/Cargo.toml
++++ clap-4.6.7/Cargo.toml
+@@ -13,15 +13,16 @@
+ edition = "2024"
+ rust-version = "1.85"
+ name = "clap"
+-version = "4.6.1"
++version = "4.6.7"
+ build = false
+ include = [
+-    "build.rs",
+-    "src/**/*",
+-    "Cargo.toml",
+-    "LICENSE*",
+-    "README.md",
+-    "examples/**/*",
++    "/build.rs",
++    "/src/**/*",
++    "/Cargo.toml",
++    "/Cargo.lock",
++    "/LICENSE*",
++    "/README.md",
++    "/examples/**/*",
+ ]
+ autolib = false
+ autobins = false
+@@ -85,7 +86,7 @@
+ search = "<!-- next-url -->"
+ replace = """
+ <!-- next-url -->
+-[Unreleased]: https://github.com/clap-rs/clap/compare/{{tag_name}}...HEAD"""
++[Unreleased]: {{repository}}/compare/{{tag_name}}...HEAD"""
+ exactly = 1
+ 
+ [[package.metadata.release.pre-release-replacements]]
+@@ -447,6 +448,7 @@
+ [[example]]
+ name = "git"
+ path = "examples/git.rs"
++doc-scrape-examples = true
+ 
+ [[example]]
+ name = "git-derive"
+@@ -486,6 +488,8 @@
+ [[example]]
+ name = "pacman"
+ path = "examples/pacman.rs"
++test = true
++doc-scrape-examples = true
+ 
+ [[example]]
+ name = "repl"
+@@ -506,11 +510,11 @@
+ required-features = ["derive"]
+ 
+ [dependencies.clap_builder]
+-version = "=4.6.0"
++version = "=4.6.7"
+ default-features = false
+ 
+ [dependencies.clap_derive]
+-version = "=4.6.1"
++version = "=4.6.7"
+ optional = true
+ 
+ [dev-dependencies.automod]
+@@ -530,7 +534,7 @@
+ version = "1.0.27"
+ 
+ [dev-dependencies.shlex]
+-version = "1.3.0"
++version = "2.0.0"
+ 
+ [dev-dependencies.snapbox]
+ version = "1.2.0"
+@@ -553,8 +557,11 @@
+ blocks_in_conditions = "allow"
+ bool_assert_comparison = "allow"
+ branches_sharing_code = "allow"
++byte_char_slices = "allow"
+ checked_conversions = "warn"
+ collapsible_else_if = "allow"
++collapsible_match = "allow"
++collection_is_never_read = "warn"
+ create_dir = "warn"
+ dbg_macro = "warn"
+ debug_assert_with_mut_call = "warn"
+@@ -567,9 +574,10 @@
+ fallible_impl_from = "warn"
+ filter_map_next = "warn"
+ flat_map_option = "warn"
++float_cmp = "warn"
+ float_cmp_const = "warn"
+ fn_params_excessive_bools = "warn"
+-from_iter_instead_of_collect = "warn"
++fn_to_numeric_cast_any = "warn"
+ if_same_then_else = "allow"
+ implicit_clone = "warn"
+ imprecise_flops = "warn"
+@@ -585,11 +593,13 @@
+ lossy_float_literal = "warn"
+ macro_use_imports = "warn"
+ mem_forget = "warn"
++mismatching_type_param_order = "warn"
+ multiple_bound_locations = "allow"
+ mutex_integer = "warn"
+ needless_continue = "allow"
+ needless_for_each = "warn"
+ negative_feature_names = "warn"
++partial_pub_fields = "warn"
+ path_buf_push_overwrite = "warn"
+ ptr_as_ptr = "warn"
+ rc_mutex = "warn"
+@@ -600,16 +610,23 @@
+ same_functions_in_if_condition = "warn"
+ self_named_module_files = "warn"
+ semicolon_if_nothing_returned = "warn"
++str_to_string = "warn"
++string_add = "warn"
+ string_add_assign = "warn"
+ string_lit_as_bytes = "warn"
+ todo = "warn"
+ trait_duplication_in_bounds = "warn"
+ uninlined_format_args = "warn"
++unnecessary_safety_comment = "warn"
++unnecessary_safety_doc = "warn"
++unseparated_literal_suffix = "warn"
++use_self = "warn"
+ verbose_file_reads = "warn"
+ zero_sized_map_values = "warn"
+ 
+ [lints.rust]
+-unnameable_types = "allow"
++non_ascii_idents = "warn"
++trivial_numeric_casts = "warn"
+ unreachable_pub = "warn"
+ unsafe_op_in_unsafe_fn = "warn"
+ unused_lifetimes = "warn"
+@@ -620,17 +637,11 @@
+ level = "warn"
+ priority = -1
+ 
+-[profile.bench]
+-lto = true
+-codegen-units = 1
+-
+ [profile.dev]
+ panic = "abort"
+ 
+ [profile.release]
+ lto = true
+ codegen-units = 1
++debug = "line-tables-only"
+ panic = "abort"
+-
+-[profile.test]
+-opt-level = 1
+--- clap-4.6.1/Cargo.toml.orig
++++ clap-4.6.7/Cargo.toml.orig
+@@ -16,17 +16,21 @@
+ edition = "2024"
+ rust-version = "1.85"  # MSRV
+ include = [
+-  "build.rs",
+-  "src/**/*",
+-  "Cargo.toml",
+-  "LICENSE*",
+-  "README.md",
+-  "examples/**/*"
++  "/build.rs",
++  "/src/**/*",
++  "/Cargo.toml",
++  "/Cargo.lock",
++  "/LICENSE*",
++  "/README.md",
++  "/examples/**/*"
+ ]
+ 
+ [workspace.lints.rust]
+ rust_2018_idioms = { level = "warn", priority = -1 }
+-unnameable_types = "allow"
++
++non_ascii_idents = "warn"
++trivial_numeric_casts = "warn"
++#unnameable_types = "warn"
+ unreachable_pub = "warn"
+ unsafe_op_in_unsafe_fn = "warn"
+ unused_lifetimes = "warn"
+@@ -34,10 +38,17 @@
+ unused_qualifications = "warn"
+ 
+ [workspace.lints.clippy]
++#allow_attributes_without_reason = "warn"
+ bool_assert_comparison = "allow"
+ branches_sharing_code = "allow"
++byte_char_slices = "allow"  # sometimes explicit arrays are better
++#cast_possible_truncation = "warn"
++#cast_possible_wrap = "warn"
++#cast_sign_loss = "warn"
+ checked_conversions = "warn"
+ collapsible_else_if = "allow"
++collapsible_match = "allow"
++collection_is_never_read = "warn"
+ create_dir = "warn"
+ dbg_macro = "warn"
+ debug_assert_with_mut_call = "warn"
+@@ -50,9 +61,10 @@
+ fallible_impl_from = "warn"
+ filter_map_next = "warn"
+ flat_map_option = "warn"
++float_cmp = "warn"
+ float_cmp_const = "warn"
+ fn_params_excessive_bools = "warn"
+-from_iter_instead_of_collect = "warn"
++fn_to_numeric_cast_any = "warn"
+ if_same_then_else = "allow"
+ implicit_clone = "warn"
+ imprecise_flops = "warn"
+@@ -68,10 +80,12 @@
+ lossy_float_literal = "warn"
+ macro_use_imports = "warn"
+ mem_forget = "warn"
++mismatching_type_param_order = "warn"
+ mutex_integer = "warn"
+ needless_continue = "allow"
+ needless_for_each = "warn"
+ negative_feature_names = "warn"
++partial_pub_fields = "warn"
+ path_buf_push_overwrite = "warn"
+ ptr_as_ptr = "warn"
+ rc_mutex = "warn"
+@@ -82,13 +96,19 @@
+ same_functions_in_if_condition = "warn"
+ self_named_module_files = "warn"
+ semicolon_if_nothing_returned = "warn"
+-# str_to_string = "warn"
+-# string_add = "warn"
++#should_panic_without_expect = "warn"
++str_to_string = "warn"
++string_add = "warn"
+ string_add_assign = "warn"
+ string_lit_as_bytes = "warn"
+ todo = "warn"
+ trait_duplication_in_bounds = "warn"
++#undocumented_unsafe_blocks = "warn"
+ uninlined_format_args = "warn"
++unnecessary_safety_comment = "warn"
++unnecessary_safety_doc = "warn"
++unseparated_literal_suffix = "warn"
++use_self = "warn"
+ verbose_file_reads = "warn"
+ # wildcard_imports = "warn"
+ zero_sized_map_values = "warn"
+@@ -104,11 +124,11 @@
+ panic = "abort"
+ codegen-units = 1
+ lto = true
+-# debug = "line-tables-only"  # requires Cargo 1.71
++debug = "line-tables-only"
+ 
+ [package]
+ name = "clap"
+-version = "4.6.1"
++version = "4.6.7"
+ description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
+ categories = ["command-line-interface"]
+ keywords = [
+@@ -139,7 +159,7 @@
+   {file="CHANGELOG.md", search="\\.\\.\\.HEAD", replace="...{{tag_name}}", exactly=1},
+   {file="CHANGELOG.md", search="ReleaseDate", replace="{{date}}", min=1},
+   {file="CHANGELOG.md", search="<!-- next-header -->", replace="<!-- next-header -->\n## [Unreleased] - ReleaseDate\n", exactly=1},
+-  {file="CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n[Unreleased]: https://github.com/clap-rs/clap/compare/{{tag_name}}...HEAD", exactly=1},
++  {file="CHANGELOG.md", search="<!-- next-url -->", replace="<!-- next-url -->\n[Unreleased]: {{repository}}/compare/{{tag_name}}...HEAD", exactly=1},
+   {file="CITATION.cff", search="^date-released: ....-..-..", replace="date-released: {{date}}"},
+   {file="CITATION.cff", search="^version: .+\\..+\\..+", replace="version: {{version}}"},
+   {file="src/lib.rs", search="blob/v.+\\..+\\..+/CHANGELOG.md", replace="blob/v{{version}}/CHANGELOG.md", exactly=1},
+@@ -185,8 +205,8 @@
+ bench = false
+ 
+ [dependencies]
+-clap_builder = { path = "./clap_builder", version = "=4.6.0", default-features = false }
+-clap_derive = { path = "./clap_derive", version = "=4.6.1", optional = true }
++clap_builder = { path = "./clap_builder", version = "=4.6.7", default-features = false }
++clap_derive = { path = "./clap_derive", version = "=4.6.7", optional = true }
+ 
+ [dev-dependencies]
+ trybuild = "1.0.116"
+@@ -195,7 +215,7 @@
+ trycmd = { version = "1.2.0", default-features = false, features = ["color-auto", "diff", "examples"] }
+ jiff = "0.2.23"
+ snapbox = { version = "1.2.0", features = ["term-svg"] }
+-shlex = "1.3.0"
++shlex = "2.0.0"
+ automod = "1.0.16"
+ clap-cargo = { version = "0.15.2", default-features = false }
+ semver = "1.0.27"
+@@ -231,6 +251,10 @@
+ doc-scrape-examples = true
+ 
+ [[example]]
++name = "git"
++doc-scrape-examples = true
++
++[[example]]
+ name = "git-derive"
+ required-features = ["derive"]
+ doc-scrape-examples = true
+@@ -248,6 +272,11 @@
+ [[example]]
+ name = "hostname"
+ path = "examples/multicall-hostname.rs"
++doc-scrape-examples = true
++
++[[example]]
++name = "pacman"
++test = true
+ doc-scrape-examples = true
+ 
+ [[example]]
+@@ -527,12 +556,5 @@
+ required-features = ["derive"]
+ doc-scrape-examples = true
+ 
+-[profile.test]
+-opt-level = 1
+-
+-[profile.bench]
+-lto = true
+-codegen-units = 1
+-
+ [lints]
+ workspace = true
+--- clap-4.6.1/examples/find.rs
++++ clap-4.6.7/examples/find.rs
+@@ -83,7 +83,7 @@
+         values.into_values().collect::<Vec<_>>()
+     }
+ 
+-    fn extract<T: Clone + Into<Value> + Send + Sync + 'static>(
++    fn extract<T: Clone + Into<Self> + Send + Sync + 'static>(
+         matches: &ArgMatches,
+         id: &clap::Id,
+         output: &mut BTreeMap<usize, (clap::Id, Self)>,
+--- clap-4.6.1/examples/git-derive.rs
++++ clap-4.6.7/examples/git-derive.rs
+@@ -1,3 +1,4 @@
++use std::collections::HashMap;
+ use std::ffi::OsStr;
+ use std::ffi::OsString;
+ use std::path::PathBuf;
+@@ -98,8 +99,48 @@
+     message: Option<String>,
+ }
+ 
++fn aliases() -> HashMap<&'static str, Vec<&'static str>> {
++    HashMap::from([
++        ("last", vec!["diff", "HEAD~", "HEAD", "--"]),
++        ("stage", vec!["add"]),
++    ])
++}
++
++fn parse_aliases() -> Result<Cli, clap::Error> {
++    let args = Cli::try_parse()?;
++    expand_aliases(args, Vec::new())
++}
++
++fn expand_aliases(args: Cli, mut expanded: Vec<String>) -> Result<Cli, clap::Error> {
++    let Commands::External(external_args) = &args.command else {
++        return Ok(args);
++    };
++    let Some(name) = external_args.first().and_then(|name| name.to_str()) else {
++        return Ok(args);
++    };
++
++    let aliases = aliases();
++    let Some(alias) = aliases.get(name) else {
++        return Ok(args);
++    };
++    if expanded.iter().any(|expanded| expanded == name) {
++        return Err(clap::Error::raw(
++            clap::error::ErrorKind::InvalidSubcommand,
++            format!("recursive alias `{}`", expanded[0]),
++        ));
++    }
++    expanded.push(name.to_owned());
++
++    let mut alias_args = vec![OsString::from("git")];
++    alias_args.extend(alias.iter().map(OsString::from));
++    alias_args.extend(external_args.iter().skip(1).cloned());
++    let args = Cli::try_parse_from(alias_args)?;
++
++    expand_aliases(args, expanded)
++}
++
+ fn main() {
+-    let args = Cli::parse();
++    let args = parse_aliases().unwrap_or_else(|error| error.exit());
+ 
+     match args.command {
+         Commands::Clone { remote } => {
+@@ -157,7 +198,7 @@
+             }
+         }
+         Commands::External(args) => {
+-            println!("Calling out to {:?} with {:?}", &args[0], &args[1..]);
++            println!("Calling out to {:?} with {:?}", args[0], &args[1..]);
+         }
+     }
+ 
+--- clap-4.6.1/examples/git.rs
++++ clap-4.6.7/examples/git.rs
+@@ -1,7 +1,8 @@
++use std::collections::HashMap;
+ use std::ffi::OsString;
+ use std::path::PathBuf;
+ 
+-use clap::{Command, arg};
++use clap::{ArgMatches, Command, arg};
+ 
+ fn cli() -> Command {
+     Command::new("git")
+@@ -57,8 +58,56 @@
+     vec![arg!(-m --message <MESSAGE>)]
+ }
+ 
++fn aliases() -> HashMap<&'static str, Vec<&'static str>> {
++    HashMap::from([
++        ("last", vec!["diff", "HEAD~", "HEAD", "--"]),
++        ("stage", vec!["add"]),
++    ])
++}
++
++fn parse_aliases() -> Result<ArgMatches, clap::Error> {
++    let matches = cli().try_get_matches()?;
++    expand_aliases(matches, Vec::new())
++}
++
++fn expand_aliases(
++    matches: ArgMatches,
++    mut expanded: Vec<String>,
++) -> Result<ArgMatches, clap::Error> {
++    let Some((name, sub_matches)) = matches.subcommand() else {
++        return Ok(matches);
++    };
++    if cli().find_subcommand(name).is_some() {
++        return Ok(matches);
++    }
++
++    let aliases = aliases();
++    let Some(alias) = aliases.get(name) else {
++        return Ok(matches);
++    };
++    let mut args = alias.iter().map(OsString::from).collect::<Vec<_>>();
++    args.extend(
++        sub_matches
++            .get_many::<OsString>("")
++            .into_iter()
++            .flatten()
++            .cloned(),
++    );
++    let matches = cli().no_binary_name(true).try_get_matches_from(args)?;
++    let new_name = matches.subcommand_name().expect("subcommand required");
++    expanded.push(name.to_owned());
++    if expanded.iter().any(|name| name == new_name) {
++        return Err(clap::Error::raw(
++            clap::error::ErrorKind::InvalidSubcommand,
++            format!("recursive alias `{}`", expanded[0]),
++        ));
++    }
++
++    expand_aliases(matches, expanded)
++}
++
+ fn main() {
+-    let matches = cli().get_matches();
++    let matches = parse_aliases().unwrap_or_else(|error| error.exit());
+ 
+     match matches.subcommand() {
+         Some(("clone", sub_matches)) => {
+--- clap-4.6.1/examples/pacman.rs
++++ clap-4.6.7/examples/pacman.rs
+@@ -1,7 +1,7 @@
+ use clap::{Arg, ArgAction, Command};
+ 
+-fn main() {
+-    let matches = Command::new("pacman")
++fn cli() -> Command {
++    Command::new("pacman")
+         .about("package manager utility")
+         .version("5.2.1")
+         .subcommand_required(true)
+@@ -66,7 +66,10 @@
+                         .num_args(1..),
+                 ),
+         )
+-        .get_matches();
++}
++
++fn main() {
++    let matches = cli().get_matches();
+ 
+     match matches.subcommand() {
+         Some(("sync", sync_matches)) => {
+@@ -108,3 +111,48 @@
+         _ => unreachable!(), // If all subcommands are defined above, anything else is unreachable
+     }
+ }
++
++#[cfg(all(test, feature = "help", feature = "usage"))]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn help_output_is_stable() {
++        snapbox::assert_data_eq!(
++            render_reference(cli()),
++            snapbox::file!["snapshots/pacman.txt"].raw()
++        );
++    }
++
++    fn render_reference(mut command: Command) -> String {
++        command = command.term_width(0);
++        command.build();
++
++        let mut buffer = String::new();
++        write_help(&mut buffer, &mut command, String::new());
++
++        buffer
++    }
++
++    fn write_help(buffer: &mut String, cmd: &mut Command, mut path: String) {
++        let header = if path.is_empty() { "#" } else { "##" };
++        path.push(' ');
++        path.push_str(cmd.get_name());
++
++        buffer.push_str(header);
++        buffer.push_str(&path);
++        buffer.push_str("\n\n");
++        buffer.push_str(&cmd.render_long_help().to_string());
++
++        let has_generated_help = !cmd.is_disable_help_subcommand_set();
++        for subcommand in cmd.get_subcommands_mut() {
++            // Generated `help` nodes proxy other commands.
++            if has_generated_help && subcommand.get_name() == "help" {
++                continue;
++            }
++
++            buffer.push('\n');
++            write_help(buffer, subcommand, path.clone());
++        }
++    }
++}
+--- clap-4.6.1/examples/tutorial_builder/03_02_option_mult.rs
++++ clap-4.6.7/examples/tutorial_builder/03_02_option_mult.rs
+@@ -16,5 +16,5 @@
+         .map(|v| v.as_str())
+         .collect::<Vec<_>>();
+ 
+-    println!("names: {:?}", &args);
++    println!("names: {args:?}");
+ }
+--- clap-4.6.1/examples/tutorial_builder/03_03_positional_mult.rs
++++ clap-4.6.7/examples/tutorial_builder/03_03_positional_mult.rs
+@@ -11,5 +11,5 @@
+         .map(|v| v.as_str())
+         .collect::<Vec<_>>();
+ 
+-    println!("names: {:?}", &args);
++    println!("names: {args:?}");
+ }
+--- clap-4.6.1/examples/tutorial_builder/04_01_enum.rs
++++ clap-4.6.7/examples/tutorial_builder/04_01_enum.rs
+@@ -9,13 +9,13 @@
+ // Can also be derived with feature flag `derive`
+ impl ValueEnum for Mode {
+     fn value_variants<'a>() -> &'a [Self] {
+-        &[Mode::Fast, Mode::Slow]
++        &[Self::Fast, Self::Slow]
+     }
+ 
+     fn to_possible_value(&self) -> Option<PossibleValue> {
+         Some(match self {
+-            Mode::Fast => PossibleValue::new("fast").help("Run swiftly"),
+-            Mode::Slow => PossibleValue::new("slow").help("Crawl slowly but steadily"),
++            Self::Fast => PossibleValue::new("fast").help("Run swiftly"),
++            Self::Slow => PossibleValue::new("slow").help("Crawl slowly but steadily"),
+         })
+     }
+ }
+--- clap-4.6.1/examples/tutorial_derive/04_03_relations.rs
++++ clap-4.6.7/examples/tutorial_derive/04_03_relations.rs
+@@ -49,7 +49,7 @@
+     // See if --set_ver was used to set the version manually
+     let vers = &cli.vers;
+     let version = if let Some(ver) = vers.set_ver.as_deref() {
+-        ver.to_string()
++        ver.to_owned()
+     } else {
+         // Increment the one requested (in a real program, we'd reset the lower numbers)
+         let (maj, min, pat) = (vers.major, vers.minor, vers.patch);
+--- clap-4.6.1/examples/tutorial_derive/04_04_custom.rs
++++ clap-4.6.7/examples/tutorial_derive/04_04_custom.rs
+@@ -49,7 +49,7 @@
+             )
+             .exit();
+         }
+-        ver.to_string()
++        ver.to_owned()
+     } else {
+         // Increment the one requested (in a real program, we'd reset the lower numbers)
+         let (maj, min, pat) = (cli.major, cli.minor, cli.patch);
+--- clap-4.6.1/examples/typed-derive/custom.rs
++++ clap-4.6.7/examples/typed-derive/custom.rs
+@@ -19,10 +19,10 @@
+ impl std::fmt::Display for TargetVersion {
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+         match self {
+-            TargetVersion::Relative(bump_level) => {
++            Self::Relative(bump_level) => {
+                 write!(f, "{bump_level}")
+             }
+-            TargetVersion::Absolute(version) => {
++            Self::Absolute(version) => {
+                 write!(f, "{version}")
+             }
+         }
+@@ -34,9 +34,9 @@
+ 
+     fn from_str(s: &str) -> Result<Self, Self::Err> {
+         if let Ok(bump_level) = BumpLevel::from_str(s) {
+-            Ok(TargetVersion::Relative(bump_level))
++            Ok(Self::Relative(bump_level))
+         } else {
+-            Ok(TargetVersion::Absolute(
++            Ok(Self::Absolute(
+                 semver::Version::parse(s).map_err(|e| e.to_string())?,
+             ))
+         }
+--- clap-4.6.1/src/_cookbook/mod.rs
++++ clap-4.6.7/src/_cookbook/mod.rs
+@@ -28,11 +28,13 @@
+ //!   - Optional subcommands
+ //!   - Default subcommands
+ //!   - [`last`][crate::Arg::last]
++//!   - Configurable command aliases
+ //!
+ //! pacman-like interface: [builder][pacman]
+ //! - Topics:
+ //!   - Flag subcommands
+ //!   - Conflicting arguments
++//!   - Visualizing help output changes through snapshot testing
+ //!
+ //! Escaped positionals with `--`: [builder][escaped_positional], [derive][escaped_positional_derive]
+ //!
+--- clap-4.6.1/src/_cookbook/pacman.rs
++++ clap-4.6.7/src/_cookbook/pacman.rs
+@@ -1,3 +1,6 @@
++// The included source defines a snapshot test.
++#![allow(clippy::test_attr_in_doctest)]
++
+ //! # Example: pacman-like CLI (Builder API)
+ //!
+ //! ```rust
+--- clap-4.6.1/src/_derive/mod.rs
++++ clap-4.6.7/src/_derive/mod.rs
+@@ -161,6 +161,20 @@
+ //!   - When not present: [Doc comment](#doc-comments) if there is a blank line, else nothing
+ //!   - When present without a value: [Doc comment](#doc-comments)
+ //! - `verbatim_doc_comment`: Minimizes pre-processing when converting doc comments to [`about`][crate::Command::about] / [`long_about`][crate::Command::long_about]
++//! - `defer = <bool_literal>`: Delay argument construction for an enum's subcommands with
++//!   [`Command::defer`][crate::Command::defer]. Available on [`Parser`][crate::Parser] and
++//!   [`Subcommand`][crate::Subcommand] enum containers.
++//!   - When not present: `false`, or `true` with the `unstable-v5` feature.
++//!   - Subcommand names and attributes on the variants are applied eagerly, so their descriptions
++//!     are available in the parent's help. Arguments and groups in named variants, and the entire
++//!     [`Args::augment_args`][crate::Args::augment_args] call for newtype variants, are deferred.
++//!   - Put metadata needed by the parent's help on the enum variants. Metadata from an `Args`
++//!     container or its flattened fields is applied when the subcommand is built, and can then
++//!     override metadata on the variant.
++//!   - Flattened and nested `Subcommand` enums use their own `defer` setting. The setting is not
++//!     inherited by those enums and does not defer their registration in the parent.
++//!   - Call [`Command::build`][crate::Command::build] before inspecting deferred arguments or
++//!     nested commands. Parsing builds the selected commands automatically.
+ //! - `next_display_order`: [`Command::next_display_order`][crate::Command::next_display_order]
+ //! - `next_help_heading`: [`Command::next_help_heading`][crate::Command::next_help_heading]
+ //!   - When `flatten`ing [`Args`][crate::Args], this is scoped to just the args in this struct and any struct `flatten`ed into it
+@@ -520,6 +534,7 @@
+ //!   [`Command::debug_assert`][crate::Command::debug_assert] in a test
+ //!   ([example][_tutorial#testing])
+ //! - Always remember to [document](#doc-comments) args and commands with `#![deny(missing_docs)]`
++//!   or `#[deny(clippy::missing_docs_in_private_items)]`
+ 
+ // Point people here that search for attributes that don't exist in the derive (a subset of magic
+ // attributes)
+--- clap-4.6.1/src/lib.rs
++++ clap-4.6.7/src/lib.rs
+@@ -12,7 +12,7 @@
+ //! - [CLI Concepts][_concepts]
+ //! - [FAQ][_faq]
+ //! - [Discussions](https://github.com/clap-rs/clap/discussions)
+-//! - [CHANGELOG](https://github.com/clap-rs/clap/blob/v4.6.1/CHANGELOG.md) (includes major version migration
++//! - [CHANGELOG](https://github.com/clap-rs/clap/blob/v4.6.7/CHANGELOG.md) (includes major version migration
+ //!   guides)
+ //!
+ //! ## Aspirations

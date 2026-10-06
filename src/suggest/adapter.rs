@@ -165,7 +165,7 @@ mod tests {
     fn an_executable_may_be_a_symlink_but_never_a_special_file() {
         // `/bin/sh` is a symlink on Linux and a regular file on macOS; both are fine.
         let resolved = read_executable(Path::new("/bin/sh"), 64 * 1024 * 1024).unwrap();
-        assert!(!resolved.is_empty());
+        assert_ne!(resolved, [] as [u8; 0]);
         assert!(read_executable(Path::new("/"), 64 * 1024 * 1024).is_err());
         let temp = tempfile::tempdir().unwrap();
         assert!(read_executable(temp.path(), 1024).is_err());

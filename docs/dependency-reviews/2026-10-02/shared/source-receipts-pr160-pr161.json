@@ -1,0 +1,529 @@
+{
+  "format": "forge.agent-assisted-source-review/1",
+  "head_pins": {
+    "base": "aef0ab24f77559593b6d0b4fe5027f8a5eaa857e",
+    "160": "9d215ad9b77c123e9b439198521b908ef2d9f9a7",
+    "161": "f91a77cdda2eb7dd95b231c155672c2bc17feee2"
+  },
+  "receipts": [
+    {
+      "name": "anstyle",
+      "version": "1.0.13",
+      "archive_sha256": "5192cca8006f1fd4f7237516f40fa183bb07f8fbdfedaa0036de5ea9b0b45e78",
+      "compressed_bytes": 17651,
+      "source_bytes": 74796,
+      "source_files": 14,
+      "rust_version": "1.66.0",
+      "build": false,
+      "proc_macro": false,
+      "vcs": {
+        "git": {
+          "sha1": "14dd743496d1614f8261a093ce755f26d8e2069d"
+        },
+        "path_in_vcs": "crates/anstyle"
+      },
+      "features": {
+        "default": [
+          "std"
+        ],
+        "std": []
+      },
+      "dependencies": []
+    },
+    {
+      "name": "anstyle",
+      "version": "1.0.14",
+      "archive_sha256": "940b3a0ca603d1eade50a4846a2afffd5ef57a9feac2c0e2ec2e14f9ead76000",
+      "compressed_bytes": 17787,
+      "source_bytes": 75175,
+      "source_files": 14,
+      "rust_version": "1.66.0",
+      "build": false,
+      "proc_macro": false,
+      "vcs": {
+        "git": {
+          "sha1": "0fe6f0ff6d52e9f91d4071199bd0b24bd46f3d35"
+        },
+        "path_in_vcs": "crates/anstyle"
+      },
+      "features": {
+        "default": [
+          "std"
+        ],
+        "std": []
+      },
+      "dependencies": []
+    },
+    {
+      "name": "clap",
+      "version": "4.6.1",
+      "archive_sha256": "1ddb117e43bbf7dacf0a4190fef4d345b9bad68dfc649cb349e7d17d28428e51",
+      "compressed_bytes": 61836,
+      "source_bytes": 261257,
+      "source_files": 146,
+      "rust_version": "1.85",
+      "build": false,
+      "proc_macro": false,
+      "vcs": {
+        "git": {
+          "sha1": "ac5fda6a799e4c640d671edd1111d4a5e723dc1a"
+        },
+        "path_in_vcs": ""
+      },
+      "features": {
+        "cargo": [
+          "clap_builder/cargo"
+        ],
+        "color": [
+          "clap_builder/color"
+        ],
+        "debug": [
+          "clap_builder/debug",
+          "clap_derive?/debug"
+        ],
+        "default": [
+          "std",
+          "color",
+          "help",
+          "usage",
+          "error-context",
+          "suggestions"
+        ],
+        "deprecated": [
+          "clap_builder/deprecated",
+          "clap_derive?/deprecated"
+        ],
+        "derive": [
+          "dep:clap_derive"
+        ],
+        "env": [
+          "clap_builder/env"
+        ],
+        "error-context": [
+          "clap_builder/error-context"
+        ],
+        "help": [
+          "clap_builder/help"
+        ],
+        "std": [
+          "clap_builder/std"
+        ],
+        "string": [
+          "clap_builder/string"
+        ],
+        "suggestions": [
+          "clap_builder/suggestions"
+        ],
+        "unicode": [
+          "clap_builder/unicode"
+        ],
+        "unstable-derive-ui-tests": [],
+        "unstable-doc": [
+          "clap_builder/unstable-doc",
+          "derive"
+        ],
+        "unstable-ext": [
+          "clap_builder/unstable-ext"
+        ],
+        "unstable-markdown": [
+          "clap_derive/unstable-markdown"
+        ],
+        "unstable-styles": [
+          "clap_builder/unstable-styles"
+        ],
+        "unstable-v5": [
+          "clap_builder/unstable-v5",
+          "clap_derive?/unstable-v5",
+          "deprecated"
+        ],
+        "usage": [
+          "clap_builder/usage"
+        ],
+        "wrap_help": [
+          "clap_builder/wrap_help"
+        ]
+      },
+      "dependencies": [
+        "clap_builder",
+        "clap_derive"
+      ]
+    },
+    {
+      "name": "clap",
+      "version": "4.6.7",
+      "archive_sha256": "aa8876b300ab35ba921adea3dfd70157a46249b33f95c9084ae5709785478946",
+      "compressed_bytes": 65831,
+      "source_bytes": 277280,
+      "source_files": 147,
+      "rust_version": "1.85",
+      "build": false,
+      "proc_macro": false,
+      "vcs": {
+        "git": {
+          "sha1": "13f2db5072d600c11d8d6298e4e9ba53ffc6c1ab"
+        },
+        "path_in_vcs": ""
+      },
+      "features": {
+        "cargo": [
+          "clap_builder/cargo"
+        ],
+        "color": [
+          "clap_builder/color"
+        ],
+        "debug": [
+          "clap_builder/debug",
+          "clap_derive?/debug"
+        ],
+        "default": [
+          "std",
+          "color",
+          "help",
+          "usage",
+          "error-context",
+          "suggestions"
+        ],
+        "deprecated": [
+          "clap_builder/deprecated",
+          "clap_derive?/deprecated"
+        ],
+        "derive": [
+          "dep:clap_derive"
+        ],
+        "env": [
+          "clap_builder/env"
+        ],
+        "error-context": [
+          "clap_builder/error-context"
+        ],
+        "help": [
+          "clap_builder/help"
+        ],
+        "std": [
+          "clap_builder/std"
+        ],
+        "string": [
+          "clap_builder/string"
+        ],
+        "suggestions": [
+          "clap_builder/suggestions"
+        ],
+        "unicode": [
+          "clap_builder/unicode"
+        ],
+        "unstable-derive-ui-tests": [],
+        "unstable-doc": [
+          "clap_builder/unstable-doc",
+          "derive"
+        ],
+        "unstable-ext": [
+          "clap_builder/unstable-ext"
+        ],
+        "unstable-markdown": [
+          "clap_derive/unstable-markdown"
+        ],
+        "unstable-styles": [
+          "clap_builder/unstable-styles"
+        ],
+        "unstable-v5": [
+          "clap_builder/unstable-v5",
+          "clap_derive?/unstable-v5",
+          "deprecated"
+        ],
+        "usage": [
+          "clap_builder/usage"
+        ],
+        "wrap_help": [
+          "clap_builder/wrap_help"
+        ]
+      },
+      "dependencies": [
+        "clap_builder",
+        "clap_derive"
+      ]
+    },
+    {
+      "name": "clap_builder",
+      "version": "4.6.0",
+      "archive_sha256": "714a53001bf66416adb0e2ef5ac857140e7dc3a0c48fb28b2f10762fc4b5069f",
+      "compressed_bytes": 171122,
+      "source_bytes": 976100,
+      "source_files": 64,
+      "rust_version": "1.85",
+      "build": false,
+      "proc_macro": false,
+      "vcs": {
+        "git": {
+          "sha1": "9ab6dee710aa384e02ec5e9e2cfeadb2f35abf2a"
+        },
+        "path_in_vcs": "clap_builder"
+      },
+      "features": {
+        "cargo": [],
+        "color": [
+          "dep:anstream"
+        ],
+        "debug": [
+          "dep:backtrace"
+        ],
+        "default": [
+          "std",
+          "color",
+          "help",
+          "usage",
+          "error-context",
+          "suggestions"
+        ],
+        "deprecated": [],
+        "env": [],
+        "error-context": [],
+        "help": [],
+        "std": [
+          "anstyle/std"
+        ],
+        "string": [],
+        "suggestions": [
+          "dep:strsim",
+          "error-context"
+        ],
+        "unicode": [
+          "dep:unicode-width",
+          "dep:unicase"
+        ],
+        "unstable-doc": [
+          "cargo",
+          "wrap_help",
+          "env",
+          "unicode",
+          "string",
+          "unstable-ext"
+        ],
+        "unstable-ext": [],
+        "unstable-styles": [
+          "color"
+        ],
+        "unstable-v5": [
+          "deprecated"
+        ],
+        "usage": [],
+        "wrap_help": [
+          "help",
+          "dep:terminal_size"
+        ]
+      },
+      "dependencies": [
+        "anstream",
+        "anstyle",
+        "clap_lex",
+        "strsim"
+      ]
+    },
+    {
+      "name": "clap_builder",
+      "version": "4.6.7",
+      "archive_sha256": "ec0797fb7aeb1406c84efac526901f7ec3ead2124f946b494e72879d4b54704d",
+      "compressed_bytes": 171709,
+      "source_bytes": 979539,
+      "source_files": 64,
+      "rust_version": "1.85",
+      "build": false,
+      "proc_macro": false,
+      "vcs": {
+        "git": {
+          "sha1": "13f2db5072d600c11d8d6298e4e9ba53ffc6c1ab"
+        },
+        "path_in_vcs": "clap_builder"
+      },
+      "features": {
+        "cargo": [],
+        "color": [
+          "dep:anstream"
+        ],
+        "debug": [
+          "dep:backtrace"
+        ],
+        "default": [
+          "std",
+          "color",
+          "help",
+          "usage",
+          "error-context",
+          "suggestions"
+        ],
+        "deprecated": [],
+        "env": [],
+        "error-context": [],
+        "help": [],
+        "std": [
+          "anstyle/std"
+        ],
+        "string": [],
+        "suggestions": [
+          "dep:strsim",
+          "error-context"
+        ],
+        "unicode": [
+          "dep:unicode-width",
+          "dep:unicase"
+        ],
+        "unstable-doc": [
+          "cargo",
+          "wrap_help",
+          "env",
+          "unicode",
+          "string",
+          "unstable-ext"
+        ],
+        "unstable-ext": [],
+        "unstable-styles": [
+          "color"
+        ],
+        "unstable-v5": [
+          "deprecated"
+        ],
+        "usage": [],
+        "wrap_help": [
+          "help",
+          "dep:terminal_size"
+        ]
+      },
+      "dependencies": [
+        "anstream",
+        "anstyle",
+        "clap_lex",
+        "strsim"
+      ]
+    },
+    {
+      "name": "clap_derive",
+      "version": "4.6.1",
+      "archive_sha256": "f2ce8604710f6733aa641a2b3731eaa1e8b3d9973d5e3565da11800813f997a9",
+      "compressed_bytes": 33512,
+      "source_bytes": 180361,
+      "source_files": 23,
+      "rust_version": "1.85",
+      "build": false,
+      "proc_macro": true,
+      "vcs": {
+        "git": {
+          "sha1": "ac5fda6a799e4c640d671edd1111d4a5e723dc1a"
+        },
+        "path_in_vcs": "clap_derive"
+      },
+      "features": {
+        "debug": [],
+        "default": [],
+        "deprecated": [],
+        "raw-deprecated": [
+          "deprecated"
+        ],
+        "unstable-markdown": [
+          "dep:pulldown-cmark",
+          "dep:anstyle"
+        ],
+        "unstable-v5": [
+          "deprecated"
+        ]
+      },
+      "dependencies": [
+        "heck",
+        "proc-macro2",
+        "quote",
+        "syn 2.0.117"
+      ]
+    },
+    {
+      "name": "clap_derive",
+      "version": "4.6.7",
+      "archive_sha256": "f9c751b79415d4e559e3d1fcf128e09e720eb673a06d26cf6f392d37d75b66e0",
+      "compressed_bytes": 33942,
+      "source_bytes": 182805,
+      "source_files": 23,
+      "rust_version": "1.85",
+      "build": false,
+      "proc_macro": true,
+      "vcs": {
+        "git": {
+          "sha1": "13f2db5072d600c11d8d6298e4e9ba53ffc6c1ab"
+        },
+        "path_in_vcs": "clap_derive"
+      },
+      "features": {
+        "debug": [],
+        "default": [],
+        "deprecated": [],
+        "raw-deprecated": [
+          "deprecated"
+        ],
+        "unstable-markdown": [
+          "dep:pulldown-cmark",
+          "dep:anstyle"
+        ],
+        "unstable-v5": [
+          "deprecated"
+        ]
+      },
+      "dependencies": [
+        "heck",
+        "proc-macro2",
+        "quote",
+        "syn 3.0.6"
+      ]
+    },
+    {
+      "name": "rayon",
+      "version": "1.11.0",
+      "archive_sha256": "368f01d005bf8fd9b1206fb6fa653e6c4a81ceb1466406b81792d87c5677a58f",
+      "compressed_bytes": 182470,
+      "source_bytes": 912019,
+      "source_files": 126,
+      "rust_version": "1.80",
+      "build": false,
+      "proc_macro": false,
+      "vcs": {
+        "git": {
+          "sha1": "7af20d7692d5decbcb4adcaa079cd607e3e50814"
+        },
+        "path_in_vcs": ""
+      },
+      "features": {
+        "web_spin_lock": [
+          "dep:wasm_sync",
+          "rayon-core/web_spin_lock"
+        ]
+      },
+      "dependencies": [
+        "either",
+        "rayon-core"
+      ]
+    },
+    {
+      "name": "rayon",
+      "version": "1.12.0",
+      "archive_sha256": "fb39b166781f92d482534ef4b4b1b2568f42613b53e5b6c160e24cfbfa30926d",
+      "compressed_bytes": 183391,
+      "source_bytes": 915870,
+      "source_files": 127,
+      "rust_version": "1.80",
+      "build": false,
+      "proc_macro": false,
+      "vcs": {
+        "git": {
+          "sha1": "c9ced185ae3508246a9eb70c8407a1199bb1b77f"
+        },
+        "path_in_vcs": ""
+      },
+      "features": {
+        "web_spin_lock": [
+          "dep:wasm_sync",
+          "rayon-core/web_spin_lock"
+        ]
+      },
+      "dependencies": [
+        "either",
+        "rayon-core"
+      ]
+    }
+  ],
+  "authority": "Read-only source evidence; does not assert human review, acceptance, or cargo-vet certification."
+}

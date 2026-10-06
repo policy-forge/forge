@@ -387,7 +387,7 @@ mod tests {
         let r = req("Use the required configuration settings.");
         let result = detect_modality(&r);
         assert_eq!(result.modality, Modality::Normative);
-        assert!(!result.matched_verbs.is_empty());
+        assert_ne!(result.matched_verbs, [] as [&str; 0]);
         assert_ne!(result.outcome, ModalityOutcome::Default);
     }
 

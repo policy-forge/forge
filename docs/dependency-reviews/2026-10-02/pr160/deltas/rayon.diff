@@ -1,0 +1,448 @@
+--- rayon-1.11.0/Cargo.toml
++++ rayon-1.12.0/Cargo.toml
+@@ -13,7 +13,7 @@
+ edition = "2021"
+ rust-version = "1.80"
+ name = "rayon"
+-version = "1.11.0"
++version = "1.12.0"
+ build = false
+ exclude = [
+     "/ci/*",
+--- rayon-1.11.0/Cargo.toml.orig
++++ rayon-1.12.0/Cargo.toml.orig
+@@ -1,6 +1,6 @@
+ [package]
+ name = "rayon"
+-version = "1.11.0"
++version = "1.12.0"
+ description = "Simple work-stealing parallelism for Rust"
+ documentation = "https://docs.rs/rayon/"
+ exclude = ["/ci/*", "/.github/*"]
+--- rayon-1.11.0/src/iter/collect/consumer.rs
++++ rayon-1.12.0/src/iter/collect/consumer.rs
+@@ -2,7 +2,6 @@
+ use crate::SendPtr;
+ use std::marker::PhantomData;
+ use std::ptr;
+-use std::slice;
+ 
+ pub(super) struct CollectConsumer<'c, T: Send> {
+     /// See `CollectResult` for explanation of why this is not a slice
+@@ -75,7 +74,7 @@
+         // Drop the first `self.initialized_len` elements, which have been recorded
+         // to be initialized by the folder.
+         unsafe {
+-            ptr::drop_in_place(slice::from_raw_parts_mut(
++            ptr::drop_in_place(ptr::slice_from_raw_parts_mut(
+                 self.start.0,
+                 self.initialized_len,
+             ));
+--- rayon-1.11.0/src/iter/mod.rs
++++ rayon-1.12.0/src/iter/mod.rs
+@@ -71,10 +71,11 @@
+ //! `Result`, where `Some`/`Ok` values will let those iterators continue, but
+ //! `None`/`Err` values will exit early.
+ //!
+-//! A note about object safety: It is currently _not_ possible to wrap
+-//! a `ParallelIterator` (or any trait that depends on it) using a
+-//! `Box<dyn ParallelIterator>` or other kind of dynamic allocation,
+-//! because `ParallelIterator` is **not object-safe**.
++//! A note about
++//! [dyn compatiblity](https://doc.rust-lang.org/reference/items/traits.html#dyn-compatibility):
++//! It is currently _not_ possible to wrap a `ParallelIterator` (or any trait
++//! that depends on it) using a `Box<dyn ParallelIterator>` or other kind of
++//! dynamic allocation, because `ParallelIterator` is **not dyn-compatible**.
+ //! (This keeps the implementation simpler and allows extra optimizations.)
+ 
+ use self::plumbing::*;
+--- rayon-1.11.0/src/range.rs
++++ rayon-1.12.0/src/range.rs
+@@ -300,7 +300,7 @@
+     ( $self:ident . $method:ident ( $( $arg:expr ),* ) ) => {{
+         let start = $self.range.start as u32;
+         let end = $self.range.end as u32;
+-        if start < 0xD800 && 0xE000 < end {
++        if start < 0xD800 && 0xE000 <= end {
+             // chain the before and after surrogate range fragments
+             (start..0xD800)
+                 .into_par_iter()
+@@ -362,6 +362,23 @@
+     {
+         convert_char!(self.with_producer(callback))
+     }
++}
++
++#[test]
++fn test_char_range_at_surrogate_boundary() {
++    use crate::prelude::*;
++
++    // Ranges ending exactly at '\u{E000}' must not produce surrogate codepoints.
++    let chars: Vec<char> = ('\u{D7FE}'..'\u{E000}').into_par_iter().collect();
++    assert_eq!(chars, vec!['\u{D7FE}', '\u{D7FF}']);
++
++    // Ranges starting at '\u{E000}' are entirely above surrogates.
++    let chars: Vec<char> = ('\u{E000}'..'\u{E002}').into_par_iter().collect();
++    assert_eq!(chars, vec!['\u{E000}', '\u{E001}']);
++
++    // A range that spans the surrogate gap should skip it.
++    let chars: Vec<char> = ('\u{D7FE}'..'\u{E002}').into_par_iter().collect();
++    assert_eq!(chars, vec!['\u{D7FE}', '\u{D7FF}', '\u{E000}', '\u{E001}']);
+ }
+ 
+ #[test]
+--- rayon-1.11.0/src/range_inclusive.rs
++++ rayon-1.12.0/src/range_inclusive.rs
+@@ -310,6 +310,23 @@
+ }
+ 
+ #[test]
++fn test_char_range_inclusive_at_surrogate_boundary() {
++    use crate::prelude::*;
++
++    // Ranges ending exactly at '\u{E000}' must not produce surrogate codepoints.
++    let chars: Vec<char> = ('\u{D7FE}'..='\u{E000}').into_par_iter().collect();
++    assert_eq!(chars, vec!['\u{D7FE}', '\u{D7FF}', '\u{E000}']);
++
++    // Ranges starting at '\u{E000}' are entirely above surrogates.
++    let chars: Vec<char> = ('\u{E000}'..='\u{E001}').into_par_iter().collect();
++    assert_eq!(chars, vec!['\u{E000}', '\u{E001}']);
++
++    // A range that spans the surrogate gap should skip it.
++    let chars: Vec<char> = ('\u{D7FE}'..='\u{E001}').into_par_iter().collect();
++    assert_eq!(chars, vec!['\u{D7FE}', '\u{D7FF}', '\u{E000}', '\u{E001}']);
++}
++
++#[test]
+ #[cfg(target_pointer_width = "64")]
+ fn test_u32_opt_len() {
+     assert_eq!(Some(101), (0..=100u32).into_par_iter().opt_len());
+--- rayon-1.11.0/src/slice/mod.rs
++++ rayon-1.12.0/src/slice/mod.rs
+@@ -9,6 +9,7 @@
+ mod chunks;
+ mod rchunks;
+ mod sort;
++mod windows;
+ 
+ mod test;
+ 
+@@ -24,6 +25,7 @@
+ pub use self::chunk_by::{ChunkBy, ChunkByMut};
+ pub use self::chunks::{Chunks, ChunksExact, ChunksExactMut, ChunksMut};
+ pub use self::rchunks::{RChunks, RChunksExact, RChunksExactMut, RChunksMut};
++pub use self::windows::{ArrayWindows, Windows};
+ 
+ /// Parallel extensions for slices.
+ pub trait ParallelSlice<T: Sync> {
+@@ -88,10 +90,21 @@
+     /// assert_eq!(vec![[1, 2], [2, 3]], windows);
+     /// ```
+     fn par_windows(&self, window_size: usize) -> Windows<'_, T> {
+-        Windows {
+-            window_size,
+-            slice: self.as_parallel_slice(),
+-        }
++        Windows::new(window_size, self.as_parallel_slice())
++    }
++
++    /// Returns a parallel iterator over all contiguous array windows of
++    /// length `N`. The windows overlap.
++    ///
++    /// # Examples
++    ///
++    /// ```
++    /// use rayon::prelude::*;
++    /// let windows: Vec<_> = [1, 2, 3].par_array_windows().collect();
++    /// assert_eq!(vec![&[1, 2], &[2, 3]], windows);
++    /// ```
++    fn par_array_windows<const N: usize>(&self) -> ArrayWindows<'_, T, N> {
++        ArrayWindows::new(self.as_parallel_slice())
+     }
+ 
+     /// Returns a parallel iterator over at most `chunk_size` elements of
+@@ -861,88 +874,6 @@
+     }
+ }
+ 
+-/// Parallel iterator over immutable overlapping windows of a slice
+-#[derive(Debug)]
+-pub struct Windows<'data, T> {
+-    window_size: usize,
+-    slice: &'data [T],
+-}
+-
+-impl<T> Clone for Windows<'_, T> {
+-    fn clone(&self) -> Self {
+-        Windows { ..*self }
+-    }
+-}
+-
+-impl<'data, T: Sync> ParallelIterator for Windows<'data, T> {
+-    type Item = &'data [T];
+-
+-    fn drive_unindexed<C>(self, consumer: C) -> C::Result
+-    where
+-        C: UnindexedConsumer<Self::Item>,
+-    {
+-        bridge(self, consumer)
+-    }
+-
+-    fn opt_len(&self) -> Option<usize> {
+-        Some(self.len())
+-    }
+-}
+-
+-impl<T: Sync> IndexedParallelIterator for Windows<'_, T> {
+-    fn drive<C>(self, consumer: C) -> C::Result
+-    where
+-        C: Consumer<Self::Item>,
+-    {
+-        bridge(self, consumer)
+-    }
+-
+-    fn len(&self) -> usize {
+-        assert!(self.window_size >= 1);
+-        self.slice.len().saturating_sub(self.window_size - 1)
+-    }
+-
+-    fn with_producer<CB>(self, callback: CB) -> CB::Output
+-    where
+-        CB: ProducerCallback<Self::Item>,
+-    {
+-        callback.callback(WindowsProducer {
+-            window_size: self.window_size,
+-            slice: self.slice,
+-        })
+-    }
+-}
+-
+-struct WindowsProducer<'data, T: Sync> {
+-    window_size: usize,
+-    slice: &'data [T],
+-}
+-
+-impl<'data, T: 'data + Sync> Producer for WindowsProducer<'data, T> {
+-    type Item = &'data [T];
+-    type IntoIter = ::std::slice::Windows<'data, T>;
+-
+-    fn into_iter(self) -> Self::IntoIter {
+-        self.slice.windows(self.window_size)
+-    }
+-
+-    fn split_at(self, index: usize) -> (Self, Self) {
+-        let left_index = Ord::min(self.slice.len(), index + (self.window_size - 1));
+-        let left = &self.slice[..left_index];
+-        let right = &self.slice[index..];
+-        (
+-            WindowsProducer {
+-                window_size: self.window_size,
+-                slice: left,
+-            },
+-            WindowsProducer {
+-                window_size: self.window_size,
+-                slice: right,
+-            },
+-        )
+-    }
+-}
+-
+ /// Parallel iterator over mutable items in a slice
+ #[derive(Debug)]
+ pub struct IterMut<'data, T> {
+--- rayon-1.11.0/src/slice/windows.rs
++++ rayon-1.12.0/src/slice/windows.rs
+@@ -0,0 +1,147 @@
++use crate::iter::plumbing::*;
++use crate::iter::*;
++
++/// Parallel iterator over immutable overlapping windows of a slice
++#[derive(Debug)]
++pub struct Windows<'data, T> {
++    window_size: usize,
++    slice: &'data [T],
++}
++
++impl<'data, T> Windows<'data, T> {
++    pub(super) fn new(window_size: usize, slice: &'data [T]) -> Self {
++        Self { window_size, slice }
++    }
++}
++
++impl<T> Clone for Windows<'_, T> {
++    fn clone(&self) -> Self {
++        Windows { ..*self }
++    }
++}
++
++impl<'data, T: Sync> ParallelIterator for Windows<'data, T> {
++    type Item = &'data [T];
++
++    fn drive_unindexed<C>(self, consumer: C) -> C::Result
++    where
++        C: UnindexedConsumer<Self::Item>,
++    {
++        bridge(self, consumer)
++    }
++
++    fn opt_len(&self) -> Option<usize> {
++        Some(self.len())
++    }
++}
++
++impl<T: Sync> IndexedParallelIterator for Windows<'_, T> {
++    fn drive<C>(self, consumer: C) -> C::Result
++    where
++        C: Consumer<Self::Item>,
++    {
++        bridge(self, consumer)
++    }
++
++    fn len(&self) -> usize {
++        assert!(self.window_size >= 1);
++        self.slice.len().saturating_sub(self.window_size - 1)
++    }
++
++    fn with_producer<CB>(self, callback: CB) -> CB::Output
++    where
++        CB: ProducerCallback<Self::Item>,
++    {
++        callback.callback(WindowsProducer {
++            window_size: self.window_size,
++            slice: self.slice,
++        })
++    }
++}
++
++struct WindowsProducer<'data, T: Sync> {
++    window_size: usize,
++    slice: &'data [T],
++}
++
++impl<'data, T: Sync> Producer for WindowsProducer<'data, T> {
++    type Item = &'data [T];
++    type IntoIter = ::std::slice::Windows<'data, T>;
++
++    fn into_iter(self) -> Self::IntoIter {
++        self.slice.windows(self.window_size)
++    }
++
++    fn split_at(self, index: usize) -> (Self, Self) {
++        let left_index = Ord::min(self.slice.len(), index + (self.window_size - 1));
++        let left = &self.slice[..left_index];
++        let right = &self.slice[index..];
++        (
++            WindowsProducer {
++                window_size: self.window_size,
++                slice: left,
++            },
++            WindowsProducer {
++                window_size: self.window_size,
++                slice: right,
++            },
++        )
++    }
++}
++
++/// Parallel iterator over immutable overlapping windows of a slice
++#[derive(Debug)]
++pub struct ArrayWindows<'data, T: Sync, const N: usize> {
++    slice: &'data [T],
++}
++
++impl<'data, T: Sync, const N: usize> ArrayWindows<'data, T, N> {
++    pub(super) fn new(slice: &'data [T]) -> Self {
++        ArrayWindows { slice }
++    }
++}
++
++impl<T: Sync, const N: usize> Clone for ArrayWindows<'_, T, N> {
++    fn clone(&self) -> Self {
++        ArrayWindows { ..*self }
++    }
++}
++
++impl<'data, T: Sync, const N: usize> ParallelIterator for ArrayWindows<'data, T, N> {
++    type Item = &'data [T; N];
++
++    fn drive_unindexed<C>(self, consumer: C) -> C::Result
++    where
++        C: UnindexedConsumer<Self::Item>,
++    {
++        bridge(self, consumer)
++    }
++
++    fn opt_len(&self) -> Option<usize> {
++        Some(self.len())
++    }
++}
++
++impl<T: Sync, const N: usize> IndexedParallelIterator for ArrayWindows<'_, T, N> {
++    fn drive<C>(self, consumer: C) -> C::Result
++    where
++        C: Consumer<Self::Item>,
++    {
++        bridge(self, consumer)
++    }
++
++    fn len(&self) -> usize {
++        assert!(N >= 1);
++        self.slice.len().saturating_sub(const { N - 1 })
++    }
++
++    fn with_producer<CB>(self, callback: CB) -> CB::Output
++    where
++        CB: ProducerCallback<Self::Item>,
++    {
++        // TODO (MSRV 1.94): use our own producer and the standard `array_windows`
++        Windows::new(N, self.slice)
++            .map(|slice| slice.try_into().unwrap())
++            .with_producer(callback)
++    }
++}
+--- rayon-1.11.0/src/str.rs
++++ rayon-1.12.0/src/str.rs
+@@ -32,6 +32,7 @@
+     // We want to split near the midpoint, but we need to find an actual
+     // character boundary.  So we look at the raw bytes, first scanning
+     // forward from the midpoint for a boundary, then trying backward.
++    // TODO (MSRV 1.91): use `str::ceil_char_boundary`, else `floor_...`.
+     let (left, right) = chars.as_bytes().split_at(mid);
+     match right.iter().copied().position(is_char_boundary) {
+         Some(i) => mid + i,
+--- rayon-1.11.0/tests/clones.rs
++++ rayon-1.12.0/tests/clones.rs
+@@ -115,6 +115,7 @@
+     check(v.par_rchunks(42));
+     check(v.par_rchunks_exact(42));
+     check(v.par_windows(42));
++    check(v.par_array_windows::<42>());
+     check(v.par_split(|x| x % 3 == 0));
+     check(v.par_split_inclusive(|x| x % 3 == 0));
+     check(v.into_par_iter());
+--- rayon-1.11.0/tests/debug.rs
++++ rayon-1.12.0/tests/debug.rs
+@@ -132,6 +132,7 @@
+     check(v.par_rchunks_mut(42));
+     check(v.par_rchunks_exact_mut(42));
+     check(v.par_windows(42));
++    check(v.par_array_windows::<42>());
+     check(v.par_split(|x| x % 3 == 0));
+     check(v.par_split_inclusive(|x| x % 3 == 0));
+     check(v.par_split_mut(|x| x % 3 == 0));
+--- rayon-1.11.0/tests/producer_split_at.rs
++++ rayon-1.12.0/tests/producer_split_at.rs
+@@ -257,6 +257,13 @@
+ }
+ 
+ #[test]
++fn slice_array_windows() {
++    let s: Vec<_> = (0..10).collect();
++    let v: Vec<&[_; 2]> = s.array_windows().collect();
++    check(&v, || s.par_array_windows::<2>());
++}
++
++#[test]
+ fn vec() {
+     let v: Vec<_> = (0..10).collect();
+     check(&v, || v.clone());

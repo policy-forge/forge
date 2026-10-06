@@ -369,7 +369,10 @@ after
     #[test]
     fn leading_and_trailing_blank_lines_yield_no_empty_blocks() {
         let document = "\n\n\n";
-        assert!(texts(document).is_empty());
+        assert_eq!(
+            texts(document),
+            [] as [(std::string::String, std::option::Option<std::string::String>); 0]
+        );
         assert_eq!(texts("\n\n\npara\n\n\n"), expected(&[("para", None)]));
     }
 
