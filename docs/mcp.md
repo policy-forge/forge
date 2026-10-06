@@ -2,6 +2,8 @@
 
 `forge mcp serve` exposes seven read-only tools over standard input and output. They retrieve recorded governance data from an explicitly selected local project. They do not perform assessments, grant approval, change project files, run processes or fetch evidence over the network.
 
+The worker defaults to the original declaration family (`--declaration-family v1`). The sections below describe that path. The separate [F20 `/2` development checkpoint](#f20-2-development-checkpoint) records the narrower candidate scope, explicit selector and unfinished qualification gates; it does not change the default path or establish release availability.
+
 ## Start a worker
 
 Connect a client that implements MCP **2026-07-28** to the worker's standard input and output. Keep standard input open while awaiting responses. Standard output is the protocol channel; do not mix it with client logging.
@@ -110,3 +112,99 @@ End of input shuts down the worker, drops queued responses and stops active work
 This guide describes the engineering slice and its source contracts. Verification records must bind each test result to the exact measured source. File-backed synthetic owner records and control fixtures demonstrate engineering behavior; they do not establish real owner approval, lawful disclosure, client interoperability or corpus acceptance. Windows runtime qualification remains pending; do not infer it from portable schemas or a successful build on another platform.
 
 The current catalog advertises tools only. MCP resources, the full F20 evidence-metadata/static-report/search-index work and related retention qualification remain separate work; accepted profile fields do not make those features available. Two independent clients, representative project/corpus comparisons and all owner/human acceptance gates remain required. This guide does not close the full-goal documentation review.
+## F20 /2 development checkpoint
+
+This section describes the `/2` engineering candidate on an exact locally qualified source image. Compilation, normal tests, source documentation, fresh library coverage and the compiled macOS child campaign have closed; final integration and hosted/client/owner acceptance remain separate gates. The original declaration family remains the default; selecting `/2` requires an explicit flag before any project capture begins:
+
+```text
+forge mcp serve --declaration-family v2 --project PROJECT_DIR \
+  --decision-root DECISION_DIR \
+  --decision-sha256 DECISION_SHA256 \
+  --profile-sha256 PROFILE_SHA256
+```
+
+Use exact raw-file pins and genuine project-specific owner records. The `/2` path retains the same three configuration filenames, confined disjoint roots and six required owner subject/role pairs described above. It uses closed [project `/2`](../src/mcp/discovery-v2.schema.json), [visibility `/2`](../src/mcp/profile-v2.schema.json) and [disclosure-decision `/2`](../src/mcp/decision-v2.schema.json) schemas. The project declaration contains the complete base resource roster and an explicit companion roster; declaring a companion does not activate a missing native producer. Hidden originals are captured and checked as part of the complete closure without disclosing their contents or counts.
+
+The MCP revision remains **2026-07-28**, and the seven tool names and `forge.mcp-query/1` output envelope remain unchanged. `/2` identifies the declaration family, not a new protocol or output version. Static discovery remains available without project disclosure; discovery, client capabilities and configuration hashes do not establish native approval or reviewer authority.
+
+### Supported candidate queries
+
+| Tool | `/2` candidate scope |
+| --- | --- |
+| `list_policies` | Visible, independently approved-current Catalog and Component Definition metadata; policy-source identity fields remain null |
+| `search_requirements` | Complete native Catalog and Component Definition requirements with exact captured source citations |
+| `get_requirement` | An exact native identifier in one supported visible artifact |
+| `trace_control` | Recorded direct native control relationships; no inferred equivalence or Mapping producer |
+| `get_artifact_status` | Recorded lifecycle approval/currentness; schedule fields are null and schedule evaluation is `not-evaluated` |
+| `get_recorded_applicability` | A complete current applicability manifest/report closure using an independently approved visible Catalog framework and an empty Mapping list |
+| `get_gap_summary` | The same complete applicability closure, with full stored-report equality and complete gap counts |
+
+Applicability source approval and framework approval are checked independently. The complete stored-report comparison includes private native fields, all rows and all counts before the minimized query projection. Multiple matching manifests refuse the result. A source hash hint or a borrowed parsed value cannot issue an approved-current native closure.
+
+Profile frameworks, nonempty Mapping dependencies, SSP, linkage/evidence closure, static-report resources and a selected search index remain unavailable in this slice. Unsupported visible families or unsupported dependencies needed by a visible result refuse the whole gate; the worker does not drop inputs to obtain a smaller successful closure. A declared Linkage Manifest companion is refused before its declared content is read. The factory also requires omitted source text and schedule modes, null `as_of` and search-index selection, and empty noncurrent, excerpt, schedule, evidence-metadata, static-report and resource-family opt-in lists. Schema fields alone do not deliver PRD 067 S-1, S-2 or S-4. S-3 still requires real project-owner profile and disclosure records.
+
+### Exact selectors, search and citations
+
+Artifact keys retain their existing safe-token rule. `/2` requirement and control IDs are exact nonempty native UTF-8 strings of at most 4,096 bytes; they are not normalized into another alphabet or UUID spelling. The original `/1` selector behavior remains unchanged. A complete native projection that cannot preserve its supported public fields refuses the result rather than clipping or replacing private identifiers.
+
+Search accepts a nonempty query of at most 4,096 bytes, with no control characters and at most 32 distinct lexical tokens. The native matcher uses Unicode lowercase tokens and deterministic exact-ID, all-token and some-token rank buckets. Duplicate query tokens do not multiply a match. Results retain complete match counts before a page is selected. Citation paths and UTF-8 byte/line spans come from the actual captured source association, including CRLF boundaries; an ID alone does not supply a citation.
+
+Pages contain 1–50 rows. Both page size and cursor are excluded from the canonical query generation, so changing page size preserves the same query generation. The remaining query selection and the complete physical input generation still bind the cursor. A changed input generation requires restarting without the old cursor. `/2` does not expose source excerpts: `include_excerpt: true` receives fixed visibility refusal. Citation metadata is not source prose, authorization or a compliance conclusion.
+
+### Capture lifetime and bounds
+
+One original controller and admission ledger span configuration decoding, complete declared capture, native/lifecycle checks, projection, finite encoding, readback and final verification. A retained successful query owner is checked again before stdout publication. A query that becomes unavailable after a genuine owner exists still checks that complete owner; static or malformed factory refusal has no native owner to verify. Capacity, interruption and control failure remain sticky first stops across ordinary parser, schema and domain failures. A later phase does not obtain a renewed allowance.
+
+| `/2` capture boundary | Fixed limit |
+| --- | --- |
+| Original registration attempts | 1,001, including fixed configs, hidden originals and absence registrations |
+| Retained and temporarily reserved native handle geometry | 1,001 |
+| Shared retained data | 50 MiB of admitted original bytes, native proofs, derived data and retained output |
+| Each ordinary declared file | At most 10 MiB; the exact role may impose a smaller limit |
+| Each fixed configuration | 1 MiB |
+| Shared admitted work | 100,000 units across decoding, native preparation, repeated verification and output |
+
+These are declared logical accounting bounds, not measurements of allocator heap use. A valid large closure may reach byte, work or geometry capacity before the maximum number of original attempts. Request framing, complete response size, queue limits, accepted-ID limits and the cooperative ten-second budget remain as described above. Whole root, file, hash and absence checks are sequential rechecks, not an atomic filesystem snapshot. Cancellation and output-write failure retain the existing transport behavior.
+
+### Offline input validation
+
+The candidate also provides a read-only offline gate with a separate intent root and closed [index-build intent](../src/mcp/index-build-intent.schema.json):
+
+```text
+forge mcp check-index-inputs --project PROJECT_DIR \
+  --intent-root INTENT_DIR \
+  --intent-sha256 INTENT_SHA256 \
+  --profile-sha256 PROFILE_SHA256
+```
+
+The intent cannot substitute for the server's external disclosure decision. A successful gate consumes genuine complete captured inputs, checks the selected destination's held absence and emits exactly one fixed line after final verification:
+
+```text
+MCP index inputs captured and checked; no index built.
+```
+
+This command does not build or publish an index and does not complete S-4. It supplies no raw-input shortcut, reusable currentness token or later publication authority.
+
+### Qualification checkpoint and remaining gates
+
+The final 1,753-file TEMP source passed all four formatting commands and strict all-feature/all-target Clippy. The full normal all-feature run passed **3,699 tests, with zero failures and three existing ignored golden fixtures**, across 74 groups, including 2,611 library tests and 24 doctests. The ignored fixtures supply no execution credit. The source, basis and 1,751-file managed image were unchanged throughout the measured intervals.
+
+The source documentation census covers 36 changed physical Rust files. All **602 selected callable bodies and 104 selected named types** have adjacent Rustdoc. The callable population is 356 production lexical bodies, 18 inline test bodies and 228 physical external test bodies. This is a lexical/position selection without AST, macro or cfg expansion; it excludes fields, enum variants and semicolon prototypes. The broader complete changed-file callable population has 866 documented bodies out of 960, leaving 94 unchanged legacy gaps. These populations overlap and must not be added. All 141 selected literal test declarations correlate by unique names to passing actual normal results; that correlation supplies no additional tests or platform credit.
+
+A fresh library-only LLVM run passed **2,611 tests, with zero failures and zero ignored controls**. Four new exclusive raw profiles were retained; the Cargo target was reused. Merge and export preserve their actual binary/source/profile interval pins. The physical file measurements below include full unchanged lines, inline tests, derived code and legacy bodies; they do not measure only changed code or the selected Rustdoc bodies.
+
+| Measured physical file cohort | Covered lines | Covered functions |
+| --- | --- | --- |
+| All 36 changed physical Rust files | 16,275 / 18,206 (89.394%) | 1,385 / 1,557 (88.953%) |
+| 28 source files, including inline/derived/legacy code | 12,095 / 13,959 (86.647%) | 1,076 / 1,232 (87.338%) |
+| Eight external test files | 4,180 / 4,247 (98.422%) | 309 / 325 (95.077%) |
+
+All 36 physical files are present in the actual export. Branches have a zero denominator and remain unmeasured; no branch, MC/DC, production-only, changed-line, compiled-CLI instrumentation or multi-platform coverage follows from these figures. Normal integration/doctest populations are separate from library instrumentation.
+
+The compiled macOS CLI campaign passed on the same final source image: eight child commands (one build, one Applicability scaffold and six Lifecycle commands) exited successfully, followed by two real stdio workers that both exited cleanly with empty stderr and trailing output. The workers completed 14 actual transactions: 13 on explicit `/2` (discovery, tool listing, all seven tools, two cursor continuations, source-drift refusal and restoration) and one default `/1` refusal of `/2` declarations. Source, basis, managed files and the compiled binary were unchanged throughout that measured interval. These transactions are a separate population from tests and library coverage. They qualify this synthetic macOS campaign; they do not establish two independent clients, broader platform runtime, network isolation or an active publication-race proof.
+
+The earlier campaign using `--output app.json` failed during Applicability scaffold setup with exit 2, before any worker or transaction ran. The successful campaign uses `--output ./app.json`, with an explicit parent. The bare-filename parent-resolution limitation is retained; this recipe change is not a product fix.
+
+The earlier 187-control component campaign remains a separate historical population and must not be added to the normal run. Its 182-pass/1-failure predecessor and 0-pass/1-failure diagnostic remain preserved. The combined strict V1–V3 failures are retained; V4's success does not retroactively change them. Original App 25-pass/2-failure and subsequent qualified repair intervals remain dated evidence, not new owner acceptance.
+
+The intended managed integration and hosted/platform qualification remain pending for this exact candidate. Real external project-owner records, two independent MCP clients, adjudicated corpus/raw-document baseline evaluation, absent resource/native families and human acceptance remain open. This guide does not complete PRD 067 S-1–S-4, make a validation-only offline gate an index builder/publisher, or close the full-goal documentation review.

@@ -10,6 +10,16 @@
 #[path = "disclosure.rs"]
 pub(crate) mod disclosure;
 
+/// Genuine same-owner held-original capture foundation.
+#[path = "capture_v2.rs"]
+pub(crate) mod capture_v2;
+/// Exact shared-admission declaration codec for actual offline capture.
+#[path = "declarations_v2.rs"]
+pub(crate) mod declarations_v2;
+/// Actual offline input controller; no index is built or published.
+#[path = "index_build.rs"]
+pub(crate) mod index_build;
+
 /// Shipped offline schemas and actual tool admission.
 #[path = "catalog.rs"]
 pub(crate) mod catalog;
@@ -27,6 +37,29 @@ use std::collections::BTreeSet;
 use std::io::{self, Write};
 use std::path::{Component, Path};
 use std::rc::Rc;
+
+#[path = "native_applicability_v2.rs"]
+mod native_applicability_v2;
+/// Actual complete lifecycle/native-source closure over the held /2 owner.
+#[path = "native_closure_v2.rs"]
+mod native_closure_v2;
+/// Genuine purpose-qualified native/offline gate; no raw/boolean proof conversion.
+#[path = "native_domain_v2.rs"]
+mod native_domain_v2;
+/// Genuine maintained complete Catalog inventory; Profile domain remains unavailable.
+#[path = "native_inventory_v2.rs"]
+mod native_inventory_v2;
+/// Exact complete native requirement tuples with actual located pointers.
+#[path = "native_requirements_v2.rs"]
+mod native_requirements_v2;
+#[path = "native_sources_v2.rs"]
+pub(crate) mod native_sources_v2;
+/// Same-original operand/admitted-data work for genuine /2 native consumers.
+#[path = "native_work_v2.rs"]
+mod native_work_v2;
+/// Pure borrowed native requirement traversal; no capture/approval constructor.
+#[path = "requirement_walk.rs"]
+pub(crate) mod requirement_walk;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

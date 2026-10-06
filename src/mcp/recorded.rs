@@ -686,3 +686,7 @@ fn mapping_citation(
         artifact_role: Role::MappingCollection,
     })
 }
+
+/// Genuine /2 projection privately reuses the existing closed result DTOs.
+#[path = "recorded_v2.rs"]
+pub(super) mod v2;

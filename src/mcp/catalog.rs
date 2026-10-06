@@ -51,6 +51,17 @@ const TOOLS: [(&str, &str, &str); 7] = [
 pub(super) struct Catalog {
     /// Seven fixed rows built only from shipped literal schemas.
     tools: Vec<Tool>,
+    /// Explicit worker-selected intake family; client metadata cannot change it.
+    intake: Intake,
+}
+
+/// Fixed constructor choice preserves the ordinary /1 default and its admission body.
+#[derive(Clone, Copy)]
+enum Intake {
+    /// Maintained default request admission, including its 128-byte selectors.
+    V1,
+    /// Actual /2 worker uses the complete 4096-byte native selector domain.
+    V2,
 }
 
 /// One fixed tool definition and its consumed complete input/output validators.
@@ -97,7 +108,42 @@ impl Catalog {
                 .map_err(|_| Fault::Internal)?;
             tools.push(Tool { name, input, output, input_validator, output_validator });
         }
-        Ok(Self { tools })
+        Ok(Self { tools, intake: Intake::V1 })
+    }
+    /// Select /2 intake only through the actual selected worker's static constructor.
+    pub(super) fn new_v2() -> Result<Self, Fault> {
+        let mut catalog = Self::new()?;
+        catalog.intake = Intake::V2;
+        Ok(catalog)
+    }
+    /// Pump shares unchanged machine/framing semantics with a fixed private intake choice.
+    pub(super) fn selected_admit(&self, request: &mut Request) -> Result<Operation, Fault> {
+        match self.intake {
+            Intake::V1 => self.admit(request),
+            Intake::V2 => self.admit_v2(request),
+        }
+    }
+    /// Consume unchanged static schemas/closed params with the additive native /2 selector domain.
+    fn admit_v2(&self, request: &mut Request) -> Result<Operation, Fault> {
+        if request.method != "tools/call" {
+            return self.admit(request);
+        }
+        closed(&request.params, &["_meta", "name", "arguments"])?;
+        let name = request.params.get("name").and_then(Value::as_str).ok_or(Fault::Params)?;
+        let tool = self.tools.iter().find(|tool| tool.name == name).ok_or(Fault::Params)?;
+        let arguments =
+            request.params.remove("arguments").unwrap_or_else(|| Value::Object(Map::new()));
+        if !tool.input_validator.is_valid(&arguments) {
+            return Err(Fault::Params);
+        }
+        let input: Arguments = serde_json::from_value(arguments).map_err(|_| Fault::Params)?;
+        let query = input.query(tool.name)?;
+        queries::validate_query_v2(&query).map_err(|_| Fault::Params)?;
+        Ok(Operation::Call(query))
+    }
+    /// Borrow the fixed shipped output operand for same-owner /2 validation admission.
+    pub(super) fn output_schema(&self, name: &str) -> Option<&Value> {
+        self.tools.iter().find(|tool| tool.name == name).map(|tool| &tool.output)
     }
     /// Admit method-specific closed params and consume the real per-tool schema.
     pub(super) fn admit(&self, request: &mut Request) -> Result<Operation, Fault> {

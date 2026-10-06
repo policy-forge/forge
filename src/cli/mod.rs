@@ -393,12 +393,24 @@ pub enum Commands {
     },
 }
 
+/// Explicit closed MCP declaration family; selection occurs before any capture opens.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, clap::ValueEnum)]
+pub enum McpDeclarationFamily {
+    /// Preserve the existing /1 runtime and declarations (default).
+    V1,
+    /// Consume only genuine /2 `ServerRead` owners; unsupported families remain unavailable.
+    V2,
+}
+
 /// Explicit local read-only MCP operations.
 #[derive(Subcommand)]
 #[deny(missing_docs)]
 pub enum McpCommand {
     /// Run one MCP 2026-07-28 stdio worker with explicit project and disclosure pins
     Serve {
+        /// Select explicit declaration family before capture; v1 preserves the existing path
+        #[arg(long, value_enum, default_value = "v1")]
+        declaration_family: McpDeclarationFamily,
         /// Project root; static discovery and missing decision pairs do not read it
         #[arg(long)]
         project: PathBuf,
@@ -411,6 +423,21 @@ pub enum McpCommand {
         /// Exact raw SHA-256 of the project's declared visibility-profile original
         #[arg(long)]
         profile_sha256: Option<String>,
+    },
+    /// Check complete declared offline index inputs through their real native owner
+    CheckIndexInputs {
+        /// Actual project root containing the intended discovery and visibility originals
+        #[arg(long)]
+        project: PathBuf,
+        /// Separate confined root containing the immutable explicit index-build intent
+        #[arg(long)]
+        intent_root: PathBuf,
+        /// Exact complete raw SHA-256 of the intent original
+        #[arg(long)]
+        intent_sha256: String,
+        /// Exact complete raw SHA-256 of the intended visibility-profile original
+        #[arg(long)]
+        profile_sha256: String,
     },
 }
 
@@ -1833,13 +1860,26 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
     reject_unsupported_config_selector(cli)?;
     match &cli.command {
         Commands::Mcp { command } => match command {
-            McpCommand::Serve { project, decision_root, decision_sha256, profile_sha256 } => {
-                crate::mcp::serve(
-                    project,
-                    decision_root.as_deref(),
-                    decision_sha256.as_deref(),
-                    profile_sha256.as_deref(),
-                )
+            McpCommand::Serve {
+                project,
+                decision_root,
+                decision_sha256,
+                profile_sha256,
+                declaration_family,
+            } => crate::mcp::serve_selected(
+                project,
+                decision_root.as_deref(),
+                decision_sha256.as_deref(),
+                profile_sha256.as_deref(),
+                *declaration_family,
+            ),
+            McpCommand::CheckIndexInputs {
+                project,
+                intent_root,
+                intent_sha256,
+                profile_sha256,
+            } => {
+                crate::mcp::check_index_inputs(project, intent_root, intent_sha256, profile_sha256)
             }
         },
         Commands::Workspace { project, read_only, machine_session, no_open, api_major } => {
@@ -2625,7 +2665,8 @@ mod tests {
         ])
         .unwrap();
         let Commands::Mcp {
-            command: McpCommand::Serve { project, decision_root, decision_sha256, profile_sha256 },
+            command:
+                McpCommand::Serve { project, decision_root, decision_sha256, profile_sha256, .. },
         } = cli.command
         else {
             panic!("expected explicit MCP serve command")
@@ -2647,7 +2688,9 @@ mod tests {
             let cli = Cli::try_parse_from(arguments).unwrap();
             let Commands::Mcp {
                 command:
-                    McpCommand::Serve { project, decision_root, decision_sha256, profile_sha256 },
+                    McpCommand::Serve {
+                        project, decision_root, decision_sha256, profile_sha256, ..
+                    },
             } = cli.command
             else {
                 panic!("expected explicit MCP serve command")

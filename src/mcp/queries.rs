@@ -1030,3 +1030,89 @@ fn contains_token(text: &str, token: &str, control: &mut dyn WorkControl) -> Que
 #[cfg(test)]
 #[path = "queries_tests.rs"]
 pub(super) mod tests;
+
+/// Actual /2 prepared dispatch retains each private native owner's complete data and fences.
+pub(super) enum PreparedDispatchV2<'scope, 'control, C: WorkControl + ?Sized> {
+    /// Existing recorded App preparation and byte-ticket behavior remain unchanged.
+    App(recorded::v2::PreparedQueryV2<'scope, 'control, C>),
+    /// Five ordinary native projections share the same original accepted owner.
+    Ordinary(ordinary_v2::PreparedOrdinaryV2<'scope, 'control, C>),
+}
+impl<C: WorkControl + ?Sized> PreparedDispatchV2<'_, '_, C> {
+    /// Borrow exact typed data from its actual retained producer.
+    pub(super) fn response(&self) -> &QueryResponse {
+        match self {
+            Self::App(value) => value.response(),
+            Self::Ordinary(value) => value.response(),
+        }
+    }
+    /// Repeat the genuine producer's complete physical verification after encoding.
+    pub(super) fn verify_inputs(&self) -> crate::workspace::preparation::WorkResult<()> {
+        match self {
+            Self::App(value) => value.verify_inputs(),
+            Self::Ordinary(value) => value.verify_inputs(),
+        }
+    }
+}
+
+/// Select genuine preparation without a /1 fallback or conversion of DTOs into owners.
+pub(super) fn prepare_v2<'scope, 'control, C: WorkControl + ?Sized>(
+    scope: &'scope super::native_sources_v2::ServerNativeScopeV2<'control, C>,
+    query: &Query,
+) -> QueryResult<PreparedDispatchV2<'scope, 'control, C>> {
+    match query {
+        Query::GetRecordedApplicability { .. } | Query::GetGapSummary { .. } => {
+            recorded::v2::prepare(scope, query).map(PreparedDispatchV2::App)
+        }
+        _ => ordinary_v2::prepare(scope, query).map(PreparedDispatchV2::Ordinary),
+    }
+}
+
+/// Encode and validate a complete /2 wire envelope on the original owner before publication.
+pub(super) fn encode_v2<C: WorkControl + ?Sized>(
+    scope: &super::native_sources_v2::ServerNativeScopeV2<'_, C>,
+    response: &QueryResponse,
+    id: &super::wire::RequestId,
+    catalog: &super::catalog::Catalog,
+    is_error: bool,
+) -> QueryResult<super::capture_v2::AdmittedValue<Vec<u8>>> {
+    recorded::v2::encode(scope, response, id, catalog, is_error)
+}
+
+/// Five ordinary projections consume only the genuine complete /2 ServerRead factory.
+#[path = "ordinary_queries_v2.rs"]
+mod ordinary_v2;
+
+/// Exact native selectors use the actual 4096-byte domain, with original UTF-8 spelling.
+pub(super) fn native_selector(value: &str) -> bool {
+    (1..=4096).contains(&value.len())
+}
+
+/// /2 intake expands only native GetRequirement/Trace selectors; all /1 admission stays separate.
+pub(super) fn validate_query_v2(query: &Query) -> QueryResult<()> {
+    let (key, selection, page) = match query {
+        Query::GetRequirement { artifact_key, requirement_id, .. } => {
+            (Some(artifact_key.as_str()), Some(requirement_id.as_str()), None)
+        }
+        Query::TraceControl { artifact_key, control_id, page } => {
+            (Some(artifact_key.as_str()), Some(control_id.as_str()), Some(page))
+        }
+        Query::SearchRequirements { query, artifact_key, page, .. } => {
+            if query.is_empty() || query.len() > MAX_QUERY || query.chars().any(char::is_control) {
+                return Err(Reason::NotFound.into());
+            }
+            (artifact_key.as_deref(), None, Some(page))
+        }
+        _ => return validate_query(query),
+    };
+    if key.is_some_and(|key| !safe_token(key))
+        || selection.is_some_and(|id| !native_selector(id))
+        || page.is_some_and(|page| {
+            !(1..=MAX_PAGE).contains(&page.limit)
+                || page.cursor.as_ref().is_some_and(|cursor| cursor.len() > 256)
+        })
+    {
+        return Err(Reason::NotFound.into());
+    }
+    Ok(())
+}

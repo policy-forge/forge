@@ -60,6 +60,49 @@ pub(crate) struct MappingInput<'a> {
     pub(crate) bytes: &'a [u8],
 }
 
+/// Plain Catalog input borrowing a complete maintained inventory from its real owner.
+///
+/// This input grants no capture, lifecycle, approval or disclosure capability. The caller
+/// retains the actual inventory and original bytes; this helper binds their raw evidence.
+#[derive(Clone, Copy)]
+pub(crate) struct BorrowedCatalogInput<'a> {
+    /// Complete exact original candidate, with no Profile companion substitution.
+    pub(crate) input: NativeInput<'a>,
+    /// Whole maintained Catalog inventory, never a selected control/statement subset.
+    pub(crate) loaded: &'a LoadedResource,
+}
+
+/// Private storage preserves the original owned path and the additive complete borrow.
+enum NativeInventory<'a> {
+    /// Existing byte consumer owns the full maintained loader output.
+    Owned(LoadedResource),
+    /// The real inventory remains owned externally; declared report evidence is retained here.
+    Borrowed {
+        /// Complete immutable maintained inventory and original native evidence.
+        loaded: &'a LoadedResource,
+        /// Exact declared href overlay without altering the externally owned resource.
+        evidence: ResourceEvidence,
+    },
+}
+
+impl NativeInventory<'_> {
+    /// Borrow the same complete inventory for all maintained semantic routines.
+    fn resource(&self) -> &LoadedResource {
+        match self {
+            Self::Owned(loaded) => loaded,
+            Self::Borrowed { loaded, .. } => loaded,
+        }
+    }
+
+    /// Preserve manifest-facing evidence separately from the source owner's href.
+    fn evidence(&self) -> &ResourceEvidence {
+        match self {
+            Self::Owned(loaded) => &loaded.evidence,
+            Self::Borrowed { evidence, .. } => evidence,
+        }
+    }
+}
+
 /// One admitted native header and a lazily needed complete effective inventory.
 struct NativePrepared<'a> {
     /// Actual caller-supplied borrowed original candidate.
@@ -67,7 +110,7 @@ struct NativePrepared<'a> {
     /// Maintained schema-admitted actual native identity and original hashes.
     evidence: ResourceEvidence,
     /// Complete maintained inventory only when the framework or a source needs it.
-    loaded: Option<LoadedResource>,
+    loaded: Option<NativeInventory<'a>>,
 }
 
 /// Retained native Mapping semantics without duplicating hrefs per control.
@@ -236,9 +279,106 @@ pub(crate) fn prepare<'a>(
     if natives[framework].input.resource_type != manifest.framework.resource_type {
         return Err(invalid());
     }
-    natives[framework].loaded =
-        Some(load_native(&natives[framework].input, &manifest.framework, charge, control)?);
-    let framework_loaded = natives[framework].loaded.as_ref().ok_or_else(invalid)?;
+    natives[framework].loaded = Some(NativeInventory::Owned(load_native(
+        &natives[framework].input,
+        &manifest.framework,
+        charge,
+        control,
+    )?));
+    finish_preparation(manifest_bytes, manifest, natives, framework, mappings, charge, control)
+}
+
+/// Consume only complete Catalog inventories, preserving every maintained manifest/report rule.
+///
+/// The original `prepare` keeps its native validation/load path. This additive plain-data
+/// path performs no native parse/schema/inventory rebuild and cannot issue native authority.
+/// Explicit Profile/companion or Mapping declarations refuse the entire borrowed path.
+pub(crate) fn prepare_borrowed_catalog<'a>(
+    manifest_bytes: &'a [u8],
+    framework_key: &str,
+    inputs: &[BorrowedCatalogInput<'a>],
+    charge: &mut dyn FnMut(usize) -> WorkResult<()>,
+    control: &mut dyn WorkControl,
+) -> WorkResult<PreparedApplicability<'a>> {
+    fence(control)?;
+    let value = strict(manifest_bytes, MAX_DOMAIN)?;
+    admit_json(&value, 0, charge, control)?;
+    let manifest = domain(manifest::parse(manifest_bytes))?;
+    if inputs.len() > MAX_NATIVES
+        || manifest.framework.resource_type != ResourceType::Catalog
+        || !manifest.mapping_collections.is_empty()
+    {
+        return Err(invalid());
+    }
+    let mut natives = borrowed_headers(inputs, charge, control)?;
+    let framework = unique_key(&natives, framework_key)?;
+    let loaded = inputs[framework].loaded;
+    if manifest
+        .framework
+        .expected_sha256
+        .as_ref()
+        .is_some_and(|expected| expected != &loaded.evidence.raw_sha256)
+    {
+        return Err(invalid());
+    }
+    if let Some(expected) = &manifest.framework.inventory
+        && expected != &loaded.snapshot()
+    {
+        return Err(invalid());
+    }
+    // Copy only actual native metadata plus the manifest's complete private href. The full
+    // inventory remains borrowed from its owner and is never cloned or reconstructed here.
+    charge(1)?;
+    let mut evidence = loaded.evidence.clone();
+    evidence.href.clone_from(&manifest.framework.href);
+    natives[framework].loaded = Some(NativeInventory::Borrowed { loaded, evidence });
+    finish_preparation(manifest_bytes, manifest, natives, framework, &[], charge, control)
+}
+
+/// Bind each exact Catalog original to its complete borrowed loader output before growth.
+fn borrowed_headers<'a>(
+    inputs: &[BorrowedCatalogInput<'a>],
+    charge: &mut dyn FnMut(usize) -> WorkResult<()>,
+    control: &mut dyn WorkControl,
+) -> WorkResult<Vec<NativePrepared<'a>>> {
+    let mut result: Vec<NativePrepared<'a>> = Vec::new();
+    for row in inputs {
+        fence(control)?;
+        let input = row.input;
+        let loaded = row.loaded;
+        if input.key.is_empty()
+            || input.bytes.len() > MAX_RAW
+            || input.resource_type != ResourceType::Catalog
+            || input.resolved_catalog.is_some()
+            || loaded.evidence.resource_type != ResourceType::Catalog
+            || loaded.evidence.resolved_catalog_sha256.is_some()
+            || result.iter().any(|old| old.input.key == input.key)
+        {
+            return Err(invalid());
+        }
+        if sha256_hex(input.bytes) != loaded.evidence.raw_sha256 {
+            return Err(invalid());
+        }
+        charge(1)?;
+        let mut evidence = loaded.evidence.clone();
+        input.key.clone_into(&mut evidence.href);
+        result.push(NativePrepared { input, evidence, loaded: None });
+    }
+    fence(control)?;
+    Ok(result)
+}
+
+/// Share complete decision, Mapping, classification and denominator semantics across both paths.
+fn finish_preparation<'a>(
+    manifest_bytes: &[u8],
+    manifest: manifest::ApplicabilityManifest,
+    natives: Vec<NativePrepared<'a>>,
+    framework: usize,
+    mappings: &[MappingInput<'a>],
+    charge: &mut dyn FnMut(usize) -> WorkResult<()>,
+    control: &mut dyn WorkControl,
+) -> WorkResult<PreparedApplicability<'a>> {
+    let framework_loaded = natives[framework].loaded.as_ref().ok_or_else(invalid)?.resource();
     if framework_loaded.inventory.count(SubjectType::Control) > MAX_CONTROLS {
         return Err(invalid());
     }
@@ -474,7 +614,8 @@ fn prepare_mappings<'a>(
         let collection = domain(super::decode_mapping_value("captured Mapping", value))?;
         let sources = match_sources(prepared, &collection, charge, control)?;
         let collection_index = prepared.mappings.len();
-        let framework = prepared.natives[prepared.framework].loaded.as_ref().ok_or_else(invalid)?;
+        let framework =
+            prepared.natives[prepared.framework].loaded.as_ref().ok_or_else(invalid)?.resource();
         let facts = &mut prepared.facts;
         let evidence = domain(super::validate_mapping_collection(
             "captured Mapping",
@@ -558,10 +699,14 @@ fn match_sources(
         let source = matching_native(&prepared.natives, &evidence, control)?;
         if prepared.natives[source].loaded.is_none() {
             let input = prepared.natives[source].input;
-            prepared.natives[source].loaded =
-                Some(load_native(&input, &bare_resource(&input), charge, control)?);
+            prepared.natives[source].loaded = Some(NativeInventory::Owned(load_native(
+                &input,
+                &bare_resource(&input),
+                charge,
+                control,
+            )?));
         }
-        let loaded = prepared.natives[source].loaded.as_ref().ok_or_else(invalid)?;
+        let loaded = prepared.natives[source].loaded.as_ref().ok_or_else(invalid)?.resource();
         for edge in &mapping.maps {
             for item in &edge.sources {
                 fence(control)?;
@@ -638,7 +783,11 @@ fn retain_pairs(
 impl PreparedApplicability<'_> {
     /// Borrow the full actual effective framework inventory, never a caller snapshot alone.
     fn framework_inventory(&self) -> WorkResult<&inventory::Inventory> {
-        self.natives[self.framework].loaded.as_ref().map(|row| &row.inventory).ok_or_else(invalid)
+        self.natives[self.framework]
+            .loaded
+            .as_ref()
+            .map(|row| &row.resource().inventory)
+            .ok_or_else(invalid)
     }
     /// Borrow the actual explicit source decision or preserve genuine omission.
     fn decision(&self, id: &str) -> Option<&manifest::ControlDecision> {
@@ -649,7 +798,7 @@ impl PreparedApplicability<'_> {
         self.natives[self.framework]
             .loaded
             .iter()
-            .flat_map(|row| row.inventory.ids_of_type_refs(SubjectType::Control))
+            .flat_map(|row| row.resource().inventory.ids_of_type_refs(SubjectType::Control))
             .map(|id| {
                 let decision = self.decision(id);
                 ControlRow {
@@ -768,7 +917,8 @@ impl PreparedApplicability<'_> {
         charge: &mut dyn FnMut(usize) -> WorkResult<()>,
         control: &mut dyn WorkControl,
     ) -> WorkResult<()> {
-        let framework = &self.natives[self.framework].loaded.as_ref().ok_or_else(invalid)?.evidence;
+        let framework =
+            self.natives[self.framework].loaded.as_ref().ok_or_else(invalid)?.evidence();
         let filters = &report.filters;
         if report.schema_version != model::REPORT_SCHEMA_VERSION
             || report.manifest_sha256 != self.manifest_sha256

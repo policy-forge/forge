@@ -303,7 +303,7 @@ impl<P: InputPort, W: Write> Pump<'_, P, W> {
                     self.machine.shutdown();
                     return Err(RunError::DuplicateId);
                 }
-                let admitted = self.catalog.admit(&mut request).and_then(|operation| {
+                let admitted = self.catalog.selected_admit(&mut request).and_then(|operation| {
                     self.machine.accept(id.clone(), operation, self.clock.now())
                 });
                 match admitted {
@@ -714,3 +714,47 @@ pub(crate) fn run_stdio(_startup: &Startup) -> Result<(), RunError> {
 #[cfg(test)]
 #[path = "stdio_tests.rs"]
 mod tests;
+
+/// Additive family dispatch; /1 remains the default and consumes its unchanged worker.
+#[path = "stdio_v2.rs"]
+mod v2;
+
+/// Select the declaration family before any project capture starts.
+pub(crate) fn run_selected<P: InputPort, W: Write>(
+    startup: &Startup,
+    family: crate::cli::McpDeclarationFamily,
+    input: P,
+    output: W,
+) -> Result<(), RunError> {
+    match family {
+        crate::cli::McpDeclarationFamily::V1 => run(startup, input, output),
+        crate::cli::McpDeclarationFamily::V2 => v2::run(startup, input, output),
+    }
+}
+/// Same native sole-reader Unix driver, with family selection before dispatch.
+#[cfg(unix)]
+pub(crate) fn run_stdio_selected(
+    startup: &Startup,
+    family: crate::cli::McpDeclarationFamily,
+) -> Result<(), RunError> {
+    let stdout = io::stdout();
+    run_selected(startup, family, UnixInput { fd: libc::STDIN_FILENO }, stdout.lock())
+}
+/// Same observed synchronous Windows byte-pipe driver, without a reader thread.
+#[cfg(windows)]
+pub(crate) fn run_stdio_selected(
+    startup: &Startup,
+    family: crate::cli::McpDeclarationFamily,
+) -> Result<(), RunError> {
+    let input = windows_input::WindowsInput::stdin().map_err(|_| RunError::Input)?;
+    let stdout = io::stdout();
+    run_selected(startup, family, input, stdout.lock())
+}
+/// No permissive success exists for platforms without a maintained native input driver.
+#[cfg(not(any(unix, windows)))]
+pub(crate) fn run_stdio_selected(
+    _startup: &Startup,
+    _family: crate::cli::McpDeclarationFamily,
+) -> Result<(), RunError> {
+    Err(RunError::UnsupportedPlatform)
+}

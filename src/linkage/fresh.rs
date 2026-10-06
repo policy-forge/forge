@@ -3,6 +3,10 @@
 //! Private proof constructors consume held native handles. Exact original bytes
 //! are rechecked with bounded streaming; URI references are never fetched.
 
+/// Non-authorizing complete actual native generation stream for /2 cursors.
+#[path = "fresh_generation_v2.rs"]
+pub(crate) mod generation_v2;
+
 use std::fs::{File, Metadata};
 use std::io::Read as _;
 use std::path::{Component, Path, PathBuf};
@@ -651,6 +655,536 @@ fn open_local(
     _allow_missing: bool,
 ) -> Result<OpenedLocal, ForgeError> {
     Err(error("evidence inspection native confinement is unsupported"))
+}
+
+/// Closed new geometry outcome preserves actual arithmetic capacity separately.
+#[derive(Debug)]
+pub(crate) enum NativeGeometryError {
+    /// Ordinary unsupported route/UTF-8 spelling, never raw IO/path content.
+    Domain(ForgeError),
+    /// Checked footprint/envelope arithmetic exceeded supported representation.
+    Capacity,
+}
+
+/// Actual logical native owner footprint, not a detached generation proof.
+///
+/// Retained path bytes plus 64 per generation record form a conservative logical
+/// payload metric. Vec/File/parser scratch overhead is not a measured heap claim.
+pub(crate) struct NativeGeometry {
+    /// Actual held File count, including retained ancestors and the original leaf.
+    handles: usize,
+    /// Actual retained UTF-8 path bytes and generation-record allowance.
+    payload: usize,
+}
+
+impl NativeGeometry {
+    /// Observe held native handles without constructing any owner or identity.
+    pub(crate) fn handles(&self) -> usize {
+        self.handles
+    }
+    /// Observe logical retained payload without exposing original paths/IDs.
+    pub(crate) fn payload(&self) -> usize {
+        self.payload
+    }
+}
+
+/// Conservative reservation for a real native operation, not proof authority.
+pub(crate) struct NativeEnvelope {
+    /// Complete extra live handle ceiling during this synchronous operation.
+    handles: usize,
+    /// Complete extra logical path/generation payload ceiling.
+    payload: usize,
+    /// Precharged native component/metadata/materialization work units.
+    work: usize,
+}
+
+impl NativeEnvelope {
+    /// Reserve all actual old/new native owners before the operation starts.
+    pub(crate) fn handles(&self) -> usize {
+        self.handles
+    }
+    /// Reserve intermediate path/generation construction before growth.
+    pub(crate) fn payload(&self) -> usize {
+        self.payload
+    }
+    /// Charge component/metadata/materialization work before native construction.
+    pub(crate) fn work(&self) -> usize {
+        self.work
+    }
+}
+
+/// Count one logical generation record and its actual retained UTF-8 path.
+fn generation_payload(path: &Path) -> Result<usize, NativeGeometryError> {
+    path.to_str()
+        .ok_or_else(|| NativeGeometryError::Domain(error("capture proof path is not UTF-8")))?
+        .len()
+        .checked_add(64)
+        .ok_or(NativeGeometryError::Capacity)
+}
+
+/// Measure only actual retained private generation vectors, not caller counts.
+fn ancestry_payload(ancestors: &[DirectoryGeneration]) -> Result<usize, NativeGeometryError> {
+    ancestors.iter().try_fold(0_usize, |total, ancestor| {
+        total.checked_add(generation_payload(&ancestor.path)?).ok_or(NativeGeometryError::Capacity)
+    })
+}
+
+impl RootGeneration {
+    /// Read the actual held-root vectors and private path after native construction.
+    pub(crate) fn geometry(&self) -> Result<NativeGeometry, NativeGeometryError> {
+        #[cfg(unix)]
+        let handles = self.directories.len();
+        #[cfg(not(unix))]
+        let handles = self._directories.len();
+        let payload = generation_payload(&self.path)?
+            .checked_add(ancestry_payload(&self.ancestors)?)
+            .ok_or(NativeGeometryError::Capacity)?;
+        Ok(NativeGeometry { handles, payload })
+    }
+}
+
+impl PreparedLocal {
+    /// Borrow the exact admitted route while the actual opened original remains held.
+    pub(crate) fn relative(&self) -> &Path {
+        &self.relative
+    }
+    /// Measure actual leaf/ancestor ownership before any original content read.
+    pub(crate) fn geometry(&self) -> Result<NativeGeometry, NativeGeometryError> {
+        let (handles, ancestors, missing) = match &self.opened {
+            OpenedLocal::Present(_, _, ancestors, directories) => (
+                directories.len().checked_add(1).ok_or(NativeGeometryError::Capacity)?,
+                ancestors,
+                None,
+            ),
+            OpenedLocal::Absent(missing, ancestors, directories) => {
+                (directories.len(), ancestors, Some(missing))
+            }
+        };
+        let mut payload = generation_payload(&self.relative)?
+            .checked_add(ancestry_payload(ancestors)?)
+            .ok_or(NativeGeometryError::Capacity)?;
+        if let Some(missing) = missing {
+            payload = payload
+                .checked_add(
+                    missing
+                        .to_str()
+                        .ok_or_else(|| {
+                            NativeGeometryError::Domain(error("capture proof path is not UTF-8"))
+                        })?
+                        .len(),
+                )
+                .ok_or(NativeGeometryError::Capacity)?;
+        }
+        Ok(NativeGeometry { handles, payload })
+    }
+}
+
+impl CapturedLocal {
+    /// Measure the actual resulting generation without duplicating its root owner.
+    #[expect(
+        clippy::used_underscore_binding,
+        reason = "The additive geometry reader measures the maintained private ownership fields without renaming or rewriting the original /1 native paths."
+    )]
+    pub(crate) fn geometry(&self) -> Result<NativeGeometry, NativeGeometryError> {
+        let (relative, ancestors, handles, missing) = match self {
+            Self::Present(_, file) => (
+                &file.relative,
+                &file.ancestors,
+                file._directories.len().checked_add(1).ok_or(NativeGeometryError::Capacity)?,
+                None,
+            ),
+            Self::Absent(absence) => (
+                &absence.relative,
+                &absence.ancestors,
+                absence._directories.len(),
+                Some(&absence.missing),
+            ),
+        };
+        let mut payload = generation_payload(relative)?
+            .checked_add(ancestry_payload(ancestors)?)
+            .ok_or(NativeGeometryError::Capacity)?;
+        if let Some(missing) = missing {
+            payload = payload
+                .checked_add(
+                    missing
+                        .to_str()
+                        .ok_or_else(|| {
+                            NativeGeometryError::Domain(error("capture proof path is not UTF-8"))
+                        })?
+                        .len(),
+                )
+                .ok_or(NativeGeometryError::Capacity)?;
+        }
+        Ok(NativeGeometry { handles, payload })
+    }
+    /// Borrow the original route; absence retains its whole requested route too.
+    pub(crate) fn relative(&self) -> &Path {
+        match self {
+            Self::Present(_, file) => &file.relative,
+            Self::Absent(absence) => &absence.relative,
+        }
+    }
+}
+
+/// Reserve absolute root request geometry before any normalization/path/native growth.
+/// Actual normalization and retained geometry come from the real qualifying constructor.
+pub(crate) fn root_envelope(root: &Path) -> Result<NativeEnvelope, NativeGeometryError> {
+    if !root.is_absolute()
+        || root.components().any(|part| matches!(part, Component::CurDir | Component::ParentDir))
+    {
+        return Err(NativeGeometryError::Domain(error("capture root spelling is unsupported")));
+    }
+    let length = root
+        .to_str()
+        .ok_or_else(|| NativeGeometryError::Domain(error("capture root is not UTF-8")))?
+        .len();
+    let handles = root
+        .components()
+        .filter(|part| matches!(part, Component::Normal(_)))
+        .count()
+        .checked_add(1)
+        .ok_or(NativeGeometryError::Capacity)?;
+    let records = handles.checked_add(1).ok_or(NativeGeometryError::Capacity)?;
+    let payload = length
+        .checked_add(64)
+        .and_then(|per| per.checked_mul(records))
+        .ok_or(NativeGeometryError::Capacity)?;
+    let work = handles.checked_mul(4).ok_or(NativeGeometryError::Capacity)?;
+    Ok(NativeEnvelope { handles, payload, work })
+}
+
+/// Bound a real descendant constructor/recheck, including Unix parent clones.
+/// Directory walks retain all K descendants; file/absence retain at most K.
+/// A simultaneous root requalification adds R; two parent clones add two.
+pub(crate) fn descendant_envelope(
+    root: &RootGeneration,
+    relative: &Path,
+) -> Result<NativeEnvelope, NativeGeometryError> {
+    // The real constructor checks complete raw normalized spelling under this reservation.
+    // Counting Normal components here needs no preliminary PathBuf allocation.
+    if relative.as_os_str().is_empty()
+        || relative.components().any(|part| !matches!(part, Component::Normal(_)))
+    {
+        return Err(NativeGeometryError::Domain(error("capture route is not a descendant")));
+    }
+    let length = relative
+        .to_str()
+        .ok_or_else(|| NativeGeometryError::Domain(error("capture route is not UTF-8")))?
+        .len();
+    let root_length = root
+        .path
+        .to_str()
+        .ok_or_else(|| NativeGeometryError::Domain(error("capture root is not UTF-8")))?
+        .len();
+    let components = relative.components().count();
+    let absolute = root_length
+        .checked_add(1)
+        .and_then(|n| n.checked_add(length))
+        .ok_or(NativeGeometryError::Capacity)?;
+    let per = absolute.checked_add(64).ok_or(NativeGeometryError::Capacity)?;
+    let root_geometry = root.geometry()?;
+    let handles = components
+        .checked_add(root_geometry.handles)
+        .and_then(|n| n.checked_add(2))
+        .ok_or(NativeGeometryError::Capacity)?;
+    // Two relative copies cover the requested route and actual first missing path.
+    // Two additional full paths cover mutable native traversal scratch/record construction.
+    let records = components.checked_add(2).ok_or(NativeGeometryError::Capacity)?;
+    let payload = per
+        .checked_mul(records)
+        .and_then(|n| n.checked_add(length.checked_mul(2)?))
+        .and_then(|n| n.checked_add(64))
+        .and_then(|n| n.checked_add(root_geometry.payload))
+        .ok_or(NativeGeometryError::Capacity)?;
+    // Every descendant open/clone/metadata/record and both root requalifications.
+    let work = components
+        .checked_add(root_geometry.handles.checked_mul(2).ok_or(NativeGeometryError::Capacity)?)
+        .and_then(|n| n.checked_mul(4))
+        .ok_or(NativeGeometryError::Capacity)?;
+    Ok(NativeEnvelope { handles, payload, work })
+}
+
+/// Complete actual contained directory original, with no caller-authored constructor.
+pub(crate) struct HeldDirectoryGeneration {
+    /// Actual qualified root retained throughout descendant generation lifetime.
+    root: Rc<RootGeneration>,
+    /// Exact normalized requested descendant spelling.
+    relative: PathBuf,
+    /// Actual final native directory identity, checked separately for alias refusal.
+    identity: (u64, u64),
+    /// Every actual descendant generation, including the final directory.
+    ancestors: Vec<DirectoryGeneration>,
+    /// Every actual descendant handle; Windows excludes DELETE sharing.
+    #[cfg_attr(
+        not(test),
+        expect(
+            dead_code,
+            reason = "Actual descendant handles must remain owned until the complete directory generation drops; production verification uses their recorded generations."
+        )
+    )]
+    directories: Vec<File>,
+}
+
+impl HeldDirectoryGeneration {
+    /// Read only the actual final directory identity for private alias refusal.
+    #[cfg(test)]
+    pub(crate) fn identity(&self) -> (u64, u64) {
+        self.identity
+    }
+    /// Borrow the original confined route without creating a new proof.
+    pub(crate) fn relative(&self) -> &Path {
+        &self.relative
+    }
+    /// Count actual owned private handle/path vectors after real construction.
+    #[cfg(test)]
+    pub(crate) fn geometry(&self) -> Result<NativeGeometry, NativeGeometryError> {
+        let payload = generation_payload(&self.relative)?
+            .checked_add(ancestry_payload(&self.ancestors)?)
+            .ok_or(NativeGeometryError::Capacity)?;
+        Ok(NativeGeometry { handles: self.directories.len(), payload })
+    }
+}
+
+/// Capture all actual safe directory ancestors, including an unused evidence root.
+pub(crate) fn prepare_directory(
+    root: Rc<RootGeneration>,
+    relative: &Path,
+) -> Result<HeldDirectoryGeneration, ForgeError> {
+    validate_relative(relative)?;
+    verify_root(&root)?;
+    let (ancestors, directories) = open_directory(&root, relative)?;
+    let identity = ancestors.last().ok_or_else(|| error("directory ancestry is missing"))?.identity;
+    verify_root(&root)?;
+    Ok(HeldDirectoryGeneration {
+        root,
+        relative: relative.to_path_buf(),
+        identity,
+        ancestors,
+        directories,
+    })
+}
+
+/// Recheck the whole held contained directory, never a child-file proxy.
+pub(crate) fn verify_directory(original: &HeldDirectoryGeneration) -> Result<(), ForgeError> {
+    let current = prepare_directory(Rc::clone(&original.root), &original.relative)?;
+    if current.identity != original.identity {
+        return Err(error("captured directory identity changed"));
+    }
+    compare_ancestors(&original.ancestors, &current.ancestors)
+}
+
+/// Unix all-directory walk uses the existing no-follow openat primitive.
+#[cfg(unix)]
+fn open_directory(
+    root: &RootGeneration,
+    relative: &Path,
+) -> Result<(Vec<DirectoryGeneration>, Vec<File>), ForgeError> {
+    let mut parent = root
+        .directories
+        .last()
+        .ok_or_else(|| error("root handle is missing"))?
+        .try_clone()
+        .map_err(|_| error("cannot retain root handle"))?;
+    let mut path = PathBuf::new();
+    let mut ancestors = Vec::new();
+    let mut directories = Vec::new();
+    for component in relative.components() {
+        let Component::Normal(name) = component else {
+            return Err(error("directory is not a descendant"));
+        };
+        let opened =
+            open_child(&parent, name, true).map_err(|_| error("cannot open safe directory"))?;
+        path.push(name);
+        ancestors.push(directory_generation(&opened, &root.path.join(&path))?);
+        parent = opened.try_clone().map_err(|_| error("cannot retain directory handle"))?;
+        directories.push(opened);
+    }
+    Ok((ancestors, directories))
+}
+
+/// Windows retains each real no-delete directory and rejects all reparse handles.
+#[cfg(windows)]
+fn open_directory(
+    root: &RootGeneration,
+    relative: &Path,
+) -> Result<(Vec<DirectoryGeneration>, Vec<File>), ForgeError> {
+    let mut path = root.path.clone();
+    let mut ancestors = Vec::new();
+    let mut directories = Vec::new();
+    for component in relative.components() {
+        let Component::Normal(name) = component else {
+            return Err(error("directory is not a descendant"));
+        };
+        path.push(name);
+        let opened = open_windows(&path, true).map_err(|_| error("cannot open safe directory"))?;
+        ancestors.push(directory_generation(&opened, &path)?);
+        directories.push(opened);
+    }
+    Ok((ancestors, directories))
+}
+
+/// Unsupported platforms cannot mint a path-only directory generation.
+#[cfg(not(any(unix, windows)))]
+fn open_directory(
+    _root: &RootGeneration,
+    _relative: &Path,
+) -> Result<(Vec<DirectoryGeneration>, Vec<File>), ForgeError> {
+    Err(error("native directory confinement is unsupported"))
+}
+
+/// Controlled new reader outcome preserves real caller stops and bound failures.
+pub(crate) enum AdmittedReadError<E> {
+    /// Ordinary minimized native failure; caller must still perform its post-fence.
+    #[expect(
+        dead_code,
+        reason = "Keep the actual native error payload alive through the original caller post-fence; disclosure deliberately minimizes it only afterward."
+    )]
+    Domain(ForgeError),
+    /// Exact failure of the original caller admission/control callback.
+    Admission(E),
+    /// Actual original growth exceeded the admitted complete read bound.
+    Capacity,
+}
+
+impl PreparedLocal {
+    /// New controlled consumer; the ordinary /1 reader remains byte-exact above.
+    pub(crate) fn read_admitted<E>(
+        self,
+        limit: u64,
+        admit: &mut dyn FnMut() -> Result<(), E>,
+    ) -> Result<CapturedLocal, AdmittedReadError<E>> {
+        let Self { root, relative, opened } = self;
+        let captured = match opened {
+            OpenedLocal::Present(mut file, identity, ancestors, directories) => {
+                let bytes = read_bounded_admitted(&mut file, limit, admit)?;
+                if file_identity(&file).map_err(AdmittedReadError::Domain)? != identity
+                    || file
+                        .metadata()
+                        .map_err(|_| AdmittedReadError::Domain(error("cannot inspect original")))?
+                        .len()
+                        != bytes.len() as u64
+                {
+                    return Err(AdmittedReadError::Domain(error(
+                        "original changed during capture",
+                    )));
+                }
+                CapturedLocal::Present(
+                    bytes,
+                    FileGeneration {
+                        root: Rc::clone(&root),
+                        relative,
+                        ancestors,
+                        identity,
+                        _file: file,
+                        _directories: directories,
+                    },
+                )
+            }
+            OpenedLocal::Absent(missing, ancestors, directories) => {
+                CapturedLocal::Absent(AbsenceGeneration {
+                    root: Rc::clone(&root),
+                    relative,
+                    missing,
+                    ancestors,
+                    _directories: directories,
+                })
+            }
+        };
+        verify_root(&root).map_err(AdmittedReadError::Domain)?;
+        Ok(captured)
+    }
+}
+
+/// Admit actual read attempts and append work on the original caller before growth.
+fn read_bounded_admitted<E>(
+    file: &mut File,
+    limit: u64,
+    admit: &mut dyn FnMut() -> Result<(), E>,
+) -> Result<Vec<u8>, AdmittedReadError<E>> {
+    admit().map_err(AdmittedReadError::Admission)?;
+    if file
+        .metadata()
+        .map_err(|_| AdmittedReadError::Domain(error("cannot inspect original")))?
+        .len()
+        > limit
+    {
+        return Err(AdmittedReadError::Capacity);
+    }
+    let mut bytes = Vec::new();
+    let mut scratch = vec![0_u8; SCRATCH_BYTES].into_boxed_slice();
+    loop {
+        admit().map_err(AdmittedReadError::Admission)?;
+        let result = file.read(&mut scratch);
+        // Retain even ordinary IO failure until the real post-read caller fence.
+        admit().map_err(AdmittedReadError::Admission)?;
+        let count = result.map_err(|_| AdmittedReadError::Domain(error("cannot read original")))?;
+        if count == 0 {
+            break;
+        }
+        let length = bytes.len().checked_add(count).ok_or(AdmittedReadError::Capacity)?;
+        if u64::try_from(length).map_err(|_| AdmittedReadError::Capacity)? > limit {
+            return Err(AdmittedReadError::Capacity);
+        }
+        admit().map_err(AdmittedReadError::Admission)?;
+        bytes.extend_from_slice(&scratch[..count]);
+    }
+    Ok(bytes)
+}
+
+/// Controlled new full-byte verifier; ordinary /1 verification stays unchanged.
+pub(crate) fn verify_file_admitted<E>(
+    original: &FileGeneration,
+    bytes: &[u8],
+    admit: &mut dyn FnMut() -> Result<(), E>,
+) -> Result<(), AdmittedReadError<E>> {
+    verify_root(&original.root).map_err(AdmittedReadError::Domain)?;
+    let OpenedLocal::Present(mut file, identity, ancestors, _directories) =
+        open_local(&original.root, &original.relative, false).map_err(AdmittedReadError::Domain)?
+    else {
+        return Err(AdmittedReadError::Domain(error("original is unavailable")));
+    };
+    compare_ancestors(&original.ancestors, &ancestors).map_err(AdmittedReadError::Domain)?;
+    if identity != original.identity
+        || file
+            .metadata()
+            .map_err(|_| AdmittedReadError::Domain(error("cannot inspect current original")))?
+            .len()
+            != bytes.len() as u64
+    {
+        return Err(AdmittedReadError::Domain(error("original identity or size changed")));
+    }
+    admit().map_err(AdmittedReadError::Admission)?;
+    let mut scratch = vec![0_u8; SCRATCH_BYTES].into_boxed_slice();
+    let mut offset = 0_usize;
+    loop {
+        admit().map_err(AdmittedReadError::Admission)?;
+        let result = file.read(&mut scratch);
+        admit().map_err(AdmittedReadError::Admission)?;
+        let count = result
+            .map_err(|_| AdmittedReadError::Domain(error("cannot recheck current original")))?;
+        if count == 0 {
+            break;
+        }
+        let end = offset
+            .checked_add(count)
+            .filter(|end| *end <= bytes.len())
+            .ok_or_else(|| AdmittedReadError::Domain(error("original bytes changed")))?;
+        if scratch[..count] != bytes[offset..end] {
+            return Err(AdmittedReadError::Domain(error("original bytes changed")));
+        }
+        offset = end;
+    }
+    if offset != bytes.len()
+        || file_identity(&file).map_err(AdmittedReadError::Domain)? != original.identity
+        || file
+            .metadata()
+            .map_err(|_| AdmittedReadError::Domain(error("cannot inspect rechecked original")))?
+            .len()
+            != bytes.len() as u64
+    {
+        return Err(AdmittedReadError::Domain(error("original changed during recheck")));
+    }
+    verify_root(&original.root).map_err(AdmittedReadError::Domain)
 }
 
 /// Keep all public inspection failures fixed/redacted rather than leaking private IO paths or content.

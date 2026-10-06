@@ -1,0 +1,1066 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "intent_key",
+    "project_key",
+    "discovery_sha256",
+    "profile_sha256",
+    "proposal_index_sha256",
+    "operator_boundary",
+    "visibility_profile",
+    "capture_roster",
+    "search_sources",
+    "destination",
+    "policy_decisions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.mcp-index-build-intent/1"
+    },
+    "intent_key": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "project_key": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "discovery_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "profile_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "proposal_index_sha256": {
+      "const": "365ac7ddbb2cb1058efdfc211a5a525babcbbd69c30557a5113126e0c616cde8"
+    },
+    "operator_boundary": {
+      "const": "operator-selected-declared-owner-record"
+    },
+    "visibility_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "project_key",
+        "discovery_sha256",
+        "enabled_tools",
+        "visible_resource_keys",
+        "noncurrent_metadata_keys",
+        "source_text_keys",
+        "schedule_keys",
+        "evidence_metadata_keys",
+        "static_report_keys",
+        "search_index_key",
+        "identity_disclosure",
+        "approved_current_basis",
+        "source_text_mode",
+        "schedule_mode",
+        "report_content_mode",
+        "evidence_bytes",
+        "network",
+        "process_execution",
+        "as_of",
+        "resource_families",
+        "index_fallback_mode"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "forge.mcp-visibility/2"
+        },
+        "project_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "discovery_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "enabled_tools": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "list_policies",
+              "search_requirements",
+              "get_requirement",
+              "trace_control",
+              "get_recorded_applicability",
+              "get_gap_summary",
+              "get_artifact_status"
+            ]
+          }
+        },
+        "visible_resource_keys": {
+          "type": "array",
+          "maxItems": 998,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        },
+        "noncurrent_metadata_keys": {
+          "type": "array",
+          "maxItems": 998,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        },
+        "source_text_keys": {
+          "type": "array",
+          "maxItems": 998,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        },
+        "schedule_keys": {
+          "type": "array",
+          "maxItems": 998,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        },
+        "evidence_metadata_keys": {
+          "type": "array",
+          "maxItems": 998,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        },
+        "static_report_keys": {
+          "type": "array",
+          "maxItems": 998,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        },
+        "search_index_key": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+            }
+          ]
+        },
+        "identity_disclosure": {
+          "const": "bounded-token-only"
+        },
+        "approved_current_basis": {
+          "const": "caller-established-recorded-policy"
+        },
+        "source_text_mode": {
+          "enum": [
+            "omit",
+            "exact-span-opt-in"
+          ]
+        },
+        "schedule_mode": {
+          "enum": [
+            "omit",
+            "explicit-as-of"
+          ]
+        },
+        "report_content_mode": {
+          "const": "minimized-metadata"
+        },
+        "evidence_bytes": {
+          "const": false
+        },
+        "network": {
+          "const": false
+        },
+        "process_execution": {
+          "const": false
+        },
+        "as_of": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 10,
+              "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+              "description": "Canonical ASCII10-byte YYYY-MM-DD; runtime maintained chrono calendar parse required, no system clock."
+            }
+          ]
+        },
+        "resource_families": {
+          "type": "array",
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "inventory",
+              "artifact-status",
+              "requirement-metadata",
+              "implementation-evidence",
+              "static-report"
+            ]
+          }
+        },
+        "index_fallback_mode": {
+          "enum": [
+            "refuse",
+            "direct-search"
+          ]
+        }
+      },
+      "description": "Proposed closed disclosure profile. Expected raw hash comes from a trusted caller. Profile bytes, a SHA256 pin, this constant, or self-reported owner/client fields do not authenticate an owner or establish approval. Complete runtime pairing/scope/policy checks required. Explicit date is part of actual raw profile/pin and captured proof, not client authority; complete mode/date/key pairing and calendar/native schedule checks required.",
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "schedule_mode"
+            ],
+            "properties": {
+              "schedule_mode": {
+                "const": "omit"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "as_of": {
+                "type": "null"
+              },
+              "schedule_keys": {
+                "maxItems": 0
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "schedule_mode"
+            ],
+            "properties": {
+              "schedule_mode": {
+                "const": "explicit-as-of"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "as_of": {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 10,
+                "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+                "description": "Canonical ASCII10-byte YYYY-MM-DD; runtime maintained chrono calendar parse required, no system clock."
+              },
+              "schedule_keys": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "capture_roster": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resources",
+        "companion_resources"
+      ],
+      "properties": {
+        "resources": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "role",
+              "path",
+              "expected_sha256",
+              "native_identity",
+              "lifecycle_key",
+              "citation_label"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+              },
+              "role": {
+                "enum": [
+                  "policy-source",
+                  "oscal-catalog-artifact",
+                  "oscal-component-artifact",
+                  "mapping-collection",
+                  "applicability-manifest",
+                  "applicability-report",
+                  "trace-report",
+                  "lifecycle-record",
+                  "lifecycle-source",
+                  "oscal-profile-artifact",
+                  "oscal-ssp-artifact",
+                  "framework-impact-manifest",
+                  "successor-map",
+                  "framework-impact-report",
+                  "framework-impact-dispositions"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "expected_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "native_identity": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "model",
+                      "root_id",
+                      "document_version",
+                      "oscal_version"
+                    ],
+                    "properties": {
+                      "model": {
+                        "enum": [
+                          "catalog",
+                          "component-definition",
+                          "profile",
+                          "system-security-plan",
+                          "mapping-collection"
+                        ]
+                      },
+                      "root_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 45
+                      },
+                      "document_version": {
+                        "type": "string",
+                        "maxLength": 4096
+                      },
+                      "oscal_version": {
+                        "type": "string",
+                        "maxLength": 64
+                      }
+                    }
+                  }
+                ]
+              },
+              "lifecycle_key": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  }
+                ]
+              },
+              "citation_label": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+              }
+            }
+          }
+        },
+        "companion_resources": {
+          "type": "array",
+          "maxItems": 1000,
+          "items": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "kind",
+                  "path",
+                  "expected_sha256",
+                  "citation_label",
+                  "lifecycle_key",
+                  "bindings"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  },
+                  "kind": {
+                    "const": "linkage-manifest"
+                  },
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "expected_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "citation_label": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  },
+                  "lifecycle_key": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  },
+                  "bindings": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "requirements",
+                      "implementation_resource_key",
+                      "local_evidence"
+                    ],
+                    "properties": {
+                      "requirements": {
+                        "type": "array",
+                        "maxItems": 64,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "requirement_key",
+                            "resource_key",
+                            "resolved_catalog_key"
+                          ],
+                          "properties": {
+                            "requirement_key": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                            },
+                            "resource_key": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                            },
+                            "resolved_catalog_key": {
+                              "anyOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "implementation_resource_key": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                      },
+                      "local_evidence": {
+                        "type": "array",
+                        "maxItems": 1000,
+                        "items": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "evidence_key",
+                            "resource_key"
+                          ],
+                          "properties": {
+                            "evidence_key": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                            },
+                            "resource_key": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "kind",
+                  "path",
+                  "expected_sha256",
+                  "citation_label",
+                  "expected_size"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  },
+                  "kind": {
+                    "const": "local-evidence"
+                  },
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "expected_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "citation_label": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  },
+                  "expected_size": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10485760
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "kind",
+                  "path",
+                  "expected_sha256",
+                  "citation_label",
+                  "report_format",
+                  "workspace_index_key"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  },
+                  "kind": {
+                    "const": "static-report"
+                  },
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "expected_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "citation_label": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  },
+                  "report_format": {
+                    "const": "forge.workspace-report/1"
+                  },
+                  "workspace_index_key": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "kind",
+                  "path",
+                  "expected_sha256",
+                  "citation_label"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  },
+                  "kind": {
+                    "const": "workspace-index-metadata"
+                  },
+                  "path": {
+                    "const": "forge.workspace.json"
+                  },
+                  "expected_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "citation_label": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "key",
+                  "kind",
+                  "path",
+                  "citation_label",
+                  "index_format"
+                ],
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  },
+                  "kind": {
+                    "const": "search-index"
+                  },
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "citation_label": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  },
+                  "index_format": {
+                    "const": "forge.mcp-search-index/1"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "search_sources": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact_key",
+          "artifact_role",
+          "artifact_identity",
+          "artifact_raw_sha256",
+          "native_id",
+          "control_id",
+          "native_pointer",
+          "source_key",
+          "source_raw_sha256",
+          "source_span",
+          "lifecycle_key"
+        ],
+        "properties": {
+          "artifact_key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "artifact_role": {
+            "enum": [
+              "oscal-catalog-artifact",
+              "oscal-component-artifact"
+            ]
+          },
+          "artifact_identity": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "model",
+              "root_id",
+              "document_version",
+              "oscal_version"
+            ],
+            "properties": {
+              "model": {
+                "enum": [
+                  "catalog",
+                  "component-definition",
+                  "profile",
+                  "system-security-plan",
+                  "mapping-collection"
+                ]
+              },
+              "root_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 45
+              },
+              "document_version": {
+                "type": "string",
+                "maxLength": 4096
+              },
+              "oscal_version": {
+                "type": "string",
+                "maxLength": 64
+              }
+            }
+          },
+          "artifact_raw_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "native_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "control_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "native_pointer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "source_key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          },
+          "source_raw_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "source_span": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "start_byte",
+              "end_byte"
+            ],
+            "properties": {
+              "start_byte": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10485760
+              },
+              "end_byte": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10485760
+              }
+            }
+          },
+          "lifecycle_key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+          }
+        }
+      }
+    },
+    "destination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "path",
+        "index_format",
+        "tokenizer_identity"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "index_format": {
+          "const": "forge.mcp-search-index/1"
+        },
+        "tokenizer_identity": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        }
+      }
+    },
+    "policy_decisions": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subject",
+          "role",
+          "disposition",
+          "declared_owner_key",
+          "recorded_on",
+          "source_record_key",
+          "source_record_sha256",
+          "proposal_index_sha256",
+          "profile_sha256",
+          "discovery_sha256"
+        ],
+        "properties": {
+          "subject": {
+            "enum": [
+              "F20-BUILD",
+              "F20-SOURCE",
+              "F20-INDEX"
+            ]
+          },
+          "role": {
+            "enum": [
+              "product",
+              "security"
+            ]
+          },
+          "disposition": {
+            "enum": [
+              "proposed",
+              "approved",
+              "refused"
+            ]
+          },
+          "declared_owner_key": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+              }
+            ]
+          },
+          "recorded_on": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 10,
+                "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+                "description": "Explicit canonical ASCII date; actual calendar parse required. No wall clock."
+              }
+            ]
+          },
+          "source_record_key": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+              }
+            ]
+          },
+          "source_record_sha256": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            ]
+          },
+          "proposal_index_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "profile_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "discovery_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "disposition"
+              ],
+              "properties": {
+                "disposition": {
+                  "const": "approved"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "declared_owner_key": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                },
+                "recorded_on": {
+                  "type": "string",
+                  "minLength": 10,
+                  "maxLength": 10,
+                  "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+                  "description": "Explicit canonical ASCII date; actual calendar parse required. No wall clock."
+                },
+                "source_record_key": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                },
+                "source_record_sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "subject",
+              "role"
+            ],
+            "properties": {
+              "subject": {
+                "const": "F20-BUILD"
+              },
+              "role": {
+                "const": "product"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "subject",
+              "role"
+            ],
+            "properties": {
+              "subject": {
+                "const": "F20-BUILD"
+              },
+              "role": {
+                "const": "security"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "subject",
+              "role"
+            ],
+            "properties": {
+              "subject": {
+                "const": "F20-SOURCE"
+              },
+              "role": {
+                "const": "product"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "subject",
+              "role"
+            ],
+            "properties": {
+              "subject": {
+                "const": "F20-SOURCE"
+              },
+              "role": {
+                "const": "security"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "subject",
+              "role"
+            ],
+            "properties": {
+              "subject": {
+                "const": "F20-INDEX"
+              },
+              "role": {
+                "const": "product"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "subject",
+              "role"
+            ],
+            "properties": {
+              "subject": {
+                "const": "F20-INDEX"
+              },
+              "role": {
+                "const": "security"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:mcp:index-build-intent:proposal",
+  "description": "Closed inert declaration admission only. No held capture, recorded approval, lawful disclosure, native/currentness proof, builder, server activation, or publication authority is constructed."
+}
