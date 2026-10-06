@@ -40,14 +40,21 @@ native = load("os_denial_native_controls", HERE / "test_workspace_os_denial.py")
 wrapper = load("os_denial_wrapper_controls", HERE / "verify_workspace_os_denial.py")
 
 
+def closure_summary():
+    """Supply a closed synthetic private proof for controller-only controls, never native trust credit."""
+    return {"format": "forge.stdlib-leaf-closure/1", "pin": {"bytes": 4, "sha256": "a" * 64},
+            "entries": 10, "charged_bytes": 128, "link_hops": 2}
+
+
 def plan():
     """Return fixed private mock inputs with a live absolute budget and four pins."""
     pin = {"bytes": 4, "sha256": "a" * 64}
-    return {"schema": "forge.os-denial-private-plan/1", "root": "/mock/root",
+    return {"schema": "forge.os-denial-private-plan/2", "root": "/mock/root",
             "forge": "/mock/forge", "output_dir": "/mock/output", "ip": "/usr/sbin/ip",
             "python": "/usr/bin/python3.11", "target_uid": 1001, "target_gid": 1001,
             "deadline_monotonic_ns": time.monotonic_ns() + 590000000000,
-            "source_pins": {key: dict(pin) for key in native.SOURCES}, "release_pin": dict(pin)}
+            "source_pins": {key: dict(pin) for key in native.SOURCES}, "release_pin": dict(pin),
+            "stdlib_proof": closure_summary(), "interpreter_pin": dict(pin)}
 
 
 def client():
@@ -815,8 +822,15 @@ class NativeControls(unittest.TestCase):
             api.plan["release_pin"] = {"bytes": 12, "sha256": native.hashlib.sha256(b"mock release").hexdigest()}
             old = os.umask(0o077)
             try:
-                with mock.patch.object(native.os, "chown"):
+                real_mkdtemp = native.tempfile.mkdtemp
+                def allocate(**kwargs):
+                    """Keep actual copies in this owned fixture while asserting the fixed native selector."""
+                    self.assertEqual(kwargs, {"prefix": "forge-os-denial-", "dir": "/var/lib"})
+                    return real_mkdtemp(prefix="protected-package-", dir=root)
+                with mock.patch.object(native.os, "chown"), mock.patch.object(native, "trusted_path") as trust, \
+                        mock.patch.object(native.tempfile, "mkdtemp", side_effect=allocate):
                     release, inputs = api.protect()
+                trust.assert_called_once_with("/var/lib", directory=True)
                 self.assertEqual(release, api.plan["release_pin"])
                 self.assertEqual(inputs, api.plan["source_pins"])
                 for directory in (api.package, api.package / "scripts", api.package / "docs", api.package / "docs/api"):
@@ -1079,7 +1093,7 @@ class WrapperControls(unittest.TestCase):
         """Actual ordinary dispatcher checks before temp resources and again before privileged command."""
         p = plan();identity = {"provided_release_binary":p["release_pin"],"inputs":dict(p["source_pins"])}
         identity["inputs"][wrapper.EXTRA_INPUTS[0]] = {"bytes":4,"sha256":"c"*64}
-        paths = {"python":Path("/usr/bin/python3.11"),"ip":Path("/usr/sbin/ip"),"sudo":Path("/usr/bin/sudo")}
+        paths = {"python":Path("/usr/bin/python3.11"),"ip":Path("/usr/sbin/ip"),"sudo":Path("/usr/bin/sudo"),"stdlib_proof":closure_summary(),"interpreter_pin":plan()["interpreter_pin"]}
         with mock.patch.object(wrapper.time,"monotonic",return_value=10), \
              mock.patch.object(wrapper,"command") as command, mock.patch.object(wrapper.tempfile,"TemporaryDirectory") as directory:
             value = wrapper.native_run(Path("/mock"),Path("/mock/forge"),identity,paths,10)
@@ -1104,7 +1118,7 @@ class WrapperControls(unittest.TestCase):
              mock.patch.object(wrapper.os,"getgid",return_value=1001), mock.patch.object(wrapper.os,"getegid",return_value=1001), \
              mock.patch.object(wrapper,"administration_tool",side_effect=lambda p:p), mock.patch.object(wrapper.shutil,"which",side_effect=lambda n:"/usr/bin/"+n), \
              mock.patch.object(wrapper,"command",side_effect=[{"exit_code":0,"failure":None,"output":r} for r in outputs]), \
-             mock.patch.object(wrapper,"stdlib_inventory",return_value={"pin":pin,"entries":10}), \
+             mock.patch.object(wrapper,"stdlib_inventory",return_value={"pin":pin,"entries":10,"proof":closure_summary()}), \
              mock.patch.object(wrapper.shared,"hash_file",return_value=pin), mock.patch.object(wrapper.shared,"tool_versions",side_effect=ordinary), \
              mock.patch.object(wrapper.time,"monotonic",side_effect=lambda:1 if expired[0] else 0):
             with self.assertRaises(wrapper.GateError) as caught: wrapper.capture_tools(Path("/mock"),1)
@@ -1244,7 +1258,7 @@ class WrapperControls(unittest.TestCase):
             (private / wrapper.CLIENT_OUTPUT).write_bytes(native.canonical(value["client"]["receipt"]))
             (private / wrapper.NATIVE_OUTPUT).write_bytes(native.canonical(value))
             return {"exit_code": 0, "failure": None, "output": b""}
-        paths = {"python": Path("/usr/bin/python3.11"), "ip": Path("/usr/sbin/ip"), "sudo": Path("/usr/bin/sudo")}
+        paths = {"python": Path("/usr/bin/python3.11"), "ip": Path("/usr/sbin/ip"), "sudo": Path("/usr/bin/sudo"), "stdlib_proof": closure_summary(), "interpreter_pin": plan()["interpreter_pin"]}
         routes = [("GET", None, x) for x in client()[1]]
         with mock.patch.object(wrapper, "command", side_effect=dispatch), \
              mock.patch.object(wrapper.os, "getuid", return_value=1001), mock.patch.object(wrapper.os, "getgid", return_value=1001), \
@@ -1369,27 +1383,11 @@ class ToolDiagnosticControls(unittest.TestCase):
             stack.enter_context(mock.patch.object(wrapper.shutil,"which",side_effect=lambda name:"/mock/"+name))
             paths=stack.enter_context(mock.patch.object(wrapper,"administration_tool",side_effect=path_check))
             command=stack.enter_context(mock.patch.object(wrapper,"command",side_effect=observations))
-            inventory=stack.enter_context(mock.patch.object(wrapper,"stdlib_inventory",side_effect=inventory_fault,return_value={"pin":pin,"entries":10}))
+            inventory=stack.enter_context(mock.patch.object(wrapper,"stdlib_inventory",side_effect=inventory_fault,return_value={"pin":pin,"entries":10,"proof":closure_summary()}))
             ordinary_call=stack.enter_context(mock.patch.object(wrapper.shared,"tool_versions",return_value=ordinary))
             hashed=stack.enter_context(mock.patch.object(wrapper.shared,"hash_file",side_effect=hash_fault,return_value=pin))
             yield {"command":command,"paths":paths,"inventory":inventory,"ordinary":ordinary_call,"hash":hashed}
 
-    @contextlib.contextmanager
-    def inventory_context(self, entries, *, max_entries=None, max_bytes=None, scandir_fault=None):
-        """Supply actual traversal code with qualified synthetic roots and explicit fake directory entries only."""
-        def scan(path):
-            """Expose one root inventory and an empty dynload directory without scanning the host."""
-            if scandir_fault is not None:raise scandir_fault
-            return contextlib.nullcontext(iter(entries if path==Path("/mock/stdlib") else []))
-        with contextlib.ExitStack() as stack:
-            stack.enter_context(mock.patch.object(wrapper.Path,"exists",return_value=True))
-            stack.enter_context(mock.patch.object(wrapper,"root_trusted",side_effect=lambda path,directory=False:path))
-            stack.enter_context(mock.patch.object(wrapper.time,"monotonic",return_value=0))
-            scanned=stack.enter_context(mock.patch.object(wrapper.os,"scandir",side_effect=scan))
-            hashed=stack.enter_context(mock.patch.object(wrapper.shared,"hash_file",return_value=plan()["release_pin"]))
-            if max_entries is not None:stack.enter_context(mock.patch.object(wrapper,"MAX_ENTRIES",max_entries))
-            if max_bytes is not None:stack.enter_context(mock.patch.object(wrapper,"MAX_STDLIB_BYTES",max_bytes))
-            yield scanned,hashed
 
     def verify_faults(self, *, first_fault=None, after_identity_fault=None, after_tool_fault=None, build="success"):
         """Publish actual ordinary-wrapper bytes using only independent synthetic identity/tool/native adapters."""
@@ -1596,32 +1594,39 @@ class ToolDiagnosticControls(unittest.TestCase):
             self.assertEqual(caught.exception.diagnostic,{"phase":"python-probe","reason":reason,"exit_code":code})
 
     def test_actual_stdlib_root_shape_missing_dynload_and_owner_faults(self):
-        """Root inventories preserve exact shape/existence/dynload/trust predicates without scanning host directories."""
-        for paths in (None,[],["/mock/a"],["relative","/mock/lib-dynload"],["/mock/a","/mock/a"]):
-            with mock.patch.object(wrapper.Path,"exists") as exists:
-                with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(paths,100)
-            exists.assert_not_called();self.assertEqual(caught.exception.diagnostic["reason"],"root-shape-invalid")
-        with mock.patch.object(wrapper.Path,"exists",return_value=False):
-            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/a","/mock/lib-dynload"],100)
-        self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-roots","reason":"missing-root","exit_code":None})
-        with mock.patch.object(wrapper.Path,"exists",return_value=True),mock.patch.object(wrapper,"root_trusted",side_effect=lambda path,directory=False:path),mock.patch.object(wrapper.os,"scandir") as scan:
-            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/a","/mock/b"],100)
-        scan.assert_not_called();self.assertEqual(caught.exception.diagnostic["reason"],"dynload-missing")
-        with mock.patch.object(wrapper.Path,"exists",return_value=True),mock.patch.object(wrapper,"root_trusted",side_effect=wrapper.GateError("tool-untrusted",tool_reason="not-root-owned")):
-            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/a","/mock/lib-dynload"],100)
-        self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-roots","reason":"not-root-owned","exit_code":None})
+        """Refuse malformed roots before IO and preserve fixed missing-root/owner diagnostic propagation."""
+        for paths in (None, [], ["/mock/a"], ["relative", "/mock/lib-dynload"],
+                      ["/mock/a", "/mock/a"], ["/mock/../a", "/mock/lib-dynload"]):
+            with mock.patch.object(wrapper.os, "open") as opened:
+                with self.assertRaises(wrapper.GateError) as caught:
+                    wrapper.stdlib_inventory(paths, 100)
+            opened.assert_not_called()
+            self.assertEqual(caught.exception.diagnostic["reason"], "root-shape-invalid")
+        with mock.patch.object(wrapper.os, "open") as opened:
+            with self.assertRaises(wrapper.GateError) as caught:
+                wrapper.stdlib_inventory(["/mock/a", "/mock/b"], 100)
+        opened.assert_not_called()
+        self.assertEqual(caught.exception.diagnostic["reason"], "dynload-missing")
+        for reason in ("missing-root", "not-root-owned"):
+            with mock.patch.object(wrapper, "leaf_closure", side_effect=wrapper.LeafClosureError(reason, "stdlib-roots")):
+                with self.assertRaises(wrapper.GateError) as caught:
+                    wrapper.stdlib_inventory(["/mock/a", "/mock/lib-dynload"], 100)
+            self.assertEqual(caught.exception.diagnostic, {"phase": "stdlib-roots", "reason": reason, "exit_code": None})
 
     def test_actual_stdlib_entry_predicates_keep_owner_link_mode_kind_priority(self):
-        """Apply real streamed entry checks to synthetic metadata and forbid hashing unqualified private paths."""
-        cases=((1001,stat.S_IFLNK|0o777,"not-root-owned"),(0,stat.S_IFLNK|0o777,"unsupported-link"),
-               (0,stat.S_IFLNK|0o755,"unsupported-link"),(0,stat.S_IFREG|0o666,"worker-writable"),
-               (0,stat.S_IFDIR|0o777,"worker-writable"),(0,stat.S_IFIFO|0o600,"unsupported-kind"))
-        for uid,mode,reason in cases:
-            entry=types.SimpleNamespace(path="/mock/stdlib/private.py",stat=mock.Mock(return_value=types.SimpleNamespace(st_uid=uid,st_mode=mode,st_size=1)))
-            with self.inventory_context([entry]) as (scan,hashed):
-                with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/stdlib","/mock/stdlib/lib-dynload"],100)
-            hashed.assert_not_called();entry.stat.assert_called_once_with(follow_symlinks=False)
-            self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-entry","reason":reason,"exit_code":None});self.assertTrue(caught.exception.incomplete)
+        """UID and nonlink permissions remain conjuncts; 0777 leaf-link metadata alone grants no proof."""
+        closure = wrapper.LeafClosure.__new__(wrapper.LeafClosure)
+        for uid, mode, kind, reason in ((1001, stat.S_IFLNK | 0o777, "link", "not-root-owned"),
+                                      (0, stat.S_IFREG | 0o666, "file", "worker-writable"),
+                                      (0, stat.S_IFDIR | 0o777, "directory", "worker-writable"),
+                                      (0, stat.S_IFLNK | 0o777, "directory", "unsupported-link"),
+                                      (0, stat.S_IFIFO | 0o600, "file", "not-regular")):
+            with self.subTest(uid=uid, mode=mode), self.assertRaises(wrapper.LeafClosureError) as caught:
+                closure.trusted(types.SimpleNamespace(st_uid=uid, st_mode=mode), kind)
+            self.assertEqual(caught.exception.reason, reason)
+        closure.trusted(types.SimpleNamespace(st_uid=0, st_mode=stat.S_IFLNK | 0o777), "link")
+        # No target identity, contents or complete proof was supplied by this metadata-only control.
+        self.assertFalse(wrapper.leaf_summary_valid({"uid_is_root": True}))
 
     def test_root_symlinks_are_rejected_without_target_reads_or_execution(self):
         """Preserve link denial across owner/mask variants without following a target or starting a child."""
@@ -1638,29 +1643,37 @@ class ToolDiagnosticControls(unittest.TestCase):
                 resolved.assert_not_called(); links.assert_not_called(); hashed.assert_not_called(); spawned.assert_not_called()
 
     def test_actual_stdlib_entry_and_byte_bounds_stop_before_hashing(self):
-        """Both configured bounds fail before retaining an over-limit file hash or claiming a qualified inventory."""
-        entry=types.SimpleNamespace(path="/mock/stdlib/private.py",stat=mock.Mock(return_value=types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFREG|0o644,st_size=64)))
-        with self.inventory_context([entry],max_entries=0) as (scan,hashed):
-            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/stdlib","/mock/stdlib/lib-dynload"],100)
-        entry.stat.assert_not_called();hashed.assert_not_called();self.assertEqual(caught.exception.diagnostic["reason"],"entry-bound")
-        with self.inventory_context([entry],max_bytes=63) as (scan,hashed):
-            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/stdlib","/mock/stdlib/lib-dynload"],100)
-        hashed.assert_not_called();self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-entry","reason":"byte-bound","exit_code":None})
+        """Monotonic aggregate work/byte charges refuse excess before any file read and do not refund failure."""
+        with mock.patch.object(wrapper.time, "monotonic", return_value=0), mock.patch.object(wrapper.os, "read") as read:
+            budget = wrapper.LeafBudget(100)
+            budget.charge("bytes", wrapper.LEAF_BYTE_LIMIT, wrapper.LEAF_BYTE_LIMIT, "byte-bound")
+            with self.assertRaises(wrapper.LeafClosureError) as caught:
+                budget.charge("bytes", 1, wrapper.LEAF_BYTE_LIMIT, "byte-bound")
+            self.assertEqual(caught.exception.reason, "byte-bound")
+            self.assertEqual(budget.bytes, wrapper.LEAF_BYTE_LIMIT)
+            budget.charge("entries", wrapper.LEAF_ENTRY_LIMIT * 2, wrapper.LEAF_ENTRY_LIMIT * 2, "entry-bound")
+            with self.assertRaises(wrapper.LeafClosureError) as caught:
+                budget.charge("entries", 1, wrapper.LEAF_ENTRY_LIMIT * 2, "entry-bound")
+            self.assertEqual(caught.exception.reason, "entry-bound")
+        read.assert_not_called()
 
     def test_actual_stdlib_depth_and_visibility_faults_are_bounded_redacted(self):
-        """Bound synthetic deep recursion and retain unknown directory observations as failed/unverified metadata."""
-        def scan(directory):
-            """Create only one synthetic descendant per level to reach the exact fixed depth rejection."""
-            entry=types.SimpleNamespace(path=str(directory/"deeper"),stat=mock.Mock(return_value=types.SimpleNamespace(st_uid=0,st_mode=stat.S_IFDIR|0o755,st_size=0)))
-            return contextlib.nullcontext(iter([entry]))
-        with mock.patch.object(wrapper.Path,"exists",return_value=True),mock.patch.object(wrapper,"root_trusted",side_effect=lambda path,directory=False:path), \
-             mock.patch.object(wrapper.os,"scandir",side_effect=scan) as scanned,mock.patch.object(wrapper.time,"monotonic",return_value=0):
-            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/stdlib","/mock/stdlib/lib-dynload"],100)
-        self.assertEqual(scanned.call_count,33);self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-entry","reason":"depth-bound","exit_code":None})
-        with self.inventory_context([],scandir_fault=OSError("PRIVATE directory entry")):
-            with self.assertRaises(wrapper.GateError) as caught:wrapper.stdlib_inventory(["/mock/stdlib","/mock/stdlib/lib-dynload"],100)
-        self.assertEqual(caught.exception.code,"verification-input-invalid");self.assertFalse(caught.exception.incomplete)
-        self.assertEqual(caught.exception.diagnostic,{"phase":"stdlib-entry","reason":"entry-observation-unverified","exit_code":None})
+        """Depth refuses before opening; unknown observation and expired clock retain fixed redacted classifications."""
+        closure = wrapper.LeafClosure.__new__(wrapper.LeafClosure)
+        with mock.patch.object(wrapper.os, "fstat") as observed:
+            with self.assertRaises(wrapper.LeafClosureError) as caught:
+                closure.visit(0, b"/mock", 1, b"", wrapper.LEAF_DEPTH_LIMIT + 1, [], {}, {})
+        observed.assert_not_called()
+        self.assertEqual(caught.exception.reason, "depth-bound")
+        with mock.patch.object(wrapper, "leaf_closure", side_effect=OSError("PRIVATE directory entry")):
+            with self.assertRaises(wrapper.GateError) as caught:
+                wrapper.tool_step("stdlib-entry", wrapper.stdlib_inventory, ["/mock/a", "/mock/lib-dynload"], 100)
+        self.assertEqual((caught.exception.code, caught.exception.incomplete), ("verification-input-invalid", False))
+        self.assertNotIn("PRIVATE", str(caught.exception))
+        with mock.patch.object(wrapper.time, "monotonic", return_value=100):
+            with self.assertRaises(wrapper.LeafClosureError) as caught:
+                wrapper.LeafBudget(100).check()
+        self.assertEqual((caught.exception.phase, caught.exception.reason), ("qualification-budget", "deadline-expired"))
 
     def test_actual_capture_ordinary_identity_and_final_budget_gates_remain_required(self):
         """A missing ordinary identity and an expired final clock still reject otherwise successful tool observations."""
@@ -1766,7 +1779,8 @@ class FixedAdministrativePathControls(unittest.TestCase):
             tools, paths = wrapper.capture_tools(root, 100)
             discovery.assert_not_called()
             self.assertEqual(calls["paths"].call_args_list, [mock.call(path) for path in selectors])
-            self.assertEqual(paths, {"python": targets[selectors[0]], "ip": targets[selectors[1]], "sudo": targets[selectors[2]]})
+            self.assertEqual(paths, {"python": targets[selectors[0]], "ip": targets[selectors[1]], "sudo": targets[selectors[2]],
+                                     "stdlib_proof": closure_summary(), "interpreter_pin": pins[targets[selectors[0]]]})
             self.assertEqual(calls["command"].call_args_list,
                              [mock.call([str(targets[selectors[0]]), "-I", "-S", "-B", "-c", wrapper.PYTHON_PROBE], root, 10),
                               mock.call([str(targets[selectors[1]]), "-V"], root, 10),
@@ -1951,7 +1965,7 @@ class FixedAdministrativePathControls(unittest.TestCase):
             self.assertEqual(raw, wrapper.shared.canonical_bytes(value))
             discovery.assert_not_called()
             dispatch.assert_called_once()
-            self.assertEqual(dispatch.call_args.args[3], {"python": Path("/usr/bin/python3"), "ip": Path("/usr/bin/ip"), "sudo": Path("/usr/bin/sudo")})
+            self.assertEqual(dispatch.call_args.args[3], {"python": Path("/usr/bin/python3"), "ip": Path("/usr/bin/ip"), "sudo": Path("/usr/bin/sudo"), "stdlib_proof": closure_summary(), "interpreter_pin": plan()["interpreter_pin"]})
             self.assertEqual(observed, [Path("/usr/bin/python3"), Path("/usr/bin/ip"), Path("/usr/bin/sudo")] * 2)
             self.assertEqual(calls["command"].call_count, 6)
             self.assertEqual(calls["ordinary"].call_count, 2)
@@ -1964,6 +1978,332 @@ class FixedAdministrativePathControls(unittest.TestCase):
         self.assertIsNone(value["diagnostic"])
         self.assertFalse(value["acceptance_eligible"])
         self.assertEqual(value["attempted_egress"], {"state": "unmeasured", "count": None})
+
+
+
+class LeafProofContractControls(unittest.TestCase):
+    """Exercise closed proof/plan adapters with fake IO; these cases confer no Linux qualification."""
+
+    def test_private_plan_requires_complete_closed_proof(self):
+        """Reject old plan, bool counters, unknown proof fields and missing proof before any native constructor."""
+        original = plan()
+        native.parse_plan(native.canonical(original), time.monotonic_ns())
+        variants = [dict(original, schema="forge.os-denial-private-plan/1")]
+        absent = dict(original); absent.pop("stdlib_proof"); variants.append(absent)
+        for fields in ({"entries": True}, {"charged_bytes": native.LEAF_BYTE_LIMIT + 1}, {"arbitrary_path": "PRIVATE"}):
+            variants.append(dict(original, stdlib_proof=dict(original["stdlib_proof"], **fields)))
+        for value in variants:
+            with self.subTest(value=value["schema"]), self.assertRaises(native.Failure):
+                native.parse_plan(native.canonical(value), time.monotonic_ns())
+
+    def test_independent_native_proof_failure_precedes_facilities(self):
+        """A fake disagreement reaches actual qualify before libc construction or output/native resource creation."""
+        api = bare_native(); api.created = False
+        api.plan["python"] = "/mock/python"
+        wrong = dict(closure_summary(), entries=11)
+        flags = types.SimpleNamespace(isolated=1, no_site=1, ignore_environment=1)
+        with mock.patch.object(native.platform, "system", return_value="Linux"), \
+             mock.patch.object(native.platform, "machine", return_value="x86_64"), \
+             mock.patch.object(native.os, "geteuid", return_value=0), mock.patch.object(native.os, "getuid", return_value=0), \
+             mock.patch.object(native.sys, "flags", flags), mock.patch.object(native.sys, "dont_write_bytecode", True), \
+             mock.patch.object(native.Path, "resolve", return_value=Path("/mock/python")), \
+             mock.patch.object(native, "trusted_path"), mock.patch.object(native, "file_pin", return_value=api.plan["interpreter_pin"]), \
+             mock.patch.object(native, "trusted_stdlib", return_value=(wrong, {})), \
+             mock.patch.object(native.ctypes, "CDLL") as facilities:
+            with self.assertRaises(native.Failure) as caught:
+                api.qualify()
+        self.assertEqual(caught.exception.code, "tool-untrusted")
+        facilities.assert_not_called()
+        self.assertFalse(api.created)
+
+    def test_post_workload_proof_disagreement_precedes_release_pass(self):
+        """Actual stable() refuses changed stdlib proof before source comparisons can imply unchanged execution."""
+        api = bare_native()
+        with mock.patch.object(native, "trusted_path"), \
+             mock.patch.object(native, "trusted_stdlib", return_value=(dict(closure_summary(), entries=11), {})), \
+             mock.patch.object(native, "file_pin", return_value=api.plan["interpreter_pin"]) as source:
+            with self.assertRaises(native.Failure) as caught:
+                api.stable()
+        source.assert_called_once_with(api.plan["python"], api.work_end)
+        self.assertEqual(caught.exception.code, "source-changed")
+
+
+class LeafEncodingAndBudgetControls(unittest.TestCase):
+    """Validate shared proof measurements and descriptor/clock refusal without native ownership claims."""
+
+    def test_private_encoded_size_matches_canonical_special_characters(self):
+        """The pre-growth measure covers escaped ASCII, Unicode, negative integers and nested proof containers."""
+        values = ["plain", "\\\"\n\t", "é雪😀", "\x7f", -1234, [], {},
+                  ["format", [1, -2], {"sha256": "a" * 64, "bytes": 0}]]
+        for engine in (wrapper, native):
+            for value in values:
+                with self.subTest(engine=engine.__name__, value=value):
+                    self.assertEqual(engine.leaf_encoded_size(value) + 1, len(engine.leaf_canonical(value)))
+
+    def test_proof_summary_exact_types_and_complete_shared_bounds(self):
+        """Neither qualifier accepts booleans, extra fields or per-field overflow in a claimed aggregate proof."""
+        for engine in (wrapper, native):
+            self.assertTrue(engine.leaf_summary_valid(closure_summary()))
+            for fields in ({"entries": True}, {"link_hops": engine.LEAF_ENTRY_LIMIT * engine.LEAF_HOP_LIMIT + 1},
+                           {"charged_bytes": engine.LEAF_BYTE_LIMIT + 1}, {"unknown": "PRIVATE"},
+                           {"pin": {"bytes": 1, "sha256": "A" * 64}}):
+                with self.subTest(fields=fields):
+                    self.assertFalse(engine.leaf_summary_valid(dict(closure_summary(), **fields)))
+
+    def test_live_descriptor_limit_refuses_before_another_open(self):
+        """A full owned descriptor set cannot make one more open or silently drop an ownership charge."""
+        for engine in (wrapper, native):
+            with mock.patch.object(engine.time, "monotonic", return_value=0), \
+                 mock.patch.object(engine.os, "open") as opened:
+                budget = engine.LeafBudget(100)
+                budget.held = set(range(engine.LEAF_FD_LIMIT))
+                with self.assertRaises(engine.LeafClosureError):
+                    budget.open(b"/never-opened", 0)
+                self.assertEqual(len(budget.held), engine.LEAF_FD_LIMIT)
+            opened.assert_not_called()
+
+
+    def test_inventoried_link_size_refuses_before_any_link_primitive(self):
+        """Zero and overbound inventoried sizes cannot open or read a link in either qualifier."""
+        for engine in (wrapper, native):
+            for size in (0, engine.LEAF_PATH_LIMIT + 1):
+                instance = engine.LeafClosure.__new__(engine.LeafClosure)
+                expected = [1, 2, stat.S_IFLNK | 0o777, 0, 0, size, 3, 4]
+                with mock.patch.object(engine.os, "open") as opened, \
+                     mock.patch.object(engine.os, "readlink") as read:
+                    with self.assertRaises(engine.LeafClosureError) as caught:
+                        instance.read_link(10, b"link", expected)
+                self.assertEqual(caught.exception.reason, "unsupported-link")
+                opened.assert_not_called(); read.assert_not_called()
+
+    def test_held_link_size_refuses_before_readlink_and_closes_owned_handle(self):
+        """A held size-zero or overbound generation refuses before link text allocation and closes its handle."""
+        for engine in (wrapper, native):
+            for size in (0, engine.LEAF_PATH_LIMIT + 1):
+                instance = engine.LeafClosure.__new__(engine.LeafClosure)
+                expected = [1, 2, stat.S_IFLNK | 0o777, 0, 0, 4, 3, 4]
+                info = types.SimpleNamespace(st_mode=expected[2], st_uid=0, st_size=size)
+                # This fake-I/O control runs on hosts without Linux O_PATH.
+                with mock.patch.object(engine.time, "monotonic", return_value=0), \
+                     mock.patch.object(engine.os, "O_PATH", 0x200000, create=True), \
+                     mock.patch.object(engine.os, "open", return_value=10), \
+                     mock.patch.object(engine.os, "fstat", return_value=info), \
+                     mock.patch.object(engine.os, "readlink") as read, \
+                     mock.patch.object(engine.os, "close") as closed:
+                    instance.budget = engine.LeafBudget(100)
+                    with self.assertRaises(engine.LeafClosureError) as caught:
+                        instance.read_link(9, b"link", expected)
+                    self.assertEqual(instance.budget.held, set())
+                self.assertEqual(caught.exception.reason, "unsupported-link")
+                read.assert_not_called(); closed.assert_called_once_with(10)
+
+    def test_stream_reservation_refuses_before_creation_and_releases_failed_creation(self):
+        """A full aggregate handle ledger refuses creation; a failed primitive leaves no fabricated stream owner."""
+        for engine in (wrapper, native):
+            with mock.patch.object(engine.time, "monotonic", return_value=0):
+                budget = engine.LeafBudget(100)
+                budget.held = set(range(engine.LEAF_FD_LIMIT))
+                with mock.patch.object(engine.os, "scandir") as scanned:
+                    with self.assertRaises(engine.LeafClosureError): budget.scandir(5)
+                scanned.assert_not_called()
+                self.assertEqual(budget.streams, {})
+                budget.held.clear()
+                with mock.patch.object(engine.os, "scandir", side_effect=OSError("PRIVATE")) as scanned:
+                    with self.assertRaises(OSError): budget.scandir(5)
+                scanned.assert_called_once_with(5)
+                self.assertEqual(budget.streams, {})
+
+
+    def test_uncertain_raw_close_is_never_retried_as_numeric_descriptor(self):
+        """A post-close error refuses and retains a charge without retrying a number another owner could reuse."""
+        for engine in (wrapper, native):
+            with mock.patch.object(engine.time, "monotonic", return_value=0), \
+                 mock.patch.object(engine.os, "close", side_effect=OSError("PRIVATE")) as closed:
+                budget = engine.LeafBudget(100)
+                budget.held.add(10)
+                with self.assertRaises(engine.LeafClosureError): budget.close(10)
+                with self.assertRaises(engine.LeafClosureError): budget.close_all()
+                self.assertEqual(budget.held, set())
+                self.assertEqual(budget.uncertain_fds, 1)
+            closed.assert_called_once_with(10)
+
+
+
+class DistroSupportRootTests(unittest.TestCase):
+    """Bind ordinary and native inventory roots to the same fixed interpreter version."""
+
+    def test_probe_adds_only_the_fixed_versioned_support_root(self):
+        """The proof probe does not modify the interpreter import search path."""
+        import contextlib
+        import io
+        before = list(sys.path)
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            exec(wrapper.PYTHON_PROBE, {})
+        result = json.loads(output.getvalue())
+        support = "/etc/python" + ".".join(map(str, sys.version_info[:2]))
+        library = "/usr/lib/" + sys.implementation._multiarch + "/libpython" + ".".join(map(str, sys.version_info[:2]))
+        self.assertEqual(result["paths"], [*before, support, library + ".so.1", library + ".so.1.0"])
+        self.assertEqual(sys.path, before)
+
+    def test_native_derives_same_roots_without_accepting_supplied_paths(self):
+        """Native qualification independently derives and passes the complete root set."""
+        import test_workspace_os_denial as native
+        before = list(native.sys.path)
+        support = "/etc/python" + ".".join(map(str, native.sys.version_info[:2]))
+        with mock.patch.object(native.sys.implementation, "_multiarch", "x86_64-linux-gnu"), mock.patch.object(native, "leaf_closure", return_value=({}, {})) as capture:
+            self.assertEqual(native.trusted_stdlib(123), ({}, {}))
+        library = "/usr/lib/x86_64-linux-gnu/libpython" + ".".join(map(str, native.sys.version_info[:2]))
+        capture.assert_called_once_with([*before, support, library + ".so.1", library + ".so.1.0"], 123)
+        self.assertEqual(native.sys.path, before)
+
+
+    def test_support_profile_requires_exact_runtime_names_and_matching_version(self):
+        """No adjacent library, unrelated file or version mismatch becomes a support member."""
+        for arch in ("x86_64-linux-gnu", "aarch64-linux-gnu"):
+            prefix = ("/usr/lib/" + arch + "/libpython3.12").encode()
+            for suffix in (b".so.1", b".so.1.0"):
+                self.assertTrue(wrapper.leaf_support_path(prefix + suffix, [b"/usr/lib/python3.12"]))
+                self.assertFalse(wrapper.leaf_support_path(prefix + suffix, [b"/usr/lib/python3.11"]))
+            for suffix in (b".a", b".so", b".so.2", b".so.1.0/private"):
+                self.assertFalse(wrapper.leaf_support_path(prefix + suffix, [b"/usr/lib/python3.12"]))
+        self.assertFalse(wrapper.leaf_support_path(b"/PRIVATE/libpython3.12.so.1.0", [b"/usr/lib/python3.12"]))
+
+    def test_native_unsupported_architecture_never_dispatches_closure(self):
+        """The fixed profile has no architecture fallback or caller-selected library root."""
+        import test_workspace_os_denial as native
+        with mock.patch.object(native.sys.implementation, "_multiarch", "unqualified"), mock.patch.object(native, "leaf_closure") as capture:
+            with self.assertRaises(native.Failure):
+                native.trusted_stdlib(123)
+        capture.assert_not_called()
+
+
+
+
+class RetiredProcessControls(unittest.TestCase):
+    """A real exit signal can settle only an already checked retained instance; live/unknown states fail closed."""
+
+    def test_retired_instance_requires_held_terminal_pidfd_and_prior_complete_proof(self):
+        """Exercise exact-key, event mask, zombie generation and disappeared-row boundaries."""
+        api = bare_native()
+        api.observed[(41, 29)] = {"namespace": True, "privilege": True, "role": "dut", "pidfd": 44}
+        poller = mock.Mock();poller.poll.return_value = [(44, native.select.POLLIN)]
+        raw = lambda state, start: b"41 (fixture) " + b" ".join([state,b"1"] + [b"0"]*17 + [str(start).encode()])
+        with mock.patch.object(native.select, "poll", return_value=poller), mock.patch.object(native, "read_proc", return_value=raw(b"Z",29)) as read:
+            self.assertTrue(api.observed_retired(41,29))
+            for state,start in ((b"R",29),(b"Z",30)):
+                read.return_value=raw(state,start);self.assertFalse(api.observed_retired(41,29))
+            read.side_effect=FileNotFoundError();self.assertTrue(api.observed_retired(41,29))
+            self.assertFalse(api.observed_retired(41,30));self.assertFalse(api.observed_retired(42,29))
+            for field in ("namespace","privilege"):
+                api.observed[(41,29)][field]=False;self.assertFalse(api.observed_retired(41,29));api.observed[(41,29)][field]=True
+            for events in ([],[(44,native.select.POLLNVAL)],[(44,native.select.POLLERR)],[(45,native.select.POLLIN)]):
+                poller.poll.return_value=events;self.assertFalse(api.observed_retired(41,29))
+        poller.register.assert_called_with(44,native.select.POLLIN)
+
+    def test_scan_preserves_known_terminal_instance_but_rejects_unknown_or_live_disappearance(self):
+        """Actual scan handles the live-to-exited race without new authority, counts, reaping or handles."""
+        for proved,terminal in ((True,True),(True,False),(False,True)):
+            api=bare_native();api.names={"dut":("fixture",8,7)}
+            if proved:api.observed[(41,29)]={"namespace":True,"privilege":True,"role":"dut","pidfd":44}
+            raw=b"41 (fixture) " + b" ".join([b"R",str(os.getpid()).encode()]+[b"0"]*17+[b"29"])
+            directory=mock.MagicMock();directory.__enter__.return_value=[types.SimpleNamespace(name="41")]
+            poller=mock.Mock();poller.poll.return_value=[(44,native.select.POLLIN)] if terminal else []
+            with mock.patch.object(native.os,"scandir",return_value=directory), \
+                    mock.patch.object(native,"read_proc",side_effect=[raw,FileNotFoundError()]), \
+                    mock.patch.object(native,"process_record",side_effect=FileNotFoundError()), \
+                    mock.patch.object(native.select,"poll",return_value=poller),mock.patch.object(native.os,"waitpid") as wait, \
+                    mock.patch.object(native.os,"pidfd_open",return_value=44,create=True),mock.patch.object(native.os,"close"):
+                if proved and terminal:api.scan();self.assertTrue(api.scan_complete)
+                else:
+                    with self.assertRaises(FileNotFoundError):api.scan()
+                    self.assertFalse(api.scan_complete)
+                wait.assert_not_called()
+            self.assertEqual(len(api.observed),int(proved))
+            self.assertFalse(api.pending_fds)
+
+    def test_new_discovery_reserves_handle_before_proof_and_transfers_ownership_once(self):
+        """Actual scan proves one fixed generation, keeping its pre-read handle through exit/recheck."""
+        api=bare_native();api.names={"dut":("fixture",8,7)}
+        raw=b"41 (fixture) " + b" ".join([b"R",str(os.getpid()).encode()]+[b"0"]*17+[b"29"])
+        directory=mock.MagicMock();directory.__enter__.return_value=[types.SimpleNamespace(name="41")]
+        poller=mock.Mock();poller.poll.return_value=[(44,native.select.POLLIN)]
+        def record(pid):
+            """First complete source observation occurs only while its private handle is held."""
+            if record.calls:
+                raise FileNotFoundError()
+            record.calls+=1
+            self.assertIn(44,api.pending_fds)
+            return proof_record()
+        record.calls=0
+        with mock.patch.object(native.os,"scandir",return_value=directory), \
+                mock.patch.object(native,"read_proc",side_effect=[raw,FileNotFoundError()]), \
+                mock.patch.object(native,"process_record",side_effect=record), \
+                mock.patch.object(native.os,"pidfd_open",return_value=44,create=True) as opened, \
+                mock.patch.object(native.select,"poll",return_value=poller),mock.patch.object(native.os,"close") as close:
+            api.scan()
+        opened.assert_called_once_with(41,0);close.assert_not_called()
+        self.assertEqual(api.observed[(41,29)]["pidfd"],44)
+        self.assertTrue(api.scan_complete);self.assertFalse(api.pending_fds)
+
+
+class ClientExitObservationControls(unittest.TestCase):
+    """Private diagnostic classification never reflects payloads or grants producer acceptance."""
+
+    def test_failed_actual_client_body_retains_only_closed_facts_and_original_exit(self):
+        """Exercise the real failure adapter, including unknown stderr and failed optional publication."""
+        for raw, banner, exception in (
+                (b"Traceback (most recent call last):\nPRIVATE path capability\nPermissionError: PRIVATE\n", "unrecognized", "PermissionError"),
+                (b"Maintained headless client conformance failed.\n", "conformance-failed", "unrecognized"),
+                (b"Maintained headless client receipt publication failed.\r\n", "publication-failed", "unrecognized"),
+                (b"PRIVATE unknown exception with credential\n", "unrecognized", "unrecognized")):
+            api = bare_native()
+            child = types.SimpleNamespace(captured=bytearray(raw))
+            api.launch = mock.Mock(return_value=child)
+            api.await_child = mock.Mock(return_value=(1, raw))
+            api.publish = mock.Mock()
+            self.assertEqual(api.run_client(), (1, None, None))
+            self.assertEqual(child.captured, bytearray())
+            name, published = api.publish.call_args.args
+            self.assertEqual(name, "os-denial-client-exit-observation.json")
+            self.assertNotIn(b"PRIVATE", published)
+            value = json.loads(published)
+            self.assertFalse(value["acceptance_eligible"])
+            self.assertEqual(value["producer_exit_code"], 1)
+            self.assertEqual(value["banner_outcome"], banner)
+            self.assertEqual(value["python_exception_class"], exception)
+            self.assertEqual(value["source_pins"], api.plan["source_pins"])
+            api.publish.side_effect = OSError("PRIVATE publication failure")
+            self.assertEqual(api.run_client(), (1, None, None))
+        with self.assertRaises(ValueError): native.client_exit_observation(True, b"", plan()["source_pins"])
+        with self.assertRaises(ValueError): native.client_exit_observation(0, b"", plan()["source_pins"])
+
+    def test_actual_bounded_replay_rejects_malformed_stale_and_symlink_observations(self):
+        """Read actual files; reject extra disclosure, false identity, booleans, oversize and link targets."""
+        sources = plan()["source_pins"]
+        original = native.client_exit_observation(1, b"ModuleNotFoundError: PRIVATE\n", sources)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "observation.json"
+            path.write_bytes(wrapper.shared.canonical_bytes(original))
+            self.assertEqual(wrapper.read_client_exit_observation(path, sources, 1), original)
+            for mutate in (
+                    lambda v: v.update(extra="PRIVATE"),
+                    lambda v: v.update(acceptance_eligible=True),
+                    lambda v: v.update(producer_exit_code=True),
+                    lambda v: v.update(producer_exit_code=2),
+                    lambda v: v.update(python_exception_class="PRIVATE"),
+                    lambda v: v["source_pins"][native.SOURCES[0]].update(sha256="b" * 64),
+                    lambda v: v["source_pins"][native.SOURCES[0]].update(bytes=True)):
+                value = copy.deepcopy(original);mutate(value)
+                path.write_bytes(wrapper.shared.canonical_bytes(value))
+                with self.assertRaises((ValueError, wrapper.GateError)):
+                    wrapper.read_client_exit_observation(path, sources, 1)
+            path.write_bytes(b"x" * 2049)
+            with self.assertRaises(ValueError): wrapper.read_client_exit_observation(path, sources, 1)
+            path.unlink()
+            target = Path(directory) / "private.json";target.write_bytes(wrapper.shared.canonical_bytes(original))
+            path.symlink_to(target)
+            with self.assertRaises(OSError): wrapper.read_client_exit_observation(path, sources, 1)
 
 
 if __name__ == "__main__":

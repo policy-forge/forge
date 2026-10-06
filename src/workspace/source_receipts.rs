@@ -1024,8 +1024,7 @@ impl Store {
     }
 }
 
-// APPEND INSIDE effects::source_receipts (same privacy context), not a new module.
-// ROOT adds Store.transfers: crate::workspace::source_transfers::SourceTransfers.
+// Staged transport shares the existing Store retention and privacy boundary.
 use crate::workspace::source_transfers::{
     DecodedPart, OtherPoolUsage, PreparationLease, PreparationTicket, SourceTransfers, StageRequest,
 };
@@ -1390,7 +1389,7 @@ impl Store {
     }
 }
 
-/// Proposed actual-method Store controls; no HTTP/native/confirmation acceptance is inferred.
+/// Actual-method Store controls; no HTTP/native/confirmation acceptance is inferred.
 #[cfg(test)]
 mod staged_adapter_tests {
     use super::*;

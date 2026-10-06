@@ -556,22 +556,35 @@ class ObservationControls(unittest.TestCase):
             probe.assert_not_called()
 
     def test_real_public_source_hashes_and_tested_head_fence(self):
-        """Use real bounded public-source file reads with mocked Git, then revoke identity on protected-byte or HEAD mismatch."""
+        """Keep historical production refusal; mock fixture pins only for real reads and HEAD/hash fences, never current observer qualification."""
+        historical = copy.deepcopy(OBSERVER.EXPECTED_PROTECTED)
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             for name in OBSERVER.INPUT_KEYS:
                 destination = root / name; destination.parent.mkdir(parents=True,exist_ok=True)
                 shutil.copyfile(ROOT / name, destination)
+            fixture_protected = {name: OBSERVER.read_source(root / name) for name in historical}
+            for name in historical:
+                self.assertNotEqual(fixture_protected[name], historical[name])
             response = {"exit_code":0,"failure":None,"output":(COMMIT + "\n").encode()}
             with mock.patch.object(OBSERVER, "command", return_value=response), mock.patch.object(OBSERVER.time,"monotonic",return_value=0):
-                captured = OBSERVER.capture_identity(root, COMMIT, COMMIT, 10)
-                self.assertEqual(set(captured["inputs"]), set(OBSERVER.INPUT_KEYS))
-                for name in OBSERVER.INPUT_KEYS:
-                    self.assertEqual(captured["inputs"][name], OBSERVER.read_source(root/name))
-                (root / OBSERVER.INPUT_KEYS[2]).write_bytes(b"changed")
                 self.assert_unavailable(self.stop(OBSERVER.capture_identity,root,COMMIT,COMMIT,10))
-            with mock.patch.object(OBSERVER, "command", return_value={**response,"output":("b" * 40 + "\n").encode()}), mock.patch.object(OBSERVER.time,"monotonic",return_value=0):
-                self.assert_unavailable(self.stop(OBSERVER.capture_identity,root,COMMIT,COMMIT,10))
+                self.assertEqual(OBSERVER.EXPECTED_PROTECTED, historical)
+                # The override is this synthetic source-reader fixture only.
+                # Production bytes/pins and the historical stat algorithm stay unchanged.
+                with mock.patch.object(OBSERVER, "EXPECTED_PROTECTED", fixture_protected):
+                    captured = OBSERVER.capture_identity(root, COMMIT, COMMIT, 10)
+                    self.assertEqual(set(captured["inputs"]), set(OBSERVER.INPUT_KEYS))
+                    for name in OBSERVER.INPUT_KEYS:
+                        self.assertEqual(captured["inputs"][name], OBSERVER.read_source(root/name))
+                    with mock.patch.object(OBSERVER, "command", return_value={**response,"output":("b" * 40 + "\n").encode()}), mock.patch.object(OBSERVER, "read_source", wraps=OBSERVER.read_source) as reader:
+                        self.assert_unavailable(self.stop(OBSERVER.capture_identity,root,COMMIT,COMMIT,10))
+                        reader.assert_not_called()
+                    changed_path = root / OBSERVER.INPUT_KEYS[2]
+                    changed = bytearray(changed_path.read_bytes()); changed[0] ^= 1
+                    changed_path.write_bytes(changed)
+                    self.assert_unavailable(self.stop(OBSERVER.capture_identity,root,COMMIT,COMMIT,10))
+            self.assertEqual(OBSERVER.EXPECTED_PROTECTED, historical)
 
     def test_identity_expiry_prevents_command(self):
         """An already-expired source observation cannot dispatch even the ordinary Git identity command."""

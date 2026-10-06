@@ -1,8 +1,8 @@
-//! Proposed sealed multi-target transaction port and exact root-bound journal facts.
+//! Sealed multi-target transaction port and exact root-bound journal facts.
 //!
-//! This uncompiled TEMP candidate never loops the existing single-file commit.
-//! ROOT integrates Store acceptance, before-listener recovery and participating
-//! workspace IO leases. CLI/editors remain external absent a real shared barrier.
+//! Store acceptance, before-listener recovery and participating workspace IO
+//! leases bind the native transaction. CLI/editors remain external absent a real
+//! shared barrier. The transaction does not loop the single-file commit port.
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -2216,7 +2216,7 @@ fn remove_empty_owned(
     Ok(())
 }
 
-/// Unexecuted controls for moved planning facts, phase safety and owned native semantics.
+/// Controls for moved planning facts, phase safety and owned native semantics.
 #[cfg(test)]
 mod tests {
     #[cfg(unix)]
