@@ -1,0 +1,5063 @@
+{
+  "format": "forge.workspace-operation-checkpoint-verification/1",
+  "recorded_at_utc": "2026-10-02T16:54:14.950932+00:00",
+  "candidate": {
+    "base_commit": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+    "branch": "codex/f19-operation-checkpoints",
+    "veans_parent": {
+      "number": 23,
+      "id": 1418
+    },
+    "veans_child": {
+      "number": 25,
+      "id": 1420
+    },
+    "source_index": {
+      "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/index.json",
+      "sha256": "41a72f8798898e140ed04de6f14fdd5c23b55c959912b94f7b61fe53c7a7a754",
+      "bytes": 8463
+    },
+    "source_pins": [
+      {
+        "repository_path": "Cargo.lock",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/Cargo.lock",
+        "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f",
+        "bytes": 74338
+      },
+      {
+        "repository_path": "Cargo.toml",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/Cargo.toml",
+        "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a",
+        "bytes": 2344
+      },
+      {
+        "repository_path": "docs/api/capability-matrix.json",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/docs/api/capability-matrix.json",
+        "sha256": "f7c789df39540e991042cb7cc52672a4e16cb72dffcdb92af1f0d73673e44254",
+        "bytes": 18246
+      },
+      {
+        "repository_path": "docs/api/forge-workspace-v1.openapi.yaml",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/docs/api/forge-workspace-v1.openapi.yaml",
+        "sha256": "edfbf9743eb48aef92082fd9276baea8f08413dce84f477b8683775d842b040f",
+        "bytes": 123394
+      },
+      {
+        "repository_path": "docs/local-workspace.md",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/docs/local-workspace.md",
+        "sha256": "e4ff6aeeafda450fbd7afa197d77144bff30c7c0a27b761a150a18a2197608e0",
+        "bytes": 14919
+      },
+      {
+        "repository_path": "docs/plans/2026-10-02-f19-operation-checkpoints.md",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/docs/plans/2026-10-02-f19-operation-checkpoints.md",
+        "sha256": "c276d8ddbcccf5db2e0782c5efadd08b1488513fee65909614d311a3a5df78bd",
+        "bytes": 1458
+      },
+      {
+        "repository_path": "docs/workspace-operations.md",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/docs/workspace-operations.md",
+        "sha256": "a472159b443e58def81eece3a1f5087ed9fb7f031d7253f7f7c97cf56b82da03",
+        "bytes": 4291
+      },
+      {
+        "repository_path": "schemas/forge.workspace-1.schema.json",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/schemas/forge.workspace-1.schema.json",
+        "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0",
+        "bytes": 4223
+      },
+      {
+        "repository_path": "src/workspace/actions.rs",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/actions.rs",
+        "sha256": "14be7594f507f63029c6eb1414a5e12ad937111703eeae9a1f434655d70ee4a3",
+        "bytes": 43337
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/domain.rs",
+        "sha256": "6f6db304bde42b95ce2f9cd855da2d7c03af258a8f3c790c887e97527235fc6b",
+        "bytes": 39012
+      },
+      {
+        "repository_path": "src/workspace/effects.rs",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/effects.rs",
+        "sha256": "a0159a6fef4ac1fd89220d79cda8b772ae02dbe6900378142da8ceadd379a4b1",
+        "bytes": 51801
+      },
+      {
+        "repository_path": "src/workspace/http.rs",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/http.rs",
+        "sha256": "0a4bbe3b83b871b506777b6422fc7b8e22fd146bd5b64b82f5e2a43160d1dca6",
+        "bytes": 43192
+      },
+      {
+        "repository_path": "src/workspace/index.rs",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/index.rs",
+        "sha256": "23c0cbd53284394d7d111c645b71706f52ea93abb1e9b2c5e8882c47c36095fa",
+        "bytes": 5820
+      },
+      {
+        "repository_path": "src/workspace/mod.rs",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/mod.rs",
+        "sha256": "70a6765601d33f5a803219ac4e60b6cad42966f7e178b89ad210ec7c72874422",
+        "bytes": 702
+      },
+      {
+        "repository_path": "src/workspace/preparation.rs",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/preparation.rs",
+        "sha256": "44825dafb5b0cacada39e81f4373520ee9683b396fcaf1f5d14f199dbeb1861d",
+        "bytes": 8403
+      },
+      {
+        "repository_path": "src/workspace/reports.rs",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/reports.rs",
+        "sha256": "8e6999bdc07bcff1161d91d7064d8d5c3cb1ef2aacebd664154dcebe72787c54",
+        "bytes": 9067
+      },
+      {
+        "repository_path": "src/workspace/root.rs",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/root.rs",
+        "sha256": "aa34052dda2b7c7f52ff6e2a7651fcf5f9135ce41f04a46def63f598fd9a4e01",
+        "bytes": 29123
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/services.rs",
+        "sha256": "3991e1b4e351986f4c8ee774ae2157d786943a05695370452032533091af5429",
+        "bytes": 59945
+      },
+      {
+        "repository_path": "tests/workspace_cli_test.rs",
+        "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/tests/workspace_cli_test.rs",
+        "sha256": "7162303d16b71816085f03ff760c5cc7086a4b34c9f47d288c881a6257169f73",
+        "bytes": 105212
+      }
+    ],
+    "qualification": "Source-bound local evidence before mandatory commit hook, push or PR. No future outcome invented."
+  },
+  "jobs": {
+    "third-strict-clippy": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-checkpoint-third-strict-clippy.json",
+        "sha256": "17548290b2830060313c85c930ae3ce21ca88aa1018532c3f5eb6513676d03e7",
+        "bytes": 7349
+      },
+      "format": "forge.f19-checkpoint-job/1",
+      "label": "third-strict-clippy",
+      "started_utc": "2026-10-02T16:29:17.754719+00:00",
+      "finished_utc": "2026-10-02T16:29:26.960870+00:00",
+      "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+      "head_before": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "head_after": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "staged_repository_paths_before": [],
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--locked",
+        "--all-targets",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "explicit_extra_environment": {},
+      "exit_code": 0,
+      "source_bytes_unchanged_during_command": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-checkpoint-third-strict-clippy.log",
+        "sha256": "2bd606d5bf56a2d745006565391d03381d56250f6a572e0bac096faa5188e2c1",
+        "bytes": 159
+      }
+    },
+    "final-full-tests": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-checkpoint-final-full-tests.json",
+        "sha256": "4dace1e634c560bac6bd6443d89e77f805c663b4b7c9eb35c892c22a6688ce67",
+        "bytes": 7320
+      },
+      "format": "forge.f19-checkpoint-job/1",
+      "label": "final-full-tests",
+      "started_utc": "2026-10-02T16:31:04.797304+00:00",
+      "finished_utc": "2026-10-02T16:32:21.465300+00:00",
+      "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+      "head_before": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "head_after": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "staged_repository_paths_before": [],
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--locked",
+        "--",
+        "--nocapture"
+      ],
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "explicit_extra_environment": {},
+      "exit_code": 0,
+      "source_bytes_unchanged_during_command": true,
+      "test_summaries": {
+        "summaries": 69,
+        "passed": 2753,
+        "failed": 0,
+        "ignored": 3
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-checkpoint-final-full-tests.log",
+        "sha256": "77d35ecbe1bcbd7c569d7818e6312983a3f1658ec15fe75bda6d0767cdbd682a",
+        "bytes": 321756
+      }
+    },
+    "maintained-client": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-checkpoint-maintained-client.json",
+        "sha256": "494de9a8d2f38275dee5cddd3ed283c44ce471568379a1d337b24f84197cc7fb",
+        "bytes": 7376
+      },
+      "format": "forge.f19-checkpoint-job/1",
+      "label": "maintained-client",
+      "started_utc": "2026-10-02T16:42:59.709957+00:00",
+      "finished_utc": "2026-10-02T16:43:03.728808+00:00",
+      "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+      "head_before": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "head_after": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "staged_repository_paths_before": [],
+      "command": [
+        "rtk",
+        "proxy",
+        "python3",
+        "scripts/test_workspace_client.py",
+        "--forge",
+        "/private/tmp/forge-f03-hook-target-1.98.1/debug/forge"
+      ],
+      "cargo_target_dir": "/private/tmp/forge-f03-hook-target-1.98.1",
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "explicit_extra_environment": {},
+      "exit_code": 0,
+      "source_bytes_unchanged_during_command": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-checkpoint-maintained-client.log",
+        "sha256": "85626f58b58802c3e67faa2a0542981ff0b41397692311a8e7bac84e27d4ffb8",
+        "bytes": 235
+      }
+    },
+    "llvm-final-tests": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-checkpoint-llvm-final-tests.json",
+        "sha256": "4539777147e81748cfcf41f8838efa8435680bb00622b205969612a12ac3e843",
+        "bytes": 7440
+      },
+      "format": "forge.f19-checkpoint-job/1",
+      "label": "llvm-final-tests",
+      "started_utc": "2026-10-02T16:33:50.858102+00:00",
+      "finished_utc": "2026-10-02T16:34:24.070186+00:00",
+      "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+      "head_before": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "head_after": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "staged_repository_paths_before": [],
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "llvm-cov",
+        "--locked",
+        "--lib",
+        "--test",
+        "api_contract_validation",
+        "--test",
+        "workspace_cli_test",
+        "--no-report",
+        "--",
+        "--nocapture"
+      ],
+      "cargo_target_dir": "/private/tmp/forge-f09-llvm-target-1.98.1",
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "explicit_extra_environment": {},
+      "exit_code": 0,
+      "source_bytes_unchanged_during_command": true,
+      "test_summaries": {
+        "summaries": 3,
+        "passed": 1899,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-checkpoint-llvm-final-tests.log",
+        "sha256": "9a31664c20c9eeccdf2d147715a5ea2468eaf7e7a3da75cecc959f6317abe801",
+        "bytes": 245947
+      }
+    },
+    "llvm-final-report-json": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-checkpoint-llvm-final-report-json.json",
+        "sha256": "f9c5b29dd22b56a00f6d7813e20e1c7673ee01e2bfe3b0ea195a30a9eec0ecaa",
+        "bytes": 7393
+      },
+      "format": "forge.f19-checkpoint-job/1",
+      "label": "llvm-final-report-json",
+      "started_utc": "2026-10-02T16:36:29.557579+00:00",
+      "finished_utc": "2026-10-02T16:36:29.924440+00:00",
+      "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+      "head_before": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "head_after": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "staged_repository_paths_before": [],
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "llvm-cov",
+        "report",
+        "--json",
+        "--output-path",
+        "/private/tmp/forge-f19-checkpoint-final-llvm-raw.json"
+      ],
+      "cargo_target_dir": "/private/tmp/forge-f09-llvm-target-1.98.1",
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "explicit_extra_environment": {},
+      "exit_code": 0,
+      "source_bytes_unchanged_during_command": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-checkpoint-llvm-final-report-json.log",
+        "sha256": "0c33e3a1de2522b99ed2c8a88c024922b1f2c7e10e50852b96885a2023e883af",
+        "bytes": 84
+      }
+    },
+    "llvm-final-report-lcov": {
+      "receipt": {
+        "path": "/private/tmp/forge-f19-checkpoint-llvm-final-report-lcov.json",
+        "sha256": "03c09667d42eebc0d4d8c613ebedf945f772c3f19bc085757f22628f18ec4ee9",
+        "bytes": 7393
+      },
+      "format": "forge.f19-checkpoint-job/1",
+      "label": "llvm-final-report-lcov",
+      "started_utc": "2026-10-02T16:36:39.598160+00:00",
+      "finished_utc": "2026-10-02T16:36:39.846519+00:00",
+      "cwd": "/Users/bluby/.codex/worktrees/f03-dependency-reviews/forge",
+      "head_before": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "head_after": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "staged_repository_paths_before": [],
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "llvm-cov",
+        "report",
+        "--lcov",
+        "--output-path",
+        "/private/tmp/forge-f19-checkpoint-final-llvm-raw.lcov"
+      ],
+      "cargo_target_dir": "/private/tmp/forge-f09-llvm-target-1.98.1",
+      "toolchain_bin": "/Users/bluby/.rustup/toolchains/1.98.1-aarch64-apple-darwin/bin",
+      "explicit_extra_environment": {},
+      "exit_code": 0,
+      "source_bytes_unchanged_during_command": true,
+      "test_summaries": {
+        "summaries": 0,
+        "passed": 0,
+        "failed": 0,
+        "ignored": 0
+      },
+      "log": {
+        "path": "/private/tmp/forge-f19-checkpoint-llvm-final-report-lcov.log",
+        "sha256": "932e680ed7daf39c275710c0af79e6026f59fcdf6baa6ced217809b29bdbe173",
+        "bytes": 84
+      }
+    }
+  },
+  "docstrings": {
+    "counts": {
+      "selected_named_functions_with_bodies": 104,
+      "selected_bodies_adjacent_rustdoc": 104,
+      "selected_trait_declarations": 2,
+      "trait_declarations_adjacent_rustdoc": 2,
+      "total_selected_named_starts": 106,
+      "selected_body_classes": {
+        "production": 33,
+        "cfg_test": 49,
+        "integration_test": 22
+      },
+      "whole_six_module_production_named_bodies": 115,
+      "whole_production_bodies_documented": 50,
+      "unchanged_legacy_production_omissions": 65,
+      "new_named_fields": 19,
+      "new_named_fields_documented": 19,
+      "new_enum_variants": 20,
+      "new_enum_variants_documented": 20,
+      "new_type_declarations": 10,
+      "new_type_declarations_documented": 10,
+      "workerror_unnamed_payload_slots": {
+        "count": 2,
+        "contextual_variant_semantics_documented": 2,
+        "inline_field_docs": 0
+      }
+    },
+    "method": "Enumerate named fn starts outside Rust comments/strings, match real braces and enclosing module/impl/trait, token-compare exact baseline including literal contents, then inspect adjacent /// through attributes. Trait declarations separate; anonymous/generated functions excluded. Whole legacy inventory retained.",
+    "selected": [
+      {
+        "path": "src/workspace/preparation.rs",
+        "line": 35,
+        "end_line": 40,
+        "key": "impl WorkError::into_error@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/preparation.rs",
+        "line": 46,
+        "end_line": 48,
+        "key": "impl From<Error> for WorkError::from@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/preparation.rs",
+        "line": 101,
+        "end_line": 101,
+        "key": "pub(crate) trait WorkControl::checkpoint@1",
+        "classification": "production",
+        "trait_declaration": true,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/preparation.rs",
+        "line": 105,
+        "end_line": 105,
+        "key": "pub(crate) trait WorkControl::interruption@1",
+        "classification": "production",
+        "trait_declaration": true,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/preparation.rs",
+        "line": 114,
+        "end_line": 116,
+        "key": "impl WorkControl for NoopControl::checkpoint@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/preparation.rs",
+        "line": 119,
+        "end_line": 121,
+        "key": "impl WorkControl for NoopControl::interruption@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/preparation.rs",
+        "line": 160,
+        "end_line": 162,
+        "key": "pub(crate) mod test_support::impl Recorder::at@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/preparation.rs",
+        "line": 165,
+        "end_line": 167,
+        "key": "pub(crate) mod test_support::impl Recorder::before_read_after@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/preparation.rs",
+        "line": 172,
+        "end_line": 197,
+        "key": "pub(crate) mod test_support::impl WorkControl for Recorder::checkpoint@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/preparation.rs",
+        "line": 200,
+        "end_line": 202,
+        "key": "pub(crate) mod test_support::impl WorkControl for Recorder::interruption@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 102,
+        "end_line": 104,
+        "key": "impl Snapshot::capture@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 109,
+        "end_line": 189,
+        "key": "impl Snapshot::capture_with_control@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 193,
+        "end_line": 225,
+        "key": "impl Snapshot::populate_analysis_with_control@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 228,
+        "end_line": 256,
+        "key": "impl Snapshot::validate_applicability_reports_with_control@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 261,
+        "end_line": 292,
+        "key": "impl Snapshot::validate_trace_reports_with_control@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 296,
+        "end_line": 399,
+        "key": "impl Snapshot::populate_mapping_queue_with_control@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 974,
+        "end_line": 1032,
+        "key": "mod tests::mapping_queue_matches_subjects_by_identity_not_by_bounded_label@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 1037,
+        "end_line": 1057,
+        "key": "mod tests::capture_fixture@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 1062,
+        "end_line": 1075,
+        "key": "mod tests::controlled_capture_interrupts_before_index_io@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 1080,
+        "end_line": 1114,
+        "key": "mod tests::controlled_capture_reports_complete_registration_denominator@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 1119,
+        "end_line": 1141,
+        "key": "mod tests::controlled_capture_stops_before_next_registered_read@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 1146,
+        "end_line": 1183,
+        "key": "mod tests::controlled_capture_preserves_analysis_stage_interruption@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 1188,
+        "end_line": 1201,
+        "key": "mod tests::controlled_capture_preserves_mapping_fallback_interruption@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 1206,
+        "end_line": 1234,
+        "key": "mod tests::controlled_trace_freshness_keeps_interruption_outside_fallbacks@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 90,
+        "end_line": 92,
+        "key": "stage@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 97,
+        "end_line": 104,
+        "key": "stage_with_control@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 109,
+        "end_line": 126,
+        "key": "copy_to_stage@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 129,
+        "end_line": 133,
+        "key": "analyze@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 138,
+        "end_line": 164,
+        "key": "analyze_with_control@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 179,
+        "end_line": 181,
+        "key": "mapping@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 185,
+        "end_line": 205,
+        "key": "mapping_with_control@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 300,
+        "end_line": 302,
+        "key": "subject_inventory@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 306,
+        "end_line": 311,
+        "key": "subject_inventory_with_control@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 314,
+        "end_line": 321,
+        "key": "inventory@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 325,
+        "end_line": 391,
+        "key": "inventory_with_control@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 396,
+        "end_line": 438,
+        "key": "append_subjects@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 512,
+        "end_line": 566,
+        "key": "convert_with_control@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 677,
+        "end_line": 729,
+        "key": "mod tests::over_long_subject_ids_are_bounded_without_losing_identity@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 767,
+        "end_line": 784,
+        "key": "mod tests::staged_fixture@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 789,
+        "end_line": 806,
+        "key": "mod tests::controlled_staging_drops_partial_owned_directory@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 811,
+        "end_line": 830,
+        "key": "mod tests::controlled_staging_preserves_success_and_ordinary_io_failure@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 835,
+        "end_line": 861,
+        "key": "mod tests::controlled_conversion_preserves_output_and_post_parser_stop@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 866,
+        "end_line": 879,
+        "key": "mod tests::controlled_domain_errors_remain_ordinary_validation_failures@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 52,
+        "end_line": 54,
+        "key": "budget_expired@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 58,
+        "end_line": 85,
+        "key": "impl OperationControl<'_>::checkpoint_at@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 90,
+        "end_line": 92,
+        "key": "impl WorkControl for OperationControl<'_>::checkpoint@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 95,
+        "end_line": 97,
+        "key": "impl WorkControl for OperationControl<'_>::interruption@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 427,
+        "end_line": 719,
+        "key": "dispatch@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 862,
+        "end_line": 871,
+        "key": "mod tests::budget_expiry_includes_equality_and_unrepresentable_deadline@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 875,
+        "end_line": 905,
+        "key": "mod tests::operation_progress_keeps_original_deadline@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 909,
+        "end_line": 953,
+        "key": "mod tests::operation_checkpoint_stop_is_sticky_before_index_read@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 957,
+        "end_line": 978,
+        "key": "mod tests::operation_already_expired_at_worker_start_does_not_capture@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 982,
+        "end_line": 997,
+        "key": "mod tests::operation_checkpoint_rechecks_budget_after_store_acquisition@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 250,
+        "end_line": 264,
+        "key": "impl Store::running@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 269,
+        "end_line": 292,
+        "key": "impl Store::observe_progress@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 297,
+        "end_line": 360,
+        "key": "impl Store::finish@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 641,
+        "end_line": 665,
+        "key": "mod tests::checkpoint_store_fixture@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 668,
+        "end_line": 689,
+        "key": "mod tests::checkpoint_store_prepared@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 692,
+        "end_line": 705,
+        "key": "mod tests::checkpoint_store_keeper@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 708,
+        "end_line": 719,
+        "key": "mod tests::checkpoint_store_sources_unchanged@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 722,
+        "end_line": 731,
+        "key": "mod tests::checkpoint_store_invalid_counters@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 735,
+        "end_line": 777,
+        "key": "mod tests::checkpoint_progress_requires_running_and_fixed_valid_capture_counters@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 781,
+        "end_line": 804,
+        "key": "mod tests::checkpoint_progress_accepts_empty_and_full_capture_boundaries@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 808,
+        "end_line": 851,
+        "key": "mod tests::checkpoint_cancelled_transfer_preserves_keeper_and_project_sentinels@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 855,
+        "end_line": 896,
+        "key": "mod tests::checkpoint_succeeded_operation_cannot_resurrect_or_merge_twice@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 900,
+        "end_line": 929,
+        "key": "mod tests::checkpoint_failed_operation_rejects_late_progress_and_receipt_transfer@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 933,
+        "end_line": 954,
+        "key": "mod tests::checkpoint_pending_cancellation_is_terminal_before_any_late_completion@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 958,
+        "end_line": 989,
+        "key": "mod tests::checkpoint_stop_fence_wins_over_success_and_failure_before_transfer@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 993,
+        "end_line": 1022,
+        "key": "mod tests::checkpoint_retention_collision_preserves_existing_receipts_and_large_targets@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 1026,
+        "end_line": 1062,
+        "key": "mod tests::checkpoint_receipt_count_collision_preserves_every_retained_preview@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 1066,
+        "end_line": 1118,
+        "key": "mod tests::checkpoint_invalid_internal_result_settles_safely_without_partial_merge@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 114,
+        "end_line": 124,
+        "key": "prepare@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "behavior_or_signature_changed"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 128,
+        "end_line": 379,
+        "key": "prepare_with_control@1",
+        "classification": "production",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 618,
+        "end_line": 656,
+        "key": "mod tests::checkpoint_action_fixture@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 659,
+        "end_line": 663,
+        "key": "mod tests::checkpoint_action_write_index@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 666,
+        "end_line": 677,
+        "key": "mod tests::checkpoint_action_project_bytes@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 680,
+        "end_line": 696,
+        "key": "mod tests::checkpoint_action_keeper@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 716,
+        "end_line": 734,
+        "key": "mod tests::impl super::super::preparation::WorkControl for CheckpointActionControl::checkpoint@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 737,
+        "end_line": 739,
+        "key": "mod tests::impl super::super::preparation::WorkControl for CheckpointActionControl::interruption@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 743,
+        "end_line": 756,
+        "key": "mod tests::checkpoint_action_control@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 760,
+        "end_line": 798,
+        "key": "mod tests::checkpoint_trace_export_accepts_exactly_one_hundred_complete_inputs@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 802,
+        "end_line": 833,
+        "key": "mod tests::checkpoint_trace_export_rejects_one_hundred_one_without_a_successful_prefix@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 837,
+        "end_line": 868,
+        "key": "mod tests::checkpoint_trace_export_accepts_one_relevant_input_among_one_hundred_one_registrations@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 872,
+        "end_line": 922,
+        "key": "mod tests::checkpoint_export_interruption_discards_local_previews_before_global_transfer@1",
+        "classification": "cfg_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1587,
+        "end_line": 1605,
+        "key": "mod checkpoint_http::checkpoint_redact_authority@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1608,
+        "end_line": 1626,
+        "key": "mod checkpoint_http::checkpoint_record_response@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1629,
+        "end_line": 1646,
+        "key": "mod checkpoint_http::checkpoint_raw@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1649,
+        "end_line": 1670,
+        "key": "mod checkpoint_http::checkpoint_accept@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1673,
+        "end_line": 1696,
+        "key": "mod checkpoint_http::checkpoint_shape@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1699,
+        "end_line": 1718,
+        "key": "mod checkpoint_http::checkpoint_terminal@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1721,
+        "end_line": 1735,
+        "key": "mod checkpoint_http::checkpoint_fingerprints@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1738,
+        "end_line": 1743,
+        "key": "mod checkpoint_http::checkpoint_preview@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1746,
+        "end_line": 1757,
+        "key": "mod checkpoint_http::checkpoint_confirm@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1760,
+        "end_line": 1768,
+        "key": "mod checkpoint_http::checkpoint_register@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1771,
+        "end_line": 1783,
+        "key": "mod checkpoint_http::checkpoint_resource@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1786,
+        "end_line": 1807,
+        "key": "mod checkpoint_http::checkpoint_capture_fixture@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1810,
+        "end_line": 1834,
+        "key": "mod checkpoint_http::checkpoint_terminal_race@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1837,
+        "end_line": 1878,
+        "key": "mod checkpoint_http::checkpoint_cancel_attempt@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1882,
+        "end_line": 1935,
+        "key": "mod checkpoint_http::checkpoint_http_reports_observed_capture_cancellation_and_terminal_races@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1938,
+        "end_line": 1952,
+        "key": "mod checkpoint_http::checkpoint_stop@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1955,
+        "end_line": 1988,
+        "key": "mod checkpoint_http::checkpoint_start_fresh@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 1991,
+        "end_line": 2029,
+        "key": "mod checkpoint_http::checkpoint_reject_old_session@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 2032,
+        "end_line": 2059,
+        "key": "mod checkpoint_http::checkpoint_confirm_fresh@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 2063,
+        "end_line": 2116,
+        "key": "mod checkpoint_http::checkpoint_http_graceful_restart_rejects_old_state_and_recaptures_changed_input@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 2119,
+        "end_line": 2171,
+        "key": "mod checkpoint_http::checkpoint_four_route_fixture@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "line": 2175,
+        "end_line": 2246,
+        "key": "mod checkpoint_http::checkpoint_http_all_four_preparation_routes_settle_without_implicit_writes@1",
+        "classification": "integration_test",
+        "trait_declaration": false,
+        "adjacent_rustdoc": true,
+        "change": "new"
+      }
+    ],
+    "files": [
+      {
+        "path": "src/workspace/preparation.rs",
+        "whole_named_definition_count": 8,
+        "whole_documented_definitions": 8,
+        "whole_production_definition_count": 4,
+        "whole_production_documented": 4,
+        "changed_or_new_definition_count": 8,
+        "changed_or_new_documented_definitions": 8,
+        "changed_or_new_trait_declarations": 2,
+        "removed_definitions": []
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "whole_named_definition_count": 44,
+        "whole_documented_definitions": 19,
+        "whole_production_definition_count": 28,
+        "whole_production_documented": 11,
+        "changed_or_new_definition_count": 14,
+        "changed_or_new_documented_definitions": 14,
+        "changed_or_new_trait_declarations": 0,
+        "removed_definitions": [
+          {
+            "name": "validate_trace_reports",
+            "key": "impl Snapshot::validate_trace_reports@1",
+            "line": 196,
+            "end_line": 225,
+            "scope": [
+              "impl Snapshot"
+            ],
+            "classification": "production",
+            "trait_declaration": false,
+            "adjacent_rustdoc": false,
+            "rustdoc": [],
+            "attributes": [],
+            "token_signature": "9f8e755422899f8a642ef0541a6c3825e761dd8b089b607a0462e89d40e1769d"
+          },
+          {
+            "name": "populate_mapping_queue",
+            "key": "impl Snapshot::populate_mapping_queue@1",
+            "line": 227,
+            "end_line": 315,
+            "scope": [
+              "impl Snapshot"
+            ],
+            "classification": "production",
+            "trait_declaration": false,
+            "adjacent_rustdoc": false,
+            "rustdoc": [],
+            "attributes": [],
+            "token_signature": "34668b21feeacc997a2585caa9a25cb6bb98965adf8e4e72ec1eb9961262f4b4"
+          }
+        ]
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "whole_named_definition_count": 41,
+        "whole_documented_definitions": 28,
+        "whole_production_definition_count": 31,
+        "whole_production_documented": 20,
+        "changed_or_new_definition_count": 19,
+        "changed_or_new_documented_definitions": 19,
+        "changed_or_new_trait_declarations": 0,
+        "removed_definitions": [
+          {
+            "name": "convert",
+            "key": "convert@1",
+            "line": 403,
+            "end_line": 449,
+            "scope": [],
+            "classification": "production",
+            "trait_declaration": false,
+            "adjacent_rustdoc": false,
+            "rustdoc": [],
+            "attributes": [],
+            "token_signature": "6938a9ae141d02b5e02c0ba56da3e087c4434882b490f48b55973d9afba15b8f"
+          }
+        ]
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "whole_named_definition_count": 28,
+        "whole_documented_definitions": 11,
+        "whole_production_definition_count": 19,
+        "whole_production_documented": 6,
+        "changed_or_new_definition_count": 10,
+        "changed_or_new_documented_definitions": 10,
+        "changed_or_new_trait_declarations": 0,
+        "removed_definitions": []
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "whole_named_definition_count": 43,
+        "whole_documented_definitions": 19,
+        "whole_production_definition_count": 23,
+        "whole_production_documented": 4,
+        "changed_or_new_definition_count": 18,
+        "changed_or_new_documented_definitions": 18,
+        "changed_or_new_trait_declarations": 0,
+        "removed_definitions": []
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "whole_named_definition_count": 29,
+        "whole_documented_definitions": 19,
+        "whole_production_definition_count": 10,
+        "whole_production_documented": 5,
+        "changed_or_new_definition_count": 13,
+        "changed_or_new_documented_definitions": 13,
+        "changed_or_new_trait_declarations": 0,
+        "removed_definitions": []
+      },
+      {
+        "path": "tests/workspace_cli_test.rs",
+        "whole_named_definition_count": 61,
+        "whole_documented_definitions": 41,
+        "whole_production_definition_count": 0,
+        "whole_production_documented": 0,
+        "changed_or_new_definition_count": 22,
+        "changed_or_new_documented_definitions": 22,
+        "changed_or_new_trait_declarations": 0,
+        "removed_definitions": []
+      }
+    ],
+    "unchanged_legacy_production_omissions": [
+      {
+        "path": "src/workspace/services.rs",
+        "line": 37,
+        "key": "resource_id@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 42,
+        "key": "validation@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 53,
+        "key": "validate_bytes@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 92,
+        "key": "validate_oscal@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 401,
+        "key": "impl Snapshot::item@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 408,
+        "key": "impl Snapshot::queue@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 443,
+        "key": "impl Snapshot::counts@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 453,
+        "key": "impl Snapshot::summary@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 467,
+        "key": "impl Snapshot::controls@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 538,
+        "key": "opaque@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 566,
+        "key": "config_status@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 582,
+        "key": "filtered@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 601,
+        "key": "impl Snapshot::validate_selection@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 631,
+        "key": "impl Snapshot::classification_counts@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 644,
+        "key": "impl Snapshot::report_view@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 745,
+        "key": "impl Snapshot::analysis_inputs@1"
+      },
+      {
+        "path": "src/workspace/services.rs",
+        "line": 771,
+        "key": "reason_priority@1"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 14,
+        "key": "invalid@1"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 33,
+        "key": "selected@1"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 67,
+        "key": "registered_reference@1"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 76,
+        "key": "check_resource@1"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 166,
+        "key": "mapping_manifest@1"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 221,
+        "key": "not_found_manifest@1"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 225,
+        "key": "draft@1"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 277,
+        "key": "subjects@1"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 463,
+        "key": "trace_source@1"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 477,
+        "key": "trace_counts@1"
+      },
+      {
+        "path": "src/workspace/domain.rs",
+        "line": 627,
+        "key": "relative_reference@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 100,
+        "key": "internal@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 103,
+        "key": "unauthorized@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 107,
+        "key": "launch@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 178,
+        "key": "open_browser@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 201,
+        "key": "single_header@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 210,
+        "key": "guard@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 291,
+        "key": "unlock_response@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 354,
+        "key": "respond@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 412,
+        "key": "json_response@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 418,
+        "key": "session_view@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 721,
+        "key": "static_response@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 740,
+        "key": "error_response@1"
+      },
+      {
+        "path": "src/workspace/http.rs",
+        "line": 762,
+        "key": "response@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 46,
+        "key": "unavailable@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 49,
+        "key": "capacity@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 66,
+        "key": "id@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 69,
+        "key": "now@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 74,
+        "key": "impl Store::replay@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 101,
+        "key": "impl Store::remember@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 122,
+        "key": "impl Store::preview@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 180,
+        "key": "impl Store::bind_external@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 198,
+        "key": "impl Store::get_preview@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 216,
+        "key": "impl Store::operation@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 219,
+        "key": "impl Store::conversion@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 226,
+        "key": "impl Store::cancel@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 239,
+        "key": "impl Store::begin@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 361,
+        "key": "impl Store::completed@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 374,
+        "key": "impl Store::commit@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 450,
+        "key": "impl Store::download@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 467,
+        "key": "request_hash@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 472,
+        "key": "semantic_summary@1"
+      },
+      {
+        "path": "src/workspace/effects.rs",
+        "line": 487,
+        "key": "text_diff@1"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 11,
+        "key": "validation_error@1"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 18,
+        "key": "text@1"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 22,
+        "key": "preview_reply@1"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 29,
+        "key": "operation_reply@1"
+      },
+      {
+        "path": "src/workspace/actions.rs",
+        "line": 32,
+        "key": "output_target@1"
+      }
+    ],
+    "audit": {
+      "path": "/private/tmp/forge-f19-checkpoint-independent-source-doc-review-v2/named-rustdoc-audit.json",
+      "sha256": "fae9527d6368ebfab910ceaec922af60ea229186ec9f249a3efcad892ece76b5",
+      "bytes": 327318
+    },
+    "field_trait_audit": {
+      "path": "/private/tmp/forge-f19-checkpoint-field-trait-doc-audit-v2/packet.json",
+      "bytes": 42900,
+      "sha256": "2617c085dfab440cae1524d8211cbe18a146d11ae8f1b7240f1bb48ec9ad1cef"
+    },
+    "root_reproduction": {
+      "path": "/private/tmp/forge-f19-checkpoint-root-evidence-replay-v2.json",
+      "sha256": "81890f2519dd0ba9790e3f0ff0044dfb47b21abef9b79750d15c1109a5b379ff",
+      "bytes": 47214
+    }
+  },
+  "coverage": {
+    "retained_derivation": {
+      "path": "/private/tmp/forge-f19-checkpoint-coverage-v1/coverage.json",
+      "sha256": "f2e1479a8027e6a84fb3f7d0e3267dbc1ca63ae4e78a2db206b6bbd45c01a580",
+      "bytes": 1827783
+    },
+    "derivation_metadata": {
+      "base_commit_parent_snapshot": "d8340f43e05f59db20d4388e945f97bc61b6f1c0",
+      "format": "forge.f19-checkpoint-source-bound-coverage/1",
+      "limits": [
+        "All mapped zero lines and unmapped textual changes retained; no whole-coverage100 claim.",
+        "Function bodies, regions, instances, polls and overlapping runs are not unique tests.",
+        "No Cargo/Git/browser/managed-source/tracker mutation by this lane.",
+        "Raw profile/object pins are post-run preservation; no startup executable attestation or profile-flush causality claim.",
+        "No fullS4/F19, UI/client, hard parser/syscall preemption, durable restart, platform/security/accessibility/human or final integrated docs acceptance."
+      ],
+      "methodology": {
+        "branch_mcdc": "Unavailable from these exports when no corresponding records exist; line/function coverage does not prove behavioral branches.",
+        "git_patch": "Parse pinned external Git --no-index --no-ext-diff --unified=0 stdout; reconstruct each entire new source byte-for-byte against pinned base. Plus lines before cfg(test) are textual additions/modifications, including reflows/docs/declarations; not semantic-only coverage. No Git invocation by this script.",
+        "lcov": "Union all SF records by maximum DA count for each exact (source file,line); no comment, blank, closing-brace or zero pruning.",
+        "named_functions": "Use pinned final doc inventory. Match first source-associated raw kind0 region to exact declaration start, exclude closure symbols from source body matches; preserve individual symbols/families and sum entry counts. Trait declarations have no body denominator.",
+        "native": "Unaltered native JSON whole-file summaries include tests/generated functions and use native summary semantics; kept separate from unique LCOV DA.",
+        "production": "Every mapped line before the first exact cfg(test) attribute. Mod is unchanged logic and reported separately as context.",
+        "sequence": "Independently derive complete production-prefix text changes with stdlib SequenceMatcher(autojunk=False), retaining the distinct repeated-line alignment.",
+        "unmatched_instances": "Retained separately; derive-attribute anchors and closures explicitly labeled, other native instances not assumed authored bodies."
+      }
+    },
+    "root_raw_reproduction": {
+      "path": "/private/tmp/forge-f19-checkpoint-root-raw-coverage-replay-v1.json",
+      "sha256": "d5e6a98d4af08a0f02816c804bf04d240f49701f7968b3e3eeeffc15a79197aa",
+      "bytes": 606
+    },
+    "independent": {
+      "path": "/private/tmp/forge-f19-checkpoint-independent-coverage-replay-v1/replay.json",
+      "sha256": "a6845e7839a64c6c3bec39d939c01cbd8ac100dd21d74696c0637028c3caeb2d",
+      "bytes": 262761
+    },
+    "production_context_summary_including_mod": {
+      "positive": 1926,
+      "total": 2425,
+      "zero": 499
+    },
+    "selected_body_entries": {
+      "positive": 31,
+      "total": 33
+    },
+    "files": [
+      {
+        "repository_path": "src/workspace/preparation.rs",
+        "source_pin": {
+          "repository_path": "src/workspace/preparation.rs",
+          "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/preparation.rs",
+          "sha256": "44825dafb5b0cacada39e81f4373520ee9683b396fcaf1f5d14f199dbeb1861d",
+          "bytes": 8403
+        },
+        "cfg_test_start_line": 124,
+        "production_unique_DA": {
+          "positive": 11,
+          "total": 14,
+          "zero_lines": [
+            119,
+            120,
+            121
+          ]
+        },
+        "added_source_lines_with_DA": {
+          "positive": 11,
+          "total": 14,
+          "zero_lines": [
+            119,
+            120,
+            121
+          ],
+          "unmapped_lines": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            39,
+            41,
+            42,
+            43,
+            44,
+            45,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87,
+            88,
+            89,
+            90,
+            91,
+            92,
+            93,
+            94,
+            95,
+            96,
+            97,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109,
+            110,
+            111,
+            112,
+            113,
+            117,
+            118,
+            122,
+            123
+          ]
+        },
+        "native_llvm_whole_file_including_cfg_test": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 10,
+            "covered": 8,
+            "percent": 80.0
+          },
+          "instantiations": {
+            "count": 14,
+            "covered": 10,
+            "percent": 71.42857142857143
+          },
+          "lines": {
+            "count": 49,
+            "covered": 41,
+            "percent": 83.6734693877551
+          },
+          "regions": {
+            "count": 61,
+            "covered": 52,
+            "notcovered": 9,
+            "percent": 85.24590163934425
+          }
+        }
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "source_pin": {
+          "repository_path": "src/workspace/services.rs",
+          "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/services.rs",
+          "sha256": "3991e1b4e351986f4c8ee774ae2157d786943a05695370452032533091af5429",
+          "bytes": 59945
+        },
+        "cfg_test_start_line": 786,
+        "production_unique_DA": {
+          "positive": 449,
+          "total": 595,
+          "zero_lines": [
+            60,
+            85,
+            88,
+            144,
+            169,
+            206,
+            219,
+            220,
+            234,
+            235,
+            236,
+            237,
+            238,
+            239,
+            240,
+            241,
+            242,
+            243,
+            244,
+            245,
+            246,
+            247,
+            249,
+            251,
+            252,
+            284,
+            285,
+            287,
+            308,
+            309,
+            310,
+            319,
+            320,
+            323,
+            324,
+            325,
+            326,
+            327,
+            328,
+            329,
+            330,
+            369,
+            415,
+            416,
+            420,
+            422,
+            423,
+            424,
+            425,
+            426,
+            427,
+            428,
+            429,
+            430,
+            447,
+            448,
+            449,
+            467,
+            468,
+            469,
+            474,
+            475,
+            476,
+            477,
+            478,
+            479,
+            480,
+            481,
+            484,
+            485,
+            486,
+            487,
+            488,
+            489,
+            490,
+            491,
+            506,
+            528,
+            568,
+            593,
+            601,
+            602,
+            603,
+            604,
+            605,
+            606,
+            607,
+            608,
+            609,
+            611,
+            612,
+            613,
+            614,
+            615,
+            616,
+            617,
+            618,
+            619,
+            621,
+            622,
+            623,
+            624,
+            625,
+            627,
+            629,
+            644,
+            645,
+            646,
+            647,
+            648,
+            649,
+            650,
+            651,
+            652,
+            653,
+            654,
+            655,
+            656,
+            657,
+            658,
+            659,
+            660,
+            661,
+            662,
+            681,
+            689,
+            690,
+            691,
+            692,
+            693,
+            694,
+            695,
+            696,
+            697,
+            698,
+            699,
+            700,
+            701,
+            702,
+            703,
+            706,
+            708,
+            721,
+            724,
+            741,
+            757
+          ]
+        },
+        "added_source_lines_with_DA": {
+          "positive": 84,
+          "total": 103,
+          "zero_lines": [
+            144,
+            169,
+            206,
+            219,
+            220,
+            234,
+            236,
+            252,
+            319,
+            320,
+            323,
+            324,
+            325,
+            326,
+            327,
+            328,
+            329,
+            330,
+            369
+          ],
+          "unmapped_lines": [
+            9,
+            100,
+            101,
+            105,
+            106,
+            107,
+            108,
+            190,
+            191,
+            192,
+            210,
+            221,
+            226,
+            227,
+            258,
+            259,
+            260,
+            273,
+            294,
+            295,
+            321,
+            322,
+            331
+          ]
+        },
+        "native_llvm_whole_file_including_cfg_test": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 115,
+            "covered": 91,
+            "percent": 79.13043478260869
+          },
+          "instantiations": {
+            "count": 207,
+            "covered": 122,
+            "percent": 58.93719806763285
+          },
+          "lines": {
+            "count": 1029,
+            "covered": 858,
+            "percent": 83.38192419825073
+          },
+          "regions": {
+            "count": 2206,
+            "covered": 1816,
+            "notcovered": 390,
+            "percent": 82.32094288304623
+          }
+        }
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "source_pin": {
+          "repository_path": "src/workspace/domain.rs",
+          "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/domain.rs",
+          "sha256": "6f6db304bde42b95ce2f9cd855da2d7c03af258a8f3c790c887e97527235fc6b",
+          "bytes": 39012
+        },
+        "cfg_test_start_line": 638,
+        "production_unique_DA": {
+          "positive": 411,
+          "total": 492,
+          "zero_lines": [
+            72,
+            83,
+            152,
+            173,
+            217,
+            218,
+            231,
+            232,
+            236,
+            237,
+            238,
+            239,
+            250,
+            277,
+            278,
+            279,
+            282,
+            283,
+            284,
+            285,
+            286,
+            287,
+            288,
+            314,
+            315,
+            316,
+            317,
+            318,
+            319,
+            320,
+            321,
+            361,
+            366,
+            369,
+            370,
+            371,
+            372,
+            374,
+            375,
+            376,
+            377,
+            378,
+            379,
+            380,
+            381,
+            382,
+            383,
+            384,
+            385,
+            386,
+            412,
+            445,
+            453,
+            455,
+            458,
+            468,
+            472,
+            473,
+            487,
+            490,
+            491,
+            492,
+            493,
+            494,
+            495,
+            496,
+            497,
+            498,
+            499,
+            500,
+            520,
+            552,
+            553,
+            554,
+            555,
+            556,
+            557,
+            558,
+            560,
+            583,
+            606
+          ]
+        },
+        "added_source_lines_with_DA": {
+          "positive": 105,
+          "total": 114,
+          "zero_lines": [
+            319,
+            320,
+            321,
+            366,
+            374,
+            386,
+            412,
+            520,
+            560
+          ],
+          "unmapped_lines": [
+            11,
+            88,
+            89,
+            93,
+            94,
+            95,
+            96,
+            105,
+            106,
+            107,
+            108,
+            121,
+            128,
+            134,
+            135,
+            136,
+            137,
+            178,
+            182,
+            183,
+            184,
+            299,
+            304,
+            305,
+            312,
+            313,
+            322,
+            323,
+            324,
+            393,
+            394,
+            395,
+            509,
+            510,
+            511
+          ]
+        },
+        "native_llvm_whole_file_including_cfg_test": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 77,
+            "covered": 52,
+            "percent": 67.53246753246754
+          },
+          "instantiations": {
+            "count": 144,
+            "covered": 81,
+            "percent": 56.25
+          },
+          "lines": {
+            "count": 706,
+            "covered": 603,
+            "percent": 85.41076487252124
+          },
+          "regions": {
+            "count": 1425,
+            "covered": 1189,
+            "notcovered": 236,
+            "percent": 83.43859649122807
+          }
+        }
+      },
+      {
+        "repository_path": "src/workspace/http.rs",
+        "source_pin": {
+          "repository_path": "src/workspace/http.rs",
+          "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/http.rs",
+          "sha256": "0a4bbe3b83b871b506777b6422fc7b8e22fd146bd5b64b82f5e2a43160d1dca6",
+          "bytes": 43192
+        },
+        "cfg_test_start_line": 787,
+        "production_unique_DA": {
+          "positive": 425,
+          "total": 597,
+          "zero_lines": [
+            71,
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            132,
+            133,
+            134,
+            140,
+            150,
+            151,
+            178,
+            182,
+            192,
+            193,
+            198,
+            199,
+            205,
+            212,
+            225,
+            233,
+            234,
+            235,
+            236,
+            237,
+            241,
+            250,
+            251,
+            252,
+            253,
+            254,
+            256,
+            265,
+            266,
+            267,
+            268,
+            269,
+            275,
+            278,
+            279,
+            280,
+            332,
+            333,
+            334,
+            364,
+            367,
+            368,
+            370,
+            379,
+            389,
+            394,
+            436,
+            441,
+            450,
+            466,
+            472,
+            473,
+            475,
+            479,
+            510,
+            515,
+            533,
+            549,
+            564,
+            582,
+            595,
+            597,
+            598,
+            599,
+            600,
+            601,
+            602,
+            605,
+            608,
+            611,
+            614,
+            617,
+            619,
+            620,
+            621,
+            623,
+            624,
+            625,
+            626,
+            627,
+            628,
+            629,
+            631,
+            632,
+            633,
+            636,
+            637,
+            638,
+            639,
+            640,
+            641,
+            642,
+            643,
+            644,
+            645,
+            646,
+            647,
+            648,
+            649,
+            650,
+            652,
+            653,
+            654,
+            655,
+            658,
+            659,
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669,
+            670,
+            674,
+            675,
+            676,
+            680,
+            683,
+            684,
+            685,
+            686,
+            687,
+            689,
+            690,
+            691,
+            692,
+            695,
+            696,
+            697,
+            698,
+            699,
+            700,
+            709,
+            710,
+            711,
+            712,
+            714,
+            717,
+            721,
+            722,
+            723,
+            724,
+            725,
+            726,
+            727,
+            728,
+            729,
+            730,
+            731,
+            732,
+            733,
+            734,
+            736,
+            738,
+            750,
+            751,
+            752,
+            753,
+            754,
+            755,
+            756
+          ]
+        },
+        "added_source_lines_with_DA": {
+          "positive": 46,
+          "total": 47,
+          "zero_lines": [
+            71
+          ],
+          "unmapped_lines": [
+            19,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            55,
+            56,
+            57,
+            66,
+            68,
+            69,
+            76,
+            78,
+            79,
+            86,
+            87,
+            88,
+            89,
+            93,
+            94,
+            98,
+            99,
+            425,
+            552,
+            553,
+            558
+          ]
+        },
+        "native_llvm_whole_file_including_cfg_test": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 86,
+            "covered": 49,
+            "percent": 56.97674418604651
+          },
+          "instantiations": {
+            "count": 163,
+            "covered": 56,
+            "percent": 34.355828220858896
+          },
+          "lines": {
+            "count": 825,
+            "covered": 617,
+            "percent": 74.7878787878788
+          },
+          "regions": {
+            "count": 1686,
+            "covered": 1270,
+            "notcovered": 416,
+            "percent": 75.32621589561091
+          }
+        }
+      },
+      {
+        "repository_path": "src/workspace/effects.rs",
+        "source_pin": {
+          "repository_path": "src/workspace/effects.rs",
+          "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/effects.rs",
+          "sha256": "a0159a6fef4ac1fd89220d79cda8b772ae02dbe6900378142da8ceadd379a4b1",
+          "bytes": 51801
+        },
+        "cfg_test_start_line": 517,
+        "production_unique_DA": {
+          "positive": 365,
+          "total": 412,
+          "zero_lines": [
+            59,
+            60,
+            65,
+            97,
+            132,
+            138,
+            188,
+            201,
+            202,
+            203,
+            204,
+            205,
+            208,
+            209,
+            210,
+            211,
+            212,
+            219,
+            220,
+            221,
+            222,
+            223,
+            224,
+            225,
+            241,
+            363,
+            381,
+            400,
+            401,
+            402,
+            403,
+            404,
+            418,
+            436,
+            441,
+            453,
+            456,
+            457,
+            458,
+            459,
+            460,
+            461,
+            462,
+            463,
+            464,
+            482,
+            501
+          ]
+        },
+        "added_source_lines_with_DA": {
+          "positive": 67,
+          "total": 67,
+          "zero_lines": [],
+          "unmapped_lines": [
+            3,
+            43,
+            44,
+            249,
+            265,
+            266,
+            267,
+            268,
+            283,
+            288,
+            289,
+            293,
+            294,
+            295,
+            296,
+            317,
+            331,
+            340,
+            341,
+            345,
+            346,
+            347,
+            348
+          ]
+        },
+        "native_llvm_whole_file_including_cfg_test": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 57,
+            "covered": 52,
+            "percent": 91.22807017543859
+          },
+          "instantiations": {
+            "count": 94,
+            "covered": 81,
+            "percent": 86.17021276595744
+          },
+          "lines": {
+            "count": 911,
+            "covered": 856,
+            "percent": 93.96267837541163
+          },
+          "regions": {
+            "count": 2179,
+            "covered": 2090,
+            "notcovered": 89,
+            "percent": 95.91555759522716
+          }
+        }
+      },
+      {
+        "repository_path": "src/workspace/actions.rs",
+        "source_pin": {
+          "repository_path": "src/workspace/actions.rs",
+          "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/actions.rs",
+          "sha256": "14be7594f507f63029c6eb1414a5e12ad937111703eeae9a1f434655d70ee4a3",
+          "bytes": 43337
+        },
+        "cfg_test_start_line": 381,
+        "production_unique_DA": {
+          "positive": 256,
+          "total": 306,
+          "zero_lines": [
+            11,
+            12,
+            17,
+            36,
+            39,
+            143,
+            160,
+            168,
+            173,
+            174,
+            175,
+            176,
+            177,
+            178,
+            180,
+            194,
+            195,
+            196,
+            197,
+            198,
+            199,
+            200,
+            201,
+            202,
+            203,
+            204,
+            205,
+            206,
+            207,
+            208,
+            209,
+            210,
+            211,
+            212,
+            223,
+            228,
+            240,
+            262,
+            271,
+            282,
+            296,
+            309,
+            321,
+            327,
+            336,
+            357,
+            358,
+            361,
+            372,
+            373
+          ]
+        },
+        "added_source_lines_with_DA": {
+          "positive": 26,
+          "total": 41,
+          "zero_lines": [
+            143,
+            168,
+            180,
+            200,
+            206,
+            210,
+            223,
+            228,
+            271,
+            296,
+            321,
+            357,
+            361,
+            372,
+            373
+          ],
+          "unmapped_lines": [
+            5,
+            113,
+            125,
+            126,
+            127,
+            371,
+            374,
+            375
+          ]
+        },
+        "native_llvm_whole_file_including_cfg_test": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 55,
+            "covered": 46,
+            "percent": 83.63636363636363
+          },
+          "instantiations": {
+            "count": 84,
+            "covered": 59,
+            "percent": 70.23809523809523
+          },
+          "lines": {
+            "count": 752,
+            "covered": 654,
+            "percent": 86.96808510638297
+          },
+          "regions": {
+            "count": 1626,
+            "covered": 1381,
+            "notcovered": 245,
+            "percent": 84.93234932349324
+          }
+        }
+      },
+      {
+        "repository_path": "src/workspace/mod.rs",
+        "source_pin": {
+          "repository_path": "src/workspace/mod.rs",
+          "path": "/private/tmp/forge-f19-checkpoint-final-source-v1/source/src/workspace/mod.rs",
+          "sha256": "70a6765601d33f5a803219ac4e60b6cad42966f7e178b89ad210ec7c72874422",
+          "bytes": 702
+        },
+        "cfg_test_start_line": null,
+        "production_unique_DA": {
+          "positive": 9,
+          "total": 9,
+          "zero_lines": []
+        },
+        "added_source_lines_with_DA": {
+          "positive": 0,
+          "total": 0,
+          "zero_lines": [],
+          "unmapped_lines": [
+            11
+          ]
+        },
+        "native_llvm_whole_file_including_cfg_test": {
+          "branches": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "mcdc": {
+            "count": 0,
+            "covered": 0,
+            "notcovered": 0,
+            "percent": 0.0
+          },
+          "functions": {
+            "count": 2,
+            "covered": 1,
+            "percent": 50.0
+          },
+          "instantiations": {
+            "count": 4,
+            "covered": 1,
+            "percent": 25.0
+          },
+          "lines": {
+            "count": 10,
+            "covered": 9,
+            "percent": 90.0
+          },
+          "regions": {
+            "count": 10,
+            "covered": 8,
+            "notcovered": 2,
+            "percent": 80.0
+          }
+        }
+      }
+    ],
+    "selected_production_bodies": [
+      {
+        "repository_path": "src/workspace/preparation.rs",
+        "name": "into_error",
+        "qualified_key": "impl WorkError::into_error@1",
+        "declaration_start": 35,
+        "body_end_line": 40,
+        "unique_DA_positive": 5,
+        "unique_DA_total": 5,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvMNtNtCsckvLbW5qlsq_5forge9workspace11preparationNtB2_9WorkError10into_error",
+            "first_region": [
+              35,
+              5,
+              35,
+              44,
+              7,
+              0,
+              0,
+              0
+            ],
+            "count": 7
+          },
+          {
+            "name": "_RNvMNtNtCs2JH5OKvciWJ_5forge9workspace11preparationNtB2_9WorkError10into_error",
+            "first_region": [
+              35,
+              5,
+              35,
+              44,
+              1,
+              0,
+              0,
+              0
+            ],
+            "count": 1
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/preparation.rs",
+        "name": "from",
+        "qualified_key": "impl From<Error> for WorkError::from@1",
+        "declaration_start": 46,
+        "body_end_line": 48,
+        "unique_DA_positive": 3,
+        "unique_DA_total": 3,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvXs_NtNtCsckvLbW5qlsq_5forge9workspace11preparationNtB4_9WorkErrorINtNtCs8Mbv00yxnRz_4core7convert4FromNtNtB6_8contract5ErrorE4from",
+            "first_region": [
+              46,
+              5,
+              46,
+              34,
+              10,
+              0,
+              0,
+              0
+            ],
+            "count": 10
+          },
+          {
+            "name": "_RNvXs_NtNtCs2JH5OKvciWJ_5forge9workspace11preparationNtB4_9WorkErrorINtNtCs8Mbv00yxnRz_4core7convert4FromNtNtB6_8contract5ErrorE4from",
+            "first_region": [
+              46,
+              5,
+              46,
+              34,
+              0,
+              0,
+              0,
+              0
+            ],
+            "count": 0
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/preparation.rs",
+        "name": "checkpoint",
+        "qualified_key": "impl WorkControl for NoopControl::checkpoint@1",
+        "declaration_start": 114,
+        "body_end_line": 116,
+        "unique_DA_positive": 3,
+        "unique_DA_total": 3,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvXs0_NtNtCsckvLbW5qlsq_5forge9workspace11preparationNtB5_11NoopControlNtB5_11WorkControl10checkpoint",
+            "first_region": [
+              114,
+              5,
+              114,
+              89,
+              35629,
+              0,
+              0,
+              0
+            ],
+            "count": 35629
+          },
+          {
+            "name": "_RNvXs0_NtNtCs2JH5OKvciWJ_5forge9workspace11preparationNtB5_11NoopControlNtB5_11WorkControl10checkpoint",
+            "first_region": [
+              114,
+              5,
+              114,
+              89,
+              689,
+              0,
+              0,
+              0
+            ],
+            "count": 689
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/preparation.rs",
+        "name": "interruption",
+        "qualified_key": "impl WorkControl for NoopControl::interruption@1",
+        "declaration_start": 119,
+        "body_end_line": 121,
+        "unique_DA_positive": 0,
+        "unique_DA_total": 3,
+        "zero_DA_lines": [
+          119,
+          120,
+          121
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvXs0_NtNtCsckvLbW5qlsq_5forge9workspace11preparationNtB5_11NoopControlNtB5_11WorkControl12interruption",
+            "first_region": [
+              119,
+              5,
+              119,
+              51,
+              0,
+              0,
+              0,
+              0
+            ],
+            "count": 0
+          },
+          {
+            "name": "_RNvXs0_NtNtCs2JH5OKvciWJ_5forge9workspace11preparationNtB5_11NoopControlNtB5_11WorkControl12interruption",
+            "first_region": [
+              119,
+              5,
+              119,
+              51,
+              0,
+              0,
+              0,
+              0
+            ],
+            "count": 0
+          }
+        ],
+        "positive_named_invocation": false
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "name": "capture",
+        "qualified_key": "impl Snapshot::capture@1",
+        "declaration_start": 102,
+        "body_end_line": 104,
+        "unique_DA_positive": 3,
+        "unique_DA_total": 3,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvMNtNtCsckvLbW5qlsq_5forge9workspace8servicesNtB2_8Snapshot7capture",
+            "first_region": [
+              102,
+              5,
+              102,
+              55,
+              91,
+              0,
+              0,
+              0
+            ],
+            "count": 91
+          },
+          {
+            "name": "_RNvMNtNtCs2JH5OKvciWJ_5forge9workspace8servicesNtB2_8Snapshot7capture",
+            "first_region": [
+              102,
+              5,
+              102,
+              55,
+              23,
+              0,
+              0,
+              0
+            ],
+            "count": 23
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "name": "capture_with_control",
+        "qualified_key": "impl Snapshot::capture_with_control@1",
+        "declaration_start": 109,
+        "body_end_line": 189,
+        "unique_DA_positive": 76,
+        "unique_DA_total": 78,
+        "zero_DA_lines": [
+          144,
+          169
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvMNtNtCsckvLbW5qlsq_5forge9workspace8servicesNtB2_8Snapshot20capture_with_control",
+            "first_region": [
+              109,
+              5,
+              112,
+              26,
+              104,
+              0,
+              0,
+              0
+            ],
+            "count": 104
+          },
+          {
+            "name": "_RNvMNtNtCs2JH5OKvciWJ_5forge9workspace8servicesNtB2_8Snapshot20capture_with_control",
+            "first_region": [
+              109,
+              5,
+              112,
+              26,
+              30,
+              0,
+              0,
+              0
+            ],
+            "count": 30
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "name": "populate_analysis_with_control",
+        "qualified_key": "impl Snapshot::populate_analysis_with_control@1",
+        "declaration_start": 193,
+        "body_end_line": 225,
+        "unique_DA_positive": 23,
+        "unique_DA_total": 26,
+        "zero_DA_lines": [
+          206,
+          219,
+          220
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvMNtNtCsckvLbW5qlsq_5forge9workspace8servicesNtB2_8Snapshot30populate_analysis_with_control",
+            "first_region": [
+              193,
+              5,
+              193,
+              98,
+              94,
+              0,
+              0,
+              0
+            ],
+            "count": 94
+          },
+          {
+            "name": "_RNvMNtNtCs2JH5OKvciWJ_5forge9workspace8servicesNtB2_8Snapshot30populate_analysis_with_control",
+            "first_region": [
+              193,
+              5,
+              193,
+              98,
+              29,
+              0,
+              0,
+              0
+            ],
+            "count": 29
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "name": "validate_applicability_reports_with_control",
+        "qualified_key": "impl Snapshot::validate_applicability_reports_with_control@1",
+        "declaration_start": 228,
+        "body_end_line": 256,
+        "unique_DA_positive": 9,
+        "unique_DA_total": 26,
+        "zero_DA_lines": [
+          234,
+          235,
+          236,
+          237,
+          238,
+          239,
+          240,
+          241,
+          242,
+          243,
+          244,
+          245,
+          246,
+          247,
+          249,
+          251,
+          252
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvMNtNtCsckvLbW5qlsq_5forge9workspace8servicesNtB2_8Snapshot43validate_applicability_reports_with_control",
+            "first_region": [
+              228,
+              5,
+              231,
+              24,
+              92,
+              0,
+              0,
+              0
+            ],
+            "count": 92
+          },
+          {
+            "name": "_RNvMNtNtCs2JH5OKvciWJ_5forge9workspace8servicesNtB2_8Snapshot43validate_applicability_reports_with_control",
+            "first_region": [
+              228,
+              5,
+              231,
+              24,
+              29,
+              0,
+              0,
+              0
+            ],
+            "count": 29
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "name": "validate_trace_reports_with_control",
+        "qualified_key": "impl Snapshot::validate_trace_reports_with_control@1",
+        "declaration_start": 261,
+        "body_end_line": 292,
+        "unique_DA_positive": 25,
+        "unique_DA_total": 28,
+        "zero_DA_lines": [
+          284,
+          285,
+          287
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvMNtNtCsckvLbW5qlsq_5forge9workspace8servicesNtB2_8Snapshot35validate_trace_reports_with_control",
+            "first_region": [
+              261,
+              5,
+              264,
+              24,
+              94,
+              0,
+              0,
+              0
+            ],
+            "count": 94
+          },
+          {
+            "name": "_RNvMNtNtCs2JH5OKvciWJ_5forge9workspace8servicesNtB2_8Snapshot35validate_trace_reports_with_control",
+            "first_region": [
+              261,
+              5,
+              264,
+              24,
+              29,
+              0,
+              0,
+              0
+            ],
+            "count": 29
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/services.rs",
+        "name": "populate_mapping_queue_with_control",
+        "qualified_key": "impl Snapshot::populate_mapping_queue_with_control@1",
+        "declaration_start": 296,
+        "body_end_line": 399,
+        "unique_DA_positive": 65,
+        "unique_DA_total": 79,
+        "zero_DA_lines": [
+          308,
+          309,
+          310,
+          319,
+          320,
+          323,
+          324,
+          325,
+          326,
+          327,
+          328,
+          329,
+          330,
+          369
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvMNtNtCsckvLbW5qlsq_5forge9workspace8servicesNtB2_8Snapshot35populate_mapping_queue_with_control",
+            "first_region": [
+              296,
+              5,
+              299,
+              24,
+              94,
+              0,
+              0,
+              0
+            ],
+            "count": 94
+          },
+          {
+            "name": "_RNvMNtNtCs2JH5OKvciWJ_5forge9workspace8servicesNtB2_8Snapshot35populate_mapping_queue_with_control",
+            "first_region": [
+              296,
+              5,
+              299,
+              24,
+              29,
+              0,
+              0,
+              0
+            ],
+            "count": 29
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "stage",
+        "qualified_key": "stage@1",
+        "declaration_start": 90,
+        "body_end_line": 92,
+        "unique_DA_positive": 3,
+        "unique_DA_total": 3,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain5stage",
+            "first_region": [
+              90,
+              1,
+              90,
+              70,
+              4,
+              0,
+              0,
+              0
+            ],
+            "count": 4
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain5stage",
+            "first_region": [
+              90,
+              1,
+              90,
+              70,
+              2,
+              0,
+              0,
+              0
+            ],
+            "count": 2
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "stage_with_control",
+        "qualified_key": "stage_with_control@1",
+        "declaration_start": 97,
+        "body_end_line": 104,
+        "unique_DA_positive": 8,
+        "unique_DA_total": 8,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain18stage_with_control",
+            "first_region": [
+              97,
+              1,
+              100,
+              35,
+              43,
+              0,
+              0,
+              0
+            ],
+            "count": 43
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain18stage_with_control",
+            "first_region": [
+              97,
+              1,
+              100,
+              35,
+              25,
+              0,
+              0,
+              0
+            ],
+            "count": 25
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "copy_to_stage",
+        "qualified_key": "copy_to_stage@1",
+        "declaration_start": 109,
+        "body_end_line": 126,
+        "unique_DA_positive": 16,
+        "unique_DA_total": 16,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain13copy_to_stage",
+            "first_region": [
+              109,
+              1,
+              113,
+              35,
+              45,
+              0,
+              0,
+              0
+            ],
+            "count": 45
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain13copy_to_stage",
+            "first_region": [
+              109,
+              1,
+              113,
+              35,
+              25,
+              0,
+              0,
+              0
+            ],
+            "count": 25
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "analyze",
+        "qualified_key": "analyze@1",
+        "declaration_start": 129,
+        "body_end_line": 133,
+        "unique_DA_positive": 5,
+        "unique_DA_total": 5,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain7analyze",
+            "first_region": [
+              129,
+              1,
+              131,
+              62,
+              2,
+              0,
+              0,
+              0
+            ],
+            "count": 2
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain7analyze",
+            "first_region": [
+              129,
+              1,
+              131,
+              62,
+              0,
+              0,
+              0,
+              0
+            ],
+            "count": 0
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "analyze_with_control",
+        "qualified_key": "analyze_with_control@1",
+        "declaration_start": 138,
+        "body_end_line": 164,
+        "unique_DA_positive": 24,
+        "unique_DA_total": 25,
+        "zero_DA_lines": [
+          152
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain20analyze_with_control",
+            "first_region": [
+              138,
+              1,
+              141,
+              66,
+              14,
+              0,
+              0,
+              0
+            ],
+            "count": 14
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain20analyze_with_control",
+            "first_region": [
+              138,
+              1,
+              141,
+              66,
+              9,
+              0,
+              0,
+              0
+            ],
+            "count": 9
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "mapping",
+        "qualified_key": "mapping@1",
+        "declaration_start": 179,
+        "body_end_line": 181,
+        "unique_DA_positive": 3,
+        "unique_DA_total": 3,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain7mapping",
+            "first_region": [
+              179,
+              1,
+              179,
+              84,
+              2,
+              0,
+              0,
+              0
+            ],
+            "count": 2
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain7mapping",
+            "first_region": [
+              179,
+              1,
+              179,
+              84,
+              0,
+              0,
+              0,
+              0
+            ],
+            "count": 0
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "mapping_with_control",
+        "qualified_key": "mapping_with_control@1",
+        "declaration_start": 185,
+        "body_end_line": 205,
+        "unique_DA_positive": 21,
+        "unique_DA_total": 21,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain20mapping_with_control",
+            "first_region": [
+              185,
+              1,
+              188,
+              47,
+              14,
+              0,
+              0,
+              0
+            ],
+            "count": 14
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain20mapping_with_control",
+            "first_region": [
+              185,
+              1,
+              188,
+              47,
+              6,
+              0,
+              0,
+              0
+            ],
+            "count": 6
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "subject_inventory",
+        "qualified_key": "subject_inventory@1",
+        "declaration_start": 300,
+        "body_end_line": 302,
+        "unique_DA_positive": 3,
+        "unique_DA_total": 3,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain17subject_inventory",
+            "first_region": [
+              300,
+              1,
+              300,
+              81,
+              1,
+              0,
+              0,
+              0
+            ],
+            "count": 1
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain17subject_inventory",
+            "first_region": [
+              300,
+              1,
+              300,
+              81,
+              0,
+              0,
+              0,
+              0
+            ],
+            "count": 0
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "subject_inventory_with_control",
+        "qualified_key": "subject_inventory_with_control@1",
+        "declaration_start": 306,
+        "body_end_line": 311,
+        "unique_DA_positive": 6,
+        "unique_DA_total": 6,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain30subject_inventory_with_control",
+            "first_region": [
+              306,
+              1,
+              309,
+              34,
+              11,
+              0,
+              0,
+              0
+            ],
+            "count": 11
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain30subject_inventory_with_control",
+            "first_region": [
+              306,
+              1,
+              309,
+              34,
+              5,
+              0,
+              0,
+              0
+            ],
+            "count": 5
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "inventory",
+        "qualified_key": "inventory@1",
+        "declaration_start": 314,
+        "body_end_line": 321,
+        "unique_DA_positive": 0,
+        "unique_DA_total": 8,
+        "zero_DA_lines": [
+          314,
+          315,
+          316,
+          317,
+          318,
+          319,
+          320,
+          321
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain9inventory",
+            "first_region": [
+              314,
+              1,
+              318,
+              30,
+              0,
+              0,
+              0,
+              0
+            ],
+            "count": 0
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain9inventory",
+            "first_region": [
+              314,
+              1,
+              318,
+              30,
+              0,
+              0,
+              0,
+              0
+            ],
+            "count": 0
+          }
+        ],
+        "positive_named_invocation": false
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "inventory_with_control",
+        "qualified_key": "inventory_with_control@1",
+        "declaration_start": 325,
+        "body_end_line": 391,
+        "unique_DA_positive": 42,
+        "unique_DA_total": 61,
+        "zero_DA_lines": [
+          361,
+          366,
+          369,
+          370,
+          371,
+          372,
+          374,
+          375,
+          376,
+          377,
+          378,
+          379,
+          380,
+          381,
+          382,
+          383,
+          384,
+          385,
+          386
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain22inventory_with_control",
+            "first_region": [
+              325,
+              1,
+              330,
+              34,
+              11,
+              0,
+              0,
+              0
+            ],
+            "count": 11
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain22inventory_with_control",
+            "first_region": [
+              325,
+              1,
+              330,
+              34,
+              5,
+              0,
+              0,
+              0
+            ],
+            "count": 5
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "append_subjects",
+        "qualified_key": "append_subjects@1",
+        "declaration_start": 396,
+        "body_end_line": 438,
+        "unique_DA_positive": 39,
+        "unique_DA_total": 40,
+        "zero_DA_lines": [
+          412
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain15append_subjects",
+            "first_region": [
+              396,
+              1,
+              404,
+              20,
+              21,
+              0,
+              0,
+              0
+            ],
+            "count": 21
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain15append_subjects",
+            "first_region": [
+              396,
+              1,
+              404,
+              20,
+              10,
+              0,
+              0,
+              0
+            ],
+            "count": 10
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/domain.rs",
+        "name": "convert_with_control",
+        "qualified_key": "convert_with_control@1",
+        "declaration_start": 512,
+        "body_end_line": 566,
+        "unique_DA_positive": 41,
+        "unique_DA_total": 50,
+        "zero_DA_lines": [
+          520,
+          552,
+          553,
+          554,
+          555,
+          556,
+          557,
+          558,
+          560
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace6domain20convert_with_control",
+            "first_region": [
+              512,
+              1,
+              517,
+              49,
+              3,
+              0,
+              0,
+              0
+            ],
+            "count": 3
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace6domain20convert_with_control",
+            "first_region": [
+              512,
+              1,
+              517,
+              49,
+              3,
+              0,
+              0,
+              0
+            ],
+            "count": 3
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/http.rs",
+        "name": "budget_expired",
+        "qualified_key": "budget_expired@1",
+        "declaration_start": 52,
+        "body_end_line": 54,
+        "unique_DA_positive": 3,
+        "unique_DA_total": 3,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace4http14budget_expired",
+            "first_region": [
+              52,
+              1,
+              52,
+              72,
+              15,
+              0,
+              0,
+              0
+            ],
+            "count": 15
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace4http14budget_expired",
+            "first_region": [
+              52,
+              1,
+              52,
+              72,
+              1174,
+              0,
+              0,
+              0
+            ],
+            "count": 1174
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/http.rs",
+        "name": "checkpoint_at",
+        "qualified_key": "impl OperationControl<'_>::checkpoint_at@1",
+        "declaration_start": 58,
+        "body_end_line": 85,
+        "unique_DA_positive": 21,
+        "unique_DA_total": 22,
+        "zero_DA_lines": [
+          71
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvMNtNtCsckvLbW5qlsq_5forge9workspace4httpNtB2_16OperationControl13checkpoint_at",
+            "first_region": [
+              58,
+              5,
+              58,
+              93,
+              11,
+              0,
+              0,
+              0
+            ],
+            "count": 11
+          },
+          {
+            "name": "_RNvMNtNtCs2JH5OKvciWJ_5forge9workspace4httpNtB2_16OperationControl13checkpoint_at",
+            "first_region": [
+              58,
+              5,
+              58,
+              93,
+              585,
+              0,
+              0,
+              0
+            ],
+            "count": 585
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/http.rs",
+        "name": "checkpoint",
+        "qualified_key": "impl WorkControl for OperationControl<'_>::checkpoint@1",
+        "declaration_start": 90,
+        "body_end_line": 92,
+        "unique_DA_positive": 3,
+        "unique_DA_total": 3,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvXs_NtNtCsckvLbW5qlsq_5forge9workspace4httpNtB4_16OperationControlNtNtB6_11preparation11WorkControl10checkpoint",
+            "first_region": [
+              90,
+              5,
+              90,
+              86,
+              4,
+              0,
+              0,
+              0
+            ],
+            "count": 4
+          },
+          {
+            "name": "_RNvXs_NtNtCs2JH5OKvciWJ_5forge9workspace4httpNtB4_16OperationControlNtNtB6_11preparation11WorkControl10checkpoint",
+            "first_region": [
+              90,
+              5,
+              90,
+              86,
+              585,
+              0,
+              0,
+              0
+            ],
+            "count": 585
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/http.rs",
+        "name": "interruption",
+        "qualified_key": "impl WorkControl for OperationControl<'_>::interruption@1",
+        "declaration_start": 95,
+        "body_end_line": 97,
+        "unique_DA_positive": 3,
+        "unique_DA_total": 3,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvXs_NtNtCsckvLbW5qlsq_5forge9workspace4httpNtB4_16OperationControlNtNtB6_11preparation11WorkControl12interruption",
+            "first_region": [
+              95,
+              5,
+              95,
+              51,
+              3,
+              0,
+              0,
+              0
+            ],
+            "count": 3
+          },
+          {
+            "name": "_RNvXs_NtNtCs2JH5OKvciWJ_5forge9workspace4httpNtB4_16OperationControlNtNtB6_11preparation11WorkControl12interruption",
+            "first_region": [
+              95,
+              5,
+              95,
+              51,
+              7,
+              0,
+              0,
+              0
+            ],
+            "count": 7
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/http.rs",
+        "name": "dispatch",
+        "qualified_key": "dispatch@1",
+        "declaration_start": 427,
+        "body_end_line": 719,
+        "unique_DA_positive": 147,
+        "unique_DA_total": 243,
+        "zero_DA_lines": [
+          436,
+          441,
+          450,
+          466,
+          472,
+          473,
+          475,
+          479,
+          510,
+          515,
+          533,
+          549,
+          564,
+          582,
+          595,
+          597,
+          598,
+          599,
+          600,
+          601,
+          602,
+          605,
+          608,
+          611,
+          614,
+          617,
+          619,
+          620,
+          621,
+          623,
+          624,
+          625,
+          626,
+          627,
+          628,
+          629,
+          631,
+          632,
+          633,
+          636,
+          637,
+          638,
+          639,
+          640,
+          641,
+          642,
+          643,
+          644,
+          645,
+          646,
+          647,
+          648,
+          649,
+          650,
+          652,
+          653,
+          654,
+          655,
+          658,
+          659,
+          660,
+          661,
+          662,
+          663,
+          664,
+          665,
+          666,
+          667,
+          668,
+          669,
+          670,
+          674,
+          675,
+          676,
+          680,
+          683,
+          684,
+          685,
+          686,
+          687,
+          689,
+          690,
+          691,
+          692,
+          695,
+          696,
+          697,
+          698,
+          699,
+          700,
+          709,
+          710,
+          711,
+          712,
+          714,
+          717
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace4http8dispatch",
+            "first_region": [
+              427,
+              1,
+              434,
+              35,
+              0,
+              0,
+              0,
+              0
+            ],
+            "count": 0
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace4http8dispatch",
+            "first_region": [
+              427,
+              1,
+              434,
+              35,
+              57,
+              0,
+              0,
+              0
+            ],
+            "count": 57
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/effects.rs",
+        "name": "running",
+        "qualified_key": "impl Store::running@1",
+        "declaration_start": 250,
+        "body_end_line": 264,
+        "unique_DA_positive": 15,
+        "unique_DA_total": 15,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvMNtNtCsckvLbW5qlsq_5forge9workspace7effectsNtB2_5Store7running",
+            "first_region": [
+              250,
+              5,
+              250,
+              63,
+              31,
+              0,
+              0,
+              0
+            ],
+            "count": 31
+          },
+          {
+            "name": "_RNvMNtNtCs2JH5OKvciWJ_5forge9workspace7effectsNtB2_5Store7running",
+            "first_region": [
+              250,
+              5,
+              250,
+              63,
+              7,
+              0,
+              0,
+              0
+            ],
+            "count": 7
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/effects.rs",
+        "name": "observe_progress",
+        "qualified_key": "impl Store::observe_progress@1",
+        "declaration_start": 269,
+        "body_end_line": 292,
+        "unique_DA_positive": 21,
+        "unique_DA_total": 21,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvMNtNtCsckvLbW5qlsq_5forge9workspace7effectsNtB2_5Store16observe_progress",
+            "first_region": [
+              269,
+              5,
+              269,
+              96,
+              32,
+              0,
+              0,
+              0
+            ],
+            "count": 32
+          },
+          {
+            "name": "_RNvMNtNtCs2JH5OKvciWJ_5forge9workspace7effectsNtB2_5Store16observe_progress",
+            "first_region": [
+              269,
+              5,
+              269,
+              96,
+              584,
+              0,
+              0,
+              0
+            ],
+            "count": 584
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/effects.rs",
+        "name": "finish",
+        "qualified_key": "impl Store::finish@1",
+        "declaration_start": 297,
+        "body_end_line": 360,
+        "unique_DA_positive": 53,
+        "unique_DA_total": 53,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvMNtNtCsckvLbW5qlsq_5forge9workspace7effectsNtB2_5Store6finish",
+            "first_region": [
+              297,
+              5,
+              302,
+              20,
+              24,
+              0,
+              0,
+              0
+            ],
+            "count": 24
+          },
+          {
+            "name": "_RNvMNtNtCs2JH5OKvciWJ_5forge9workspace7effectsNtB2_5Store6finish",
+            "first_region": [
+              297,
+              5,
+              302,
+              20,
+              7,
+              0,
+              0,
+              0
+            ],
+            "count": 7
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/actions.rs",
+        "name": "prepare",
+        "qualified_key": "prepare@1",
+        "declaration_start": 114,
+        "body_end_line": 124,
+        "unique_DA_positive": 11,
+        "unique_DA_total": 11,
+        "zero_DA_lines": [],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace7actions7prepare",
+            "first_region": [
+              114,
+              1,
+              121,
+              19,
+              5,
+              0,
+              0,
+              0
+            ],
+            "count": 5
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace7actions7prepare",
+            "first_region": [
+              114,
+              1,
+              121,
+              19,
+              7,
+              0,
+              0,
+              0
+            ],
+            "count": 7
+          }
+        ],
+        "positive_named_invocation": true
+      },
+      {
+        "repository_path": "src/workspace/actions.rs",
+        "name": "prepare_with_control",
+        "qualified_key": "prepare_with_control@1",
+        "declaration_start": 128,
+        "body_end_line": 379,
+        "unique_DA_positive": 178,
+        "unique_DA_total": 223,
+        "zero_DA_lines": [
+          143,
+          160,
+          168,
+          173,
+          174,
+          175,
+          176,
+          177,
+          178,
+          180,
+          194,
+          195,
+          196,
+          197,
+          198,
+          199,
+          200,
+          201,
+          202,
+          203,
+          204,
+          205,
+          206,
+          207,
+          208,
+          209,
+          210,
+          211,
+          212,
+          223,
+          228,
+          240,
+          262,
+          271,
+          282,
+          296,
+          309,
+          321,
+          327,
+          336,
+          357,
+          358,
+          361,
+          372,
+          373
+        ],
+        "mapping_instances": [
+          {
+            "name": "_RNvNtNtCsckvLbW5qlsq_5forge9workspace7actions20prepare_with_control",
+            "first_region": [
+              128,
+              1,
+              136,
+              23,
+              14,
+              0,
+              0,
+              0
+            ],
+            "count": 14
+          },
+          {
+            "name": "_RNvNtNtCs2JH5OKvciWJ_5forge9workspace7actions20prepare_with_control",
+            "first_region": [
+              128,
+              1,
+              136,
+              23,
+              13,
+              0,
+              0,
+              0
+            ],
+            "count": 13
+          }
+        ],
+        "positive_named_invocation": true
+      }
+    ],
+    "textual_alignment_qualification": {
+      "path": "/private/tmp/forge-f19-checkpoint-independent-coverage-replay-v1/textual-cohort-alignment-difference.json",
+      "sha256": "c7bc769bad78c2a5457a0337d4049699362de071d5c0899866ae094c32bfee85",
+      "bytes": 3089
+    },
+    "all_whole_production_first_regions": {
+      "path": "/private/tmp/forge-f19-checkpoint-independent-coverage-replay-v1/whole-production-first-region-replay.json",
+      "sha256": "3465468cbf61400400cb74ba4a240ed10c913cbb035a31571ada2583c999133b",
+      "bytes": 92284
+    },
+    "branch_mcdc_and_generated_family_coverage": "Unavailable without matching records; absent records are not complete coverage.",
+    "producer_summary": {
+      "branch_mcdc_unavailable_from_exports": true,
+      "changed_six_git_patch_mapped_da": {
+        "covered": 339,
+        "mapped": 386,
+        "zero": 47
+      },
+      "changed_six_modules_production_unique_da": {
+        "covered": 1917,
+        "mapped": 2416,
+        "zero": 499
+      },
+      "changed_six_sequence_matcher_mapped_da": {
+        "covered": 338,
+        "mapped": 385,
+        "zero": 47
+      },
+      "git_unmapped_changed_source_lines_six": 233,
+      "selected_body_union_unique_da": {
+        "covered": 878,
+        "mapped": 1100,
+        "zero": 222
+      },
+      "selected_positive_entry_bodies": 31,
+      "selected_production_source_bodies": 33,
+      "selected_unmapped_bodies": [],
+      "selected_zero_entry_bodies": [
+        {
+          "end_line": 121,
+          "key": "impl WorkControl for NoopControl::interruption@1",
+          "line": 119,
+          "path": "src/workspace/preparation.rs"
+        },
+        {
+          "end_line": 321,
+          "key": "inventory@1",
+          "line": 314,
+          "path": "src/workspace/domain.rs"
+        }
+      ],
+      "sequence_unmapped_changed_source_lines_six": 235,
+      "seven_module_production_context": {
+        "covered": 1926,
+        "mapped": 2425,
+        "zero": 499
+      },
+      "trait_declarations_separate": 2,
+      "unchanged_mod_whole_mapped_context": {
+        "covered": 9,
+        "mapped": 9,
+        "zero": 0
+      },
+      "whole_production_source_bodies": 115,
+      "whole_production_unmapped_bodies": []
+    },
+    "producer_index": {
+      "path": "/private/tmp/forge-f19-checkpoint-coverage-v1/index.json",
+      "sha256": "3326a02a1595b593eaaf2f1639ca133ae8701484b33d451e7e9a8cedd9401f9a",
+      "bytes": 2489
+    },
+    "producer_root_check": {
+      "path": "/private/tmp/forge-f19-checkpoint-coverage-replay.json",
+      "sha256": "3e314131eec9d54d5f68cd2442d7d7c135468f670bbc02545f197c9f5493ff03",
+      "bytes": 7733
+    },
+    "exact_git_patch_inputs": {
+      "path": "/private/tmp/forge-f19-checkpoint-independent-git-patch-input-v1/index.json",
+      "sha256": "0305abff3ce6ba48b50e5cf7453e3faa7f31c1cbd7104d0f369e5c64a5a89fa5",
+      "bytes": 14320
+    }
+  },
+  "http_execution": {
+    "record_count": 57,
+    "status_counts": {
+      "200": 32,
+      "202": 19,
+      "401": 1,
+      "409": 3,
+      "404": 2
+    },
+    "observations": [
+      "checkpoint_http_attempt attempt=0 admitted=pending observed_state=running capture_completed=Some(6) capture_total=Some(100) cancellation_status=200 cancellation_reply_state=running terminal_state=cancelled",
+      "checkpoint_http_observation attempts=1 running_gets=1 capture_progress_gets=1 cancellation_acks=1 running_get_then_cancel_ack_same_attempt=1 terminal_before_cancel=0",
+      "checkpoint_http_restart graceful_process_exits=2 old_capability_rejected=1 old_operation_rejected=1 old_preview_rejected=1 old_receipt_rejected=1 changed_source_hash_bound=1 explicit_fresh_commit=1",
+      "checkpoint_http_normal_route kind=conversion accepted=pending terminal=succeeded confirmed=false",
+      "checkpoint_http_normal_route kind=applicability-analysis accepted=pending terminal=succeeded confirmed=false",
+      "checkpoint_http_normal_route kind=mapping-build accepted=pending terminal=succeeded confirmed=false",
+      "checkpoint_http_normal_route kind=export accepted=pending terminal=succeeded confirmed=false"
+    ],
+    "selected_states": [
+      {
+        "status": 200,
+        "method": "GET",
+        "path": "/api/v1/operations/op_068793c75c2ec18458370841b5770c4683010d79c73bd8bcba91172b2b8c7c87",
+        "state": "running",
+        "cancel_requested": false,
+        "progress": {
+          "completed_items": 6,
+          "total_items": 100
+        },
+        "original_response_sha256": "f713ed96cde38cc09c6799f8be9c5339e6e7f2b09388c89a651b2bc5fdb51973"
+      },
+      {
+        "status": 200,
+        "method": "POST",
+        "path": "/api/v1/operations/op_068793c75c2ec18458370841b5770c4683010d79c73bd8bcba91172b2b8c7c87/cancellation",
+        "state": "running",
+        "cancel_requested": true,
+        "progress": {
+          "completed_items": 13,
+          "total_items": 100
+        },
+        "original_response_sha256": "690a068ffe932beb7ce1fceba1407fcb9fc26077b0e0b25bb818d90d462f8684"
+      },
+      {
+        "status": 200,
+        "method": "GET",
+        "path": "/api/v1/operations/op_068793c75c2ec18458370841b5770c4683010d79c73bd8bcba91172b2b8c7c87",
+        "state": "cancelled",
+        "cancel_requested": true,
+        "progress": null,
+        "original_response_sha256": "92e38c38abcbe898efd942a5cebcaad05d688adefb4030fd438fd85dd8809d3b"
+      },
+      {
+        "status": 409,
+        "method": "POST",
+        "path": "/api/v1/operations/op_068793c75c2ec18458370841b5770c4683010d79c73bd8bcba91172b2b8c7c87/cancellation",
+        "state": null,
+        "cancel_requested": null,
+        "progress": null,
+        "original_response_sha256": "38e5255d566cd03ce1504dce6d4166c10a50062fe26aed2ba19428b012b3dbb0"
+      },
+      {
+        "status": 200,
+        "method": "GET",
+        "path": "/api/v1/operations/op_068793c75c2ec18458370841b5770c4683010d79c73bd8bcba91172b2b8c7c87",
+        "state": "cancelled",
+        "cancel_requested": true,
+        "progress": null,
+        "original_response_sha256": "92e38c38abcbe898efd942a5cebcaad05d688adefb4030fd438fd85dd8809d3b"
+      },
+      {
+        "status": 409,
+        "method": "POST",
+        "path": "/api/v1/operations/op_60626dd2b32a10fbcad371496aa31ca5c9bfe943e4560c918e930463eb880c10/cancellation",
+        "state": null,
+        "cancel_requested": null,
+        "progress": null,
+        "original_response_sha256": "38e5255d566cd03ce1504dce6d4166c10a50062fe26aed2ba19428b012b3dbb0"
+      }
+    ],
+    "qualification": "Recorded selected synthetic responses, not every HTTP request. Parsed bodies redact token/capability values; Authorization omitted. Synthetic labels and diff_text can remain. Original-body hashes plus redacted parsed bodies cannot reconstruct authority-bearing wire bytes."
+  },
+  "binary_profile_preservation": {
+    "path": "/private/tmp/forge-f19-checkpoint-final-binaries-profiles-v1/index.json",
+    "sha256": "adda6b347554048e865598b2e299616e7b128fa5664157b46c4b536784f68d61",
+    "bytes": 9300
+  },
+  "independent_reviews": [
+    {
+      "path": "/private/tmp/forge-f19-checkpoint-independent-source-doc-review-v2/index.json",
+      "sha256": "c54f5199ffef0a8d6b2734056b264b508158f4a2bf948d2d45773d30ec291f27",
+      "bytes": 5159
+    },
+    {
+      "path": "/private/tmp/forge-f19-independent-component-test-review-v2/index.json",
+      "sha256": "4f139e30494ad2f069f4d9494226e3a30b008cce205bc20a4383baf763dc817a",
+      "bytes": 5038
+    },
+    {
+      "path": "/private/tmp/forge-f19-root-adapter-review-v3/index.json",
+      "sha256": "548c829527f2e810654c71ec7bafe620679fb6ba23f58dee91f00706410be83e",
+      "bytes": 3779
+    }
+  ],
+  "review_qualification": "Bounded complementary review, not independent human acceptance. Each reviewer excludes correctness of its own authored code/tests. Reviews that predate full execution remain preserved; root execution receipts are separate.",
+  "historical_design_reference_mismatches": [
+    {
+      "path": "/private/tmp/forge-f19-operation-checkpoint-design-v1/internal-contract.rs.txt",
+      "expected_sha256": "54f7a004f247d4ec4aa9bec32dc8b6e2eb917bae5aed1a461be69216d2061f0a",
+      "observed_sha256": "2e6e9fd8b68dcc5d753fe33157261968f2152c5e1f84660e4b7d8fc832871cad"
+    },
+    {
+      "path": "/private/tmp/forge-f19-operation-checkpoint-design-v1/internal-contract.rs.txt",
+      "expected_bytes": 2311,
+      "observed_bytes": 2283
+    },
+    {
+      "path": "/private/tmp/forge-f19-operation-checkpoint-design-v1/proposal.json",
+      "expected_sha256": "12eb2ba6d335206fc14640104200661bd1ac860b643737b879645f3b725f16b8",
+      "observed_sha256": "38e1f7aca64b31d1f63996714740369486a82f83ab836b73eb2be5c379411dd8"
+    },
+    {
+      "path": "/private/tmp/forge-f19-operation-checkpoint-design-v1/proposal.json",
+      "expected_bytes": 74731,
+      "observed_bytes": 75445
+    },
+    {
+      "path": "/private/tmp/forge-f19-operation-checkpoint-design-v1/proposal.md",
+      "expected_sha256": "0b2de3f8132b0189d040f088ad2da44ff8b8adead5a8044c6b81fda2a3863bfe",
+      "observed_sha256": "ce0a19aaa00ae3f3042a852f2e6736f277a5a5360d77c58f0477cb60006290e6"
+    },
+    {
+      "path": "/private/tmp/forge-f19-operation-checkpoint-design-v1/proposal.md",
+      "expected_bytes": 8503,
+      "observed_bytes": 9093
+    }
+  ],
+  "historical_failures": [
+    "First core build stopped before tests on four integration errors.",
+    "Second core run: 90 passes, 1 failed test expecting resource-containment for a missing file; preserved ordinary error is not-found.",
+    "First strict Clippy: enum name, long capture function, Rustdoc formatting, semicolon and unchecked subtraction findings.",
+    "Second strict Clippy: missed private stage rename in a legacy test and two assigning_clones findings.",
+    "First clippy-fix constructor failed a formatted-source anchor before any managed write; corrected successor applied."
+  ],
+  "test_denominator": {
+    "baseline_passes": 2721,
+    "new_unit_declarations": 29,
+    "new_http_declarations": 3,
+    "final_full_passes": 2753,
+    "final_full_failed": 0,
+    "final_full_ignored": 3,
+    "qualification": "Focused, full, instrumented, repeated and client workflows overlap; do not add their denominators. Eleven selected interruption contexts cover eight stage names, not a full ten-stage/three-reason Cartesian matrix."
+  },
+  "open_gates": [
+    "Mandatory commit hook and commit/push/draft PR outcome are pending in this pre-commit record.",
+    "Main-only hosted CI does not schedule for the intended stacked base; hosted platform validation remains unproven.",
+    "Full PRD062 S-4 and all six Should Have acceptance gates remain open.",
+    "F05 operation/progress browser consumer integration, supported platforms, MSRV, security, native keyboard, assistive technology, privacy and human acceptance remain open.",
+    "Cooperative checks do not preempt syscalls/parsers/domain engines or prove a hard wall-time bound.",
+    "Full S-6 browser bundle export, metadata disclosure, source-content opt-in, explicitly confirmed writable import and batch/capacity work remain open.",
+    "No new dependency, index role, schema family, wire field, persisted authority or public-library API is introduced.",
+    "Final integrated full documentation review/update and verified 2.0.0 release candidate remain goal gates."
+  ],
+  "historical_design_archive_readback": {
+    "pin": {
+      "path": "/private/tmp/forge-f19-checkpoint-historical-reference-readback-v1.json",
+      "sha256": "f45c22d1fc909fdbabb8146d6e0cb1bd913e7f6beec4245a15e5efbbbec6007e",
+      "bytes": 3275
+    },
+    "verified_archives": [
+      {
+        "archived_original_bytes": 2311,
+        "archived_original_path": "/private/tmp/forge-f19-operation-checkpoint-design-v1/provisional-before-final-budget-choice/internal-contract.rs.txt",
+        "archived_original_sha256": "54f7a004f247d4ec4aa9bec32dc8b6e2eb917bae5aed1a461be69216d2061f0a",
+        "current_final_bytes": 2283,
+        "current_final_sha256": "2e6e9fd8b68dcc5d753fe33157261968f2152c5e1f84660e4b7d8fc832871cad",
+        "historical_original_bytes_recovered_from_preserved_archive": true,
+        "recorded_historical_bytes": 2311,
+        "recorded_historical_sha256": "54f7a004f247d4ec4aa9bec32dc8b6e2eb917bae5aed1a461be69216d2061f0a",
+        "stale_historical_path": "/private/tmp/forge-f19-operation-checkpoint-design-v1/internal-contract.rs.txt"
+      },
+      {
+        "archived_original_bytes": 74731,
+        "archived_original_path": "/private/tmp/forge-f19-operation-checkpoint-design-v1/provisional-before-final-budget-choice/proposal.json",
+        "archived_original_sha256": "12eb2ba6d335206fc14640104200661bd1ac860b643737b879645f3b725f16b8",
+        "current_final_bytes": 75445,
+        "current_final_sha256": "38e1f7aca64b31d1f63996714740369486a82f83ab836b73eb2be5c379411dd8",
+        "historical_original_bytes_recovered_from_preserved_archive": true,
+        "recorded_historical_bytes": 74731,
+        "recorded_historical_sha256": "12eb2ba6d335206fc14640104200661bd1ac860b643737b879645f3b725f16b8",
+        "stale_historical_path": "/private/tmp/forge-f19-operation-checkpoint-design-v1/proposal.json"
+      },
+      {
+        "archived_original_bytes": 8503,
+        "archived_original_path": "/private/tmp/forge-f19-operation-checkpoint-design-v1/provisional-before-final-budget-choice/proposal.md",
+        "archived_original_sha256": "0b2de3f8132b0189d040f088ad2da44ff8b8adead5a8044c6b81fda2a3863bfe",
+        "current_final_bytes": 9093,
+        "current_final_sha256": "ce0a19aaa00ae3f3042a852f2e6736f277a5a5360d77c58f0477cb60006290e6",
+        "historical_original_bytes_recovered_from_preserved_archive": true,
+        "recorded_historical_bytes": 8503,
+        "recorded_historical_sha256": "0b2de3f8132b0189d040f088ad2da44ff8b8adead5a8044c6b81fda2a3863bfe",
+        "stale_historical_path": "/private/tmp/forge-f19-operation-checkpoint-design-v1/proposal.md"
+      }
+    ],
+    "qualification": "Original historical path bindings remain stale; the exact expected original bytes exist in the preserved provisional-before-final-budget-choice archive. This is a verified alternate-path lookup, not a historical hash/path rewrite or reconstruction. Current final source and coverage evidence remain separate. The frozen coverage-v1 mismatch qualification stays unchanged; this successor supplies the newly verified archive availability."
+  }
+}

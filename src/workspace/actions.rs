@@ -2,6 +2,7 @@
 use super::contract::{Error, Result};
 use super::effects::{Reply, Store};
 use super::index::{INDEX_PATH, Index, Resource, Role};
+use super::preparation::{NoopControl, ProgressUpdate, Stage, WorkControl, WorkError, WorkResult};
 use super::root::{Root, conflict};
 use super::services::{Item, Snapshot};
 use base64::Engine as _;
@@ -109,7 +110,7 @@ fn mapping_references(
         .collect()
 }
 
-#[allow(clippy::too_many_lines)] // One audited route-to-effect table.
+/// Prepare ordinary direct effects without a callback that could relock their Store.
 pub(crate) fn prepare(
     store: &mut Store,
     root: &Root,
@@ -118,12 +119,28 @@ pub(crate) fn prepare(
     path: &str,
     request: &Value,
 ) -> Result<Reply> {
-    match (method, path) {
+    prepare_with_control(store, root, snapshot, method, path, request, &mut NoopControl)
+        .map_err(WorkError::into_error)
+}
+
+/// Prepare against captured inputs, discarding local proposals on cooperative stop.
+#[allow(clippy::too_many_lines)] // One audited route-to-effect table.
+pub(crate) fn prepare_with_control(
+    store: &mut Store,
+    root: &Root,
+    snapshot: &mut Snapshot,
+    method: &str,
+    path: &str,
+    request: &Value,
+    control: &mut dyn WorkControl,
+) -> WorkResult<Reply> {
+    control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Clear)?;
+    let reply: WorkResult<Reply> = match (method, path) {
         ("POST", "/api/v1/applicability/initializations" | "/api/v1/mapping/initializations") => {
             let target = text(request, "target_path")?;
             output_target(snapshot, target, None)?;
             if root.target(target)?.base.is_some() {
-                return Err(conflict());
+                return Err(conflict().into());
             }
             let mapping = path.contains("/mapping/");
             let bytes = super::domain::initialize(snapshot, request, mapping)?;
@@ -148,7 +165,7 @@ pub(crate) fn prepare(
                 serde_json::from_value(request["role"].clone()).map_err(|_| Error::invalid())?;
             let captured = root.read(path, 10 * 1024 * 1024)?;
             if snapshot.items.iter().any(|item| item.captured.identity == captured.identity) {
-                return Err(Error::containment());
+                return Err(Error::containment().into());
             }
             let key = request["key"].as_str().map_or_else(|| registration_key(path), str::to_owned);
             let registration = Resource { key, role, path: path.to_owned() };
@@ -160,7 +177,7 @@ pub(crate) fn prepare(
                                 .ok()
                     })))
             {
-                return Err(validation_error());
+                return Err(validation_error().into());
             }
             let mut index = snapshot.index.clone();
             index.resources.push(registration.clone());
@@ -180,17 +197,17 @@ pub(crate) fn prepare(
                 serde_json::from_value(request["role"].clone()).map_err(|_| Error::invalid())?;
             let encoded = text(request, "content_base64")?;
             if encoded.len() > 13_981_016 {
-                return Err(Error::invalid());
+                return Err(Error::invalid().into());
             }
             let bytes = base64::engine::general_purpose::STANDARD
                 .decode(encoded)
                 .map_err(|_| Error::invalid())?;
             if bytes.len() > 10 * 1024 * 1024 {
-                return Err(Error::invalid());
+                return Err(Error::invalid().into());
             }
             let registration = Resource { key: "upload".into(), role, path: path.into() };
             if !super::services::validate_bytes(&registration, &bytes) {
-                return Err(validation_error());
+                return Err(validation_error().into());
             }
             Ok(preview_reply(store.preview(root, snapshot, path, "resource-upload", bytes, &[])?))
         }
@@ -203,12 +220,12 @@ pub(crate) fn prepare(
             };
             let target = item.registration.path.clone();
             if request["observed_version"] != item.metadata["version"] {
-                return Err(conflict());
+                return Err(conflict().into());
             }
             let validation =
                 super::domain::validate_draft(snapshot, mapping, &request["manifest"])?;
             if validation["state"] != "valid" {
-                return Err(validation_error());
+                return Err(validation_error().into());
             }
             // The draft is validated against the deployed manifest contract, so the
             // encode bound is that contract's byte limit minus the trailing newline
@@ -249,11 +266,12 @@ pub(crate) fn prepare(
             let target = text(request, "target_path")?;
             output_target(snapshot, target, None)?;
             let kind = text(request, "output_kind")?;
-            let result = super::domain::convert(snapshot, source, kind)?;
+            let result = super::domain::convert_with_control(snapshot, source, kind, control)?;
             if !result.secondary_outputs.is_empty() {
-                return Err(validation_error());
+                return Err(validation_error().into());
             }
             let count = result.statistics.requirements_extracted;
+            control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
             let preview = store.preview(
                 root,
                 snapshot,
@@ -275,11 +293,12 @@ pub(crate) fn prepare(
                 .next()
                 .map_or("applicability-report.json", |item| item.registration.path.as_str());
             if reports.next().is_some() {
-                return Err(validation_error());
+                return Err(validation_error().into());
             }
             output_target(snapshot, target, Some(Role::ApplicabilityReport))?;
             let mut bytes = super::contract::encode(analysis, 10 * 1024 * 1024 - 1, true)?;
             bytes.push(b'\n');
+            control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
             let preview = store.preview(
                 root,
                 snapshot,
@@ -292,20 +311,21 @@ pub(crate) fn prepare(
             Ok(operation_reply(store.completed("applicability-analysis", result)?))
         }
         ("POST", "/api/v1/mapping/builds") => {
-            let built = super::domain::mapping(snapshot)?;
+            let built = super::domain::mapping_with_control(snapshot, control)?;
             let manifest_item = super::domain::mapping_manifest(snapshot)?;
             let manifest = crate::mapping::manifest::parse(&manifest_item.captured.bytes)
                 .map_err(|_| validation_error())?;
             let target = "mapping-collection.json";
             output_target(snapshot, target, Some(Role::MappingCollection))?;
             if manifest_item.registration.path.eq_ignore_ascii_case(target) {
-                return Err(Error::containment());
+                return Err(Error::containment().into());
             }
             let inputs = manifest_inputs(
                 snapshot,
                 &manifest_item.registration.path,
                 &mapping_references(&manifest),
             )?;
+            control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
             let preview = store.preview(
                 root,
                 snapshot,
@@ -330,22 +350,32 @@ pub(crate) fn prepare(
             let target = text(request, "target_path")?;
             output_target(snapshot, target, None)?;
             let kind = text(request, "report_kind")?;
+            control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
             let summary = match kind {
                 "applicability-gap" => snapshot.classification_counts()?,
                 "mapping-collection" => {
-                    let built = super::domain::mapping(snapshot)?;
+                    let built = super::domain::mapping_with_control(snapshot, control)?;
                     json!({"eligible_controls":built.report.target_controls.eligible,"referenced_controls":built.report.target_controls.referenced})
                 }
                 "trace" => super::domain::trace_counts(snapshot)?,
-                _ => return Err(Error::invalid()),
+                _ => return Err(Error::invalid().into()),
             };
+            control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
             let bytes = super::reports::render(snapshot, kind, summary)?;
+            control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
             let inputs = super::reports::inputs(snapshot, kind)?;
+            control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
             let preview = store.preview(root, snapshot, target, "report-export", bytes, &inputs)?;
             Ok(operation_reply(store.completed("export",json!({"operation_id":"op_000000000000","preview":preview,"redaction_summary":{"removed_categories":["reviewer-names","absolute-paths","source-excerpts","secrets"]}}))?))
         }
-        _ => Err(Error::new("not-found", "The requested effect operation was not found.", false)),
-    }
+        _ => {
+            Err(Error::new("not-found", "The requested effect operation was not found.", false)
+                .into())
+        }
+    };
+    let reply = reply?;
+    control.checkpoint(Stage::RetainPrepared, ProgressUpdate::Unchanged)?;
+    Ok(reply)
 }
 
 #[cfg(test)]
@@ -583,5 +613,311 @@ mod tests {
         let index = super::super::index::Index::parse(&serde_json::to_vec(&index).unwrap())
             .expect("both derived keys must register");
         assert_eq!(index.resources.len(), 2);
+    }
+    /// Build a confined project with complete policy inputs and optional valid inert trace reports.
+    fn checkpoint_action_fixture(
+        policy_count: usize,
+        report_count: usize,
+    ) -> (tempfile::TempDir, Root, Snapshot) {
+        let directory = tempfile::tempdir().unwrap();
+        let mut resources = Vec::new();
+        for number in 0..policy_count {
+            let path = format!("policy-{number}.md");
+            std::fs::write(
+                directory.path().join(&path),
+                format!("# Policy {number}\n\nAn explicit supplied clause.\n"),
+            )
+            .unwrap();
+            resources
+                .push(json!({"key":format!("policy-{number}"),"role":"policy-source","path":path}));
+        }
+        checkpoint_action_write_index(directory.path(), &resources);
+        let root = Root::open(directory.path()).unwrap();
+        if report_count != 0 {
+            let initial = Snapshot::capture(&root).unwrap();
+            let bytes = super::super::reports::render(&initial, "trace", json!({
+                "total_elements":0,"asserted_trace_elements":0,"current_source_locations":0,"unresolved_elements":0
+            })).unwrap();
+            for number in 0..report_count {
+                let path = format!("report-{number}.html");
+                std::fs::write(directory.path().join(&path), &bytes).unwrap();
+                resources.push(
+                    json!({"key":format!("report-{number}"),"role":"trace-report","path":path}),
+                );
+            }
+            checkpoint_action_write_index(directory.path(), &resources);
+        }
+        std::fs::write(directory.path().join("review.html"), b"EXISTING REVIEW SENTINEL\n")
+            .unwrap();
+        std::fs::write(directory.path().join("keeper.html"), b"EXISTING KEEPER SENTINEL\n")
+            .unwrap();
+        let snapshot = Snapshot::capture(&root).unwrap();
+        (directory, root, snapshot)
+    }
+
+    /// Persist the actual normalized closed index instead of assuming a serializer's field ordering.
+    fn checkpoint_action_write_index(directory: &std::path::Path, resources: &[Value]) {
+        let index = json!({"schema_version":"forge.workspace/1","label":"Checkpoint fixture","resources":resources});
+        let index = Index::parse(&serde_json::to_vec(&index).unwrap()).unwrap();
+        std::fs::write(directory.join(INDEX_PATH), index.bytes().unwrap()).unwrap();
+    }
+
+    /// Record every flat fixture file so failed or prepared work cannot silently add an output or change input bytes.
+    fn checkpoint_action_project_bytes(
+        directory: &std::path::Path,
+    ) -> std::collections::BTreeMap<String, Vec<u8>> {
+        std::fs::read_dir(directory)
+            .unwrap()
+            .map(|entry| {
+                let entry = entry.unwrap();
+                assert!(entry.file_type().unwrap().is_file());
+                (entry.file_name().into_string().unwrap(), std::fs::read(entry.path()).unwrap())
+            })
+            .collect()
+    }
+
+    /// Prepare a real unrelated mapping-summary receipt whose input roles exclude all policy files.
+    fn checkpoint_action_keeper(
+        store: &mut Store,
+        root: &Root,
+        snapshot: &Snapshot,
+    ) -> (String, Value) {
+        let bytes = super::super::reports::render(
+            snapshot,
+            "mapping-collection",
+            json!({
+                "eligible_controls":0,"referenced_controls":0
+            }),
+        )
+        .unwrap();
+        let preview =
+            store.preview(root, snapshot, "keeper.html", "report-export", bytes, &[]).unwrap();
+        (preview["preview_id"].as_str().unwrap().to_owned(), preview)
+    }
+
+    /// Test observer of the genuinely consumed control API, with no I/O replacement or production pause hook.
+    struct CheckpointActionControl {
+        /// Actual producer stage selected for this bounded interruption scenario.
+        stop_stage: super::super::preparation::Stage,
+        /// One-based matching callback to stop; `usize::MAX` permits ordinary continuation.
+        stop_occurrence: usize,
+        /// Number of selected stage callbacks actually reached by the producer.
+        matching_occurrences: usize,
+        /// Ordered stage observations before the sticky stop, without source-bearing metadata.
+        events: Vec<std::mem::Discriminant<super::super::preparation::Stage>>,
+        /// Internal interruption cause returned at the selected checkpoint.
+        reason: super::super::preparation::Interruption,
+        /// Sticky latch preventing later callbacks from continuing after interruption.
+        stopped: bool,
+    }
+
+    impl super::super::preparation::WorkControl for CheckpointActionControl {
+        /// Stop on a selected actual checkpoint occurrence and retain the first interruption thereafter.
+        fn checkpoint(
+            &mut self,
+            stage: super::super::preparation::Stage,
+            _progress: super::super::preparation::ProgressUpdate,
+        ) -> super::super::preparation::WorkResult<()> {
+            use super::super::preparation::WorkError;
+            if let Some(reason) = self.interruption() {
+                return Err(WorkError::Interrupted(reason));
+            }
+            self.events.push(std::mem::discriminant(&stage));
+            if std::mem::discriminant(&stage) == std::mem::discriminant(&self.stop_stage) {
+                self.matching_occurrences += 1;
+                if self.matching_occurrences == self.stop_occurrence {
+                    self.stopped = true;
+                    return Err(WorkError::Interrupted(self.interruption().unwrap()));
+                }
+            }
+            Ok(())
+        }
+
+        /// Expose the latched internal cause without converting it into a normal validation error.
+        fn interruption(&self) -> Option<super::super::preparation::Interruption> {
+            self.stopped.then_some(self.reason)
+        }
+    }
+
+    /// Select an actual stage occurrence; `usize::MAX` yields an ordinary continuing observer for these bounded fixtures.
+    fn checkpoint_action_control(
+        stage: super::super::preparation::Stage,
+        occurrence: usize,
+        reason: super::super::preparation::Interruption,
+    ) -> CheckpointActionControl {
+        CheckpointActionControl {
+            stop_stage: stage,
+            stop_occurrence: occurrence,
+            matching_occurrences: 0,
+            events: Vec::new(),
+            reason,
+            stopped: false,
+        }
+    }
+
+    /// A trace export binds every one of exactly 100 policy inputs, with full hashes and no project publication.
+    #[test]
+    fn checkpoint_trace_export_accepts_exactly_one_hundred_complete_inputs() {
+        use super::super::preparation::{Interruption, Stage};
+        let (directory, root, mut snapshot) = checkpoint_action_fixture(100, 0);
+        let before = checkpoint_action_project_bytes(directory.path());
+        let mut store = Store::default();
+        let mut control = checkpoint_action_control(
+            Stage::PreparePreview,
+            usize::MAX,
+            Interruption::CancelRequested,
+        );
+        let reply = super::prepare_with_control(
+            &mut store,
+            &root,
+            &mut snapshot,
+            "POST",
+            "/api/v1/exports",
+            &json!({"report_kind":"trace","target_path":"review.html"}),
+            &mut control,
+        )
+        .unwrap();
+        let preview = &reply.value["result"]["preview"];
+        let expected: Vec<Value> = snapshot
+            .items
+            .iter()
+            .map(|item| {
+                json!({
+                    "resource_id":item.metadata["resource_id"],"sha256":item.captured.sha256
+                })
+            })
+            .collect();
+        assert_eq!(preview["input_hashes"], json!(expected));
+        assert_eq!(preview["input_hashes"].as_array().unwrap().len(), 100);
+        assert_eq!(store.get_preview(preview["preview_id"].as_str().unwrap()).unwrap(), *preview);
+        assert_eq!(reply.value["state"], "succeeded");
+        assert!(!control.stopped);
+        assert_eq!(control.matching_occurrences, 1);
+        super::super::contract::validate(reply.schema, &reply.value).unwrap();
+        assert_eq!(checkpoint_action_project_bytes(directory.path()), before);
+    }
+
+    /// The 101st relevant policy input rejects the entire trace export and preserves unrelated receipts and every file.
+    #[test]
+    fn checkpoint_trace_export_rejects_one_hundred_one_without_a_successful_prefix() {
+        use super::super::preparation::{Interruption, Stage, WorkError};
+        let (directory, root, mut snapshot) = checkpoint_action_fixture(101, 0);
+        let before = checkpoint_action_project_bytes(directory.path());
+        assert_eq!(snapshot.items.len(), 101);
+        let mut store = Store::default();
+        let (keeper_id, keeper) = checkpoint_action_keeper(&mut store, &root, &snapshot);
+        let mut control = checkpoint_action_control(
+            Stage::PreparePreview,
+            usize::MAX,
+            Interruption::CancelRequested,
+        );
+        let outcome = super::prepare_with_control(
+            &mut store,
+            &root,
+            &mut snapshot,
+            "POST",
+            "/api/v1/exports",
+            &json!({"report_kind":"trace","target_path":"review.html"}),
+            &mut control,
+        );
+        match outcome {
+            Err(WorkError::Failed(error)) => assert_eq!(error.code, "report-binds-too-many-inputs"),
+            Err(WorkError::Interrupted(_)) => {
+                panic!("ordinary input-cap rejection must not become interruption")
+            }
+            Ok(_) => panic!("101 relevant inputs must not become a successful prefix export"),
+        }
+        assert!(!control.stopped);
+        assert_eq!(store.get_preview(&keeper_id).unwrap(), keeper);
+        assert_eq!(checkpoint_action_project_bytes(directory.path()), before);
+    }
+
+    /// Total registered capture cardinality does not narrow the independently computed trace-input selection.
+    #[test]
+    fn checkpoint_trace_export_accepts_one_relevant_input_among_one_hundred_one_registrations() {
+        use super::super::preparation::{Interruption, Stage};
+        let (directory, root, mut snapshot) = checkpoint_action_fixture(1, 100);
+        let before = checkpoint_action_project_bytes(directory.path());
+        assert_eq!(snapshot.items.len(), 101);
+        assert!(snapshot.items.iter().all(|item| item.validation["state"] == "valid"));
+        let policy = &snapshot.items[0];
+        let expected =
+            json!([{"resource_id":policy.metadata["resource_id"],"sha256":policy.captured.sha256}]);
+        let mut store = Store::default();
+        let mut control = checkpoint_action_control(
+            Stage::PreparePreview,
+            usize::MAX,
+            Interruption::CancelRequested,
+        );
+        let reply = super::prepare_with_control(
+            &mut store,
+            &root,
+            &mut snapshot,
+            "POST",
+            "/api/v1/exports",
+            &json!({"report_kind":"trace","target_path":"review.html"}),
+            &mut control,
+        )
+        .unwrap();
+        let preview = &reply.value["result"]["preview"];
+        assert_eq!(preview["input_hashes"], expected);
+        assert_eq!(store.get_preview(preview["preview_id"].as_str().unwrap()).unwrap(), *preview);
+        assert_eq!(reply.value["state"], "succeeded");
+        super::super::contract::validate(reply.schema, &reply.value).unwrap();
+        assert_eq!(checkpoint_action_project_bytes(directory.path()), before);
+    }
+
+    /// Stops before the real local preview and after preparation preserve the typed cause and global sentinel receipt.
+    #[test]
+    fn checkpoint_export_interruption_discards_local_previews_before_global_transfer() {
+        use super::super::preparation::{Interruption, Stage, WorkError};
+        let (directory, root, mut snapshot) = checkpoint_action_fixture(1, 0);
+        let before = checkpoint_action_project_bytes(directory.path());
+        for reason in
+            [Interruption::CancelRequested, Interruption::Shutdown, Interruption::DeadlineExceeded]
+        {
+            let expected_reason = std::mem::discriminant(&reason);
+            for (stage, occurrence) in [(Stage::PreparePreview, 1), (Stage::RetainPrepared, 1)] {
+                let selected_stage = std::mem::discriminant(&stage);
+                let mut global = Store::default();
+                let (keeper_id, keeper) = checkpoint_action_keeper(&mut global, &root, &snapshot);
+                let operation = global.begin("export").unwrap();
+                let id = operation["operation_id"].as_str().unwrap();
+                assert!(global.running(id).unwrap());
+                let mut control = checkpoint_action_control(stage, occurrence, reason);
+                let mut local = Store::default();
+                let outcome = super::prepare_with_control(
+                    &mut local,
+                    &root,
+                    &mut snapshot,
+                    "POST",
+                    "/api/v1/exports",
+                    &json!({"report_kind":"trace","target_path":"review.html"}),
+                    &mut control,
+                );
+                match outcome {
+                    Err(WorkError::Interrupted(actual)) => {
+                        assert_eq!(std::mem::discriminant(&actual), expected_reason);
+                    }
+                    Err(WorkError::Failed(error)) => {
+                        panic!("stop was collapsed to ordinary failure: {error}")
+                    }
+                    Ok(_) => panic!("interrupted export returned a prepared reply"),
+                }
+                assert!(control.stopped);
+                assert_eq!(control.matching_occurrences, occurrence);
+                assert_eq!(control.events.last(), Some(&selected_stage));
+                drop(local);
+                global.finish(id, Err(Error::invalid()), true).unwrap();
+                let terminal = global.operation(id).unwrap();
+                assert_eq!(terminal["state"], "cancelled");
+                assert!(terminal["result"].is_null());
+                assert!(terminal["error"].is_null());
+                assert!(terminal["progress"].is_null());
+                assert_eq!(global.get_preview(&keeper_id).unwrap(), keeper);
+                super::super::contract::validate("Operation", &terminal).unwrap();
+                assert_eq!(checkpoint_action_project_bytes(directory.path()), before);
+            }
+        }
     }
 }

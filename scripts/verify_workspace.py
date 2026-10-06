@@ -21,13 +21,17 @@ import threading
 sys.dont_write_bytecode = True
 MAX_CAPTURE = 4 * 1024 * 1024
 MAX_INPUT = 1024 * 1024 * 1024
+# One shared attempt bound for both maintained-client sessions and receipt replay.
+MAX_CLIENT_REQUESTS = 10000
 SUITES = ("api-contract", "api-workflow", "maintained-client")
 INPUTS = (
     "Cargo.toml", "Cargo.lock", "docs/api/forge-workspace-v1.openapi.yaml",
     "docs/api/capability-matrix.json", "schemas/forge.workspace-1.schema.json",
     "ui/workspace.js", "ui/workspace.css", "src/workspace/assets.rs",
     "scripts/workspace_client.py", "scripts/test_workspace_client.py",
-    "scripts/verify_workspace.py", "tests/api_contract_validation.rs",
+    "scripts/verify_workspace.py", "scripts/test_verify_workspace.py",
+    ".github/workflows/ci.yml", ".github/workflows/workspace-verification.yml",
+    ".gitattributes", "tests/api_contract_validation.rs",
     "tests/workspace_cli_test.rs",
 )
 BUILD_OUTCOMES = ("success", "failure", "skipped", "cancelled", "unrecorded")
@@ -273,7 +277,7 @@ def read_client_receipt(path, declared):
         raise ValueError("Client receipt must be an object")
     allowed = {"schema_version", "status", "checks", "check_count", "declared_operation_count",
                "observed_operations", "unobserved_operations", "operation_outcomes"}
-    if set(value) != allowed or value["schema_version"] != "forge.workspace-client-verification/1" or value["status"] != "passed":
+    if set(value) != allowed or value["schema_version"] != "forge.workspace-client-verification/2" or value["status"] != "passed":
         raise ValueError("Client receipt did not pass its closed contract")
     expected_checks = {
         "upload_requires_confirmation", "idempotent_commit_replays_exact_bytes", "conversion_succeeds",
@@ -281,38 +285,124 @@ def read_client_receipt(path, declared):
         "explicit_scope_decision_validates", "committed_scope_analysis_succeeds",
         "export_matches_committed_redacted_bytes", "read_only_summary_reconciles_resources",
         "read_only_mutation_is_rejected", "clean_shutdown_writable", "clean_shutdown_read_only",
+        "metadata_bundle_preview_preserves_complete_denominator",
+        "metadata_bundle_fingerprints_match_exact_bytes",
+        "registered_bundle_comparison_reconciles_expected_current",
+        "metadata_bundle_queries_preserve_workspace_files",
     }
     checks = value["checks"]
-    if not isinstance(checks, list) or any(not isinstance(item, str) for item in checks) or set(checks) != expected_checks or len(checks) != len(expected_checks) or value["check_count"] != len(checks):
+    if not isinstance(checks, list) or any(not isinstance(item, str) for item in checks) or set(checks) != expected_checks or len(checks) != len(expected_checks) or type(value["check_count"]) is not int or value["check_count"] != len(checks):
         raise ValueError("Client checks are incomplete")
     observed, missing = value["observed_operations"], value["unobserved_operations"]
     if not isinstance(observed, list) or not isinstance(missing, list) or observed != sorted(set(observed)) or missing != sorted(set(missing)):
         raise ValueError("Client operation inventory is invalid")
-    if value["declared_operation_count"] != len(declared) or set(observed) & set(missing) or set(observed) | set(missing) != set(declared):
+    if type(value["declared_operation_count"]) is not int or value["declared_operation_count"] != len(declared) or set(observed) & set(missing) or set(observed) | set(missing) != set(declared):
         raise ValueError("Client operation denominator is inconsistent")
     outcomes = value["operation_outcomes"]
     if not isinstance(outcomes, dict) or set(outcomes) != set(observed):
         raise ValueError("Client outcomes do not match observed operations")
+    total_attempts = 0
     for counts in outcomes.values():
         if not isinstance(counts, dict) or set(counts) != {"succeeded", "rejected", "transport_failed"}:
             raise ValueError("Client outcomes are not closed")
-        if any(type(count) is not int or not 0 <= count <= 10000 for count in counts.values()) or sum(counts.values()) == 0:
+        if any(type(count) is not int or not 0 <= count <= MAX_CLIENT_REQUESTS for count in counts.values()) or sum(counts.values()) == 0:
             raise ValueError("Client outcome count is invalid")
+        total_attempts += sum(counts.values())
+    if not 0 < total_attempts <= MAX_CLIENT_REQUESTS:
+        raise ValueError("Client total request count is invalid")
     return value
 
 
+def commit_parents(raw, commit):
+    """Verify one bounded raw Git commit object and return only its ordered parent identifiers."""
+    if not isinstance(raw, bytes) or not raw or len(raw) > MAX_CAPTURE:
+        raise ValueError("Commit object exceeds its supported bound")
+    if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", commit):
+        raise ValueError("Commit identifier is invalid")
+    algorithm = "sha1" if len(commit) == 40 else "sha256"
+    digest = hashlib.new(algorithm, b"commit " + str(len(raw)).encode("ascii") + b"\0" + raw, usedforsecurity=False).hexdigest()
+    if digest != commit:
+        raise ValueError("Commit object does not match captured HEAD")
+    headers, separator, _ = raw.partition(b"\n\n")
+    if not separator or len(headers) > 65536 or b"\0" in headers:
+        raise ValueError("Commit object header is invalid")
+    lines = headers.split(b"\n")
+    identifier = rb"[0-9a-f]{" + str(len(commit)).encode("ascii") + rb"}"
+    if not lines or not re.fullmatch(rb"tree " + identifier, lines[0]):
+        raise ValueError("Commit tree identifier is invalid")
+    parents = []
+    parent_section = True
+    for line in lines[1:]:
+        if line.startswith(b"parent "):
+            if not parent_section or not re.fullmatch(rb"parent " + identifier, line):
+                raise ValueError("Commit parent identifier is invalid")
+            parents.append(line[7:].decode("ascii"))
+            if len(parents) > 256 or len(parents) != len(set(parents)):
+                raise ValueError("Commit parent inventory is invalid")
+        else:
+            parent_section = False
+            if not line or line.startswith(b"parent"):
+                raise ValueError("Commit object header is invalid")
+    return parents
+
+
+def checkout_binding(identity, expected_commit=None, *, event="local", checkout_kind="local",
+                     requested_head=None, requested_base=None):
+    """Check the workflow context against the captured object; local runs receive no hosted-context credit."""
+    commit = identity["source_commit"]
+    parents = identity["ordered_parents"]
+    if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", commit):
+        raise ValueError("Captured commit identifier is invalid")
+    identifier = re.compile(r"[0-9a-f]{" + str(len(commit)) + r"}")
+    if not isinstance(parents, list) or len(parents) > 256 or any(not isinstance(value, str) or not identifier.fullmatch(value) for value in parents) or len(parents) != len(set(parents)):
+        raise ValueError("Captured parent inventory is invalid")
+    if expected_commit is not None and (not isinstance(expected_commit, str) or not identifier.fullmatch(expected_commit)):
+        raise ValueError("Expected commit identifier is invalid")
+    if event not in {"local", "pull_request", "push", "workflow_dispatch"} or checkout_kind not in {"local", "pull-request-merge", "head"}:
+        raise ValueError("Checkout context is unsupported")
+    if event == "local":
+        if checkout_kind != "local" or requested_head is not None or requested_base is not None:
+            raise ValueError("Local verification has no requested hosted context")
+    else:
+        if expected_commit is None or (not isinstance(requested_head, str) or not identifier.fullmatch(requested_head)) or checkout_kind == "local":
+            raise ValueError("Hosted verification requires exact workflow identifiers")
+        if event == "pull_request":
+            if (not isinstance(requested_base, str) or not identifier.fullmatch(requested_base)):
+                raise ValueError("Pull request verification requires its requested base")
+        elif checkout_kind != "head" or requested_base is not None:
+            raise ValueError("Head verification has unsupported merge context")
+        if checkout_kind == "pull-request-merge":
+            if event != "pull_request" or parents != [requested_base, requested_head]:
+                raise ValueError("Pull request merge parents differ from requested base and head")
+        elif commit != requested_head:
+            raise ValueError("Head checkout differs from its requested head")
+    if expected_commit is not None and commit != expected_commit:
+        raise ValueError("Source commit differs from requested tested commit")
+    return {"event": event, "kind": checkout_kind, "requested_head": requested_head,
+            "requested_base": requested_base, "tested_commit": commit,
+            "ordered_parents": parents.copy(), "hosted_context_asserted": event != "local",
+            "binding": "local-commit-object-only" if event == "local" else "workflow-context-and-commit-object"}
+
+
 def capture_identity(root, forge, timeout):
-    """Capture exact input and binary pins, the Git commit and tracked-source cleanliness."""
+    """Capture bounded inputs, exact raw commit parents and source cleanliness; discard authors and commit messages."""
     inputs = {name: hash_file(root / name) for name in INPUTS}
     identity = {"inputs": inputs, "provided_release_binary": hash_file(forge)}
     command = run_command(["git", "rev-parse", "HEAD"], root, timeout)
     commit = command["output"].strip().decode("ascii")
     if command["exit_code"] != 0 or command["failure"] is not None or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", commit):
         raise ValueError("Source commit is unavailable")
+    captured = run_command(["git", "cat-file", "commit", "HEAD"], root, timeout)
+    if captured["exit_code"] != 0 or captured["failure"] is not None:
+        raise ValueError("HEAD commit object is unavailable")
+    parents = commit_parents(captured["output"], commit)
+    confirmed = run_command(["git", "rev-parse", "HEAD"], root, timeout)
+    if confirmed["exit_code"] != 0 or confirmed["failure"] is not None or confirmed["output"].strip() != commit.encode("ascii"):
+        raise ValueError("HEAD changed during commit capture")
     dirty = run_command(["git", "status", "--porcelain", "--untracked-files=no"], root, timeout)
     if dirty["exit_code"] != 0 or dirty["failure"] is not None:
         raise ValueError("Tracked source state is unavailable")
-    identity.update(source_commit=commit, tracked_source_clean=not bool(dirty["output"]))
+    identity.update(source_commit=commit, ordered_parents=parents, tracked_source_clean=not bool(dirty["output"]))
     return identity
 
 
@@ -354,7 +444,8 @@ def suite_binding(suite, identity, tools):
     return binding
 
 
-def verify(root, forge, output_dir, selected, timeout=900, expected_commit=None, build_outcome="unrecorded"):
+def verify(root, forge, output_dir, selected, timeout=900, expected_commit=None, build_outcome="unrecorded",
+           *, event="local", checkout_kind="local", requested_head=None, requested_base=None):
     """Run selected suites despite individual failures and publish a receipt for this slice; keep acceptance gates open."""
     if build_outcome not in BUILD_OUTCOMES:
         raise ValueError("Invalid build outcome")
@@ -364,8 +455,8 @@ def verify(root, forge, output_dir, selected, timeout=900, expected_commit=None,
     if output_dir.exists() and any(output_dir.iterdir()):
         raise ValueError("Use an empty receipt directory")
     output_dir.mkdir(parents=True, exist_ok=True)
-    receipt = {"schema_version": "forge.workspace-verification/1", "scope": "f04-api-foundation",
-               "status": "incomplete", "identity": None, "tools": None,
+    receipt = {"schema_version": "forge.workspace-verification/2", "scope": "f04-api-foundation",
+               "status": "incomplete", "identity": None, "checkout": None, "tools": None,
                "input_stability": "unverified", "suites": {}, "pending_gates": list(PENDING),
                "build": {"outcome": build_outcome, "profile": "release", "features": "default",
                          "locked": True, "offline": True, "binding": "workflow-step-assertion"}}
@@ -378,8 +469,8 @@ def verify(root, forge, output_dir, selected, timeout=900, expected_commit=None,
         receipt["identity"] = before
         receipt["tools"] = tool_versions(root, min(timeout, 30))
         declared = [name for _, _, name in contract_routes(root)]
-        if expected_commit and before["source_commit"] != expected_commit:
-            raise ValueError("Source commit differs from requested commit")
+        receipt["checkout"] = checkout_binding(before, expected_commit, event=event,
+            checkout_kind=checkout_kind, requested_head=requested_head, requested_base=requested_base)
         with tempfile.TemporaryDirectory(prefix="forge-workspace-receipts-") as directory:
             client_path = Path(directory) / "client.json"
             for suite in selected:
@@ -436,6 +527,10 @@ def main():
     parser.add_argument("--suite", action="append", choices=SUITES, required=True)
     parser.add_argument("--timeout", type=int, default=900)
     parser.add_argument("--expected-commit")
+    parser.add_argument("--event", choices=("local", "pull_request", "push", "workflow_dispatch"), default="local")
+    parser.add_argument("--checkout-kind", choices=("local", "pull-request-merge", "head"), default="local")
+    parser.add_argument("--requested-head")
+    parser.add_argument("--requested-base")
     parser.add_argument("--build-outcome", choices=BUILD_OUTCOMES, default="unrecorded")
     args = parser.parse_args()
     if not 1 <= args.timeout <= 1800:
@@ -443,7 +538,9 @@ def main():
     root = Path(__file__).resolve().parents[1]
     try:
         receipt = verify(root, args.forge.resolve(), args.output_dir, args.suite,
-                         args.timeout, args.expected_commit, args.build_outcome)
+                         args.timeout, args.expected_commit, args.build_outcome, event=args.event,
+                         checkout_kind=args.checkout_kind, requested_head=args.requested_head,
+                         requested_base=args.requested_base)
     except (OSError, ValueError):
         print("Workspace verification could not publish a fresh receipt.", file=sys.stderr)
         return 2

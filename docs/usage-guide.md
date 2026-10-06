@@ -544,7 +544,13 @@ does not implicitly classify the statement's parent control as mapped or
 reviewed-no-relationship. Authors must map the control explicitly when that is
 the reviewed conclusion.
 
-Detail filters never change framework-wide totals:
+Detail filters never change framework-wide totals. Persisted applicability
+reports must reconcile the six classification counts with the inventory total;
+invalid or overflowing sums are rejected. Unfiltered category counts match the
+visible inventory exactly, while filtered details may be a subset. Workspace
+currentness additionally requires comparison with recomputed analysis.
+
+For example, select a subset without changing the complete denominator:
 
 ```bash
 forge applicability analyze --manifest applicability.json --format json \
@@ -900,11 +906,35 @@ Install the pre-commit hook:
 ./scripts/install-hooks.sh
 ```
 
+## Local workspace index bundles
+
+For an explicit `forge.workspace.json`, the unreleased **Trace & Reports**
+browser panel and maintained Python client's `bundle_preview()` and
+`verify_bundle(bundle)` inspect complete registrations and compare supplied
+fingerprints in either session mode. Preview metadata and acknowledge its
+sensitivity before requesting the browser's local metadata JSON download. This
+writes no project file or server receipt, includes no source content and
+establishes no approval.
+
+Choose a metadata JSON file, then explicitly compare registered fingerprints.
+Its original bytes plus the 11-byte wrapper must fit 1 MiB, so the selected file
+may be at most 1,048,565 bytes. The server rejects malformed/unsupported input
+without opening supplied unregistered paths. Missing/empty index, subset
+agreement/current-only entries, whole-index equality and observed validation
+state remain separate. Queries keep the complete expected denominator up to
+1,000 within byte limits and prepare no 100-input effect.
+
+See [Workspace index bundles](workspace-index-bundles.md) for the Python example,
+normalized index hash versus original resource hashes and safe errors. Server
+publication/receipt-backed export, source-content opt-in, confirmed writable
+import, full S-6 capacity/batch qualification and the final integrated
+documentation review remain open.
+
 ## Further Reading
 
 - [README.md](../README.md) — project overview and quick start
 - [Evidence and Implementation Linking](evidence-linkage.md) — exact subject/evidence metadata linkage, freshness, privacy, and baseline contracts
-- [Contributing Guide](CONTRIBUTING.md) — development setup and PR process
+- [Contributing Guide](../CONTRIBUTING.md) — development setup and PR process
 - [Architecture Guide](architecture.md) — pipeline details and crate structure
 - `example_data/` — 25 sample policies
 - `tests/fixtures/` — test fixtures for all subcommands

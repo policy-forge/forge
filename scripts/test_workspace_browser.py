@@ -14,20 +14,41 @@ import subprocess
 import tempfile
 import time
 
+def synthetic_framework_catalog():
+    """Keep the original review IDs and add 51 authored controls for a second page."""
+    controls=[{"id":"framework-a","title":"Synthetic A"},
+              {"id":"framework-b","title":"Synthetic B"}]
+    controls.extend({"id":f"framework-extra-{index:03}",
+                     "title":f"Synthetic pagination control {index}"}
+                    for index in range(1,52))
+    return {"catalog":{"uuid":"22222222-2222-4222-8222-222222222222",
+                       "metadata":{"title":"<img src=x onerror=alert(1)>",
+                                   "last-modified":"2026-09-10T00:00:00Z",
+                                   "version":"1","oscal-version":"1.2.3"},
+                       "controls":controls}}
+
+def synthetic_long_project_label():
+    """Author exactly 200 ASCII scalars with literal markup and an unbroken suffix."""
+    return "<script>" + "L" * 192
+
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--forge",required=True)
 parser.add_argument("--node",default="node")
 parser.add_argument("--read-only",action="store_true")
+parser.add_argument("--metadata-long-content-fixture",action="store_true",
+                    help="Author the 200-scalar metadata label and enable native long-content reflow checks")
 args=parser.parse_args()
 forge=str(Path(args.forge).resolve())
 script=Path(__file__).resolve().parents[1]/"ui/tests/workspace.cjs"
 with tempfile.TemporaryDirectory(prefix="forge-browser-") as root:
     project=Path(root)
     (project/"policy.md").write_text("# Synthetic policy\n\n## Access\n\n- Operators must review the supplied clause.\n")
-    catalog={"catalog":{"uuid":"22222222-2222-4222-8222-222222222222","metadata":{"title":"<img src=x onerror=alert(1)>","last-modified":"2026-09-10T00:00:00Z","version":"1","oscal-version":"1.2.3"},"controls":[{"id":"framework-a","title":"Synthetic A"},{"id":"framework-b","title":"Synthetic B"}]}}
+    catalog=synthetic_framework_catalog()
     (project/"framework.json").write_text(json.dumps(catalog))
-    if args.read_only:
-        (project/"forge.workspace.json").write_text(json.dumps({"schema_version":"forge.workspace/1","label":"Synthetic read-only project <script>","resources":[{"key":"policy","role":"policy-source","path":"policy.md"},{"key":"framework","role":"oscal-catalog-artifact","path":"framework.json"}]}))
+    if args.read_only or args.metadata_long_content_fixture:
+        label=synthetic_long_project_label() if args.metadata_long_content_fixture else "Synthetic read-only project <script>"
+        resources=[{"key":"policy","role":"policy-source","path":"policy.md"},{"key":"framework","role":"oscal-catalog-artifact","path":"framework.json"}] if args.read_only else []
+        (project/"forge.workspace.json").write_text(json.dumps({"schema_version":"forge.workspace/1","label":label,"resources":resources}))
     pid, terminal=pty.fork()
     if pid==0:
         command=[forge,"workspace","--project",root,"--no-open"]
@@ -47,9 +68,14 @@ with tempfile.TemporaryDirectory(prefix="forge-browser-") as root:
             if match:url=match.group(1).decode();break
         if not url:raise RuntimeError("Synthetic browser workspace did not launch")
         if b"synthetic browser verification passphrase" in output:raise RuntimeError("Terminal echoed the test passphrase")
-        result=subprocess.run([args.node,str(script),url,"read-only" if args.read_only else "writable"],timeout=240,check=False)
+        browser_environment=os.environ.copy()
+        browser_environment.pop("FORGE_TEST_LONG_METADATA",None)
+        if args.metadata_long_content_fixture:browser_environment["FORGE_TEST_LONG_METADATA"]="1"
+        result=subprocess.run([args.node,str(script),url,"read-only" if args.read_only else "writable"],timeout=240,check=False,env=browser_environment)
         if result.returncode:raise SystemExit(result.returncode)
     finally:
+        # Release the PTY before reaping: macOS can wait for its master during exit.
+        os.close(terminal)
         try:os.kill(pid,signal.SIGTERM)
         except ProcessLookupError:pass
         deadline=time.monotonic()+3
@@ -62,4 +88,3 @@ with tempfile.TemporaryDirectory(prefix="forge-browser-") as root:
                 except ProcessLookupError:pass
                 os.waitpid(pid,0);break
             time.sleep(0.05)
-        os.close(terminal)

@@ -16,6 +16,7 @@ use hyper::{Request, Response};
 use serde_json::{Value, json};
 
 use super::contract::{self, Error, Result};
+use super::preparation::{Interruption, ProgressUpdate, Stage, WorkControl, WorkError, WorkResult};
 use super::root::Root;
 use super::services::{Snapshot, filtered, paginate};
 use super::session::{Mode, Session};
@@ -33,6 +34,67 @@ struct State {
     effects: Mutex<super::effects::Store>,
     work: Arc<tokio::sync::Semaphore>,
     jobs: Arc<tokio::sync::Semaphore>,
+}
+
+/// Cooperative control for one accepted, session-owned background preparation.
+struct OperationControl<'a> {
+    /// Session stop flag and operation store; locks never cover producer I/O.
+    state: &'a State,
+    /// The admitted operation whose cancellation and progress this worker owns.
+    id: &'a str,
+    /// One checked acceptance deadline, including any wait before worker entry.
+    deadline: Option<Instant>,
+    /// First observed stop remains sticky through all later checkpoints.
+    interruption: Option<Interruption>,
+}
+
+/// An unrepresentable deadline fails closed; exact equality exhausts the budget.
+fn budget_expired(deadline: Option<Instant>, observed: Instant) -> bool {
+    deadline.is_none_or(|deadline| observed >= deadline)
+}
+
+impl OperationControl<'_> {
+    /// Check a supplied monotonic observation using the same production fence.
+    fn checkpoint_at(&mut self, update: ProgressUpdate, observed: Instant) -> WorkResult<()> {
+        if let Some(reason) = self.interruption {
+            return Err(WorkError::Interrupted(reason));
+        }
+        let reason = if self.state.stopped.load(Ordering::Acquire) {
+            Some(Interruption::Shutdown)
+        } else if budget_expired(self.deadline, observed) {
+            Some(Interruption::DeadlineExceeded)
+        } else {
+            let mut store = self.state.effects.lock().map_err(|_| internal())?;
+            // Waiting for the store is part of the same budget. Recheck after
+            // acquisition before publishing progress or allowing producer I/O.
+            if self.state.stopped.load(Ordering::Acquire) {
+                Some(Interruption::Shutdown)
+            } else if budget_expired(self.deadline, Instant::now()) {
+                Some(Interruption::DeadlineExceeded)
+            } else if store.observe_progress(self.id, update)? {
+                None
+            } else {
+                Some(Interruption::CancelRequested)
+            }
+        };
+        if let Some(reason) = reason {
+            self.interruption = Some(reason);
+            return Err(WorkError::Interrupted(reason));
+        }
+        Ok(())
+    }
+}
+
+impl WorkControl for OperationControl<'_> {
+    /// Check cancellation, shutdown and the original deadline at a real boundary.
+    fn checkpoint(&mut self, _stage: Stage, update: ProgressUpdate) -> WorkResult<()> {
+        self.checkpoint_at(update, Instant::now())
+    }
+
+    /// Return the first observed stop without renewing work or inspecting files.
+    fn interruption(&self) -> Option<Interruption> {
+        self.interruption
+    }
 }
 
 fn internal() -> Error {
@@ -274,8 +336,10 @@ fn unlock_response(
     response
 }
 
+/// Preserve write scope except for documented read-only query operations.
 fn is_mutation(method: &str, path: &str) -> bool {
     method != "GET"
+        && !(method == "POST" && path == "/api/v1/project/bundle-verifications")
         && !matches!(
             path,
             "/api/v1/session/unlock"
@@ -357,6 +421,8 @@ fn session_view(state: &State, label: &str) -> Result<Value> {
         "api_major":1,"contract_version":contract::VERSION,"project_label":label,"launched_at":session.launched_at}))
 }
 
+/// Validate the normative operation and dispatch captured queries or explicit effects.
+/// Dispatch authenticated requests, preserving admission, replay and terminal fences.
 #[allow(clippy::too_many_lines)] // Explicit normative route dispatch; domain rules stay in services.
 fn dispatch(
     state: &Arc<State>,
@@ -448,6 +514,8 @@ fn dispatch(
                     )
                 })?;
                 let operation = store.begin(kind)?;
+                let accepted_at = Instant::now();
+                let deadline = accepted_at.checked_add(Duration::from_secs(30));
                 let id = operation["operation_id"].as_str().ok_or_else(internal)?.to_owned();
                 let shared = Arc::clone(state);
                 let method = method.to_owned();
@@ -455,7 +523,6 @@ fn dispatch(
                 let request = request.clone();
                 tokio::task::spawn_blocking(move || {
                     let _permit = permit;
-                    let start = Instant::now();
                     let proceed = shared
                         .effects
                         .lock()
@@ -465,23 +532,35 @@ fn dispatch(
                     if !proceed {
                         return;
                     }
+                    let mut control =
+                        OperationControl { state: &shared, id: &id, deadline, interruption: None };
                     let result = (|| {
                         let mut local = super::effects::Store::default();
-                        let mut snapshot = Snapshot::capture(&shared.root)?;
-                        let reply = super::actions::prepare(
+                        let mut snapshot =
+                            Snapshot::capture_with_control(&shared.root, &mut control)?;
+                        let reply = super::actions::prepare_with_control(
                             &mut local,
                             &shared.root,
                             &mut snapshot,
                             &method,
                             &path,
                             &request,
+                            &mut control,
                         )?;
                         Ok((local, reply))
                     })();
-                    let cancelled = shared.stopped.load(Ordering::Acquire)
-                        || start.elapsed() > Duration::from_secs(30);
+                    // The final checkpoint also overrides a local safe failure
+                    // when a stop arrives before any receipts can be transferred.
+                    let result =
+                        match control.checkpoint(Stage::RetainPrepared, ProgressUpdate::Clear) {
+                            Ok(()) => result,
+                            Err(error) => Err(error),
+                        };
                     if let Ok(mut store) = shared.effects.lock() {
-                        let _ = store.finish(&id, result, cancelled);
+                        let cancelled = control.interruption().is_some()
+                            || shared.stopped.load(Ordering::Acquire)
+                            || budget_expired(deadline, Instant::now());
+                        let _ = store.finish(&id, result.map_err(WorkError::into_error), cancelled);
                     }
                 });
                 super::effects::Reply { value: operation, schema: "Operation", status: 202 }
@@ -512,6 +591,16 @@ fn dispatch(
     }
     let mut snapshot = Snapshot::capture(&state.root)?;
     match (method, path) {
+        ("GET", "/api/v1/project/bundle-preview") => {
+            json_response(super::bundles::preview(&snapshot)?, "ProjectBundlePreview")
+        }
+        ("POST", "/api/v1/project/bundle-verifications") => json_response(
+            super::bundles::verify_registered(
+                &snapshot,
+                payload.as_ref().ok_or_else(Error::invalid)?,
+            )?,
+            "ProjectBundleVerification",
+        ),
         ("GET", "/api/v1/session") => {
             json_response(session_view(state, &snapshot.index.label)?, "Session")
         }
@@ -767,5 +856,143 @@ mod tests {
                 "unlock-throttled"
             );
         }
+    }
+    /// The consumed monotonic fence includes exact equality and fails closed.
+    #[test]
+    fn budget_expiry_includes_equality_and_unrepresentable_deadline() {
+        let deadline = Instant::now() + Duration::from_secs(30);
+        assert!(!budget_expired(
+            Some(deadline),
+            deadline.checked_sub(Duration::from_nanos(1)).unwrap()
+        ));
+        assert!(budget_expired(Some(deadline), deadline));
+        assert!(budget_expired(Some(deadline), deadline + Duration::from_nanos(1)));
+        assert!(budget_expired(None, deadline));
+    }
+
+    /// Progress cannot renew the acceptance deadline or count later stopped work.
+    #[test]
+    fn operation_progress_keeps_original_deadline() {
+        let dir = tempfile::tempdir().unwrap();
+        let state = browser_state(Root::open(dir.path()).unwrap(), "correct long passphrase");
+        let operation = state.effects.lock().unwrap().begin("export").unwrap();
+        let id = operation["operation_id"].as_str().unwrap();
+        assert!(state.effects.lock().unwrap().running(id).unwrap());
+        let accepted = Instant::now();
+        let deadline = accepted + Duration::from_secs(30);
+        let mut control =
+            OperationControl { state: &state, id, deadline: Some(deadline), interruption: None };
+        control
+            .checkpoint_at(ProgressUpdate::Capture { completed: 0, total: 101 }, accepted)
+            .unwrap();
+        control
+            .checkpoint_at(
+                ProgressUpdate::Capture { completed: 1, total: 101 },
+                deadline.checked_sub(Duration::from_nanos(1)).unwrap(),
+            )
+            .unwrap();
+        assert!(matches!(
+            control.checkpoint_at(ProgressUpdate::Capture { completed: 2, total: 101 }, deadline),
+            Err(WorkError::Interrupted(Interruption::DeadlineExceeded))
+        ));
+        let observed = state.effects.lock().unwrap().operation(id).unwrap();
+        assert_eq!(observed["progress"], json!({"completed_items":1,"total_items":101}));
+        assert_eq!(control.deadline, Some(deadline));
+        state.effects.lock().unwrap().finish(id, Err(Error::invalid()), true).unwrap();
+        let settled = state.effects.lock().unwrap().operation(id).unwrap();
+        assert_eq!(settled["state"], "cancelled");
+        assert!(settled["progress"].is_null());
+    }
+
+    /// First observed cancellation, shutdown or expiry survives later boundaries.
+    #[test]
+    fn operation_checkpoint_stop_is_sticky_before_index_read() {
+        for expected in
+            [Interruption::CancelRequested, Interruption::Shutdown, Interruption::DeadlineExceeded]
+        {
+            let dir = tempfile::tempdir().unwrap();
+            std::fs::write(dir.path().join("forge.workspace.json"), b"invalid index sentinel")
+                .unwrap();
+            let state = browser_state(Root::open(dir.path()).unwrap(), "correct long passphrase");
+            let operation = state.effects.lock().unwrap().begin("export").unwrap();
+            let id = operation["operation_id"].as_str().unwrap();
+            assert!(state.effects.lock().unwrap().running(id).unwrap());
+            let observed = Instant::now();
+            let deadline = if expected == Interruption::DeadlineExceeded {
+                observed
+            } else {
+                observed + Duration::from_secs(30)
+            };
+            if expected == Interruption::CancelRequested {
+                state.effects.lock().unwrap().cancel(id).unwrap();
+            }
+            if expected == Interruption::Shutdown {
+                state.stopped.store(true, Ordering::Release);
+            }
+            let mut control = OperationControl {
+                state: &state,
+                id,
+                deadline: Some(deadline),
+                interruption: None,
+            };
+            assert!(
+                matches!(control.checkpoint_at(ProgressUpdate::Unchanged, observed), Err(WorkError::Interrupted(reason)) if reason == expected)
+            );
+            state.stopped.store(true, Ordering::Release);
+            assert!(
+                matches!(Snapshot::capture_with_control(&state.root, &mut control), Err(WorkError::Interrupted(reason)) if reason == expected)
+            );
+            assert_eq!(control.interruption(), Some(expected));
+            state.effects.lock().unwrap().finish(id, Err(Error::invalid()), true).unwrap();
+            assert_eq!(state.effects.lock().unwrap().operation(id).unwrap()["state"], "cancelled");
+            assert_eq!(
+                std::fs::read(dir.path().join("forge.workspace.json")).unwrap(),
+                b"invalid index sentinel"
+            );
+        }
+    }
+
+    /// An expired queued job stops before capture rather than starting a fresh budget.
+    #[test]
+    fn operation_already_expired_at_worker_start_does_not_capture() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("forge.workspace.json"), b"invalid index sentinel").unwrap();
+        let state = browser_state(Root::open(dir.path()).unwrap(), "correct long passphrase");
+        assert!(Snapshot::capture(&state.root).is_err());
+        let operation = state.effects.lock().unwrap().begin("export").unwrap();
+        let id = operation["operation_id"].as_str().unwrap();
+        assert!(state.effects.lock().unwrap().running(id).unwrap());
+        let mut control = OperationControl {
+            state: &state,
+            id,
+            deadline: Some(Instant::now()),
+            interruption: None,
+        };
+        assert!(matches!(
+            Snapshot::capture_with_control(&state.root, &mut control),
+            Err(WorkError::Interrupted(Interruption::DeadlineExceeded))
+        ));
+        let observed = state.effects.lock().unwrap().operation(id).unwrap();
+        assert!(observed.get("progress").is_none());
+        assert!(observed.get("result").is_none());
+    }
+
+    /// An eligible pre-lock observation cannot permit work after budget expiry.
+    #[test]
+    fn operation_checkpoint_rechecks_budget_after_store_acquisition() {
+        let dir = tempfile::tempdir().unwrap();
+        let state = browser_state(Root::open(dir.path()).unwrap(), "correct long passphrase");
+        let operation = state.effects.lock().unwrap().begin("export").unwrap();
+        let id = operation["operation_id"].as_str().unwrap();
+        assert!(state.effects.lock().unwrap().running(id).unwrap());
+        let deadline = Instant::now();
+        let mut control =
+            OperationControl { state: &state, id, deadline: Some(deadline), interruption: None };
+        let before_lock = deadline.checked_sub(Duration::from_nanos(1)).unwrap();
+        assert!(matches!(
+            control.checkpoint_at(ProgressUpdate::Capture { completed: 0, total: 1 }, before_lock),
+            Err(WorkError::Interrupted(Interruption::DeadlineExceeded))
+        ));
+        assert!(state.effects.lock().unwrap().operation(id).unwrap().get("progress").is_none());
     }
 }

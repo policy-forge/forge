@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -68,14 +67,21 @@ jobs:
         env:
           FORGE_TEST_BINARY: target/release/forge${{ runner.os == 'Windows' && '.exe' || '' }}
           FORGE_TEST_COMMIT: ${{ github.sha }}
+          FORGE_TEST_EVENT: ${{ github.event_name }}
+          FORGE_TEST_CHECKOUT: ${{ github.event_name == 'pull_request' && 'pull-request-merge' || 'head' }}
+          FORGE_TEST_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          FORGE_TEST_BASE: ${{ github.event.pull_request.base.sha || '' }}
           FORGE_TEST_BUILD: ${{ steps.release-build.outcome }}
         shell: bash
         run: |
+          checkout_context_args=(--event "$FORGE_TEST_EVENT" --checkout-kind "$FORGE_TEST_CHECKOUT" --requested-head "$FORGE_TEST_HEAD")
+          if [ -n "$FORGE_TEST_BASE" ]; then checkout_context_args+=(--requested-base "$FORGE_TEST_BASE"); fi
           python -B scripts/verify_workspace.py \
             --forge "$FORGE_TEST_BINARY" \
             --output-dir workspace-evidence \
             --expected-commit "$FORGE_TEST_COMMIT" \
             --build-outcome "$FORGE_TEST_BUILD" \
+            "${checkout_context_args[@]}" \
             --suite api-contract --suite api-workflow --suite maintained-client
 
       - name: Retain redacted verification receipt

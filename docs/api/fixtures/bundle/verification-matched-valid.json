@@ -1,0 +1,22 @@
+{
+  "scope": "registered-fingerprints-only",
+  "snapshot_version": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "source_index_present": true,
+  "state": "matched",
+  "current_resources": 1,
+  "current_only_resources": 0,
+  "expected_index_matches_current": true,
+  "expected_resources": 1,
+  "matched_resources": 1,
+  "unregistered_resources": 0,
+  "mismatched_resources": 0,
+  "items": [
+    {
+      "key": "policy",
+      "status": "matched",
+      "reason_codes": [],
+      "observed_resource_validation_state": "valid"
+    }
+  ],
+  "source_content_included": false
+}

@@ -280,6 +280,97 @@
       "schema": "openapi:components/schemas/WorkspaceReportEnvelope",
       "expectation": "invalid",
       "description": "Closed inert trace export envelope; reject arbitrary private fields."
+    },
+    {
+      "file": "bundle/bundle-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceIndexBundle",
+      "expectation": "valid",
+      "description": "Closed complete metadata bundle; normalized index hash and resource hash bind synthetic bytes."
+    },
+    {
+      "file": "bundle/preview-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundlePreview",
+      "expectation": "valid",
+      "description": "Authorized metadata preview, every declared category, no source content or receipt."
+    },
+    {
+      "file": "bundle/verification-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "valid",
+      "description": "Closed registered-only comparison request."
+    },
+    {
+      "file": "bundle/verification-matched-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleVerification",
+      "expectation": "valid",
+      "description": "Complete single-entry fingerprint match; validation state remains separate."
+    },
+    {
+      "file": "bundle/empty-bundle-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/WorkspaceIndexBundle",
+      "expectation": "valid",
+      "description": "An explicitly present empty index is a valid complete zero-entry bundle."
+    },
+    {
+      "file": "bundle/verification-missing-index-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/ProjectBundleVerification",
+      "expectation": "valid",
+      "description": "Absent destination index is explicit; all expected entries remain unregistered."
+    },
+    {
+      "file": "bundle/unknown-content-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "Unknown source-content field is prohibited."
+    },
+    {
+      "file": "bundle/unknown-approval-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "The nested index remains closed to approval fields."
+    },
+    {
+      "file": "bundle/wrong-version-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "Unsupported narrow bundle version."
+    },
+    {
+      "file": "bundle/wrong-profile-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "The metadata-only profile is closed."
+    },
+    {
+      "file": "bundle/upper-hash-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "Digest format is lowercase SHA256."
+    },
+    {
+      "file": "bundle/oversize-pin-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "One-over declared resource byte bound."
+    },
+    {
+      "file": "bundle/unknown-role-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/WorkspaceBundleVerificationRequest",
+      "expectation": "invalid",
+      "description": "Existing index roles are unchanged and closed."
     }
   ]
 }

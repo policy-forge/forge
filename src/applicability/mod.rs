@@ -1312,6 +1312,12 @@ fn error(message: impl Into<String>) -> ForgeError {
 /// Parse a complete persisted report without accepting unknown fields or
 /// inconsistent denominators. This validates asserted historical data; callers
 /// must still compare against recomputation before describing it as current.
+///
+/// # Errors
+///
+/// Returns the existing validation error for malformed persisted reports,
+/// including classification counts whose sum overflows or differs from the
+/// declared inventory total. Filtered details retain the complete denominator.
 pub(crate) fn parse_stored_report(bytes: &[u8]) -> Result<model::ApplicabilityReport, ForgeError> {
     #[derive(serde::Deserialize, serde::Serialize)]
     #[serde(deny_unknown_fields)]
@@ -1351,14 +1357,18 @@ pub(crate) fn parse_stored_report(bytes: &[u8]) -> Result<model::ApplicabilityRe
     // `counts` always describes the complete inventory, so its total must equal the sum of
     // its classification counts; the visible controls are a subset of that denominator.
     let c = &stored.counts;
-    if c.total
-        != c.applicable_mapped
-            + c.applicable_reviewed_no_relationship
-            + c.applicable_unmapped
-            + c.not_applicable
-            + c.deferred
-            + c.under_review
-    {
+    let classified = [
+        c.applicable_mapped,
+        c.applicable_reviewed_no_relationship,
+        c.applicable_unmapped,
+        c.not_applicable,
+        c.deferred,
+        c.under_review,
+    ]
+    .into_iter()
+    .try_fold(0_usize, usize::checked_add)
+    .ok_or_else(failure)?;
+    if c.total != classified {
         return Err(failure());
     }
     for hash in std::iter::once(&stored.manifest_sha256)
@@ -1606,5 +1616,182 @@ mod tests {
         bad_source_resolved["mapping_collections"][0]["source_resources"][0]["resolved_catalog_sha256"] =
             serde_json::json!("x".repeat(63));
         assert!(parse_json_report(&bad_source_resolved).is_err());
+    }
+
+    /// Existing six classification counter fields; no new inventory-count policy.
+    const STORED_COUNT_FIELDS: [&str; 6] = [
+        "applicable_mapped",
+        "applicable_reviewed_no_relationship",
+        "applicable_unmapped",
+        "not_applicable",
+        "deferred",
+        "under_review",
+    ];
+
+    /// Retain the persisted wire contract while selecting an empty filtered subset.
+    fn empty_filtered_stored_report() -> serde_json::Value {
+        let mut report = stored_report_json();
+        report["filters"] = serde_json::json!({"group": "group-1"});
+        report["controls"] = serde_json::json!([]);
+        report["matched_controls"] = serde_json::json!(0_usize);
+        for counter in report["counts"].as_object_mut().expect("known counts object").values_mut() {
+            *counter = serde_json::json!(0_usize);
+        }
+        report
+    }
+
+    /// Preserve each raw synthetic counter fixture and caught parser outcome on request.
+    ///
+    /// The optional `FORGE_STORED_REPORT_COUNTER_EVIDENCE_DIR` must name a fresh
+    /// run directory. New case directories prevent overwriting earlier receipts;
+    /// at most 37 small cases are recorded, with no authentic inventory claim.
+    fn record_stored_counter_case(
+        case: &str,
+        bytes: &[u8],
+        outcome: &std::thread::Result<Result<model::ApplicabilityReport, ForgeError>>,
+    ) {
+        let Some(directory) = std::env::var_os("FORGE_STORED_REPORT_COUNTER_EVIDENCE_DIR") else {
+            return;
+        };
+        let directory = std::path::PathBuf::from(directory);
+        std::fs::create_dir_all(&directory).expect("create evidence run directory");
+        let case_directory = directory.join(case);
+        std::fs::create_dir(&case_directory).expect("evidence case directory must be fresh");
+        let observed = match outcome {
+            Ok(Ok(parsed)) => serde_json::json!({
+                "kind": "accepted",
+                "parsed_report": parsed,
+            }),
+            Ok(Err(validation_error)) => serde_json::json!({
+                "kind": "rejected",
+                "validation_error": matches!(validation_error, ForgeError::Validation(_)),
+                "message": validation_error.to_string(),
+            }),
+            Err(payload) => {
+                let message = payload
+                    .downcast_ref::<&str>()
+                    .copied()
+                    .or_else(|| payload.downcast_ref::<String>().map(String::as_str));
+                serde_json::json!({"kind": "panicked", "message": message})
+            }
+        };
+        let receipt = serde_json::json!({
+            "truth_state": "synthetic-development",
+            "case": case,
+            "usize_bits": usize::BITS,
+            "fixture_sha256": crate::hashing::sha256_hex(bytes),
+            "outcome": observed,
+            "qualification": "Persisted-parser regression only; no authenticated inventory or review acceptance",
+        });
+        std::fs::write(case_directory.join("report.json"), bytes).expect("record raw fixture");
+        std::fs::write(
+            case_directory.join("outcome.json"),
+            serde_json::to_vec_pretty(&receipt).expect("serialize counter outcome"),
+        )
+        .expect("record caught parser outcome");
+    }
+
+    /// Reject every ordered MAX-plus-one counter pair without panic or wrapped acceptance.
+    ///
+    /// All 30 direct parser calls settle before the final assertion in an unwind
+    /// test profile, so the baseline can retain every observed pair outcome.
+    #[test]
+    fn persisted_report_rejects_every_counter_overflow_without_panicking() {
+        let mut failures = Vec::new();
+        let mut attempted = 0_usize;
+        for (maximum_index, maximum_field) in STORED_COUNT_FIELDS.iter().enumerate() {
+            for (one_index, one_field) in STORED_COUNT_FIELDS.iter().enumerate() {
+                if maximum_index == one_index {
+                    continue;
+                }
+                let mut report = empty_filtered_stored_report();
+                report["counts"][*maximum_field] = serde_json::json!(usize::MAX);
+                report["counts"][*one_field] = serde_json::json!(1_usize);
+                let bytes = serde_json::to_vec(&report).expect("serialize existing report shape");
+                let outcome = std::panic::catch_unwind(|| parse_stored_report(&bytes));
+                attempted += 1;
+                let case = format!("overflow-{maximum_index}-{one_index}");
+                record_stored_counter_case(&case, &bytes, &outcome);
+                let label = format!("{maximum_field}=MAX, {one_field}=1");
+                match outcome {
+                    Ok(Err(ForgeError::Validation(message)))
+                        if message == "Invalid persisted applicability report" => {}
+                    Ok(Err(other)) => failures.push(format!("{label}: wrong error {other}")),
+                    Ok(Ok(_)) => failures.push(format!("{label}: wrapped sum accepted")),
+                    Err(_) => failures.push(format!("{label}: parser panicked")),
+                }
+            }
+        }
+        assert_eq!(attempted, 30, "all ordered distinct pairs must reach the parser");
+        assert_eq!(failures.as_slice(), [] as [String; 0], "{}", failures.join("\n"));
+    }
+
+    /// Preserve zero and every representable filtered MAX-plus-zero denominator.
+    ///
+    /// These seven calls assert the existing historical-parser boundary, not
+    /// authentic inventory provenance or approval of a new total-count cap.
+    #[test]
+    fn persisted_report_accepts_representable_filtered_counter_boundaries() {
+        let mut failures = Vec::new();
+        let mut attempted = 0_usize;
+        for maximum_field in
+            std::iter::once(None).chain(STORED_COUNT_FIELDS.iter().copied().map(Some))
+        {
+            let mut report = empty_filtered_stored_report();
+            let total = maximum_field.map_or(0, |_| usize::MAX);
+            report["counts"]["total"] = serde_json::json!(total);
+            if let Some(field) = maximum_field {
+                report["counts"][field] = serde_json::json!(usize::MAX);
+            }
+            let bytes = serde_json::to_vec(&report).expect("serialize existing report shape");
+            let outcome = std::panic::catch_unwind(|| parse_stored_report(&bytes));
+            attempted += 1;
+            let case = format!("positive-{}", maximum_field.unwrap_or("zero"));
+            record_stored_counter_case(&case, &bytes, &outcome);
+            match outcome {
+                Ok(Ok(parsed)) => {
+                    let decoded = serde_json::to_value(parsed).expect("serialize parsed report");
+                    if decoded != report {
+                        failures.push(format!("{case}: parsed report changed"));
+                    }
+                }
+                Ok(Err(validation_error)) => {
+                    failures
+                        .push(format!("{case}: representable report rejected: {validation_error}"));
+                }
+                Err(_) => failures.push(format!("{case}: parser panicked")),
+            }
+        }
+        assert_eq!(attempted, 7, "zero and all six MAX-plus-zero cases must reach the parser");
+        assert_eq!(failures.as_slice(), [] as [String; 0], "{}", failures.join("\n"));
+    }
+    /// Validate the actual registered-report ingress without panic or overflow acceptance.
+    ///
+    /// The same consumer still accepts an ordinary report and rejects a
+    /// representable classification-total mismatch.
+    #[test]
+    fn persisted_report_workspace_registration_rejects_counter_overflow() {
+        let registration = crate::workspace::index::Resource {
+            key: "report".into(),
+            role: crate::workspace::index::Role::ApplicabilityReport,
+            path: "report.json".into(),
+        };
+        let mut overflow = empty_filtered_stored_report();
+        overflow["counts"][STORED_COUNT_FIELDS[0]] = serde_json::json!(usize::MAX);
+        overflow["counts"][STORED_COUNT_FIELDS[1]] = serde_json::json!(1_usize);
+        let bytes = serde_json::to_vec(&overflow).expect("serialize existing report shape");
+        let outcome = std::panic::catch_unwind(|| {
+            crate::workspace::services::validate_bytes(&registration, &bytes)
+        });
+        assert!(matches!(outcome, Ok(false)), "workspace ingress must reject without panicking");
+
+        let ordinary =
+            serde_json::to_vec(&stored_report_json()).expect("serialize ordinary report");
+        assert!(crate::workspace::services::validate_bytes(&registration, &ordinary));
+
+        let mut mismatch = empty_filtered_stored_report();
+        mismatch["counts"][STORED_COUNT_FIELDS[0]] = serde_json::json!(1_usize);
+        let bytes = serde_json::to_vec(&mismatch).expect("serialize ordinary total mismatch");
+        assert!(!crate::workspace::services::validate_bytes(&registration, &bytes));
     }
 }
