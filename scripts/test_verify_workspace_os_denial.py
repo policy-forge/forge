@@ -2179,6 +2179,74 @@ class DistroSupportRootTests(unittest.TestCase):
 
 
 
+
+class RetiredProcessControls(unittest.TestCase):
+    """A real exit signal can settle only an already checked retained instance; live/unknown states fail closed."""
+
+    def test_retired_instance_requires_held_terminal_pidfd_and_prior_complete_proof(self):
+        """Exercise exact-key, event mask, zombie generation and disappeared-row boundaries."""
+        api = bare_native()
+        api.observed[(41, 29)] = {"namespace": True, "privilege": True, "role": "dut", "pidfd": 44}
+        poller = mock.Mock();poller.poll.return_value = [(44, native.select.POLLIN)]
+        raw = lambda state, start: b"41 (fixture) " + b" ".join([state,b"1"] + [b"0"]*17 + [str(start).encode()])
+        with mock.patch.object(native.select, "poll", return_value=poller), mock.patch.object(native, "read_proc", return_value=raw(b"Z",29)) as read:
+            self.assertTrue(api.observed_retired(41,29))
+            for state,start in ((b"R",29),(b"Z",30)):
+                read.return_value=raw(state,start);self.assertFalse(api.observed_retired(41,29))
+            read.side_effect=FileNotFoundError();self.assertTrue(api.observed_retired(41,29))
+            self.assertFalse(api.observed_retired(41,30));self.assertFalse(api.observed_retired(42,29))
+            for field in ("namespace","privilege"):
+                api.observed[(41,29)][field]=False;self.assertFalse(api.observed_retired(41,29));api.observed[(41,29)][field]=True
+            for events in ([],[(44,native.select.POLLNVAL)],[(44,native.select.POLLERR)],[(45,native.select.POLLIN)]):
+                poller.poll.return_value=events;self.assertFalse(api.observed_retired(41,29))
+        poller.register.assert_called_with(44,native.select.POLLIN)
+
+    def test_scan_preserves_known_terminal_instance_but_rejects_unknown_or_live_disappearance(self):
+        """Actual scan handles the live-to-exited race without new authority, counts, reaping or handles."""
+        for proved,terminal in ((True,True),(True,False),(False,True)):
+            api=bare_native();api.names={"dut":("fixture",8,7)}
+            if proved:api.observed[(41,29)]={"namespace":True,"privilege":True,"role":"dut","pidfd":44}
+            raw=b"41 (fixture) " + b" ".join([b"R",str(os.getpid()).encode()]+[b"0"]*17+[b"29"])
+            directory=mock.MagicMock();directory.__enter__.return_value=[types.SimpleNamespace(name="41")]
+            poller=mock.Mock();poller.poll.return_value=[(44,native.select.POLLIN)] if terminal else []
+            with mock.patch.object(native.os,"scandir",return_value=directory), \
+                    mock.patch.object(native,"read_proc",side_effect=[raw,FileNotFoundError()]), \
+                    mock.patch.object(native,"process_record",side_effect=FileNotFoundError()), \
+                    mock.patch.object(native.select,"poll",return_value=poller),mock.patch.object(native.os,"waitpid") as wait, \
+                    mock.patch.object(native.os,"pidfd_open",return_value=44,create=True),mock.patch.object(native.os,"close"):
+                if proved and terminal:api.scan();self.assertTrue(api.scan_complete)
+                else:
+                    with self.assertRaises(FileNotFoundError):api.scan()
+                    self.assertFalse(api.scan_complete)
+                wait.assert_not_called()
+            self.assertEqual(len(api.observed),int(proved))
+            self.assertFalse(api.pending_fds)
+
+    def test_new_discovery_reserves_handle_before_proof_and_transfers_ownership_once(self):
+        """Actual scan proves one fixed generation, keeping its pre-read handle through exit/recheck."""
+        api=bare_native();api.names={"dut":("fixture",8,7)}
+        raw=b"41 (fixture) " + b" ".join([b"R",str(os.getpid()).encode()]+[b"0"]*17+[b"29"])
+        directory=mock.MagicMock();directory.__enter__.return_value=[types.SimpleNamespace(name="41")]
+        poller=mock.Mock();poller.poll.return_value=[(44,native.select.POLLIN)]
+        def record(pid):
+            """First complete source observation occurs only while its private handle is held."""
+            if record.calls:
+                raise FileNotFoundError()
+            record.calls+=1
+            self.assertIn(44,api.pending_fds)
+            return proof_record()
+        record.calls=0
+        with mock.patch.object(native.os,"scandir",return_value=directory), \
+                mock.patch.object(native,"read_proc",side_effect=[raw,FileNotFoundError()]), \
+                mock.patch.object(native,"process_record",side_effect=record), \
+                mock.patch.object(native.os,"pidfd_open",return_value=44,create=True) as opened, \
+                mock.patch.object(native.select,"poll",return_value=poller),mock.patch.object(native.os,"close") as close:
+            api.scan()
+        opened.assert_called_once_with(41,0);close.assert_not_called()
+        self.assertEqual(api.observed[(41,29)]["pidfd"],44)
+        self.assertTrue(api.scan_complete);self.assertFalse(api.pending_fds)
+
+
 class ClientExitObservationControls(unittest.TestCase):
     """Private diagnostic classification never reflects payloads or grants producer acceptance."""
 

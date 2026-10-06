@@ -1626,8 +1626,8 @@ class Native:
             for fd in (ready_r, ready_w, release_r, release_w, output_w, output_r):
                 self.close_pending(fd)
 
-    def observe_instance(self, record, role):
-        """Prove one observed live runtime instance without an exhaustive fork claim."""
+    def observe_instance(self, record, role, reserved_pidfd=None):
+        """Prove one observed runtime instance; discovery reserves its pidfd before full proc reads."""
         key = (record["pid"], record["start"])
         if key not in self.observed:
             if len(self.observed) >= MAX_INSTANCES:
@@ -1640,9 +1640,48 @@ class Native:
         if not item["namespace"] or not item["privilege"]:
             raise Failure("privilege-fence")
         if item["pidfd"] is None:
-            item["pidfd"] = os.pidfd_open(record["pid"], 0)
-            if process_record(record["pid"])["start"] != record["start"]:
-                raise Failure("execution-unverified")
+            if reserved_pidfd is not None:
+                if reserved_pidfd not in self.pending_fds:
+                    raise Failure("execution-unverified")
+                self.pending_fds.remove(reserved_pidfd)
+                item["pidfd"] = reserved_pidfd
+            else:
+                # Direct workers remain blocked at their launch fence here.
+                item["pidfd"] = os.pidfd_open(record["pid"], 0)
+            try:
+                if process_record(record["pid"])["start"] != record["start"]:
+                    raise Failure("execution-unverified")
+            except (FileNotFoundError, ProcessLookupError):
+                if not self.observed_retired(record["pid"], record["start"]):
+                    raise
+
+    def observed_retired(self, pid, start):
+        """Accept only a previously proved exact instance whose held pidfd proves all threads exited.
+
+        This is not proof for a new/unseen process. Missing proc namespace files
+        alone never suffice, and a present live or reused PID remains a refusal.
+        Retain the existing pidfd/wait owners until the normal cleanup fences.
+        """
+        item = self.observed.get((pid, start))
+        if (item is None or not item["namespace"] or not item["privilege"]
+                or item["pidfd"] is None):
+            return False
+        poller = select.poll()
+        poller.register(item["pidfd"], select.POLLIN)
+        events = poller.poll(0)
+        mask = select.POLLIN | select.POLLHUP
+        if (len(events) != 1 or events[0][0] != item["pidfd"]
+                or not events[0][1] & mask or events[0][1] & ~mask):
+            return False
+        try:
+            raw = read_proc(Path("/proc") / str(pid) / "stat", 8192)
+        except FileNotFoundError:
+            return True
+        closing = raw.rfind(b")")
+        fields = raw[closing + 2:].split()
+        if closing < 0 or len(fields) < 20:
+            return False
+        return fields[0] == b"Z" and int(fields[19]) == start
 
     def scan(self):
         """Bound proc topology and prove observed owned runtime descendants, preserving wait owners."""
@@ -1686,10 +1725,23 @@ class Native:
                     if row[0] == os.getpid() and not any(c.pid == pid for c in self.children):
                         os.waitpid(pid, os.WNOHANG)
                     continue
-                record = process_record(pid)
-                if record["start"] != row[1]:
-                    raise Failure("execution-unverified")
-                self.observe_instance(record, role)
+                reserved = None
+                item = self.observed.get((pid, row[1]))
+                if item is None or item["pidfd"] is None:
+                    # Anchor the discovered instance before its namespace/ID reads,
+                    # so a later exit cannot substitute a recycled process handle.
+                    reserved = os.pidfd_open(pid, 0)
+                    self.pending_fds.add(reserved)
+                try:
+                    record = process_record(pid)
+                    if record["start"] != row[1]:
+                        raise Failure("execution-unverified")
+                    self.observe_instance(record, role, reserved)
+                except (FileNotFoundError, ProcessLookupError):
+                    if not self.observed_retired(pid, row[1]):
+                        raise
+                finally:
+                    self.close_pending(reserved)
         except BaseException:
             self.scan_complete = False
             raise
