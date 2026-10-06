@@ -1,5 +1,8 @@
 //! Exact Catalog classification and PRD 055 Mapping Collection dependency traversal.
 
+// Borrowed legacy facts only; capture/cohort/currentness issuers remain separate.
+pub(crate) mod legacy_borrowed;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
@@ -113,14 +116,140 @@ pub fn analyze(
         .as_ref()
         .map(|path| load_successor_map(&manifest_dir.join(path), &mut input_paths))
         .transpose()?;
-    let changes = classify(&old.inventory, &new.inventory, successor_map.as_ref())?;
-    let mut findings =
-        build_findings(&changes, &portfolio.references, applicability.as_ref(), &old, &new)?;
-    add_metadata_finding(&mut findings, &changes, &old, &new)?;
-    if manifest.successor_map.is_none() {
-        add_missing_migration_evidence_finding(&mut findings, &changes, &old, &new)?;
+    let applicability_facts = applicability.as_ref().map(|prepared| ApplicabilityFactsRef {
+        manifest: &prepared.manifest,
+        report: &prepared.report,
+    });
+    let mut report = build_report(
+        old,
+        new,
+        &portfolio,
+        applicability_facts.as_ref(),
+        successor_map.as_ref(),
+        filters,
+    )?;
+    if let (Some(prior_report), Some(disposition_file)) =
+        (&manifest.prior_report, &manifest.disposition_file)
+    {
+        apply_dispositions(
+            &manifest_dir.join(prior_report),
+            &manifest_dir.join(disposition_file),
+            &mut report,
+            &mut input_paths,
+        )?;
     }
+    finish_report(&mut report);
+    Ok((report, input_paths))
+}
+
+/// Plain borrowed legacy applicability data, with no capture/currentness authority.
+struct ApplicabilityFactsRef<'a> {
+    /// Complete ordinary validated declarations, without prepared IO fingerprints.
+    manifest: &'a crate::applicability::manifest::ApplicabilityManifest,
+    /// Complete ordinary native report including private tuples, counts and controls.
+    report: &'a crate::applicability::model::ApplicabilityReport,
+}
+
+/// Borrow actual native inputs at the next allocation stage; no result authority.
+#[derive(Clone, Copy)]
+enum ReportGrowth<'a> {
+    Classification {
+        old: &'a Inventory,
+        new: &'a Inventory,
+        successor_map: Option<&'a crate::migration::SuccessorMap>,
+    },
+    Findings(ReportFindingInputs<'a>),
+    FrameworkGroups {
+        old: &'a Inventory,
+        new: &'a Inventory,
+        findings: &'a [ImpactFinding],
+    },
+    FindingSort {
+        changes: &'a [super::model::ControlChange],
+        findings: &'a [ImpactFinding],
+    },
+}
+
+/// Complete real inputs for prospective finding allocation in the shared builder.
+#[derive(Clone, Copy)]
+struct ReportFindingInputs<'a> {
+    old: &'a LoadedResource,
+    new: &'a LoadedResource,
+    changes: &'a [super::model::ControlChange],
+    portfolio: &'a MappingPortfolio,
+    applicability: Option<&'a ApplicabilityFactsRef<'a>>,
+    successor_map: Option<&'a crate::migration::SuccessorMap>,
+}
+
+/// Keep actual native errors separate from the original caller's admission result.
+enum ReportBuildError<E> {
+    Native(ForgeError),
+    Admission(E),
+}
+
+/// Preserve the ordinary native entrypoint, complete result and error chronology.
+fn build_report(
+    old: LoadedResource,
+    new: LoadedResource,
+    portfolio: &MappingPortfolio,
+    applicability: Option<&ApplicabilityFactsRef<'_>>,
+    successor_map: Option<&crate::migration::SuccessorMap>,
+    filters: ImpactFilters,
+) -> Result<ImpactReport, ForgeError> {
+    match build_report_admitted(
+        old,
+        new,
+        portfolio,
+        applicability,
+        successor_map,
+        filters,
+        &mut |_| Ok::<(), std::convert::Infallible>(()),
+    ) {
+        Ok(report) => Ok(report),
+        Err(ReportBuildError::Native(error)) => Err(error),
+        Err(ReportBuildError::Admission(never)) => match never {},
+    }
+}
+
+/// Admit real staged growth before running the unchanged complete native builders.
+fn build_report_admitted<E>(
+    old: LoadedResource,
+    new: LoadedResource,
+    portfolio: &MappingPortfolio,
+    applicability: Option<&ApplicabilityFactsRef<'_>>,
+    successor_map: Option<&crate::migration::SuccessorMap>,
+    filters: ImpactFilters,
+    admit: &mut impl FnMut(ReportGrowth<'_>) -> Result<(), E>,
+) -> Result<ImpactReport, ReportBuildError<E>> {
+    admit(ReportGrowth::Classification { old: &old.inventory, new: &new.inventory, successor_map })
+        .map_err(ReportBuildError::Admission)?;
+    let changes = classify(&old.inventory, &new.inventory, successor_map)
+        .map_err(ReportBuildError::Native)?;
+    admit(ReportGrowth::Findings(ReportFindingInputs {
+        old: &old,
+        new: &new,
+        changes: &changes,
+        portfolio,
+        applicability,
+        successor_map,
+    }))
+    .map_err(ReportBuildError::Admission)?;
+    let mut findings = build_findings(&changes, &portfolio.references, applicability, &old, &new)
+        .map_err(ReportBuildError::Native)?;
+    add_metadata_finding(&mut findings, &changes, &old, &new).map_err(ReportBuildError::Native)?;
+    if successor_map.is_none() {
+        add_missing_migration_evidence_finding(&mut findings, &changes, &old, &new)
+            .map_err(ReportBuildError::Native)?;
+    }
+    admit(ReportGrowth::FrameworkGroups {
+        old: &old.inventory,
+        new: &new.inventory,
+        findings: &findings,
+    })
+    .map_err(ReportBuildError::Admission)?;
     attach_framework_groups(&mut findings, &old.inventory, &new.inventory);
+    admit(ReportGrowth::FindingSort { changes: &changes, findings: &findings })
+        .map_err(ReportBuildError::Admission)?;
     findings.sort_by(|left, right| {
         (
             left.priority,
@@ -140,7 +269,7 @@ pub fn analyze(
     let mut summary = summarize(&changes, &findings);
     summary.old_controls = old.inventory.count(SubjectType::Control);
     summary.new_controls = new.inventory.count(SubjectType::Control);
-    let mut report = ImpactReport {
+    let report = ImpactReport {
         schema_version: REPORT_SCHEMA_VERSION.to_string(),
         status: ReportStatus::Complete,
         old: old.evidence,
@@ -153,19 +282,13 @@ pub fn analyze(
         filtered_out_findings: Vec::new(),
         prior_only_dispositions: Vec::new(),
     };
-    if let (Some(prior_report), Some(disposition_file)) =
-        (&manifest.prior_report, &manifest.disposition_file)
-    {
-        apply_dispositions(
-            &manifest_dir.join(prior_report),
-            &manifest_dir.join(disposition_file),
-            &mut report,
-            &mut input_paths,
-        )?;
-    }
-    apply_filters(&mut report);
-    update_disposition_summary(&mut report);
-    Ok((report, input_paths))
+    Ok(report)
+}
+
+/// Preserve complete-analysis counts and visible-only disposition/filter semantics.
+fn finish_report(report: &mut ImpactReport) {
+    apply_filters(report);
+    update_disposition_summary(report);
 }
 
 fn validate_filters(filters: &ImpactFilters) -> Result<(), ForgeError> {
@@ -350,12 +473,24 @@ fn apply_dispositions(
         io::read_bounded(prior_report_path, super::disposition::MAX_PRIOR_REPORT_BYTES)
             .map_err(|error| impact_error(format!("$.prior_report: {error}")))?;
     let dispositions = super::disposition::load(disposition_path)?;
-    if sha256_hex(&prior_bytes) != dispositions.prior_report_sha256 {
+    apply_disposition_records(&prior_bytes, dispositions, report)?;
+    input_paths.push(prior_report_path.to_path_buf());
+    input_paths.push(disposition_path.to_path_buf());
+    Ok(())
+}
+
+/// Preserve original hash/header/exact pair/unique-ID rules and all prior-only rows.
+fn apply_disposition_records(
+    prior_bytes: &[u8],
+    dispositions: super::disposition::DispositionFile,
+    report: &mut ImpactReport,
+) -> Result<(), ForgeError> {
+    if sha256_hex(prior_bytes) != dispositions.prior_report_sha256 {
         return Err(impact_error(
             "$.disposition_file prior_report_sha256 does not match $.prior_report",
         ));
     }
-    let prior = super::disposition::parse_strict_value(&prior_bytes, "$.prior_report")?;
+    let prior = super::disposition::parse_strict_value(prior_bytes, "$.prior_report")?;
     validate_prior_report(&prior, report)?;
     let prior_finding_ids = prior_finding_ids(&prior)?;
     let current_finding_indexes = current_finding_indexes(&report.findings)?;
@@ -373,8 +508,6 @@ fn apply_dispositions(
         }
     }
     report.prior_only_dispositions.sort_by(|left, right| left.finding_id.cmp(&right.finding_id));
-    input_paths.push(prior_report_path.to_path_buf());
-    input_paths.push(disposition_path.to_path_buf());
     Ok(())
 }
 
@@ -476,6 +609,8 @@ fn update_disposition_summary(report: &mut ImpactReport) {
     }
 }
 
+/// Load the declared framework and explicit Profile companion through native inventory IO.
+/// Require regular files and preserve the full declared hash, UUID and version checks.
 fn load_framework_resource(
     manifest_dir: &Path,
     path_label: &str,
@@ -490,7 +625,16 @@ fn load_framework_resource(
         )
         .map_err(impact_error)?;
     }
-    let descriptor = ResourceManifest {
+    let descriptor = framework_descriptor(&path, resource);
+    let loaded = crate::mapping::inventory::load(manifest_dir, path_label, &descriptor)
+        .map_err(map_mapping_error)?;
+    validate_loaded_framework(path_label, resource, &loaded)?;
+    Ok(loaded)
+}
+
+/// Retain the legacy basename href, expected hashes and exact Profile declarations.
+fn framework_descriptor(path: &Path, resource: &FrameworkResource) -> ResourceManifest {
+    ResourceManifest {
         resource_type: resource.resource_type,
         artifact: resource.artifact.clone(),
         href: path
@@ -501,9 +645,15 @@ fn load_framework_resource(
         expected_sha256: Some(resource.expected_sha256.clone()),
         expected_resolved_catalog_sha256: resource.expected_resolved_catalog_sha256.clone(),
         inventory: None,
-    };
-    let loaded = crate::mapping::inventory::load(manifest_dir, path_label, &descriptor)
-        .map_err(map_mapping_error)?;
+    }
+}
+
+/// Check the complete private, unnormalized native tuple using legacy errors.
+fn validate_loaded_framework(
+    path_label: &str,
+    resource: &FrameworkResource,
+    loaded: &LoadedResource,
+) -> Result<(), ForgeError> {
     if loaded.evidence.resolved_catalog_sha256 != resource.expected_resolved_catalog_sha256 {
         return Err(impact_error(format!(
             "{path_label}.expected_resolved_catalog_sha256 does not match the supplied Profile companion"
@@ -526,7 +676,7 @@ fn load_framework_resource(
             )));
         }
     }
-    Ok(loaded)
+    Ok(())
 }
 
 fn load_successor_map(
@@ -669,6 +819,8 @@ fn single_sha256(subjects: &[SubjectFingerprint]) -> Option<String> {
     (subjects.len() == 1).then(|| subjects[0].sha256.clone())
 }
 
+/// Prepare the complete unfiltered applicability report for the declared old framework.
+/// Validate portfolio consistency and current input fingerprints before retaining its paths.
 fn load_applicability(
     path: &Path,
     old: &LoadedResource,
@@ -680,12 +832,28 @@ fn load_applicability(
         crate::applicability::model::ReportFilters::default(),
     )
     .map_err(map_applicability_error)?;
-    if !same_resource_identity(&prepared.report.framework, &old.evidence) {
+    validate_applicability_facts(
+        &ApplicabilityFactsRef { manifest: &prepared.manifest, report: &prepared.report },
+        old,
+        portfolio,
+    )?;
+    prepared.verify_input_fingerprints().map_err(map_applicability_error)?;
+    input_paths.extend(prepared.input_paths.iter().cloned());
+    Ok(prepared)
+}
+
+/// Retain all legacy framework/portfolio/count/control consistency checks.
+fn validate_applicability_facts(
+    facts: &ApplicabilityFactsRef<'_>,
+    old: &LoadedResource,
+    portfolio: &MappingPortfolio,
+) -> Result<(), ForgeError> {
+    if !same_resource_identity(&facts.report.framework, &old.evidence) {
         return Err(impact_error(
             "$.applicability_manifest references a different old framework baseline",
         ));
     }
-    let applicability_mapping_hashes: BTreeSet<_> = prepared
+    let applicability_mapping_hashes: BTreeSet<_> = facts
         .report
         .mapping_collections
         .iter()
@@ -696,14 +864,14 @@ fn load_applicability(
             "$.applicability_manifest Mapping Collection portfolio does not exactly match framework-role target inputs",
         ));
     }
-    if prepared.report.controls.len() != old.inventory.count(SubjectType::Control)
-        || prepared.report.matched_controls != prepared.report.counts.total
+    if facts.report.controls.len() != old.inventory.count(SubjectType::Control)
+        || facts.report.matched_controls != facts.report.counts.total
     {
         return Err(impact_error(
             "$.applicability_manifest did not produce a complete unfiltered old-baseline inventory",
         ));
     }
-    for control in &prepared.report.controls {
+    for control in &facts.report.controls {
         let facts = portfolio.applicability_facts.get(&control.control_id);
         let (positive_count, no_relationship_count, policy_sources) = facts.map_or_else(
             || (0, 0, BTreeSet::new()),
@@ -721,9 +889,7 @@ fn load_applicability(
             )));
         }
     }
-    prepared.verify_input_fingerprints().map_err(map_applicability_error)?;
-    input_paths.extend(prepared.input_paths.iter().cloned());
-    Ok(prepared)
+    Ok(())
 }
 
 fn same_resource_identity(
@@ -738,6 +904,8 @@ fn same_resource_identity(
         && left.resolved_catalog_sha256 == right.resolved_catalog_sha256
 }
 
+/// Load every declared Mapping Collection into the complete native dependency portfolio.
+/// Refuse aliased artifact paths, retain each input path and sort references deterministically.
 fn load_mapping_references(
     manifest_dir: &Path,
     dependencies: &[MappingDependency],
@@ -761,31 +929,78 @@ fn load_mapping_references(
         }
         let bytes = io::read_bounded(&path, io::MAX_FILE_SIZE)
             .map_err(|error| impact_error(format!("{label}.artifact: {error}")))?;
-        let raw_sha256 = sha256_hex(&bytes);
-        let value = parse_mapping_value(&bytes, &label)?;
-        validate_mapping(&label, &value)?;
-        let collection: MappingCollectionEnvelope = serde_json::from_value(value)
-            .map_err(|error| impact_error(format!("{label}.artifact is unsupported: {error}")))?;
-        if !collection_ids.insert(collection.mapping_collection.uuid) {
-            return Err(impact_error(format!(
-                "{label}.artifact duplicates Mapping Collection identity '{}'",
-                collection.mapping_collection.uuid
-            )));
-        }
-        inventory_mapping(
+        add_mapping_bytes(
             &label,
-            &collection,
+            &bytes,
             dependency.framework_role,
             old,
-            &mut portfolio.references,
-            &mut portfolio.applicability_facts,
+            &mut collection_ids,
+            &mut portfolio,
         )?;
-        if dependency.framework_role == FrameworkRole::Target {
-            portfolio.target_collection_sha256s.insert(raw_sha256);
-        }
         input_paths.push(path.clone());
         mapping_paths.push(path);
     }
+    sort_mapping_references(&mut portfolio);
+    Ok(portfolio)
+}
+
+/// Consume declared bytes only; embedded policy hrefs remain data, never routes.
+fn add_mapping_bytes(
+    label: &str,
+    bytes: &[u8],
+    role: FrameworkRole,
+    old: &LoadedResource,
+    collection_ids: &mut BTreeSet<Uuid>,
+    portfolio: &mut MappingPortfolio,
+) -> Result<(), ForgeError> {
+    let raw_sha256 = sha256_hex(bytes);
+    let collection = decode_mapping_bytes(label, bytes)?;
+    record_mapping_collection(label, &collection, raw_sha256, role, old, collection_ids, portfolio)
+}
+
+/// Preserve strict parse/schema/version/typed decode before either caller projects native rows.
+fn decode_mapping_bytes(
+    label: &str,
+    bytes: &[u8],
+) -> Result<MappingCollectionEnvelope, ForgeError> {
+    let value = parse_mapping_value(bytes, label)?;
+    validate_mapping(label, &value)?;
+    serde_json::from_value(value)
+        .map_err(|error| impact_error(format!("{label}.artifact is unsupported: {error}")))
+}
+
+/// Record the full native portfolio only after the borrowed caller admits repeated projections.
+fn record_mapping_collection(
+    label: &str,
+    collection: &MappingCollectionEnvelope,
+    raw_sha256: String,
+    role: FrameworkRole,
+    old: &LoadedResource,
+    collection_ids: &mut BTreeSet<Uuid>,
+    portfolio: &mut MappingPortfolio,
+) -> Result<(), ForgeError> {
+    if !collection_ids.insert(collection.mapping_collection.uuid) {
+        return Err(impact_error(format!(
+            "{label}.artifact duplicates Mapping Collection identity '{}'",
+            collection.mapping_collection.uuid
+        )));
+    }
+    inventory_mapping(
+        label,
+        collection,
+        role,
+        old,
+        &mut portfolio.references,
+        &mut portfolio.applicability_facts,
+    )?;
+    if role == FrameworkRole::Target {
+        portfolio.target_collection_sha256s.insert(raw_sha256);
+    }
+    Ok(())
+}
+
+/// Preserve complete deterministic dependency ordering across both read adapters.
+fn sort_mapping_references(portfolio: &mut MappingPortfolio) {
     for entries in portfolio.references.values_mut() {
         entries.sort_by(|left, right| {
             (
@@ -802,7 +1017,6 @@ fn load_mapping_references(
                 ))
         });
     }
-    Ok(portfolio)
 }
 
 fn parse_mapping_value(bytes: &[u8], label: &str) -> Result<Value, ForgeError> {
@@ -992,10 +1206,12 @@ fn require_forge_prop(props: &[OscalProp], name: &str, path: &str) -> Result<Str
     Ok(value.value.clone())
 }
 
+/// Build every native base finding and eligible old-subject Mapping/applicability dependency.
+/// Preserve complete change arrays and private context; enforce the maintained finding limit.
 fn build_findings(
     changes: &[super::model::ControlChange],
     references: &BTreeMap<String, Vec<MappingReference>>,
-    applicability: Option<&crate::applicability::PreparedAnalysis>,
+    applicability: Option<&ApplicabilityFactsRef<'_>>,
     old: &LoadedResource,
     new: &LoadedResource,
 ) -> Result<Vec<ImpactFinding>, ForgeError> {
@@ -1130,11 +1346,13 @@ fn add_mapping_findings(
     Ok(())
 }
 
+/// Add the configured applicability decision finding for an eligible changed old subject.
+/// Require its native report row and retain classification, decision, reviewer and policy context.
 fn add_applicability_finding(
     findings: &mut Vec<ImpactFinding>,
     change: &super::model::ControlChange,
     subject_id: &str,
-    applicability: Option<&crate::applicability::PreparedAnalysis>,
+    applicability: Option<&ApplicabilityFactsRef<'_>>,
     old: &LoadedResource,
     new: &LoadedResource,
 ) -> Result<(), ForgeError> {

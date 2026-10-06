@@ -107,6 +107,42 @@ Cancellation removes a queued request or stops active work at a cooperative chec
 
 End of input shuts down the worker, drops queued responses and stops active work at its next checkpoint. An unfinished final frame is discarded. Closing input is not a way to flush outstanding requests, so clients must await their responses first.
 
+## F20 `/2` development checkpoint
+
+The separate `/2` candidate adds closed server-decision and offline build-intent
+declarations, one held input owner and shared admission accounting. The intended
+read-only `forge mcp check-index-inputs` consumer is not registered in this
+checkout. Checking complete inputs would not build or publish an index, nor add
+a server resource or tool. The existing `/1` worker examples above remain the
+current CLI contract.
+
+The offline native Catalog/Component slice has been exercised separately. The
+later applicability candidate requires the actual complete applicability
+manifest, source-domain Lifecycle closure, independently Approved/current
+framework closure and full native report comparison. Visible unsupported
+Profile, Mapping or linkage scope is refused as a whole; profile fields and
+recorded hashes cannot substitute for missing native producers.
+
+The latest 2026-10-05 same-owner App reuse run compiled and passed 22 selected
+native controls and three controller controls, with two native failures:
+25 passes and 2 failures across the 27-control producer. Its complete factory
+path now passes the saved-report fixture's first preparation, but standalone
+report preparation and the distinct-manifest case still reach Capacity. Both
+earlier and successor first-capacity diagnostic histories remain retained. The
+complete App gate is unaccepted and managed F11/server coupling remains open;
+further borrowed-preparation/admission design is not a qualified runtime result.
+
+The fixed budget and first-stop behavior remain unchanged. `/2` jointly bounds
+retained original/proof/native data within a logical 50 MiB pool, with 100,000
+work units and 1,001 original/handle ceilings. These logical limits do not measure
+heap usage or guarantee every near-limit input fits; they do not replace the
+`/1` table above.
+
+Evidence metadata trace, static-report resources, an actual deterministic optional
+index builder and complete server publication coupling remain open. Actual
+project-owner records, client/corpus evaluation, retention/privacy/platform
+qualification and all human acceptance gates remain required.
+
 ## Qualification and remaining work
 
 This guide describes the engineering slice and its source contracts. Verification records must bind each test result to the exact measured source. File-backed synthetic owner records and control fixtures demonstrate engineering behavior; they do not establish real owner approval, lawful disclosure, client interoperability or corpus acceptance. Windows runtime qualification remains pending; do not infer it from portable schemas or a successful build on another platform.

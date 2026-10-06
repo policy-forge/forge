@@ -90,6 +90,27 @@ pub fn publish_new_file(root: &Path, relative_path: &Path, bytes: &[u8]) -> Resu
     publish_new_file_with_hook(root, relative_path, bytes, |_| Ok(()))
 }
 
+/// Publish one new file only after the caller's final pre-rename fence succeeds.
+/// The caller retains its genuine input owner and shared work/control ledger;
+/// this port supplies no source-currentness, approval or timeout proof itself.
+/// Existing native staging, no-follow held-parent and no-replace semantics remain.
+/// # Errors
+/// Returns the precise caller fence error before publication or the maintained
+/// publisher error. A durability failure after rename can leave a complete file.
+pub(crate) fn publish_new_file_guarded(
+    root: &Path,
+    relative_path: &Path,
+    bytes: &[u8],
+    mut before_rename: impl FnMut() -> Result<(), ForgeError>,
+) -> Result<(), ForgeError> {
+    publish_new_file_with_hook(root, relative_path, bytes, |event| {
+        if event == FilePublishEvent::BeforeRename {
+            before_rename()?;
+        }
+        Ok(())
+    })
+}
+
 fn publish_new_file_with_hook(
     root: &Path,
     relative_path: &Path,
@@ -796,5 +817,47 @@ mod tests {
         let result = publish(root.path(), Path::new("generated"), &artifacts());
         assert!(result.unwrap_err().to_string().contains("unsupported"));
         assert_eq!(std::fs::read_dir(root.path()).unwrap().count(), 0);
+    }
+}
+
+#[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
+/// Genuine publication-point controls; the callback does not grant domain authority.
+mod guarded_file_tests {
+    use super::*;
+
+    /// A failed final fence removes private staging and never exposes a partial destination.
+    #[test]
+    fn failed_final_fence_keeps_destination_absent_and_cleans_private_stage() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().canonicalize().unwrap();
+        let mut calls = 0;
+        let error =
+            publish_new_file_guarded(&root, Path::new("review.json"), b"complete\n", || {
+                calls += 1;
+                assert!(!root.join("review.json").exists());
+                Err(ForgeError::Validation("fixed final fence canary".into()))
+            })
+            .unwrap_err();
+        assert_eq!(calls, 1);
+        assert_eq!(error.to_string(), "Validation error: fixed final fence canary");
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 0);
+    }
+
+    /// A raced destination after the final callback remains intact under native no-replace rename.
+    #[test]
+    fn final_fence_destination_race_never_replaces_existing_bytes() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().canonicalize().unwrap();
+        let mut calls = 0;
+        let result =
+            publish_new_file_guarded(&root, Path::new("review.json"), b"proposed\n", || {
+                calls += 1;
+                std::fs::write(root.join("review.json"), b"preserved\n").unwrap();
+                Ok(())
+            });
+        assert!(result.is_err());
+        assert_eq!(calls, 1);
+        assert_eq!(std::fs::read(root.join("review.json")).unwrap(), b"preserved\n");
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
     }
 }

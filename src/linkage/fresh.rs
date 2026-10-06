@@ -168,6 +168,86 @@ pub(crate) fn verify_root(original: &RootGeneration) -> Result<(), ForgeError> {
     compare_ancestors(&original.ancestors, &current.ancestors)
 }
 
+/// Precharge complete native spellings before component iteration or bounded traversal.
+/// Four full combined extents per component conservatively cover path construction,
+/// conversion and generation geometry; fixed overhead counts native metadata work.
+/// This logical byte-work convention is not a heap/CPU or syscall-preemption bound.
+fn admit_path_geometry<E>(
+    path: &Path,
+    base: Option<&Path>,
+    admit: &mut impl FnMut(usize) -> Result<(), E>,
+) -> Result<(), VerificationError<E>> {
+    let spelling = path.as_os_str().as_encoded_bytes().len();
+    admit(spelling).map_err(VerificationError::Admission)?;
+    let base_extent = if let Some(base) = base {
+        let extent = base.as_os_str().as_encoded_bytes().len();
+        admit(extent).map_err(VerificationError::Admission)?;
+        extent
+    } else {
+        0
+    };
+    let full = base_extent
+        .checked_add(spelling)
+        .and_then(|bytes| bytes.checked_add(1))
+        .ok_or(VerificationError::Capacity)?;
+    let component_work = full
+        .checked_mul(4)
+        .and_then(|bytes| bytes.checked_add(256))
+        .ok_or(VerificationError::Capacity)?;
+    admit(full).map_err(VerificationError::Admission)?;
+    for _ in path.components() {
+        admit(component_work).map_err(VerificationError::Admission)?;
+    }
+    Ok(())
+}
+
+/// Qualify the same actual root only after complete precharged traversal geometry.
+/// The post-native checkpoint observes stops crossing the bounded native phase.
+pub(crate) fn qualify_root_admitted<E>(
+    root: &Path,
+    admit: &mut impl FnMut(usize) -> Result<(), E>,
+) -> Result<RootGeneration, VerificationError<E>> {
+    admit(0).map_err(VerificationError::Admission)?;
+    admit_path_geometry(root, None, admit)?;
+    let generation = qualify_root(root)?;
+    admit(0).map_err(VerificationError::Admission)?;
+    Ok(generation)
+}
+
+/// Compare the actual complete root with precharged native geometry and ancestry.
+/// Legacy `verify_root` remains unchanged; this port retains the same identity rules.
+pub(crate) fn verify_root_admitted<E>(
+    original: &RootGeneration,
+    admit: &mut impl FnMut(usize) -> Result<(), E>,
+) -> Result<(), VerificationError<E>> {
+    let current = qualify_root_admitted(&original.path, admit)?;
+    compare_ancestors_admitted(&original.ancestors, &current.ancestors, admit)?;
+    admit(0).map_err(VerificationError::Admission)?;
+    Ok(())
+}
+
+/// Precharge both complete ancestor lists before any path/identity equality check.
+/// Mismatched lengths and every repeated generation retain the same complete work.
+fn compare_ancestors_admitted<E>(
+    original: &[DirectoryGeneration],
+    current: &[DirectoryGeneration],
+    admit: &mut impl FnMut(usize) -> Result<(), E>,
+) -> Result<(), VerificationError<E>> {
+    admit(2 * std::mem::size_of::<usize>()).map_err(VerificationError::Admission)?;
+    for generation in original.iter().chain(current) {
+        let extent = generation
+            .path
+            .as_os_str()
+            .as_encoded_bytes()
+            .len()
+            .checked_add(16)
+            .ok_or(VerificationError::Capacity)?;
+        admit(extent).map_err(VerificationError::Admission)?;
+    }
+    compare_ancestors(original, current)?;
+    Ok(())
+}
+
 /// Observe actual local bytes under the remaining limit, or typed missing ancestry when permitted.
 pub(crate) fn capture_local(
     root: Rc<RootGeneration>,
@@ -195,6 +275,24 @@ pub(crate) fn prepare_local(
     Ok(PreparedLocal { root, relative: relative.to_path_buf(), opened })
 }
 
+/// Open the same held original after caller admission of every native phase.
+/// Complete raw spellings precede validation/component work; no contents are read.
+pub(crate) fn prepare_local_admitted<E>(
+    root: Rc<RootGeneration>,
+    relative: &Path,
+    allow_missing: bool,
+    admit: &mut impl FnMut(usize) -> Result<(), E>,
+) -> Result<PreparedLocal, VerificationError<E>> {
+    admit(relative.as_os_str().as_encoded_bytes().len()).map_err(VerificationError::Admission)?;
+    validate_relative(relative)?;
+    verify_root_admitted(&root, admit)?;
+    admit_path_geometry(relative, Some(&root.path), admit)?;
+    let opened = open_local(&root, relative, allow_missing)?;
+    admit(0).map_err(VerificationError::Admission)?;
+    verify_root_admitted(&root, admit)?;
+    Ok(PreparedLocal { root, relative: relative.to_path_buf(), opened })
+}
+
 /// Actual opened leaf or typed absence, retained until identity admission and read.
 pub(crate) struct PreparedLocal {
     /// Same qualified root used for the actual native open.
@@ -206,6 +304,51 @@ pub(crate) struct PreparedLocal {
 }
 
 impl PreparedLocal {
+    /// Read this actual held original under caller admission before each bounded scratch read.
+    /// The caller controls the existing raw extent independently; positive charges cover
+    /// potential read/copy work, zero charges preserve the original cooperative stop.
+    pub(crate) fn read_admitted<E>(
+        self,
+        limit: u64,
+        admit: &mut impl FnMut(usize) -> Result<(), E>,
+    ) -> Result<CapturedLocal, VerificationError<E>> {
+        admit(0).map_err(VerificationError::Admission)?;
+        let Self { root, relative, opened } = self;
+        match opened {
+            OpenedLocal::Present(mut file, identity, ancestors, directories) => {
+                let bytes = read_bounded_admitted(&mut file, limit, admit)?;
+                if file_identity(&file)? != identity
+                    || file.metadata().map_err(|_| error("cannot inspect captured original"))?.len()
+                        != bytes.len() as u64
+                {
+                    return Err(error("evidence inspection original changed during capture").into());
+                }
+                verify_root_admitted(&root, admit)?;
+                Ok(CapturedLocal::Present(
+                    bytes,
+                    FileGeneration {
+                        root,
+                        relative,
+                        ancestors,
+                        identity,
+                        _file: file,
+                        _directories: directories,
+                    },
+                ))
+            }
+            OpenedLocal::Absent(missing, ancestors, directories) => {
+                verify_root_admitted(&root, admit)?;
+                Ok(CapturedLocal::Absent(AbsenceGeneration {
+                    root,
+                    relative,
+                    missing,
+                    ancestors,
+                    _directories: directories,
+                }))
+            }
+        }
+    }
+
     /// Borrow the actual present identity before reading; absence has no fake identity.
     pub(crate) fn identity(&self) -> Option<(u64, u64)> {
         match &self.opened {
@@ -313,24 +456,63 @@ pub(crate) fn original_generation_digest(original: &CapturedLocal) -> String {
 
 /// Stream-compare exact full bytes, identity, safe ancestry and EOF without retaining a second input Vec.
 pub(crate) fn verify_file(original: &FileGeneration, bytes: &[u8]) -> Result<(), ForgeError> {
-    verify_root(&original.root)?;
+    match verify_file_admitted(original, bytes, &mut |_| Ok::<(), std::convert::Infallible>(())) {
+        Ok(()) => Ok(()),
+        Err(VerificationError::Domain(error)) => Err(error),
+        Err(VerificationError::Admission(never)) => match never {},
+        Err(VerificationError::Capacity) => Err(error("bounded original capacity exceeded")),
+    }
+}
+
+/// Preserve caller admission failures separately from actual file-generation failures.
+pub(crate) enum VerificationError<E> {
+    /// An actual controlled original exceeds its remaining raw limit or cannot be retained.
+    Capacity,
+    /// Actual confined original, ancestry, identity, size or byte check failed.
+    Domain(ForgeError),
+    /// Caller stopped before the next bounded read/comparison phase.
+    Admission(E),
+}
+
+impl<E> From<ForgeError> for VerificationError<E> {
+    /// Preserve the maintained native error without translating caller control.
+    fn from(error: ForgeError) -> Self {
+        Self::Domain(error)
+    }
+}
+
+/// Recheck the same complete original with admission before each native phase and scratch read.
+/// A zero charge is a checkpoint; positive charges cover both read and comparison extents.
+/// This does not preempt a filesystem syscall or promise an atomic external snapshot.
+pub(crate) fn verify_file_admitted<E>(
+    original: &FileGeneration,
+    bytes: &[u8],
+    admit: &mut impl FnMut(usize) -> Result<(), E>,
+) -> Result<(), VerificationError<E>> {
+    verify_root_admitted(&original.root, admit)?;
+    admit_path_geometry(&original.relative, Some(&original.root.path), admit)?;
     let OpenedLocal::Present(mut file, identity, ancestors, _directories) =
         open_local(&original.root, &original.relative, false)?
     else {
-        return Err(error("evidence inspection original is unavailable"));
+        return Err(error("evidence inspection original is unavailable").into());
     };
-    compare_ancestors(&original.ancestors, &ancestors)?;
+    compare_ancestors_admitted(&original.ancestors, &ancestors, admit)?;
     if identity != original.identity
         || file.metadata().map_err(|_| error("cannot inspect current original"))?.len()
             != bytes.len() as u64
     {
-        return Err(error("evidence inspection original identity or size changed"));
+        return Err(error("evidence inspection original identity or size changed").into());
     }
-    let mut scratch = vec![0_u8; SCRATCH_BYTES].into_boxed_slice();
+    let scratch_size = SCRATCH_BYTES.min(bytes.len().saturating_add(1));
+    admit(scratch_size).map_err(VerificationError::Admission)?;
+    let mut scratch = vec![0_u8; scratch_size].into_boxed_slice();
     let mut offset = 0_usize;
     loop {
-        let count =
-            file.read(&mut scratch).map_err(|_| error("cannot recheck current original"))?;
+        let read_limit = scratch.len().min(bytes.len().saturating_sub(offset).saturating_add(1));
+        admit(2 * read_limit).map_err(VerificationError::Admission)?;
+        let count = file
+            .read(&mut scratch[..read_limit])
+            .map_err(|_| error("cannot recheck current original"))?;
         if count == 0 {
             break;
         }
@@ -339,7 +521,7 @@ pub(crate) fn verify_file(original: &FileGeneration, bytes: &[u8]) -> Result<(),
             .filter(|end| *end <= bytes.len())
             .ok_or_else(|| error("evidence inspection original bytes changed"))?;
         if scratch[..count] != bytes[offset..end] {
-            return Err(error("evidence inspection original bytes changed"));
+            return Err(error("evidence inspection original bytes changed").into());
         }
         offset = end;
     }
@@ -348,9 +530,11 @@ pub(crate) fn verify_file(original: &FileGeneration, bytes: &[u8]) -> Result<(),
         || file.metadata().map_err(|_| error("cannot inspect rechecked original"))?.len()
             != bytes.len() as u64
     {
-        return Err(error("evidence inspection original changed during recheck"));
+        return Err(error("evidence inspection original changed during recheck").into());
     }
-    verify_root(&original.root)
+    verify_root_admitted(&original.root, admit)?;
+    admit(0).map_err(VerificationError::Admission)?;
+    Ok(())
 }
 
 /// Require the same actual first missing component and safe existing ancestry; newly appeared bytes refuse.
@@ -366,6 +550,35 @@ pub(crate) fn verify_absence(original: &AbsenceGeneration) -> Result<(), ForgeEr
     }
     compare_ancestors(&original.ancestors, &ancestors)?;
     verify_root(&original.root)
+}
+
+/// Reconcile the same typed absence with complete geometry charged before reopening.
+/// Both missing spellings and every ancestor path precede their equality checks.
+pub(crate) fn verify_absence_admitted<E>(
+    original: &AbsenceGeneration,
+    admit: &mut impl FnMut(usize) -> Result<(), E>,
+) -> Result<(), VerificationError<E>> {
+    verify_root_admitted(&original.root, admit)?;
+    admit_path_geometry(&original.relative, Some(&original.root.path), admit)?;
+    let OpenedLocal::Absent(missing, ancestors, _directories) =
+        open_local(&original.root, &original.relative, true)?
+    else {
+        return Err(error("previously unavailable local evidence appeared").into());
+    };
+    let extent = missing
+        .as_os_str()
+        .as_encoded_bytes()
+        .len()
+        .checked_add(original.missing.as_os_str().as_encoded_bytes().len())
+        .ok_or(VerificationError::Capacity)?;
+    admit(extent).map_err(VerificationError::Admission)?;
+    if missing != original.missing {
+        return Err(error("unavailable local evidence ancestry changed").into());
+    }
+    compare_ancestors_admitted(&original.ancestors, &ancestors, admit)?;
+    verify_root_admitted(&original.root, admit)?;
+    admit(0).map_err(VerificationError::Admission)?;
+    Ok(())
 }
 
 /// Compare complete exact directory generations without interpreting byte-equal replacements as stable.
@@ -407,6 +620,47 @@ fn read_bounded(file: &mut File, limit: u64) -> Result<Vec<u8>, ForgeError> {
         }
         bytes.extend_from_slice(&scratch[..count]);
     }
+    Ok(bytes)
+}
+
+/// Bound each actual controlled read and retained original growth before it occurs.
+fn read_bounded_admitted<E>(
+    file: &mut File,
+    limit: u64,
+    admit: &mut impl FnMut(usize) -> Result<(), E>,
+) -> Result<Vec<u8>, VerificationError<E>> {
+    let measured = file.metadata().map_err(|_| error("cannot inspect original input"))?.len();
+    if measured > limit {
+        return Err(VerificationError::Capacity);
+    }
+    let measured =
+        usize::try_from(measured).map_err(|_| error("original byte count conversion failed"))?;
+    let limit =
+        usize::try_from(limit).map_err(|_| error("original byte count conversion failed"))?;
+    let scratch_size = SCRATCH_BYTES.min(measured.saturating_add(1));
+    admit(scratch_size).map_err(VerificationError::Admission)?;
+    let mut scratch = vec![0_u8; scratch_size].into_boxed_slice();
+    let mut bytes = Vec::new();
+    loop {
+        let read_limit = scratch.len().min(limit.saturating_sub(bytes.len()).saturating_add(1));
+        admit(read_limit.checked_mul(2).ok_or_else(|| error("original byte count overflowed"))?)
+            .map_err(VerificationError::Admission)?;
+        let count = file
+            .read(&mut scratch[..read_limit])
+            .map_err(|_| error("cannot read original input"))?;
+        if count == 0 {
+            break;
+        }
+        let length = bytes
+            .len()
+            .checked_add(count)
+            .filter(|n| *n <= limit)
+            .ok_or(VerificationError::Capacity)?;
+        bytes.try_reserve(count).map_err(|_| VerificationError::Capacity)?;
+        bytes.extend_from_slice(&scratch[..count]);
+        debug_assert_eq!(bytes.len(), length);
+    }
+    admit(0).map_err(VerificationError::Admission)?;
     Ok(bytes)
 }
 
@@ -1055,7 +1309,7 @@ pub(crate) enum AdmittedReadError<E> {
 
 impl PreparedLocal {
     /// New controlled consumer; the ordinary /1 reader remains byte-exact above.
-    pub(crate) fn read_admitted<E>(
+    pub(crate) fn read_mcp_admitted<E>(
         self,
         limit: u64,
         admit: &mut dyn FnMut() -> Result<(), E>,
@@ -1063,7 +1317,7 @@ impl PreparedLocal {
         let Self { root, relative, opened } = self;
         let captured = match opened {
             OpenedLocal::Present(mut file, identity, ancestors, directories) => {
-                let bytes = read_bounded_admitted(&mut file, limit, admit)?;
+                let bytes = read_bounded_mcp_admitted(&mut file, limit, admit)?;
                 if file_identity(&file).map_err(AdmittedReadError::Domain)? != identity
                     || file
                         .metadata()
@@ -1103,7 +1357,7 @@ impl PreparedLocal {
 }
 
 /// Admit actual read attempts and append work on the original caller before growth.
-fn read_bounded_admitted<E>(
+fn read_bounded_mcp_admitted<E>(
     file: &mut File,
     limit: u64,
     admit: &mut dyn FnMut() -> Result<(), E>,
@@ -1139,7 +1393,7 @@ fn read_bounded_admitted<E>(
 }
 
 /// Controlled new full-byte verifier; ordinary /1 verification stays unchanged.
-pub(crate) fn verify_file_admitted<E>(
+pub(crate) fn verify_file_mcp_admitted<E>(
     original: &FileGeneration,
     bytes: &[u8],
     admit: &mut dyn FnMut() -> Result<(), E>,
@@ -2454,5 +2708,149 @@ mod disclosure_held_tests {
             panic!("typed absence");
         };
         assert!(verify_absence(&old).is_err());
+    }
+}
+
+#[cfg(all(test, any(unix, windows)))]
+/// Actual file/root generation fixtures for admitted geometry; no owner authority.
+mod admitted_geometry_tests {
+    use super::*;
+
+    /// Return one actual normalized root with a regular original and a declared directory.
+    fn actual_root() -> (tempfile::TempDir, PathBuf) {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().canonicalize().unwrap();
+        std::fs::write(root.join("original.bin"), b"actual").unwrap();
+        std::fs::create_dir(root.join("evidence")).unwrap();
+        (directory, root)
+    }
+
+    /// A finite byte-work refusal precedes even the actual missing-root native failure.
+    #[test]
+    fn root_path_capacity_precedes_native_traversal() {
+        let (_directory, root) = actual_root();
+        let missing = root.join("missing-root");
+        let mut charged = 0_usize;
+        let mut remaining = missing.as_os_str().as_encoded_bytes().len() - 1;
+        let result = qualify_root_admitted(&missing, &mut |bytes| {
+            charged = charged.checked_add(bytes).unwrap();
+            if bytes > remaining {
+                return Err("path-capacity");
+            }
+            remaining -= bytes;
+            Ok(())
+        });
+        assert_eq!(charged, missing.as_os_str().as_encoded_bytes().len());
+        assert!(matches!(result, Err(VerificationError::Admission("path-capacity"))));
+    }
+
+    /// A required missing descendant retains the exact pre-native caller refusal.
+    #[test]
+    fn descendant_admission_is_not_hidden_by_missing_file_error() {
+        let (_directory, root) = actual_root();
+        let held = Rc::new(qualify_root(&root).unwrap());
+        let mut charged = 0_usize;
+        let result = prepare_local_admitted(held, Path::new("missing.bin"), false, &mut |bytes| {
+            if bytes == 0 {
+                return Ok(());
+            }
+            charged = bytes;
+            Err("before-open")
+        });
+        assert_eq!(charged, "missing.bin".len());
+        assert!(matches!(result, Err(VerificationError::Admission("before-open"))));
+    }
+
+    /// Complete actual ancestor strings from both sides are charged before equality.
+    #[test]
+    fn ancestor_comparison_accounts_for_both_complete_lists() {
+        let (_directory, root) = actual_root();
+        let held = qualify_root(&root).unwrap();
+        let expected = held
+            .ancestors
+            .iter()
+            .try_fold(2 * std::mem::size_of::<usize>(), |total, row| {
+                total.checked_add(2 * (row.path.as_os_str().as_encoded_bytes().len() + 16))
+            })
+            .unwrap();
+        let mut actual = 0_usize;
+        compare_ancestors_admitted(&held.ancestors, &held.ancestors, &mut |bytes| {
+            actual = actual.checked_add(bytes).unwrap();
+            Ok::<(), ()>(())
+        })
+        .unwrap_or_else(|_| panic!("actual ancestors must match"));
+        assert_eq!(actual, expected);
+    }
+
+    /// The final actual root phase cannot turn a late caller stop into success.
+    #[test]
+    fn root_post_native_checkpoint_preserves_late_stop() {
+        let (_directory, root) = actual_root();
+        let held = qualify_root(&root).unwrap();
+        let mut sequence = Vec::new();
+        verify_root_admitted(&held, &mut |bytes| {
+            sequence.push(bytes);
+            Ok::<(), ()>(())
+        })
+        .unwrap_or_else(|_| panic!("actual root must remain stable"));
+        assert_eq!(sequence.last(), Some(&0));
+        let mut index = 0_usize;
+        let result = verify_root_admitted(&held, &mut |bytes| {
+            index += 1;
+            if index == sequence.len() {
+                assert_eq!(bytes, 0);
+                Err("late-stop")
+            } else {
+                Ok(())
+            }
+        });
+        assert_eq!(index, sequence.len());
+        assert!(matches!(result, Err(VerificationError::Admission("late-stop"))));
+    }
+
+    /// Original and repeated fences account native geometry in addition to full byte work.
+    #[test]
+    fn repeated_file_fences_retain_complete_path_charges() {
+        let (_directory, root) = actual_root();
+        let held = Rc::new(qualify_root(&root).unwrap());
+        let CapturedLocal::Present(bytes, generation) =
+            capture_local(held, Path::new("original.bin"), 6, false).unwrap()
+        else {
+            panic!("actual original required");
+        };
+        let root_extent = root.as_os_str().as_encoded_bytes().len();
+        for _ in 0..2 {
+            let mut work = 0_usize;
+            let mut root_spellings = 0_usize;
+            verify_file_admitted(&generation, &bytes, &mut |charge| {
+                work = work.checked_add(charge).unwrap();
+                if charge == root_extent {
+                    root_spellings += 1;
+                }
+                Ok::<(), ()>(())
+            })
+            .unwrap_or_else(|_| panic!("actual repeated original must match"));
+            assert!(root_spellings >= 2);
+            assert!(work > 2 * bytes.len());
+        }
+    }
+
+    /// Typed absence is rechecked through admitted geometry and still rejects appeared bytes.
+    #[test]
+    fn absence_geometry_and_current_missing_identity_remain_consumed() {
+        let (_directory, root) = actual_root();
+        let held = Rc::new(qualify_root(&root).unwrap());
+        let CapturedLocal::Absent(absence) =
+            capture_local(held, Path::new("evidence/missing.bin"), 6, true).unwrap()
+        else {
+            panic!("actual absence required");
+        };
+        let stopped = verify_absence_admitted(&absence, &mut |bytes| {
+            if bytes == 0 { Ok(()) } else { Err("absence-path-capacity") }
+        });
+        assert!(matches!(stopped, Err(VerificationError::Admission("absence-path-capacity"))));
+        std::fs::write(root.join("evidence/missing.bin"), b"new").unwrap();
+        let changed = verify_absence_admitted(&absence, &mut |_| Ok::<(), ()>(()));
+        assert!(matches!(changed, Err(VerificationError::Domain(_))));
     }
 }

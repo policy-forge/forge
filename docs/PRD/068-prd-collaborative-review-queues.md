@@ -21,7 +21,7 @@ FORGE will package mapping, applicability, change-impact, authoring, assessment,
 
 ### Background :red_circle: `@human-required`
 
-FORGE's evidence-first features deliberately require human review, but each currently assumes one manifest author and has no common mechanism for assigning work, collecting independent decisions, resolving disagreement, or proving that the reviewed subject bytes match the current project. Building live collaboration first would introduce accounts, authorization, tenancy, and databases before the review semantics are stable.
+At the 2026-08-24 planning checkpoint, FORGE's evidence-first workflows required human review but lacked a common mechanism for assignments, independent responses and exact-subject binding. The later portable implementation is described below. Building live collaboration first would introduce accounts, authorization, tenancy and databases before the review semantics are stable.
 
 ### Evidence and Product Hypotheses :yellow_circle: `@human-review`
 
@@ -31,7 +31,7 @@ FORGE's evidence-first features deliberately require human review, but each curr
 | Product boundary | Local manifests preserve declared parties but do not authenticate identity. | Response files must state this limitation and must not be called digital signatures. |
 | Product hypothesis | Portable asynchronous queues solve most initial collaboration pain without a hosted platform. | Measure completed review cycles and conflict resolution before building live service mode. |
 
-No team workflow research, identity design, merge corpus, or hosted-service business case was supplied. Queue adoption targets are hypotheses.
+At that initial planning checkpoint, no team workflow research, identity design, merge corpus or hosted-service business case was supplied. Later engineering work uses asserted identity and quorum; authentic team/adoption and reviewer-authority acceptance remain open.
 
 ### Scope Boundaries :yellow_circle: `@human-review`
 
@@ -48,7 +48,7 @@ No team workflow research, identity design, merge corpus, or hosted-service busi
 **Out of Scope:**
 
 - Authentication, authorization, e-signatures, SSO, accounts, organization tenancy, or non-repudiation
-- Hosted database/service, real-time editing, presence, comments chat, or notifications
+- Hosted database/service, real-time editing, presence, comments chat, or notification delivery
 - Automatic approval, tie-breaking, conflict resolution, or domain-artifact mutation
 - Git operations, pull-request creation, email, or ticketing performed by FORGE
 - Evidence content or unrestricted policy/framework excerpts in queue packages
@@ -156,7 +156,7 @@ Completion states are `unassigned`, `assigned`, `in-review`, `conflicted`, `chan
 
 ### Won't Have (W) — This release :red_circle: `@human-required`
 
-- Accounts, auth, signatures, hosted service, real-time editing, notifications, Git/ticket operations, auto-approval, or automatic conflict resolution.
+- Accounts, auth, signatures, hosted service, real-time editing, notification delivery, Git/ticket operations, auto-approval, or automatic conflict resolution.
 
 ## Acceptance Criteria — Given / When / Then :yellow_circle: `@human-review`
 
@@ -185,6 +185,61 @@ Completion states are `unassigned`, `assigned`, `in-review`, `conflicted`, `chan
 - **Phase 1:** PRD 055/056 queue adapters, response/merge/status, static HTML.
 - **Phase 2:** Lifecycle/change-impact/AI/assessment/POA&M adapters and proposed patches.
 - **Phase 3:** Signed envelopes investigation and hosted-collaboration discovery.
+
+## Engineering Implementation Scope
+
+The F12 implementation candidate covers re-review of selected Mapping assertions
+first and explicit applicability decisions second. `forge review init` uses a
+complete current native source closure and recorded Approved lifecycle tuple;
+`merge` and `status` recheck that closure. `respond` binds to the exact recorded
+queue. Asserted review policy uses distinct reviewer keys,
+author exclusion, nonapproving abstention and preserved dissent. `export-html`
+renders a recorded bundle; `export-notifications` produces a local recorded queue
+assignment artifact without transmitting it or granting recipient authority.
+
+The additive `supersede` command creates a separate
+`forge.review-queue-supersession/1` companion from explicit old/new item links and
+a complete unfiltered native Impact comparison. It validates the current new
+queue closure, records the old queue as historical and retains complete unmatched
+items and unreferenced findings. Many-to-many lineage does not transfer responses,
+quorum, domain approval or an authenticated identity. Loaded currentness labels
+remain inert; private rationale, source paths and native document-version/href
+fields are omitted from the minimized companion. Identifiers and hashes may
+still disclose sensitive metadata.
+
+F13 adds a separate [Lifecycle review exchange candidate](../lifecycle-review-exchange.md)
+with closed Queue/Response/Disposition `/2` documents and an already
+Approved/current native Lifecycle prerequisite. Its implementation candidate
+registers `forge review lifecycle init/respond/merge/status`; use those commands
+after candidate integration. One authentic coupled run passed 63 controls across
+receiver/binding/finalizer/current/response/export/init, including the in-process
+CLI workflow. Later exact formatted candidate checks passed normal regressions,
+strict lint and fresh library-only LLVM instrumentation, plus a separate macOS
+child workflow; see the linked guide for denominators. Other platform and
+acceptance gates remain open. A recorded `Current` result does
+not authenticate reviewers or perform a Lifecycle transition. This slice does
+not complete the other adapters, proposed edits or interactive client requirements.
+
+The separate [Authoring `/3` exchange candidate](../authoring-review-exchange.md)
+uses genuine complete native regeneration of a saved `forge.authoring-plan/1`
+and an independently typed Queue/Response/Disposition family.
+`forge review authoring init/respond/merge/status` retains asserted identity,
+distinct reviewer keys, author exclusion, nonapproving abstention and dissent.
+Completed TEMP full-test/strict-lint and compiled-CLI evidence is retained, with
+lexical Rustdoc and physical LLVM scopes in the linked guide. Final integrated
+checks and hosted/platform/human acceptance remain open. This slice does not
+select individual clauses, consume component-plan `/2` output, apply edits or
+grant native promotion.
+
+See the [portable review queue guide](../review-queues.md) for all seven commands,
+private formats, publication limits and exact authority boundaries. This is an
+implementation scope note. Requirements and Ready gates remain open pending
+applicable acceptance evidence. Authentic team workflows, reviewer authority,
+interoperability, platform/privacy/accessibility qualification, remaining domain
+adapters, proposed edits, interactive clients, signed envelopes and release gates
+remain separate. External connector integration and acceptance remain open in
+the separate integration work. The final goal-wide documentation review and
+fresh coverage/docstring checks remain required.
 
 ## Risks and Mitigations :yellow_circle: `@human-review`
 

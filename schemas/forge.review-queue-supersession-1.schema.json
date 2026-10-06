@@ -1,0 +1,1189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forge.review-queue-supersession/1",
+  "title": "Closed inert recorded direct queue lineage companion",
+  "$comment": "All labels are recorded assertions. Actual exact raw binding, chronology, ordered complete item/findings accounting, source role/cohort/union ownership, canonical native report equality and fresh final fences remain genuine semantic consumers; JSON Schema never supplies proof.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "identity_disclaimer",
+    "sensitivity",
+    "supersession_id",
+    "created_at",
+    "semantics",
+    "old_queue_currentness",
+    "new_queue_currentness",
+    "old_queue",
+    "new_queue",
+    "impact",
+    "links",
+    "unmatched_old_items",
+    "unmatched_new_items",
+    "counts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.review-queue-supersession/1"
+    },
+    "identity_disclaimer": {
+      "const": "keys-roles-authors-and-times-are-asserted-not-authenticated-signed-or-non-repudiable"
+    },
+    "sensitivity": {
+      "const": "ids-and-hashes"
+    },
+    "supersession_id": {
+      "$ref": "#/$defs/uuid"
+    },
+    "created_at": {
+      "$ref": "#/$defs/time"
+    },
+    "semantics": {
+      "const": "declared-lineage-no-response-transfer"
+    },
+    "old_queue_currentness": {
+      "const": "historical-unverified"
+    },
+    "new_queue_currentness": {
+      "const": "recorded-current-at-creation-fence"
+    },
+    "old_queue": {
+      "$ref": "#/$defs/QueueReference"
+    },
+    "new_queue": {
+      "$ref": "#/$defs/QueueReference"
+    },
+    "impact": {
+      "$ref": "#/$defs/ImpactReference"
+    },
+    "links": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/LinkProjection"
+      }
+    },
+    "unmatched_old_items": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/Endpoint"
+      }
+    },
+    "unmatched_new_items": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/Endpoint"
+      }
+    },
+    "counts": {
+      "$ref": "#/$defs/Counts"
+    }
+  },
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "not": {
+        "const": "00000000-0000-0000-0000-000000000000"
+      }
+    },
+    "Domain": {
+      "type": "string",
+      "enum": [
+        "mapping-assertion",
+        "applicability-decision"
+      ]
+    },
+    "SourceModel": {
+      "type": "string",
+      "enum": [
+        "mapping",
+        "catalog",
+        "profile",
+        "resolved-catalog",
+        "component-definition",
+        "mapping-manifest",
+        "applicability-manifest",
+        "applicability-report",
+        "lifecycle-record"
+      ]
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+    },
+    "SourcePin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_key",
+        "model",
+        "native_root_uuid",
+        "raw_sha256",
+        "byte_length",
+        "schema_identity"
+      ],
+      "properties": {
+        "artifact_key": {
+          "$ref": "#/$defs/key"
+        },
+        "model": {
+          "$ref": "#/$defs/SourceModel"
+        },
+        "native_root_uuid": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "schema_identity": {
+          "$ref": "#/$defs/version"
+        }
+      }
+    },
+    "Endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "item_id",
+        "domain",
+        "adapter_version",
+        "subject_id",
+        "subject_sha256",
+        "context_sha256",
+        "policy_key",
+        "policy_sha256",
+        "requested_action",
+        "source_keys"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "item_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "domain": {
+          "$ref": "#/$defs/Domain"
+        },
+        "adapter_version": {
+          "enum": [
+            "forge.mapping-review/1",
+            "forge.applicability-review/1"
+          ]
+        },
+        "subject_id": {
+          "$ref": "#/$defs/subject"
+        },
+        "subject_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "context_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "policy_key": {
+          "$ref": "#/$defs/key"
+        },
+        "policy_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "requested_action": {
+          "const": "re-review"
+        },
+        "source_keys": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/key"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "domain": {
+                "const": "mapping-assertion"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "adapter_version": {
+                "const": "forge.mapping-review/1"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "adapter_version": {
+                "const": "forge.applicability-review/1"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Differences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "subject",
+        "context",
+        "policy",
+        "source_pins"
+      ],
+      "properties": {
+        "subject": {
+          "type": "boolean"
+        },
+        "context": {
+          "type": "boolean"
+        },
+        "policy": {
+          "type": "boolean"
+        },
+        "source_pins": {
+          "type": "boolean"
+        }
+      }
+    },
+    "OriginalPin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "raw_sha256",
+        "byte_length"
+      ],
+      "properties": {
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10485760
+        }
+      }
+    },
+    "QueueReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "queue_id",
+        "raw_sha256",
+        "byte_length",
+        "source_pins",
+        "item_count"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "forge.review-queue/1"
+        },
+        "queue_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "source_pins": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/SourcePin"
+          }
+        },
+        "item_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        }
+      }
+    },
+    "nativeUuid": {
+      "type": "string",
+      "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[45][0-9A-Fa-f]{3}-[89ABab][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}$",
+      "maxLength": 36
+    },
+    "nativeSubject": {
+      "type": "string",
+      "pattern": "^(\\p{L}|_)(\\p{L}|\\p{N}|[.\\-_])*$",
+      "minLength": 1,
+      "maxLength": 65536
+    },
+    "time": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "FindingReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finding_id",
+        "priority",
+        "reason_code",
+        "required_action",
+        "native_subject_id",
+        "change_class",
+        "old_dependency_binding",
+        "new_relation"
+      ],
+      "properties": {
+        "finding_id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "priority": {
+          "enum": [
+            "blocking",
+            "review-required",
+            "informational"
+          ]
+        },
+        "reason_code": {
+          "enum": [
+            "control_added",
+            "control_removed",
+            "control_content_changed",
+            "mapping_reference_removed",
+            "mapping_subject_changed",
+            "applicability_decision_removed",
+            "applicability_decision_changed",
+            "applicability_decision_migrated",
+            "identity_migration_declared",
+            "mapping_subject_migrated",
+            "resource_metadata_changed",
+            "migration_evidence_missing"
+          ]
+        },
+        "required_action": {
+          "enum": [
+            "review-applicability",
+            "review-framework-removal",
+            "review-control-change",
+            "repair-or-approve-mapping",
+            "reapprove-mapping-rationale",
+            "review-applicability-decision",
+            "review-identity-migration",
+            "review-resource-metadata"
+          ]
+        },
+        "native_subject_id": {
+          "$ref": "#/$defs/nativeSubject"
+        },
+        "change_class": {
+          "enum": [
+            "added",
+            "removed",
+            "content-changed",
+            "identity-migrated",
+            "unchanged"
+          ]
+        },
+        "old_dependency_binding": {
+          "enum": [
+            "captured-native-map-id-and-declared-old-pin",
+            "captured-native-control-id-and-declared-old-pin"
+          ]
+        },
+        "new_relation": {
+          "const": "explicit-declared-review-lineage"
+        }
+      }
+    },
+    "LinkProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "old",
+        "new",
+        "differences",
+        "relation",
+        "findings"
+      ],
+      "properties": {
+        "old": {
+          "$ref": "#/$defs/Endpoint"
+        },
+        "new": {
+          "$ref": "#/$defs/Endpoint"
+        },
+        "differences": {
+          "$ref": "#/$defs/Differences"
+        },
+        "relation": {
+          "const": "explicit-declared-lineage"
+        },
+        "findings": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 100000,
+          "items": {
+            "$ref": "#/$defs/FindingReference"
+          }
+        }
+      }
+    },
+    "Counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "old_items",
+        "new_items",
+        "link_edges",
+        "linked_old_items",
+        "linked_new_items",
+        "unmatched_old_items",
+        "unmatched_new_items",
+        "link_finding_occurrences",
+        "distinct_linked_findings",
+        "unreferenced_findings"
+      ],
+      "properties": {
+        "old_items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "new_items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "link_edges": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "linked_old_items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "linked_new_items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "unmatched_old_items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "unmatched_new_items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "link_finding_occurrences": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "distinct_linked_findings": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "unreferenced_findings": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      }
+    },
+    "ImpactSourcePin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "kind",
+        "native_root_uuid",
+        "raw_sha256",
+        "byte_length",
+        "schema_identity"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "kind": {
+          "enum": [
+            "catalog",
+            "profile",
+            "resolved-catalog",
+            "mapping",
+            "applicability-manifest",
+            "framework-impact-manifest",
+            "framework-impact-report",
+            "successor-map",
+            "framework-impact-dispositions"
+          ]
+        },
+        "native_root_uuid": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/nativeUuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "byte_length": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "schema_identity": {
+          "enum": [
+            "oscal:1.2.3:catalog",
+            "oscal:1.2.3:profile",
+            "oscal:1.2.3:mapping-collection",
+            "forge.applicability/1",
+            "forge.framework-impact/1",
+            "forge.framework-impact-report/1",
+            "forge.successor-map/1",
+            "forge.framework-impact-dispositions/1"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "catalog"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "schema_identity": {
+                "const": "oscal:1.2.3:catalog"
+              },
+              "native_root_uuid": {
+                "$ref": "#/$defs/nativeUuid"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "profile"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "schema_identity": {
+                "const": "oscal:1.2.3:profile"
+              },
+              "native_root_uuid": {
+                "$ref": "#/$defs/nativeUuid"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "resolved-catalog"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "schema_identity": {
+                "const": "oscal:1.2.3:catalog"
+              },
+              "native_root_uuid": {
+                "$ref": "#/$defs/nativeUuid"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "mapping"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "schema_identity": {
+                "const": "oscal:1.2.3:mapping-collection"
+              },
+              "native_root_uuid": {
+                "$ref": "#/$defs/nativeUuid"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "applicability-manifest"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "schema_identity": {
+                "const": "forge.applicability/1"
+              },
+              "native_root_uuid": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "framework-impact-manifest"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "schema_identity": {
+                "const": "forge.framework-impact/1"
+              },
+              "native_root_uuid": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "framework-impact-report"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "schema_identity": {
+                "const": "forge.framework-impact-report/1"
+              },
+              "native_root_uuid": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "successor-map"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "schema_identity": {
+                "const": "forge.successor-map/1"
+              },
+              "native_root_uuid": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "framework-impact-dispositions"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "schema_identity": {
+                "const": "forge.framework-impact-dispositions/1"
+              },
+              "native_root_uuid": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ImpactResource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resource_type",
+        "raw_sha256",
+        "root_uuid",
+        "oscal_version",
+        "resolved_catalog_sha256"
+      ],
+      "properties": {
+        "resource_type": {
+          "enum": [
+            "catalog",
+            "profile"
+          ]
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/hash"
+        },
+        "root_uuid": {
+          "$ref": "#/$defs/nativeUuid"
+        },
+        "oscal_version": {
+          "const": "1.2.3"
+        },
+        "resolved_catalog_sha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "resource_type": {
+                "const": "catalog"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "resolved_catalog_sha256": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "resolved_catalog_sha256": {
+                "$ref": "#/$defs/hash"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ImpactSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "old_controls",
+        "new_controls",
+        "added",
+        "removed",
+        "content_changed",
+        "identity_migrated",
+        "unchanged",
+        "findings",
+        "blocking",
+        "review_required",
+        "informational",
+        "dispositioned_resolved",
+        "dispositioned_accepted_risk",
+        "dispositioned_still_open",
+        "undispositioned"
+      ],
+      "properties": {
+        "old_controls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "new_controls": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "added": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "removed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "content_changed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "identity_migrated": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "unchanged": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "findings": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "blocking": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "review_required": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "informational": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "dispositioned_resolved": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "dispositioned_accepted_risk": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "dispositioned_still_open": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "undispositioned": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        }
+      }
+    },
+    "EmptyFilters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "group",
+        "decision_state",
+        "policy_source",
+        "priority",
+        "owner"
+      ],
+      "properties": {
+        "group": {
+          "type": "null"
+        },
+        "decision_state": {
+          "type": "null"
+        },
+        "policy_source": {
+          "type": "null"
+        },
+        "priority": {
+          "type": "null"
+        },
+        "owner": {
+          "type": "null"
+        }
+      }
+    },
+    "ImpactReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "manifest",
+        "report",
+        "locator",
+        "schema_version",
+        "status",
+        "currentness",
+        "source_pins",
+        "old_framework_source_key",
+        "new_framework_source_key",
+        "old_resolved_source_key",
+        "new_resolved_source_key",
+        "old",
+        "new",
+        "summary",
+        "filters",
+        "change_count",
+        "finding_count",
+        "matched_findings",
+        "native_change_observation",
+        "distinct_linked_findings",
+        "unreferenced_finding_ids",
+        "prior_only_disposition_count"
+      ],
+      "properties": {
+        "manifest": {
+          "$ref": "#/$defs/OriginalPin"
+        },
+        "report": {
+          "$ref": "#/$defs/OriginalPin"
+        },
+        "locator": {
+          "$ref": "#/$defs/OriginalPin"
+        },
+        "schema_version": {
+          "const": "forge.framework-impact-report/1"
+        },
+        "status": {
+          "const": "complete"
+        },
+        "currentness": {
+          "const": "captured-recomputed-at-creation-fence"
+        },
+        "source_pins": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/ImpactSourcePin"
+          }
+        },
+        "old_framework_source_key": {
+          "$ref": "#/$defs/key"
+        },
+        "new_framework_source_key": {
+          "$ref": "#/$defs/key"
+        },
+        "old_resolved_source_key": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/key"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "new_resolved_source_key": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/key"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "old": {
+          "$ref": "#/$defs/ImpactResource"
+        },
+        "new": {
+          "$ref": "#/$defs/ImpactResource"
+        },
+        "summary": {
+          "$ref": "#/$defs/ImpactSummary"
+        },
+        "filters": {
+          "$ref": "#/$defs/EmptyFilters"
+        },
+        "change_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "finding_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "matched_findings": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "native_change_observation": {
+          "enum": [
+            "no-detected-native-change",
+            "detected-native-change"
+          ]
+        },
+        "distinct_linked_findings": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "unreferenced_finding_ids": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 100000,
+          "items": {
+            "$ref": "#/$defs/uuid"
+          }
+        },
+        "prior_only_disposition_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "summary": {
+                "properties": {
+                  "added": {
+                    "const": 0
+                  },
+                  "removed": {
+                    "const": 0
+                  },
+                  "content_changed": {
+                    "const": 0
+                  },
+                  "identity_migrated": {
+                    "const": 0
+                  },
+                  "findings": {
+                    "const": 0
+                  }
+                }
+              },
+              "finding_count": {
+                "const": 0
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "native_change_observation": {
+                "const": "no-detected-native-change"
+              },
+              "matched_findings": {
+                "const": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "native_change_observation": {
+                "const": "detected-native-change"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "old": {
+                "properties": {
+                  "resource_type": {
+                    "const": "catalog"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "new": {
+                "properties": {
+                  "resource_type": {
+                    "const": "catalog"
+                  }
+                }
+              },
+              "old_resolved_source_key": {
+                "type": "null"
+              },
+              "new_resolved_source_key": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "new": {
+                "properties": {
+                  "resource_type": {
+                    "const": "profile"
+                  }
+                }
+              },
+              "old_resolved_source_key": {
+                "$ref": "#/$defs/key"
+              },
+              "new_resolved_source_key": {
+                "$ref": "#/$defs/key"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forge.review-authoring-plan-inputs/1",
+  "title": "Proposed private authoring-plan locator; no native or physical proof",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project",
+    "plan"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.review-authoring-plan-inputs/1"
+    },
+    "project": {
+      "$ref": "#/$defs/Route"
+    },
+    "plan": {
+      "$ref": "#/$defs/Route"
+    }
+  },
+  "$defs": {
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "Route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/path"
+        }
+      }
+    }
+  }
+}

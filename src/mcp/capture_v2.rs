@@ -960,7 +960,7 @@ impl<'control, C: WorkControl + ?Sized> CaptureBuilderV2<'control, C> {
             .ok_or_else(|| self.shared.capacity())?;
         let mut ticket = Ticket::reserve(&self.shared, root_envelope.handles(), bytes)?;
         let shared = Rc::clone(&self.shared);
-        let result = prepared.read_admitted(limit as u64, &mut || shared.charge(1));
+        let result = prepared.read_mcp_admitted(limit as u64, &mut || shared.charge(1));
         let captured = self.shared.read(result)?;
         let captured_geometry = self.shared.native_geometry(captured.geometry())?;
         if captured_geometry.handles() != geometry.handles()
@@ -1038,8 +1038,9 @@ impl<'control, C: WorkControl + ?Sized> CaptureBuilderV2<'control, C> {
             match native {
                 CapturedLocal::Present(bytes, generation) => {
                     let shared = Rc::clone(&self.shared);
-                    let result =
-                        fresh::verify_file_admitted(generation, bytes, &mut || shared.charge(1));
+                    let result = fresh::verify_file_mcp_admitted(generation, bytes, &mut || {
+                        shared.charge(1)
+                    });
                     self.shared.read(result)?;
                 }
                 CapturedLocal::Absent(generation) => {

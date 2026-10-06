@@ -7,6 +7,12 @@ independent review. Actual design-partner exercises, measured pilot outcomes and
 release approval remain open. Reviewer and component-status metadata are
 assertions, not authenticated identities or independent review evidence.
 
+The separate [Authoring `/3` review candidate](authoring-review-exchange.md) is
+limited to one complete saved `forge.authoring-plan/1`. It does not consume the
+component `forge.authoring-plan/2` envelope, select individual clauses, refresh
+answers, apply edits or invoke handoff. Its qualification and acceptance gates
+remain separate from this native drafting extension.
+
 ## Compatibility and contracts
 
 Existing `forge.author-project/1` and `forge.authoring-pack/1` are unchanged.
