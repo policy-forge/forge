@@ -3,6 +3,8 @@
 import copy
 import hashlib
 import json
+import io
+import ast
 from pathlib import Path
 import sys
 import signal
@@ -17,7 +19,51 @@ import run_workspace_stdlib_closure as dispatch
 
 
 class DispatcherControls(unittest.TestCase):
+    def test_protected_bootstrap_embeds_exact_registered_runner(self):
+        """The root copy must execute the same source and IDs whose pin the outer validator expects."""
+        module = ast.parse(dispatch.BOOTSTRAP)
+        assignment = next(n for n in module.body if isinstance(n, ast.Assign)
+                          and any(isinstance(t, ast.Name) and t.id == "RUNNER" for t in n.targets))
+        self.assertEqual(ast.literal_eval(assignment.value), dispatch.RUNNER)
+
     """Check the narrow receipt/copy contract with mocked dispatch, never count these as Linux physical evidence."""
+
+    def test_registered_runner_executes_complete_closed_count_path(self):
+        """Exercise discovery and main receipt admission for all registered synthetic IDs without root execution."""
+        namespace = {"__name__": "runner_fixture", "__file__": "/synthetic/runner.py"}
+        exec(compile(dispatch.RUNNER, "registered_runner_fixture", "exec"), namespace)
+        expected = namespace["EXPECTED_IDS"]
+        class Case(unittest.TestCase):
+            def __init__(self, identifier):
+                super().__init__()
+                self.identifier = identifier
+            def id(self):
+                return self.identifier
+        class Suite:
+            def __iter__(self):
+                return iter(Case(identifier) for identifier in expected)
+            def run(self, result):
+                result.counts["passed"] = len(expected)
+                result.testsRun = result.fixture_checks = result.fixture_absent = len(expected)
+                result.ids = list(expected)
+                result.protocol_valid = True
+        suite = Suite()
+        self.assertEqual(namespace["case_ids"](suite), expected)
+        loader = types.SimpleNamespace(exec_module=lambda module: setattr(module, "PhysicalLeafClosureControls", object()))
+        specification = types.SimpleNamespace(loader=loader)
+        stdout = io.StringIO()
+        with mock.patch.object(sys, "platform", "linux"), \
+             mock.patch.object(namespace["os"], "getuid", return_value=0), \
+             mock.patch.object(namespace["os"], "geteuid", return_value=0), \
+             mock.patch.object(namespace["importlib"].util, "spec_from_file_location", return_value=specification), \
+             mock.patch.object(namespace["importlib"].util, "module_from_spec", return_value=types.SimpleNamespace()), \
+             mock.patch.object(unittest.TestLoader, "loadTestsFromTestCase", return_value=suite), \
+             mock.patch.object(sys, "stdout", stdout):
+            self.assertEqual(namespace["main"](), 0)
+        receipt = json.loads(stdout.getvalue())
+        self.assertEqual(receipt["ran"], 24)
+        self.assertEqual(receipt["passed"], 24)
+        self.assertTrue(receipt["exact_ids"])
 
     def setUp(self):
         """Give each control independent exact source pins, counters and a normal closed transport fixture."""
@@ -49,7 +95,7 @@ class DispatcherControls(unittest.TestCase):
         return dispatch.outcome(self.transport(value, **changes), self.pins, self.runner)
 
     def test_exact_campaign_is_a_reconciled_positive_control(self):
-        """Exactly twenty-two real-looking outcomes and both cleanup records satisfy only the receipt predicate."""
+        """Exactly twenty-four real-looking outcomes and both cleanup records satisfy only the receipt predicate."""
         retained, good = self.admitted()
         self.assertTrue(good)
         self.assertEqual(retained, self.value)
@@ -85,7 +131,7 @@ class DispatcherControls(unittest.TestCase):
                 self.assertEqual(self.admitted(value), (None, False))
 
     def test_discovered_registered_ids_must_match(self):
-        """The protected runner's exact-ID comparison is required independently of an apparent count of twenty-two."""
+        """The protected runner's exact-ID comparison is required independently of an apparent count of twenty-four."""
         self.value["execution"]["exact_ids"] = False
         self.assertFalse(self.admitted()[1])
 
