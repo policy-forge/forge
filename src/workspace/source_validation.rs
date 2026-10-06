@@ -145,6 +145,7 @@ impl<'a> Sources<'a> {
                 crate::OscalModelType::Profile => "profile",
                 crate::OscalModelType::SystemSecurityPlan => "system-security-plan",
                 crate::OscalModelType::Mapping => "mapping-collection",
+                crate::OscalModelType::Poam => "plan-of-action-and-milestones",
             };
             let uuid = value[root]["uuid"].as_str().ok_or_else(invalid)?;
             uuid::Uuid::parse_str(uuid).map_err(|_| invalid())?;

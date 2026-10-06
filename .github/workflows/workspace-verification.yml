@@ -131,6 +131,7 @@ jobs:
       # Independent from the existing CI strict Clippy gate: failed lint must
       # not suppress these receipts, and these results do not waive failed lint.
       - name: Verify API contracts, process parity fixtures, and maintained client
+        id: api-verification
         if: always()
         env:
           FORGE_TEST_BINARY: target/release/forge${{ runner.os == 'Windows' && '.exe' || '' }}
@@ -158,6 +159,15 @@ jobs:
         with:
           name: workspace-api-${{ matrix.os }}-${{ github.sha }}
           path: workspace-evidence/workspace-verification.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Retain separate bounded maintained-client failure observation
+        if: ${{ failure() && steps.api-verification.outcome == 'failure' && steps.api-verification.outputs.client_failure_observation_published == 'true' && hashFiles('workspace-evidence/workspace-client-failure-observation.json') != '' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-client-failure-${{ matrix.os }}-${{ github.sha }}
+          path: workspace-evidence/workspace-client-failure-observation.json
           if-no-files-found: error
           retention-days: 14
 

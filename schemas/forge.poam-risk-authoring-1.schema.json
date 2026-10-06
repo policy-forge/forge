@@ -1,0 +1,561 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:poam-risk-authoring:1",
+  "$comment": "Proposed closed first-new-plan profile only. Root must consume/compile this with existing offline validator and actual semantic predicates before delivery. No remote references. Schema does not prove capture, tuple union, chronology, UTF8 byte bounds or authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "workflow",
+    "reviewed_risks"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.poam-risk-authoring/1"
+    },
+    "workflow": {
+      "$ref": "#/$defs/Workflow"
+    },
+    "reviewed_risks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/ReviewedRisk"
+      },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "SourceKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536,
+      "x-runtime-utf8-byte-limit": 65536
+    },
+    "WorkflowKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "x-runtime-utf8-byte-limit": 256,
+      "description": "Runtime existing exact-key validator additionally requires trimmed text and no controls; source-object keys use the separate SourceKey domain."
+    },
+    "AuthoredText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536,
+      "x-runtime-utf8-byte-limit": 65536,
+      "description": "Runtime existing text validator rejects whitespace-only and controls other than LF/TAB; neither exact raw string bytes nor authorities are inferred."
+    },
+    "CanonicalUuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "FullDate": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 10,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "description": "Actual Gregorian calendar and canonical spelling are separately enforced by the consumed existing workflow date predicate; syntax schema alone is not calendar validation."
+    },
+    "Timestamp": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536,
+      "description": "Existing chrono RFC3339 parsing is authoritative; no default timestamp. This schema intentionally does not invent a stricter JSON-Schema format admission."
+    },
+    "LocalJsonPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536,
+      "x-runtime-utf8-byte-limit": 65536,
+      "description": "Existing source normalized_json_path and actual no-follow capture enforce normalized portable relative .json path. Runtime byte/domain and filesystem checks are authoritative."
+    },
+    "LocalHref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536,
+      "x-runtime-utf8-byte-limit": 65536,
+      "description": "Existing source normalized-local-reference and actual importer-relative chain checks are authoritative; no rebase or rewrite."
+    },
+    "Document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "title",
+        "version",
+        "last_modified"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/WorkflowKey"
+        },
+        "title": {
+          "$ref": "#/$defs/AuthoredText"
+        },
+        "version": {
+          "$ref": "#/$defs/AuthoredText"
+        },
+        "last_modified": {
+          "$ref": "#/$defs/Timestamp"
+        }
+      }
+    },
+    "Artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact",
+        "href",
+        "expected_sha256",
+        "root_uuid",
+        "document_version",
+        "oscal_version"
+      ],
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/LocalJsonPath"
+        },
+        "href": {
+          "$ref": "#/$defs/LocalHref"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "root_uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "document_version": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "oscal_version": {
+          "enum": [
+            "1.2.0",
+            "1.2.1",
+            "1.2.2",
+            "1.2.3"
+          ]
+        }
+      }
+    },
+    "ArArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact",
+        "href",
+        "expected_sha256",
+        "root_uuid",
+        "document_version",
+        "oscal_version"
+      ],
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/LocalJsonPath"
+        },
+        "href": {
+          "$ref": "#/$defs/LocalHref"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "root_uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "document_version": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "oscal_version": {
+          "const": "1.2.3"
+        }
+      }
+    },
+    "ResultIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "uuid",
+        "key"
+      ],
+      "properties": {
+        "uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        }
+      }
+    },
+    "Context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assessment_plan",
+        "ssp",
+        "profile",
+        "catalog",
+        "evidence_index"
+      ],
+      "properties": {
+        "assessment_plan": {
+          "$ref": "#/$defs/Artifact"
+        },
+        "ssp": {
+          "$ref": "#/$defs/Artifact"
+        },
+        "profile": {
+          "$ref": "#/$defs/Artifact"
+        },
+        "catalog": {
+          "$ref": "#/$defs/Artifact"
+        },
+        "evidence_index": {
+          "type": "null"
+        }
+      }
+    },
+    "Source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assessment_results",
+        "result",
+        "context"
+      ],
+      "properties": {
+        "assessment_results": {
+          "$ref": "#/$defs/ArArtifact"
+        },
+        "result": {
+          "$ref": "#/$defs/ResultIdentity"
+        },
+        "context": {
+          "$ref": "#/$defs/Context"
+        }
+      }
+    },
+    "RiskSourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "key",
+        "uuid",
+        "result_uuid",
+        "expected_sha256"
+      ],
+      "properties": {
+        "kind": {
+          "const": "risk"
+        },
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "result_uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "Role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/WorkflowKey"
+        },
+        "title": {
+          "$ref": "#/$defs/AuthoredText"
+        }
+      }
+    },
+    "Party": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "type",
+        "name"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/WorkflowKey"
+        },
+        "type": {
+          "enum": [
+            "person",
+            "organization"
+          ]
+        },
+        "name": {
+          "$ref": "#/$defs/AuthoredText"
+        }
+      }
+    },
+    "Owner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role_id",
+        "party_key",
+        "rationale"
+      ],
+      "properties": {
+        "role_id": {
+          "$ref": "#/$defs/WorkflowKey"
+        },
+        "party_key": {
+          "$ref": "#/$defs/WorkflowKey"
+        },
+        "rationale": {
+          "$ref": "#/$defs/AuthoredText"
+        }
+      }
+    },
+    "Actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role_id",
+        "party_key"
+      ],
+      "properties": {
+        "role_id": {
+          "$ref": "#/$defs/WorkflowKey"
+        },
+        "party_key": {
+          "$ref": "#/$defs/WorkflowKey"
+        }
+      }
+    },
+    "InitialEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "actor",
+        "at",
+        "from",
+        "to",
+        "rationale",
+        "closure"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/WorkflowKey"
+        },
+        "actor": {
+          "$ref": "#/$defs/Actor"
+        },
+        "at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "from": {
+          "type": "null"
+        },
+        "to": {
+          "const": "planned"
+        },
+        "rationale": {
+          "$ref": "#/$defs/AuthoredText"
+        },
+        "closure": {
+          "type": "null"
+        }
+      }
+    },
+    "Milestone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "outcome",
+        "target_date",
+        "depends_on",
+        "owners",
+        "state",
+        "history"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/WorkflowKey"
+        },
+        "outcome": {
+          "$ref": "#/$defs/AuthoredText"
+        },
+        "target_date": {
+          "$ref": "#/$defs/FullDate"
+        },
+        "depends_on": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/WorkflowKey"
+          },
+          "uniqueItems": true
+        },
+        "owners": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/Owner"
+          }
+        },
+        "state": {
+          "const": "planned"
+        },
+        "history": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "$ref": "#/$defs/InitialEvent"
+          }
+        }
+      }
+    },
+    "WorkItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "title",
+        "description",
+        "source_refs",
+        "owners",
+        "target_date",
+        "state",
+        "history",
+        "milestones"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/WorkflowKey"
+        },
+        "title": {
+          "$ref": "#/$defs/AuthoredText"
+        },
+        "description": {
+          "$ref": "#/$defs/AuthoredText"
+        },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/RiskSourceReference"
+          }
+        },
+        "owners": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/Owner"
+          }
+        },
+        "target_date": {
+          "$ref": "#/$defs/FullDate"
+        },
+        "state": {
+          "const": "planned"
+        },
+        "history": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "$ref": "#/$defs/InitialEvent"
+          }
+        },
+        "milestones": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/Milestone"
+          }
+        }
+      }
+    },
+    "Workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "document",
+        "source",
+        "roles",
+        "parties",
+        "items"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "forge.poam/1"
+        },
+        "document": {
+          "$ref": "#/$defs/Document"
+        },
+        "source": {
+          "$ref": "#/$defs/Source"
+        },
+        "roles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/Role"
+          }
+        },
+        "parties": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/Party"
+          }
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/WorkItem"
+          }
+        }
+      }
+    },
+    "ReviewedRisk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_ref",
+        "caller_asserted_reviewed"
+      ],
+      "properties": {
+        "source_ref": {
+          "$ref": "#/$defs/RiskSourceReference"
+        },
+        "caller_asserted_reviewed": {
+          "const": true
+        }
+      }
+    }
+  }
+}

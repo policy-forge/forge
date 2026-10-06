@@ -1,7 +1,9 @@
 # PRD 060 Implementation Audit
 
-This audit maps the implementation on `codex/060-evidence-implementation-linking` to the live PRD.
-It separates executable implementation evidence from launch approvals and design-partner outcomes.
+This audit maps the native linkage implementation to the live PRD. The F09 overlay entry
+describes the open completion candidate; it does not establish merged or launch availability.
+Executable implementation evidence, model-scope decisions, independent interoperability and
+design-partner outcomes remain separate.
 
 ## Must Have
 
@@ -33,7 +35,7 @@ It separates executable implementation evidence from launch approvals and design
 |---|---|---|
 | S-1 Portfolio owner queue | Implemented | `forge linkage queue` analyzes only explicitly supplied manifests and groups stable findings by owner. |
 | S-2 PRD 057/058 references | Implemented without approval transfer | Optional `impact_finding_ids` and `policy_version_keys` are validated, sorted, and retained as metadata; they never change review status. |
-| S-3 OSCAL back-matter overlay | Correctly deferred | The PRD conditions this on demonstrated schema-valid lossless round trips for every supported model. That evidence and independent model approval do not exist, so no overlay is emitted. |
+| S-3 OSCAL back-matter overlay | F09 candidate; acceptance open | `forge linkage overlay` emits Catalog/Component JSON with complete native-value preservation, closed association records and held original-generation rechecks. Local controls exercise both models; [behavior and limits](../evidence-overlays.md) retain supported-model disposition, independent consumer interoperability and remaining F09 gates. |
 | S-4 Static HTML trace | Implemented | `--format html` renders escaped requirement-to-implementation links, evidence metadata/fingerprints, and maintenance findings. |
 
 ## Acceptance Criteria

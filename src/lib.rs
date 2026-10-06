@@ -76,6 +76,8 @@ pub mod parameter;
 pub mod parse;
 /// End-to-end policy-to-OSCAL conversion pipelines.
 pub mod pipeline;
+/// Confined POA&M scaffolding and explicit source integrity checks.
+pub mod poam;
 /// Deterministic composition of local, hash-pinned Markdown policy components.
 pub mod policy;
 pub mod reuse;
@@ -124,3 +126,6 @@ pub use validate::{
     SchemaError, ValidateError, ValidationResult, check_file_size, detect_model_type, load_schema,
     validate_artifact,
 };
+
+/// Shared confined original generations and before-growth evidence inspection budgets.
+pub(crate) mod evidence_capture;

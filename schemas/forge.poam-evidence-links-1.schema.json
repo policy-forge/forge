@@ -1,0 +1,121 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "plan_key",
+    "linkage",
+    "bindings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.poam-evidence-links/1"
+    },
+    "plan_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "linkage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact",
+        "expected_sha256",
+        "project_key"
+      ],
+      "properties": {
+        "artifact": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "expected_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "project_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        }
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Binding"
+      },
+      "minItems": 0,
+      "maxItems": 100000
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:proposed:poam-evidence-links:1",
+  "$defs": {
+    "Locator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item_key",
+        "milestone_key",
+        "event_key",
+        "assertion_evidence_key"
+      ],
+      "properties": {
+        "item_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "milestone_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "event_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "assertion_evidence_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "Binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "locator",
+        "link_key",
+        "evidence_key"
+      ],
+      "properties": {
+        "locator": {
+          "$ref": "#/$defs/Locator"
+        },
+        "link_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        },
+        "evidence_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        }
+      }
+    }
+  },
+  "$comment": "Design only, not shipped/compiled. Runtime uses UTF8 byte limits and exact trimmed/no-control/path/calendar/uniqueness rules; schema maxLength is Unicode scalar count."
+}

@@ -1,6 +1,7 @@
 //! Confined local OSCAL context loading and exact subject inventories.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::io::Write as _;
 use std::path::{Component, Path, PathBuf};
 
 use serde::Serialize;
@@ -88,11 +89,80 @@ struct LoadedArtifact {
 /// Returns an error for unsafe paths, stale identities, invalid OSCAL artifacts,
 /// inconsistent import chains, or unsupported/out-of-scope references.
 pub fn load(manifest_path: &Path, context: &ContextManifest) -> Result<LoadedContext, ForgeError> {
-    let manifest_dir = manifest_path.parent().unwrap_or_else(|| Path::new("."));
+    let manifest_dir = manifest_path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .unwrap_or_else(|| Path::new("."));
     let root = manifest_dir.canonicalize().map_err(|cause| {
         error(format!("cannot resolve manifest directory '{}': {cause}", manifest_dir.display()))
     })?;
     load_from_root(&root, context)
+}
+
+/// Validate companions from a private snapshot of previously confined captures.
+/// Original artifact paths are never reopened by this validation path.
+pub(crate) fn load_captured(
+    context: &ContextManifest,
+    captured: &BTreeMap<PathBuf, Vec<u8>>,
+) -> Result<LoadedContext, ForgeError> {
+    super::manifest::validate_context(context)?;
+    if context.evidence_index.is_some() {
+        return Err(error("captured POA&M context does not support an evidence index"));
+    }
+    let snapshot =
+        tempfile::tempdir().map_err(|_| error("cannot create private context snapshot"))?;
+    let root = snapshot
+        .path()
+        .canonicalize()
+        .map_err(|_| error("cannot resolve private context snapshot"))?;
+    let mut paths = BTreeSet::new();
+    let mut total_bytes = 0_u64;
+    for artifact in [&context.assessment_plan, &context.ssp, &context.profile, &context.catalog] {
+        let text = artifact
+            .artifact
+            .to_str()
+            .ok_or_else(|| error("captured context path must be UTF-8"))?;
+        if text.split('/').any(|part| {
+            part.is_empty()
+                || part == "."
+                || part == ".."
+                || part.contains(['\\', ':'])
+                || part.ends_with(['.', ' '])
+        }) || artifact.artifact.components().any(|part| !matches!(part, Component::Normal(_)))
+            || !paths.insert(artifact.artifact.clone())
+        {
+            return Err(error("captured context paths must be unique normalized descendants"));
+        }
+        let bytes = captured
+            .get(&artifact.artifact)
+            .ok_or_else(|| error("captured context artifact is missing"))?;
+        total_bytes += bytes.len() as u64;
+        if total_bytes > 100 * 1024 * 1024
+            || bytes.len() as u64 > io::MAX_FILE_SIZE
+            || sha256_hex(bytes) != artifact.expected_sha256
+        {
+            return Err(error("captured context artifact is oversized or stale"));
+        }
+        let destination = root.join(&artifact.artifact);
+        let parent =
+            destination.parent().ok_or_else(|| error("captured context parent is missing"))?;
+        std::fs::create_dir_all(parent)
+            .map_err(|_| error("cannot prepare private context snapshot"))?;
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(destination)
+            .map_err(|_| error("cannot create private context snapshot artifact"))?;
+        file.write_all(bytes)
+            .map_err(|_| error("cannot write private context snapshot artifact"))?;
+    }
+    let mut loaded = load_from_root(&root, context).map_err(|cause| {
+        let message = cause.to_string().replace(&root.display().to_string(), "<captured-context>");
+        error(json_strict::bounded(&message))
+    })?;
+    // Snapshot paths expire here and must never be exposed as original input identities.
+    loaded.input_paths.clear();
+    Ok(loaded)
 }
 
 /// Load and cross-check a context relative to an already resolved scaffold directory.
@@ -1045,6 +1115,26 @@ fn bounded(value: &str) -> String {
 
 fn error(message: impl Into<String>) -> ForgeError {
     ForgeError::AssessmentResultsBuild(message.into())
+}
+
+/// Borrowed context loading from the actual sealed S4 capture session.
+#[path = "context_captured.rs"]
+mod captured_context;
+
+/// Validate exact native companions without spooling, reopening or copying their raw bytes.
+///
+/// # Errors
+///
+/// Returns an error for detached/missing originals, unsupported native context,
+/// stale declared identities, inconsistent imports, scope defects or complete
+/// shared relationship/conservative local metadata bounds. The caller must retain
+/// and recheck the whole capture proof after analysis and before publication.
+pub(crate) fn load_captured_refs(
+    context: &ContextManifest,
+    captured: &BTreeMap<PathBuf, &[u8]>,
+    capture: &mut crate::evidence_capture::CaptureSession,
+) -> Result<LoadedContext, ForgeError> {
+    captured_context::load(context, captured, capture)
 }
 
 #[cfg(test)]

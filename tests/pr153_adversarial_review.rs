@@ -125,6 +125,7 @@ fn review_project_changed_after_seed_is_rejected_before_publication() {
         }
         if let Some(status) = child.try_wait().unwrap() {
             assert_eq!(status.code(), Some(2));
+            assert!(!root.join("out/reuse.json").exists(), "rejected FIFO published output");
             return;
         }
         if Instant::now() >= deadline {
@@ -134,13 +135,18 @@ fn review_project_changed_after_seed_is_rejected_before_publication() {
         }
         std::thread::sleep(Duration::from_millis(5));
     };
-    // Opening the writer establishes that reuse_seed has completed. The reader
-    // cannot finish until the corpus bytes arrive, so mutate a pin in that gap.
+    // A confined reader may briefly open the FIFO before rejecting its file
+    // type. The writer can therefore connect just before that reader closes;
+    // BrokenPipe is expected in this rejection race. Keep the exit and
+    // no-publication assertions below for both outcomes.
     std::fs::write(root.join("pack.json"), b"{}\n").unwrap();
-    pipe.write_all(&bytes).unwrap();
+    if let Err(error) = pipe.write_all(&bytes) {
+        assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe, "unexpected FIFO write error");
+    }
     drop(pipe);
     let output = child.wait_with_output().unwrap();
     let published = root.join("out/reuse.json").exists();
+    assert!(!published, "rejected FIFO or changed project published output");
     assert_eq!(
         output.status.code(),
         Some(2),

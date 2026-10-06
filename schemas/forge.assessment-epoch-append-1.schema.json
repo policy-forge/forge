@@ -1,0 +1,834 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "prior_source",
+    "next_epoch",
+    "prior_report",
+    "seed_families",
+    "new_risks"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.assessment-epoch-append/1"
+    },
+    "prior_source": {
+      "$ref": "#/$defs/Source"
+    },
+    "next_epoch": {
+      "$ref": "#/$defs/NextEpoch"
+    },
+    "prior_report": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/PriorReport"
+        }
+      ]
+    },
+    "seed_families": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/SeedFamily"
+      }
+    },
+    "new_risks": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/NewRisk"
+      }
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:assessment-epoch-append:1",
+  "$defs": {
+    "SourceKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536,
+      "x-runtime-utf8-byte-limit": 65536
+    },
+    "CanonicalUuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "Timestamp": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536,
+      "description": "Existing chrono RFC3339 parsing is authoritative; no default timestamp. This schema intentionally does not invent a stricter JSON-Schema format admission."
+    },
+    "LocalJsonPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536,
+      "x-runtime-utf8-byte-limit": 65536,
+      "description": "Existing source normalized_json_path and actual no-follow capture enforce normalized portable relative .json path. Runtime byte/domain and filesystem checks are authoritative."
+    },
+    "LocalHref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536,
+      "x-runtime-utf8-byte-limit": 65536,
+      "description": "Existing source normalized-local-reference and actual importer-relative chain checks are authoritative; no rebase or rewrite."
+    },
+    "Artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact",
+        "href",
+        "expected_sha256",
+        "root_uuid",
+        "document_version",
+        "oscal_version"
+      ],
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/LocalJsonPath"
+        },
+        "href": {
+          "$ref": "#/$defs/LocalHref"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "root_uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "document_version": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "oscal_version": {
+          "enum": [
+            "1.2.0",
+            "1.2.1",
+            "1.2.2",
+            "1.2.3"
+          ]
+        }
+      }
+    },
+    "ArArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact",
+        "href",
+        "expected_sha256",
+        "root_uuid",
+        "document_version",
+        "oscal_version"
+      ],
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/PortableJsonFilename"
+        },
+        "href": {
+          "$ref": "#/$defs/LocalHref"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "root_uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "document_version": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "oscal_version": {
+          "const": "1.2.3"
+        }
+      }
+    },
+    "ResultIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "uuid",
+        "key"
+      ],
+      "properties": {
+        "uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        }
+      }
+    },
+    "Context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assessment_plan",
+        "ssp",
+        "profile",
+        "catalog",
+        "evidence_index"
+      ],
+      "properties": {
+        "assessment_plan": {
+          "$ref": "#/$defs/Artifact"
+        },
+        "ssp": {
+          "$ref": "#/$defs/Artifact"
+        },
+        "profile": {
+          "$ref": "#/$defs/Artifact"
+        },
+        "catalog": {
+          "$ref": "#/$defs/Artifact"
+        },
+        "evidence_index": {
+          "type": "null"
+        }
+      }
+    },
+    "Source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assessment_results",
+        "result",
+        "context"
+      ],
+      "properties": {
+        "assessment_results": {
+          "$ref": "#/$defs/ArArtifact"
+        },
+        "result": {
+          "$ref": "#/$defs/ResultIdentity"
+        },
+        "context": {
+          "$ref": "#/$defs/Context"
+        }
+      }
+    },
+    "RiskSourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "key",
+        "uuid",
+        "result_uuid",
+        "expected_sha256"
+      ],
+      "properties": {
+        "kind": {
+          "const": "risk"
+        },
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "result_uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "FamilyKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "x-runtime-utf8-byte-limit": 256,
+      "description": "Exact nonempty UTF8 family key; no normalization or automatic suffix."
+    },
+    "PortableJsonFilename": {
+      "type": "string",
+      "minLength": 6,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._-]+\\.json$",
+      "description": "Single ASCII JSON leaf. Actual existing publisher admission additionally rejects reserved or ambiguous names; no filesystem authority follows from this schema."
+    },
+    "Provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assessor_key",
+        "role_id",
+        "start",
+        "end",
+        "method",
+        "rationale"
+      ],
+      "properties": {
+        "assessor_key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "role_id": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "start": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/Timestamp"
+            }
+          ]
+        },
+        "method": {
+          "enum": [
+            "EXAMINE",
+            "INTERVIEW",
+            "TEST",
+            "UNKNOWN"
+          ]
+        },
+        "rationale": {
+          "$ref": "#/$defs/SourceKey"
+        }
+      }
+    },
+    "Document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "title",
+        "version",
+        "last_modified"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "title": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "version": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "last_modified": {
+          "$ref": "#/$defs/Timestamp"
+        }
+      }
+    },
+    "Role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "title": {
+          "$ref": "#/$defs/SourceKey"
+        }
+      }
+    },
+    "Party": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "type",
+        "name"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "type": {
+          "enum": [
+            "person",
+            "organization"
+          ]
+        },
+        "name": {
+          "$ref": "#/$defs/SourceKey"
+        }
+      }
+    },
+    "Subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "uuid"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "component",
+            "inventory-item",
+            "location",
+            "party",
+            "user",
+            "resource"
+          ]
+        },
+        "uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        }
+      }
+    },
+    "Observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "title",
+        "description",
+        "provenance",
+        "subjects",
+        "task_uuids",
+        "evidence_keys"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/SourceKey"
+            }
+          ]
+        },
+        "description": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "subjects": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/Subject"
+          },
+          "uniqueItems": true
+        },
+        "task_uuids": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/CanonicalUuid"
+          },
+          "uniqueItems": true
+        },
+        "evidence_keys": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 0,
+          "items": {
+            "$ref": "#/$defs/SourceKey"
+          }
+        }
+      }
+    },
+    "FindingTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id",
+        "state",
+        "reason"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "statement-id",
+            "objective-id"
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "state": {
+          "enum": [
+            "satisfied",
+            "not-satisfied"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "enum": [
+                "pass",
+                "fail",
+                "other"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "Finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "title",
+        "description",
+        "provenance",
+        "target",
+        "implementation_statement_uuid"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "title": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "description": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "target": {
+          "$ref": "#/$defs/FindingTarget"
+        },
+        "implementation_statement_uuid": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/CanonicalUuid"
+            }
+          ]
+        }
+      }
+    },
+    "Risk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "title",
+        "description",
+        "statement",
+        "status",
+        "severity",
+        "confidence",
+        "provenance"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "title": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "description": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "statement": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "status": {
+          "enum": [
+            "open",
+            "investigating",
+            "remediating",
+            "deviation-requested",
+            "deviation-approved",
+            "closed"
+          ]
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/SourceKey"
+            }
+          ]
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          ]
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      }
+    },
+    "Endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "key"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "observation",
+            "finding",
+            "risk"
+          ]
+        },
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        }
+      }
+    },
+    "Relationship": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from",
+        "to"
+      ],
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/Endpoint"
+        },
+        "to": {
+          "$ref": "#/$defs/Endpoint"
+        }
+      }
+    },
+    "Result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "title",
+        "description",
+        "start",
+        "end",
+        "control_ids",
+        "objective_ids",
+        "observations",
+        "findings",
+        "risks",
+        "relationships"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "title": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "description": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "start": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "end": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "control_ids": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/SourceKey"
+          },
+          "uniqueItems": true
+        },
+        "objective_ids": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/SourceKey"
+          },
+          "uniqueItems": true
+        },
+        "observations": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/Observation"
+          }
+        },
+        "findings": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/Finding"
+          }
+        },
+        "risks": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/Risk"
+          }
+        },
+        "relationships": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 20000,
+          "items": {
+            "$ref": "#/$defs/Relationship"
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "NextEpoch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "document",
+        "context",
+        "roles",
+        "parties",
+        "result"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "forge.assessment-results/1"
+        },
+        "document": {
+          "$ref": "#/$defs/Document"
+        },
+        "context": {
+          "$ref": "#/$defs/Context"
+        },
+        "roles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/Role"
+          }
+        },
+        "parties": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000,
+          "items": {
+            "$ref": "#/$defs/Party"
+          }
+        },
+        "result": {
+          "$ref": "#/$defs/Result"
+        }
+      }
+    },
+    "PriorReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact",
+        "expected_sha256"
+      ],
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/PortableJsonFilename"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "SeedFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "family_key",
+        "risk",
+        "caller_asserted_continuity",
+        "provenance"
+      ],
+      "properties": {
+        "family_key": {
+          "$ref": "#/$defs/FamilyKey"
+        },
+        "risk": {
+          "$ref": "#/$defs/RiskSourceReference"
+        },
+        "caller_asserted_continuity": {
+          "const": true
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      }
+    },
+    "NewRisk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "next_key",
+        "family_key",
+        "prior",
+        "caller_asserted_continuity",
+        "provenance"
+      ],
+      "properties": {
+        "next_key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "family_key": {
+          "$ref": "#/$defs/FamilyKey"
+        },
+        "prior": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/RiskSourceReference"
+            }
+          ]
+        },
+        "caller_asserted_continuity": {
+          "const": true
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        }
+      }
+    }
+  },
+  "$comment": "Closed first same-context sealed epoch profile. No remote references. Actual raw/depth/UTF8/pre-growth bounds, capture, chronology, complete graph, context equality, report-history coupling and caller authority limits remain separately required runtime predicates."
+}

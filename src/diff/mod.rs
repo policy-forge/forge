@@ -108,6 +108,7 @@ fn load_snapshot(
     Ok((artifact_type, controls))
 }
 
+/// Admit only Catalog or Component Definition into the human-oriented diff path.
 fn to_artifact_type(json: &serde_json::Value, path: &Path) -> Result<ArtifactType, ForgeError> {
     match detect_model_type(json) {
         Ok(OscalModelType::Catalog) => Ok(ArtifactType::Catalog),
@@ -115,7 +116,8 @@ fn to_artifact_type(json: &serde_json::Value, path: &Path) -> Result<ArtifactTyp
         Ok(
             unsupported @ (OscalModelType::Profile
             | OscalModelType::SystemSecurityPlan
-            | OscalModelType::Mapping),
+            | OscalModelType::Mapping
+            | OscalModelType::Poam),
         ) => Err(ForgeError::DiffError(format!(
             "'{}': {} artifacts are not supported by diff; expected Catalog or ComponentDefinition",
             path.display(),

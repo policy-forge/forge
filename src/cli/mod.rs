@@ -282,6 +282,12 @@ pub enum Commands {
         #[command(subcommand)]
         command: AssessmentCommand,
     },
+    /// Scaffold, check exact sources, or prepare explicit nonterminal POA&M work
+    Poam {
+        /// Explicit scaffold, source-only integrity, authored check or build operation.
+        #[command(subcommand)]
+        command: PoamCommand,
+    },
 
     /// Link exact requirement and implementation subjects to evidence metadata
     Linkage {
@@ -380,6 +386,234 @@ pub enum Commands {
     },
 }
 
+/// Explicit source integrity, nonterminal workflow and read-only comparison commands.
+#[derive(Subcommand)]
+#[deny(missing_docs)]
+pub enum PoamCommand {
+    /// Pin one explicit Assessment Results result without selecting remediation
+    Init(Box<PoamInitArgs>),
+    /// Prepare explicitly authored nonterminal work and publish a new native JSON artifact
+    Build(
+        /// Explicit manifest, schedule date and new output destination declarations.
+        Box<PoamBuildArgs>,
+    ),
+    /// Compare explicit current/prior declarations without preparing a native artifact
+    Baseline(
+        /// Explicit comparison inputs, date and optional new report destination.
+        Box<PoamBaselineArgs>,
+    ),
+    /// Report every explicitly supplied native/authoring pair with optional static HTML
+    Portfolio(
+        /// Complete positional pairs, explicit date/root and new report destinations.
+        Box<PoamPortfolioArgs>,
+    ),
+    /// Prepare an explicit minimized local change set from an actual native workflow original
+    Outbound(
+        /// Explicit authoring/native pair, closed item intents, date/root and new report destination.
+        Box<PoamOutboundArgs>,
+    ),
+    /// Inspect complete closure references against freshly captured local evidence metadata
+    Evidence(
+        /// Explicit plan, linkage bindings, date and optional new JSON report destination.
+        Box<PoamEvidenceArgs>,
+    ),
+    /// Check explicitly acknowledged source-only or authored workflow scope
+    Check {
+        /// Closed forge.poam/1 manifest for the explicitly selected scope
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Acknowledge that this check covers source integrity only
+        #[arg(long, conflicts_with_all = ["workflow", "as_of", "due_soon_days", "baseline", "report"], required_unless_present = "workflow")]
+        source_only: bool,
+        /// Check authored nonterminal workflow, dates and exact source selection
+        #[arg(long, conflicts_with = "source_only")]
+        workflow: bool,
+        /// Required canonical full date for workflow scheduling; never inferred from the clock
+        #[arg(long, requires = "workflow", required_if_eq("workflow", "true"))]
+        as_of: Option<String>,
+        /// Inclusive due-soon interval in days; omitted workflow interval is zero
+        #[arg(long, requires = "workflow", value_parser = clap::value_parser!(u16).range(0..=365))]
+        due_soon_days: Option<u16>,
+        /// Optional prior authoring JSON as a confined descendant of the manifest directory
+        #[arg(long, requires = "workflow")]
+        baseline: Option<PathBuf>,
+        /// New report filename in the manifest directory; omitted reports go to stdout
+        #[arg(long, requires = "workflow")]
+        report: Option<PathBuf>,
+        /// Minimized source inventory or authored schedule format for the selected scope
+        #[arg(long, value_enum, default_value_t = AuthorReportFormat::Text)]
+        format: AuthorReportFormat,
+    },
+}
+
+/// Explicit read-only local evidence inspection inputs and new report declaration.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct PoamEvidenceArgs {
+    /// Current authoring manifest; its directory confines all actual inspection originals
+    #[arg(long)]
+    pub manifest: PathBuf,
+    /// Explicit closed evidence-binding JSON as a descendant of the plan directory
+    #[arg(long)]
+    pub links: PathBuf,
+    /// Canonical explicit calendar date for current evidence freshness; no clock default
+    #[arg(long)]
+    pub as_of: String,
+    /// Optional new portable JSON filename in the plan directory; otherwise complete stdout
+    #[arg(long)]
+    pub report: Option<PathBuf>,
+}
+
+/// Explicit local native handoff inputs, preparation date and new output declarations.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct PoamOutboundArgs {
+    /// Explicit current authoring manifest; its directory confines native and selection originals
+    #[arg(long)]
+    pub manifest: PathBuf,
+    /// One supplied native .json filename beside the authoring manifest
+    #[arg(long)]
+    pub native: PathBuf,
+    /// One explicit closed item-intent selection .json filename beside the manifest
+    #[arg(long)]
+    pub selection: PathBuf,
+    /// Canonical explicit preparation date; no wall-clock default or state reconstruction
+    #[arg(long)]
+    pub as_of: String,
+    /// Inclusive schedule interval used by actual native preparation; omitted interval is zero
+    #[arg(long, default_value_t = 0, value_parser = clap::value_parser!(u16).range(0..=365))]
+    pub due_soon_days: u16,
+    /// Explicit existing output directory; input native hrefs are never rebased
+    #[arg(long)]
+    pub output_root: PathBuf,
+    /// Optional new .json report filename under output-root; otherwise complete JSON goes to stdout
+    #[arg(long)]
+    pub report: Option<PathBuf>,
+}
+
+/// Explicit supplied native/authoring companions, date and report publication declarations.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct PoamPortfolioArgs {
+    /// Explicit authoring manifests, paired in order with repeated native filenames
+    #[arg(long, required = true, action = clap::ArgAction::Append)]
+    pub manifest: Vec<PathBuf>,
+    /// Explicit native .json filenames beside each corresponding authoring manifest
+    #[arg(long, required = true, action = clap::ArgAction::Append)]
+    pub native: Vec<PathBuf>,
+    /// Canonical explicit as-of full date; no wall-clock default
+    #[arg(long)]
+    pub as_of: String,
+    /// Inclusive due-soon interval; zero includes rows due on as-of
+    #[arg(long, default_value_t = 0, value_parser = clap::value_parser!(u16).range(0..=365))]
+    pub due_soon_days: u16,
+    /// Explicit existing output directory; JSON/HTML hrefs remain original-bundle display text
+    #[arg(long)]
+    pub output_root: PathBuf,
+    /// Optional new .json report filename in output-root; otherwise complete JSON goes to stdout
+    #[arg(long)]
+    pub report: Option<PathBuf>,
+    /// Optional new .html filename in output-root, rendered from the same complete report
+    #[arg(long)]
+    pub html: Option<PathBuf>,
+}
+
+/// Explicit bounded read-only baseline comparison inputs and optional report output.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct PoamBaselineArgs {
+    /// Current declaration; its canonical directory confines every input and report
+    #[arg(long)]
+    pub manifest: PathBuf,
+    /// Explicit prior declaration relative to the current manifest directory
+    #[arg(long)]
+    pub baseline: PathBuf,
+    /// Canonical explicit comparison date; no wall-clock default
+    #[arg(long)]
+    pub as_of: String,
+    /// Optional closed proposed-reopening array; grants no native build authority
+    #[arg(long)]
+    pub reopens: Option<PathBuf>,
+    /// Optional new report filename in the current manifest directory; otherwise stdout
+    #[arg(long)]
+    pub report: Option<PathBuf>,
+    /// Complete minimized JSON or printable ASCII text report
+    #[arg(long, value_enum, default_value_t = AuthorReportFormat::Json)]
+    pub format: AuthorReportFormat,
+}
+
+/// Explicit authoring inputs and new destinations for the nonterminal POA&M producer.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct PoamBuildArgs {
+    /// Confined authored manifest; its directory is the immutable relative-link base
+    #[arg(long)]
+    pub manifest: PathBuf,
+    /// Canonical explicit full date for schedule evaluation; no wall-clock default
+    #[arg(long)]
+    pub as_of: String,
+    /// Inclusive due-soon interval; zero still includes records due exactly on as-of
+    #[arg(long, default_value_t = 0, value_parser = clap::value_parser!(u16).range(0..=365))]
+    pub due_soon_days: u16,
+    /// Optional prior authoring JSON as a confined descendant of the manifest directory
+    #[arg(long)]
+    pub baseline: Option<PathBuf>,
+    /// Required new .json filename in the manifest directory, preserving all native href bases
+    #[arg(long)]
+    pub output: PathBuf,
+    /// Optional new report filename in the same directory; omitted report goes to stdout
+    #[arg(long)]
+    pub report: Option<PathBuf>,
+    /// Minimized schedule report format; native output remains OSCAL JSON
+    #[arg(long, value_enum, default_value_t = AuthorReportFormat::Json)]
+    pub format: AuthorReportFormat,
+}
+
+/// Explicit input and document identity for a zero-selection POA&M scaffold.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct PoamInitArgs {
+    /// Confined bundle directory; all artifact paths are relative descendants
+    #[arg(long, default_value = ".")]
+    pub root: PathBuf,
+    /// Local FORGE Assessment Results JSON
+    #[arg(long)]
+    pub assessment_results: PathBuf,
+    /// Local Assessment Plan referenced by the Assessment Results
+    #[arg(long)]
+    pub assessment_plan: PathBuf,
+    /// Local System Security Plan referenced by the Assessment Plan
+    #[arg(long)]
+    pub ssp: PathBuf,
+    /// Local Profile referenced by the System Security Plan
+    #[arg(long)]
+    pub profile: PathBuf,
+    /// Local Catalog imported by the Profile
+    #[arg(long)]
+    pub catalog: PathBuf,
+    /// Exact selected source result UUID
+    #[arg(long)]
+    pub result_uuid: String,
+    /// Exact selected FORGE result stable key
+    #[arg(long)]
+    pub result_key: String,
+    /// Immutable local plan key
+    #[arg(long)]
+    pub document_key: String,
+    /// Explicit scaffold document title
+    #[arg(long)]
+    pub title: String,
+    /// Explicit scaffold document version
+    #[arg(long)]
+    pub document_version: String,
+    /// Explicit RFC3339 document timestamp; never taken from the clock
+    #[arg(long)]
+    pub last_modified: String,
+    /// New manifest filename in the bundle root; existing files are preserved
+    #[arg(long)]
+    pub output: Option<PathBuf>,
+}
+
 /// OSCAL assessment workflow commands.
 #[derive(Subcommand)]
 pub enum AssessmentCommand {
@@ -393,6 +627,39 @@ pub enum AssessmentCommand {
 /// Human-authored OSCAL Assessment Results commands.
 #[derive(Subcommand)]
 pub enum AssessmentResultsCommand {
+    /// Append one sealed assessment epoch with explicit caller-asserted risk continuity
+    AppendEpoch {
+        /// Closed request JSON; its actual parent confines all captured inputs and outputs
+        #[arg(long)]
+        request: PathBuf,
+        /// Required new single JSON filename for native Assessment Results
+        #[arg(long)]
+        output: PathBuf,
+        /// Required new single JSON filename for the complete continuity companion
+        #[arg(long)]
+        report: PathBuf,
+        /// Optional complete report view on stdout after both files are published
+        #[arg(long, value_enum)]
+        view_format: Option<AssessmentResultsReportFormat>,
+        /// Whether a valid append with review actions produces exit status 1
+        #[arg(long, value_enum, default_value = "any")]
+        fail_on: AssessmentResultsFailOn,
+    },
+    /// Export explicitly reviewed risks into a complete caller-authored POA&M workflow
+    ExportPoam {
+        /// Actual existing empty POA&M scaffold defining the fixed source root
+        #[arg(long)]
+        scaffold: PathBuf,
+        /// Closed reviewed-risk authoring JSON relative to the scaffold root
+        #[arg(long)]
+        authoring: PathBuf,
+        /// Explicit Gregorian date in canonical YYYY-MM-DD form
+        #[arg(long)]
+        as_of: String,
+        /// Optional new single JSON filename in the scaffold's parent directory
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
     /// Scaffold a context-bound manifest without observations, findings, or risks
     Init {
         /// Local OSCAL Assessment Plan JSON
@@ -428,7 +695,9 @@ pub enum AssessmentResultsCommand {
         /// Review report format
         #[arg(long, value_enum, default_value = "text")]
         report_format: AssessmentResultsReportFormat,
-        /// Prior FORGE Assessment Results JSON used for revision impact analysis
+        /// Prior one-result FORGE Assessment Results JSON used for revision impact analysis
+        ///
+        /// Multiple result epochs are invalid input, including with --fail-on never.
         #[arg(long)]
         baseline: Option<PathBuf>,
         /// Whether valid baseline review actions produce exit status 1
@@ -445,7 +714,7 @@ pub enum AssessmentResultsReportFormat {
     Html,
 }
 
-/// Baseline review gate for Assessment Results revisions.
+/// Exit gate for descriptive Assessment Results review actions.
 #[derive(ValueEnum, Clone, Debug, PartialEq, Eq)]
 pub enum AssessmentResultsFailOn {
     Any,
@@ -548,6 +817,21 @@ pub enum LinkageCommand {
         /// Write the scaffold atomically instead of stdout
         #[arg(long)]
         output: Option<PathBuf>,
+    },
+    /// Create a complete Catalog or Component evidence overlay in a new JSON file
+    Overlay {
+        /// Versioned linkage manifest whose parent confines every original input
+        #[arg(long)]
+        manifest: PathBuf,
+        /// Exact declared Catalog or Component resource key to annotate
+        #[arg(long)]
+        target_resource: String,
+        /// Explicit canonical date used for all freshness observations (YYYY-MM-DD)
+        #[arg(long)]
+        as_of: String,
+        /// New portable root-relative JSON path in the selected target's existing directory
+        #[arg(long)]
+        output: PathBuf,
     },
     /// Build a deterministic linkage index and optional maintenance report
     Build {
@@ -1360,6 +1644,8 @@ pub enum SchemaType {
     SystemSecurityPlan,
     /// Validate against the OSCAL Control Mapping schema.
     Mapping,
+    /// Validate a native OSCAL Plan of Action and Milestones.
+    Poam,
 }
 
 /// Raw convert-command arguments captured from clap before resolution.
@@ -1674,8 +1960,114 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                 }
             }
         },
+        Commands::Poam { command } => match command {
+            PoamCommand::Init(args) => crate::poam::execute_init(args),
+            PoamCommand::Build(args) => {
+                if crate::poam::workflow_cli::execute_build(args)? {
+                    Err(ForgeError::PoamActionRequired)
+                } else {
+                    Ok(())
+                }
+            }
+            PoamCommand::Outbound(args) => crate::poam::workflow_outbound_cli::execute(args),
+            PoamCommand::Evidence(args) => {
+                if crate::poam::workflow_evidence_cli::execute(args)? {
+                    Err(ForgeError::PoamActionRequired)
+                } else {
+                    Ok(())
+                }
+            }
+            PoamCommand::Portfolio(args) => {
+                if crate::poam::portfolio_cli::execute(args)? {
+                    Err(ForgeError::PoamActionRequired)
+                } else {
+                    Ok(())
+                }
+            }
+            PoamCommand::Baseline(args) => {
+                if crate::poam::workflow_cli::execute_baseline(args)? {
+                    Err(ForgeError::PoamActionRequired)
+                } else {
+                    Ok(())
+                }
+            }
+            PoamCommand::Check {
+                manifest,
+                source_only,
+                workflow,
+                as_of,
+                due_soon_days,
+                baseline,
+                report,
+                format,
+            } => {
+                if *source_only {
+                    if *workflow
+                        || as_of.is_some()
+                        || due_soon_days.is_some()
+                        || baseline.is_some()
+                        || report.is_some()
+                    {
+                        return Err(ForgeError::PoamBuild(
+                            "source-only acknowledgement cannot be combined with workflow options"
+                                .to_string(),
+                        ));
+                    }
+                    crate::poam::execute_source_check(manifest, *format)
+                } else if *workflow {
+                    let as_of = as_of.as_deref().ok_or_else(|| {
+                        ForgeError::PoamBuild(
+                            "workflow check requires explicit canonical --as-of".to_string(),
+                        )
+                    })?;
+                    if crate::poam::workflow_cli::execute_check(
+                        manifest,
+                        as_of,
+                        due_soon_days.unwrap_or(0),
+                        baseline.as_deref(),
+                        report.as_deref(),
+                        *format,
+                    )? {
+                        Err(ForgeError::PoamActionRequired)
+                    } else {
+                        Ok(())
+                    }
+                } else {
+                    Err(ForgeError::PoamBuild(
+                        "POA&M foundation check requires explicit --source-only acknowledgement or --workflow scope".to_string(),
+                    ))
+                }
+            }
+        },
         Commands::Assessment { command } => match command {
             AssessmentCommand::Results { command } => match command {
+                AssessmentResultsCommand::AppendEpoch {
+                    request,
+                    output,
+                    report,
+                    view_format,
+                    fail_on,
+                } => {
+                    if crate::poam::assessment_epochs_cli::execute(
+                        request,
+                        output,
+                        report,
+                        view_format.as_ref(),
+                        fail_on,
+                    )? {
+                        Err(ForgeError::AssessmentResultsReviewRequired)
+                    } else {
+                        Ok(())
+                    }
+                }
+                AssessmentResultsCommand::ExportPoam { scaffold, authoring, as_of, output } => {
+                    crate::poam::risk_authoring_cli::execute(
+                        scaffold,
+                        authoring,
+                        as_of,
+                        output.as_deref(),
+                    )
+                }
                 AssessmentResultsCommand::Init {
                     assessment_plan,
                     ssp,
@@ -1723,6 +2115,10 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                         implementation,
                         output.as_deref(),
                     )?;
+                    false
+                }
+                LinkageCommand::Overlay { manifest, target_resource, as_of, output } => {
+                    crate::linkage::overlay_cli::execute(manifest, target_resource, as_of, output)?;
                     false
                 }
                 LinkageCommand::Build {

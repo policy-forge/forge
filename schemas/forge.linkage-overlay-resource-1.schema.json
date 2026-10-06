@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:linkage-overlay-resource:1",
+  "title": "Proposed exact generated resource property wrapper",
+  "description": "Only a newly generated resource. Existing original resources are not validated against this narrower profile. record value is separately strict-decoded and checked against record.schema.json; JSON Schema cannot decode the embedded JSON string itself.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "uuid",
+    "props"
+  ],
+  "properties": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "props": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "ns",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "profile"
+            },
+            "ns": {
+              "const": "https://policy-forge.github.io/ns/linkage-overlay/1"
+            },
+            "value": {
+              "const": "forge.linkage-overlay/1"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "ns",
+            "value"
+          ],
+          "properties": {
+            "name": {
+              "const": "record"
+            },
+            "ns": {
+              "const": "https://policy-forge.github.io/ns/linkage-overlay/1"
+            },
+            "value": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 10485760,
+              "pattern": "^\\{[^\\r\\n]*\\}$",
+              "x-runtime-complete-strict-json-schema": "record.schema.json",
+              "x-runtime-utf8-bytes-max": 10485760
+            }
+          }
+        }
+      ],
+      "items": false
+    }
+  }
+}

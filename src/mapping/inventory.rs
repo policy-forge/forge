@@ -77,6 +77,14 @@ impl Inventory {
         self.excerpts.get(&subject_type).and_then(|excerpts| excerpts.get(id)).map(String::as_str)
     }
 
+    /// Borrow native subject IDs without cloning a complete inventory before projection admission.
+    pub(crate) fn ids_of_type_refs(&self, subject_type: SubjectType) -> impl Iterator<Item = &str> {
+        self.subjects
+            .get(&subject_type)
+            .into_iter()
+            .flat_map(|subjects| subjects.keys().map(String::as_str))
+    }
+
     #[must_use]
     pub fn ids_of_type(&self, subject_type: SubjectType) -> BTreeSet<String> {
         self.subjects
@@ -597,6 +605,132 @@ fn bounded(value: &str) -> String {
 
 fn mapping_error(message: impl Into<String>) -> ForgeError {
     ForgeError::MappingBuild(message.into())
+}
+
+/// Validate and inventory previously confined original bytes without reopening native artifact paths.
+///
+/// Complete native inventory relationships are pre-admitted before native maps grow.
+/// Original schema/model/hash/companion/inventory predicates remain the existing loader profile.
+/// # Errors
+/// Refuses malformed, schema-invalid, stale or overbound captured native resources.
+pub(crate) fn load_captured(
+    manifest_dir: &Path,
+    path_label: &str,
+    resource: &ResourceManifest,
+    bytes: &[u8],
+    captured_companion: Option<&[u8]>,
+    capture: &mut crate::evidence_capture::CaptureSession,
+) -> Result<LoadedResource, ForgeError> {
+    let artifact_path = manifest_dir.join(&resource.artifact);
+    if bytes.len() as u64 > io::MAX_FILE_SIZE {
+        return Err(mapping_error("captured requirement resource exceeds its input bound"));
+    }
+    let raw_sha256 = sha256_hex(bytes);
+    if let Some(expected) = &resource.expected_sha256
+        && expected != &raw_sha256
+    {
+        return Err(mapping_error(format!(
+            "{path_label}.expected_sha256 mismatch: expected {expected}, got {raw_sha256}"
+        )));
+    }
+    let json: Value = serde_json::from_slice(bytes).map_err(|error| {
+        mapping_error(format!("{path_label}.artifact is not valid JSON: {error}"))
+    })?;
+    let expected_model = match resource.resource_type {
+        ResourceType::Catalog => OscalModelType::Catalog,
+        ResourceType::Profile => OscalModelType::Profile,
+    };
+    let detected = validate::detect_model_type(&json)
+        .map_err(|error| mapping_error(format!("{path_label}.artifact: {error}")))?;
+    if detected != expected_model {
+        return Err(mapping_error(format!(
+            "{path_label}.type declares '{}' but artifact root is '{}'",
+            resource.resource_type.as_str(),
+            detected.as_str()
+        )));
+    }
+    validate_schema(path_label, &json, expected_model)?;
+    let mut evidence = extract_evidence(path_label, resource, &json, raw_sha256)?;
+
+    let inventory = if resource.resource_type == ResourceType::Profile {
+        let companion = resource.resolved_catalog.as_ref().ok_or_else(|| {
+            mapping_error(format!("{path_label}.resolved_catalog is required for a Profile"))
+        })?;
+        let _companion_path = manifest_dir.join(companion);
+        let companion_bytes = captured_companion
+            .ok_or_else(|| mapping_error("captured Profile companion is required"))?;
+        if companion_bytes.len() as u64 > io::MAX_FILE_SIZE {
+            return Err(mapping_error("captured Catalog companion exceeds its input bound"));
+        }
+        let resolved_catalog_sha256 = sha256_hex(companion_bytes);
+        let expected_resolved_catalog_sha256 =
+            resource.expected_resolved_catalog_sha256.as_ref().ok_or_else(|| {
+                mapping_error(format!(
+                    "{path_label}.expected_resolved_catalog_sha256 is required for a Profile"
+                ))
+            })?;
+        if expected_resolved_catalog_sha256 != &resolved_catalog_sha256 {
+            return Err(mapping_error(format!(
+                "{path_label}.expected_resolved_catalog_sha256 mismatch: expected {expected_resolved_catalog_sha256}, got {resolved_catalog_sha256}"
+            )));
+        }
+        evidence.resolved_catalog_sha256 = Some(resolved_catalog_sha256);
+        let companion_json: Value = serde_json::from_slice(companion_bytes).map_err(|error| {
+            mapping_error(format!("{path_label}.resolved_catalog is not valid JSON: {error}"))
+        })?;
+        let detected = validate::detect_model_type(&companion_json)
+            .map_err(|error| mapping_error(format!("{path_label}.resolved_catalog: {error}")))?;
+        if detected != OscalModelType::Catalog {
+            return Err(mapping_error(format!(
+                "{path_label}.resolved_catalog must contain a Catalog root"
+            )));
+        }
+        validate_schema(path_label, &companion_json, OscalModelType::Catalog)?;
+        admit_captured_catalog(&companion_json, capture)?;
+        inventory_catalog(path_label, &companion_json)?
+    } else {
+        admit_captured_catalog(&json, capture)?;
+        inventory_catalog(path_label, &json)?
+    };
+
+    if let Some(expected) = &resource.inventory {
+        let actual = LoadedResource::build_snapshot(&evidence, &inventory);
+        if expected != &actual {
+            return Err(mapping_error(format!(
+                "{path_label}.inventory no longer matches the supplied resource; regenerate or review the manifest"
+            )));
+        }
+    }
+    Ok(LoadedResource { path: artifact_path, evidence, inventory })
+}
+
+/// Admit every native Catalog group/control/part before the existing inventory builds maps.
+fn admit_captured_catalog(
+    value: &Value,
+    capture: &mut crate::evidence_capture::CaptureSession,
+) -> Result<(), ForgeError> {
+    let root =
+        value.get("catalog").ok_or_else(|| mapping_error("captured inventory requires Catalog"))?;
+    admit_captured_nodes(root.get("groups"), 0, capture)?;
+    admit_captured_nodes(root.get("controls"), 0, capture)
+}
+
+/// Walk borrowed native nodes with existing depth bound and one whole relationship pool before growth.
+fn admit_captured_nodes(
+    value: Option<&Value>,
+    depth: usize,
+    capture: &mut crate::evidence_capture::CaptureSession,
+) -> Result<(), ForgeError> {
+    if let Some(nodes) = value.and_then(Value::as_array) {
+        enforce_depth("captured requirement inventory", depth)?;
+        for node in nodes {
+            capture.relationships(1)?;
+            for key in ["groups", "controls", "parts"] {
+                admit_captured_nodes(node.get(key), depth + 1, capture)?;
+            }
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

@@ -1,0 +1,671 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:linkage-overlay-record:1",
+  "title": "Proposed closed forge.linkage-overlay/1 decoded record",
+  "description": "Engineering proposal, not an accepted native interoperability profile. Structural shape only; exact source equality, calendar validity, complete membership, stable UUIDs and paired cross-record predicates require consumed producer/reader checks. Character limits are not UTF-8 byte bounds.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Provenance"
+    },
+    {
+      "$ref": "#/$defs/Link"
+    },
+    {
+      "$ref": "#/$defs/Evidence"
+    }
+  ],
+  "$defs": {
+    "Key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 16384,
+      "pattern": "\\S",
+      "x-runtime-utf8-bytes-max": 16384,
+      "x-runtime-exact-source-value": true
+    },
+    "SourceText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 10485760,
+      "x-runtime-shared-projection-bound": 10485760,
+      "x-runtime-exact-source-value": true
+    },
+    "Uuid": {
+      "type": "string",
+      "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[45][0-9A-Fa-f]{3}-[89ABab][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}$",
+      "minLength": 36,
+      "maxLength": 36
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "AsOf": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+      "minLength": 10,
+      "maxLength": 10,
+      "x-runtime-real-calendar-required": true
+    },
+    "RecordedDate": {
+      "type": "string",
+      "pattern": "^(?:[0-9]{4}|-[0-9]{4,6}|\\+[0-9]{5,6})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+      "maxLength": 13,
+      "x-runtime-exact-native-naive-date-serialization": true
+    },
+    "U64": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 18446744073709551615
+    },
+    "ObservedSize": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 52428800
+    },
+    "RequirementSubject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resource_key",
+        "side",
+        "type",
+        "id",
+        "sha256"
+      ],
+      "properties": {
+        "resource_key": {
+          "$ref": "#/$defs/Key"
+        },
+        "side": {
+          "const": "requirement"
+        },
+        "type": {
+          "enum": [
+            "control",
+            "statement"
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/Key"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "ImplementationSubject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resource_key",
+        "side",
+        "type",
+        "id",
+        "sha256"
+      ],
+      "properties": {
+        "resource_key": {
+          "$ref": "#/$defs/Key"
+        },
+        "side": {
+          "const": "implementation"
+        },
+        "type": {
+          "enum": [
+            "implemented-requirement",
+            "statement"
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/Key"
+        },
+        "sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "Source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "side",
+        "resource_key",
+        "model",
+        "root_uuid",
+        "raw_sha256",
+        "document_version",
+        "oscal_version",
+        "resolved_catalog_sha256"
+      ],
+      "properties": {
+        "side": {
+          "enum": [
+            "requirement",
+            "implementation"
+          ]
+        },
+        "resource_key": {
+          "$ref": "#/$defs/Key"
+        },
+        "model": {
+          "enum": [
+            "catalog",
+            "profile",
+            "component-definition",
+            "system-security-plan"
+          ]
+        },
+        "root_uuid": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "document_version": {
+          "$ref": "#/$defs/SourceText"
+        },
+        "oscal_version": {
+          "$ref": "#/$defs/SourceText"
+        },
+        "resolved_catalog_sha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "side": {
+                "const": "requirement"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "model": {
+                "enum": [
+                  "catalog",
+                  "profile"
+                ]
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "model": {
+                "enum": [
+                  "component-definition",
+                  "system-security-plan"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "model": {
+                "const": "profile"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "resolved_catalog_sha256": {
+                "$ref": "#/$defs/Sha256"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "resolved_catalog_sha256": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resource_key",
+        "side",
+        "model",
+        "root_uuid",
+        "raw_sha256",
+        "document_version",
+        "oscal_version"
+      ],
+      "properties": {
+        "resource_key": {
+          "$ref": "#/$defs/Key"
+        },
+        "side": {
+          "enum": [
+            "requirement",
+            "implementation"
+          ]
+        },
+        "model": {
+          "enum": [
+            "catalog",
+            "component-definition"
+          ]
+        },
+        "root_uuid": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "raw_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "document_version": {
+          "$ref": "#/$defs/SourceText"
+        },
+        "oscal_version": {
+          "$ref": "#/$defs/SourceText"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "model": {
+                "const": "catalog"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "side": {
+                "const": "requirement"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "side": {
+                "const": "implementation"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "Provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "schema_version",
+        "project_key",
+        "as_of",
+        "manifest_sha256",
+        "target",
+        "sources",
+        "link_count",
+        "evidence_count",
+        "authority"
+      ],
+      "properties": {
+        "kind": {
+          "const": "provenance"
+        },
+        "schema_version": {
+          "const": "forge.linkage-overlay/1"
+        },
+        "project_key": {
+          "$ref": "#/$defs/Key"
+        },
+        "as_of": {
+          "$ref": "#/$defs/AsOf"
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 65,
+          "items": {
+            "$ref": "#/$defs/Source"
+          }
+        },
+        "link_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "evidence_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000
+        },
+        "authority": {
+          "const": "association-only"
+        }
+      }
+    },
+    "EvidencePair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "resource_uuid"
+      ],
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/Key"
+        },
+        "resource_uuid": {
+          "$ref": "#/$defs/Uuid"
+        }
+      }
+    },
+    "RecordedReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer_key",
+        "reviewed_at"
+      ],
+      "properties": {
+        "reviewer_key": {
+          "$ref": "#/$defs/Key"
+        },
+        "reviewed_at": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384,
+          "x-runtime-rfc3339-and-exact-source-equality": true
+        }
+      }
+    },
+    "Link": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "provenance_uuid",
+        "link_key",
+        "link_id",
+        "requirements",
+        "implementations",
+        "evidence",
+        "evidence_required",
+        "recorded_implementation_status",
+        "recorded_review"
+      ],
+      "properties": {
+        "kind": {
+          "const": "link"
+        },
+        "provenance_uuid": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "link_key": {
+          "$ref": "#/$defs/Key"
+        },
+        "link_id": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "requirements": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/RequirementSubject"
+          }
+        },
+        "implementations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/ImplementationSubject"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/EvidencePair"
+          }
+        },
+        "evidence_required": {
+          "type": "boolean"
+        },
+        "recorded_implementation_status": {
+          "enum": [
+            "planned",
+            "partial",
+            "implemented",
+            "not-applicable",
+            "unknown"
+          ]
+        },
+        "recorded_review": {
+          "$ref": "#/$defs/RecordedReview"
+        }
+      }
+    },
+    "LocalReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "approved_sha256",
+        "approved_size",
+        "observed_sha256",
+        "observed_size"
+      ],
+      "properties": {
+        "kind": {
+          "const": "local"
+        },
+        "approved_sha256": {
+          "$ref": "#/$defs/Sha256"
+        },
+        "approved_size": {
+          "$ref": "#/$defs/U64"
+        },
+        "observed_sha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observed_size": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ObservedSize"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "UriReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "expected_sha256"
+      ],
+      "properties": {
+        "kind": {
+          "const": "uri"
+        },
+        "expected_sha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "provenance_uuid",
+        "evidence_key",
+        "freshness",
+        "recorded_valid_through",
+        "reference"
+      ],
+      "properties": {
+        "kind": {
+          "const": "evidence"
+        },
+        "provenance_uuid": {
+          "$ref": "#/$defs/Uuid"
+        },
+        "evidence_key": {
+          "$ref": "#/$defs/Key"
+        },
+        "freshness": {
+          "enum": [
+            "current",
+            "expiring",
+            "expired",
+            "changed",
+            "unavailable",
+            "unverified-uri"
+          ]
+        },
+        "recorded_valid_through": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RecordedDate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/LocalReference"
+            },
+            {
+              "$ref": "#/$defs/UriReference"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "reference": {
+                "properties": {
+                  "kind": {
+                    "const": "uri"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "freshness": {
+                "const": "unverified-uri"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "freshness": {
+                "enum": [
+                  "current",
+                  "expiring",
+                  "expired",
+                  "changed",
+                  "unavailable"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "freshness": {
+                "const": "unavailable"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reference": {
+                "properties": {
+                  "observed_sha256": {
+                    "type": "null"
+                  },
+                  "observed_size": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "if": {
+              "properties": {
+                "reference": {
+                  "properties": {
+                    "kind": {
+                      "const": "local"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "reference": {
+                  "properties": {
+                    "observed_sha256": {
+                      "$ref": "#/$defs/Sha256"
+                    },
+                    "observed_size": {
+                      "$ref": "#/$defs/ObservedSize"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

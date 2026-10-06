@@ -1,0 +1,9 @@
+# F04 hosted rejection detail — 2026-10-04
+
+At requested head `2f452541dbad44b52fc2569c36ae1df0d1fee858`, [run 37242989998, job 111555235591](https://github.com/policy-forge/forge/actions/runs/37242989998/job/111555235591) tested merge `76189d75334c9394f00badb26e625c321e9136aa`. GitHub commit readback confirms ordered parents `58422646deacc8abefca40b9dfe0080e5888c024` and that requested head. The [inspection record](2026-10-04-f04-rejection-detail-hosted-v1.json) retains full records, archive/member digests and selected source equality against both the authenticated tested tree and requested-head Git blobs.
+
+All **22/22 protected synthetic filesystem controls passed**, with exact IDs, no skips/failures, normal reaping, closed output, verified ownership and removed fixtures. These controls do not qualify the production stdlib or runtime denial. The release build passed; the actual prerequisite job failed. Its primary receipt remains incomplete with `tool-untrusted`, `stdlib-entry/unsupported-link`, no producer execution, verified-not-created cleanup and unmeasured egress.
+
+The new separately published sidecar binds that exact primary receipt and unchanged engine/source inputs. It records **`target-not-in-inventory`**: the lexically collapsed target spelling is in neither regular-file nor link inventory, before target traversal/stat. This is not evidence of which actual object caused the rejection, whether it exists, or whether it is a directory, external or untrusted. The older stat observer remained unavailable. No policy, trust, ownership, quota, producer or acceptance predicate was relaxed.
+
+Runtime IP-denial/attempted-egress, bootstrap/loaded-byte trust, remaining platform/browser work, audits, human acceptance and full-goal final documentation remain open. Historical failed and passing receipts are preserved byte for byte.

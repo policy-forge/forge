@@ -1,5 +1,9 @@
 # OSCAL Assessment Results
 
+For the separate same-context multi-result append command, see
+[sealed assessment epochs](assessment-results-epochs.md). The one-result build
+and baseline interface below retains its existing scope.
+
 `forge assessment results` packages explicit assessor-authored conclusions into
 OSCAL 1.2.3 Assessment Results JSON. FORGE validates structure, exact local
 artifact identities, scope, references, and graph integrity. It does not run
@@ -69,6 +73,15 @@ comparison uses stable identities and reports object additions/removals,
 content/rationale/status changes, stale references, and changed upstream
 fingerprints. Text, JSON, and static HTML reports share the same deterministic,
 content-minimizing model.
+
+A baseline must contain exactly one native result epoch. A schema-valid plural
+`results` array is unsupported input and exits `2` before an artifact or report
+is written, or an artifact is published to stdout. Existing output files remain
+unchanged. `--fail-on never` applies only to valid comparison actions; it does
+not permit a plural baseline. This matches the current one-result manifest and
+report identity contract. The separate [sealed append command](assessment-results-epochs.md) implements
+a bounded first PRD 063 S-4 profile. Broader assessment workflows, representative
+workflow validation, interoperability and recorded owner acceptance remain open.
 
 `--report-format` controls an explicitly requested `--report` file. When a
 baseline is supplied without `--report`, FORGE writes the review summary to

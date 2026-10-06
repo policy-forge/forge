@@ -145,12 +145,14 @@ fn output_format_label(format: crate::types::OutputFormat) -> &'static str {
     }
 }
 
+/// Report the explicit validation schema selector without introducing an export capability.
 fn schema_type_label(schema_type: &crate::cli::SchemaType) -> &'static str {
     match schema_type {
         crate::cli::SchemaType::Catalog => "catalog",
         crate::cli::SchemaType::ComponentDefinition => "component-definition",
         crate::cli::SchemaType::SystemSecurityPlan => "system-security-plan",
         crate::cli::SchemaType::Mapping => "mapping",
+        crate::cli::SchemaType::Poam => "poam",
     }
 }
 

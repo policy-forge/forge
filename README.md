@@ -47,14 +47,14 @@ MCP Native: Designed to feed into the Model Context Protocol (MCP), allowing age
 ## ✨ Features
 
 - **Markdown to OSCAL** — Convert policy documents into OSCAL Catalogs or Component Definitions
-- **Multi-format output** — JSON, XML and YAML for Catalog and Component Definition models; current typed export does not guarantee preservation of arbitrary native fields
+- **Multi-format output** — JSON, XML and YAML for Catalog and Component Definition models; JSON/YAML export preserves the complete decoded JSON-compatible tree, while XML and typed helpers retain a model projection
 - **Schema validation** — Validate supported OSCAL v1.2.0–v1.2.3 declarations against the pinned v1.2.3 JSON schemas with semantic checks
 - **Format conversion** — Export supported Catalog and Component Definition artifacts between JSON, XML and YAML
 - **Requirement atomization** — Automatically split compound policy statements into individual controls
 - **Deterministic IDs** — UUID v5 generation ensures stable identifiers across re-conversions
 - **Citation extraction** — URLs and references extracted into OSCAL back-matter resources
 - **Traceability** — Source-to-OSCAL element mapping embedded as provenance metadata
-- **Evidence linkage** — Deterministic requirement-to-implementation indexes with metadata-only evidence freshness and baseline checks
+- **Evidence linkage** — Deterministic requirement-to-implementation indexes, evidence freshness and baseline checks, plus [Catalog/Component JSON overlays](docs/evidence-overlays.md) preserving original document values
 - **Reusable policy components** — Compose local, hash-pinned Markdown clauses with bounded typed values and span-level provenance
 - **Zero network dependencies** — Reads and writes local files only
 
@@ -105,7 +105,7 @@ forge convert large-policy.md --strategy catalog --format json --max-size 20
 ```
 ### Export
 
-Convert a supported Catalog or Component Definition between JSON, XML and YAML. The input format is detected from its extension. Current export validates and serializes a typed model projection; retain the original because fields outside that model can be omitted. Other OSCAL models are not supported by `export`.
+Convert a supported Catalog or Component Definition between JSON, XML and YAML. The input format is detected from its extension. JSON/YAML inputs exported to JSON/YAML are validated and emitted as the complete decoded JSON-compatible tree, preserving supported native fields and array order. XML input/output and direct typed helper APIs retain a partial model projection. Retain the original for XML work, original bytes and YAML presentation. Other OSCAL models are not supported by `export`. See the [bounded prerequisite scope](docs/plans/2026-10-03-f09-lossless-prerequisite-rebase.md), including the exact i64/u64 numeric range and refusal of all floating representations such as `1.0`/`1e0`, plus YAML limits.
 
 ```bash
 # JSON to XML
@@ -220,7 +220,61 @@ The workflow is offline, deterministic, exact-context-bound, and
 content-minimizing. Optional PRD 060 linkage input supplies evidence identity
 only. Baseline reports flag stable-object, status, rationale, stale-reference,
 and upstream-fingerprint changes with exit `1`; invalid analysis exits `2`
-before writes. See [OSCAL Assessment Results](docs/assessment-results.md).
+before writes. Baselines must contain exactly one result epoch; plural baselines
+are invalid even with `--fail-on never`. See
+[OSCAL Assessment Results](docs/assessment-results.md).
+
+`forge assessment results export-poam` turns explicitly selected, caller-reviewed
+risks and a complete caller-authored first-plan workflow into `forge.poam/1`.
+Supply every owner, date, milestone and initial history event; then use the
+maintained POA&M check/build commands. The caller's review assertion establishes
+no reviewer authority or terminal approval. See
+[reviewed-risk authoring](docs/assessment-results-reviewed-risks.md) for the exact
+request, source checks and remaining acceptance gates.
+
+`forge assessment results append-epoch` appends one sealed result with explicit
+caller-declared risk continuity. It preserves prior results, saves a complete JSON
+companion, and can display the same report as JSON, text or static HTML. See
+[sealed assessment epochs](docs/assessment-results-epochs.md) for the same-context
+profile, explicit source rebinding and independent publication semantics.
+
+### POA&M source foundation
+
+Create an unselected `forge.poam/1` scaffold from one explicitly identified
+Assessment Results result and its exact local companions. Then check only the
+source integrity boundary:
+
+```bash
+forge poam check --manifest ./assessment-bundle/poam.json \
+  --source-only --format json
+```
+
+The inventory includes every finding and risk in that result, including satisfied
+findings and closed risks. It does not validate remediation ownership, schedule,
+review or closure. Separate authored `poam check --workflow --as-of YYYY-MM-DD`
+and `poam build` commands validate nonterminal ownership/history/schedules and
+generate native JSON from exact source selections. Completion and risk acceptance
+remain refused pending the recorded closure decision. `poam baseline` reports
+complete prior/current identity and field changes against the current source
+capture, including refused revisions, without creating a native artifact. See
+[baseline comparison](docs/poam-baseline-comparison.md) and the
+[authored command guide](docs/poam-cli-workflow.md). Remaining F08 features and
+acceptance remain open.
+See [POA&M source foundation](docs/poam-foundation.md) for explicit scaffold
+inputs, limits, supported source profile and remaining gates.
+
+`forge poam portfolio` combines 1–32 explicitly paired native POA&M and authoring
+plans into complete JSON and optional static HTML reports. Supply an explicit date
+and existing output directory; source references retain their original bundle base.
+See [portfolio reports](docs/poam-portfolio.md) for pairing, counts and safe outputs.
+
+`forge poam outbound` prepares a minimized local change set from one explicit
+current native/authoring pair and item-intent selection. It rechecks the eight
+original files before output; a valid handoff exits 0 and grants no remote action.
+See [local outbound change sets](docs/poam-outbound.md) for inputs, schema,
+privacy, safe publication and remaining connector gates.
+
+`forge poam evidence` inspects every declared closure-evidence assertion against explicit linkage bindings and current local bytes, while keeping terminal admission and evidence approval separate. See [local evidence inspection](docs/poam-evidence-inspection.md) for path bases, reports and review conditions.
 
 ### Policy Lifecycle
 

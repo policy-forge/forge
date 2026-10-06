@@ -23,6 +23,7 @@ fn schema_type_to_model_type(schema_type: &SchemaType) -> OscalModelType {
         SchemaType::ComponentDefinition => OscalModelType::ComponentDefinition,
         SchemaType::SystemSecurityPlan => OscalModelType::SystemSecurityPlan,
         SchemaType::Mapping => OscalModelType::Mapping,
+        SchemaType::Poam => OscalModelType::Poam,
     }
 }
 
@@ -252,6 +253,7 @@ pub fn execute_round_trip(
     if passed { Ok(()) } else { Err(ForgeError::RoundTripFailed(unresolved_count)) }
 }
 
+/// Classify typed Catalog/Component round-trip checks and retain other models as unsupported.
 fn build_round_trip_result(
     original_json: &serde_json::Value,
     model_type: OscalModelType,
@@ -262,9 +264,10 @@ fn build_round_trip_result(
     let artifact_type = match model_type {
         OscalModelType::Catalog => ArtifactType::Catalog,
         OscalModelType::ComponentDefinition => ArtifactType::ComponentDefinition,
-        OscalModelType::Profile | OscalModelType::SystemSecurityPlan | OscalModelType::Mapping => {
-            ArtifactType::Unknown
-        }
+        OscalModelType::Profile
+        | OscalModelType::SystemSecurityPlan
+        | OscalModelType::Mapping
+        | OscalModelType::Poam => ArtifactType::Unknown,
     };
     let declared_oscal_version =
         validate::version::inspect_oscal_version(original_json, model_type).declared;

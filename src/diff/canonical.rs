@@ -172,6 +172,7 @@ fn parse_artifact(path: &Path, role: ArtifactRole) -> Result<Value, ForgeError> 
     })
 }
 
+/// Admit Catalog or Component Definition for canonical drift and refuse every other native model.
 fn detect_artifact_type(value: &Value, role: ArtifactRole) -> Result<ArtifactType, ForgeError> {
     match crate::validate::detect_model_type(value) {
         Ok(OscalModelType::Catalog) => Ok(ArtifactType::Catalog),
@@ -186,6 +187,10 @@ fn detect_artifact_type(value: &Value, role: ArtifactRole) -> Result<ArtifactTyp
         ))),
         Ok(OscalModelType::Mapping) => Err(ForgeError::DiffError(format!(
             "{} artifact uses unsupported Control Mapping model; expected Catalog or Component Definition",
+            role.as_str()
+        ))),
+        Ok(OscalModelType::Poam) => Err(ForgeError::DiffError(format!(
+            "{} artifact uses unsupported POA&M model; expected Catalog or Component Definition",
             role.as_str()
         ))),
         Err(error) => Err(ForgeError::DiffError(format!(

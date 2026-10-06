@@ -131,6 +131,7 @@ pub fn detect_model_type(json: &Value) -> Result<OscalModelType, ValidateError> 
         ("profile", OscalModelType::Profile),
         ("system-security-plan", OscalModelType::SystemSecurityPlan),
         ("mapping-collection", OscalModelType::Mapping),
+        ("plan-of-action-and-milestones", OscalModelType::Poam),
     ];
     let found: Vec<_> = roots
         .iter()
@@ -171,6 +172,7 @@ pub fn load_schema(model_type: OscalModelType) -> Result<Value, ValidateError> {
         OscalModelType::Mapping => {
             include_str!("../../schemas/oscal_mapping_schema.json")
         }
+        OscalModelType::Poam => include_str!("../../schemas/oscal_poam_schema.json"),
     };
 
     let schema =
@@ -188,6 +190,7 @@ static COMPONENT_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 static PROFILE_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 static SSP_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 static MAPPING_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
+static POAM_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 
 /// Return the process-wide compiled validator for an OSCAL model.
 ///
@@ -202,6 +205,7 @@ pub(crate) fn compiled_validator(
         OscalModelType::Profile => &PROFILE_VALIDATOR,
         OscalModelType::SystemSecurityPlan => &SSP_VALIDATOR,
         OscalModelType::Mapping => &MAPPING_VALIDATOR,
+        OscalModelType::Poam => &POAM_VALIDATOR,
     };
     if let Some(validator) = cell.get() {
         return Ok(validator);
@@ -233,6 +237,21 @@ fn collect_schema_and_version_errors(
         .iter_errors(json)
         .map(|error| formatter::format_schema_error(&error, json))
         .collect::<Vec<_>>();
+    // The OSCAL model requires an SSP import or local system identifier. The
+    // pristine release schema does not encode this assembly-choice constraint.
+    if model_type == OscalModelType::Poam
+        && let Some(root) = json.get(model_type.as_str()).and_then(Value::as_object)
+        && !root.contains_key("import-ssp")
+        && !root.contains_key("system-id")
+    {
+        errors.push(ValidationError::new(
+            ValidationErrorCategory::Semantic,
+            "$.plan-of-action-and-milestones".to_string(),
+            "POA&M requires import-ssp or system-id".to_string(),
+            "at least one system identity assembly".to_string(),
+            "neither assembly present",
+        ));
+    }
     let version = version::inspect_oscal_version(json, model_type);
     let declared = version.declared;
     let supported = version.supported;
