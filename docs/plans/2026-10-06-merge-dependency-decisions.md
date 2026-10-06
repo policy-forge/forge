@@ -1,6 +1,6 @@
 # Forge merge dependency decisions — approved 2026-10-06
 
-The authorized merge train is blocked by 20 existing exact-version dependencies without accepted `safe-to-deploy` audit paths. Refreshing the already-configured Mozilla and Embark sources did not close any of these gaps. No dependency version or audit is changed. The approved policy and owner-bound exceptions are recorded in the sidecars and native store.
+The initial dependency decision covered 20 existing exact-version dependencies without accepted `safe-to-deploy` audit paths. A separate owner-approved chacha20 exception below brings the recorded set to 21 exact identities. Refreshing the already-configured Mozilla and Embark sources did not close any of these gaps. No dependency version or audit is changed. The approved policy and owner-bound exceptions are recorded in the sidecars and native store.
 
 ## Recorded owner disposition
 
@@ -40,3 +40,11 @@ The alternative is to keep merges held until full-rooted accepted audits/sign-of
 In Codex chat `01a110f1-0063-72a0-a56c-c1d3e8cf236d`, the human user answered **“Approve policy and listed temporary exceptions”** to the complete policy/20-package question on 2026-10-06. GitHub account identity was verified as `brianluby`. This records that exception/policy disposition; it is not a source-audit sign-off or product/release approval.
 
 The committed import snapshot remains unchanged. Legacy baseline bytes remain unchanged. Existing native audit records remain unchanged; no synthetic review sidecars are added. The default incremental gate may pass under this disposition. Strict runtime review and full-store validation still expose legacy unowned exemptions and remain unfinished acceptance work.
+
+## Additional chacha20 disposition — approved 2026-10-06
+
+The stronger inventory identified a separate gap omitted from the initial native-vet list: `chacha20 0.10.2` has an agent-authored differential audit from `0.10.1`, rooted in a legacy exemption. That path does not establish a full-rooted accepted review.
+
+The owner approved this additional temporary exception in the same Codex chat on October 6. After being told the exact version, owner, review and expiry dates and given the checksum-bound addendum, the user answered **“Approved”**. The exception binds crates.io source `registry+https://github.com/rust-lang/crates.io-index` and archive SHA-256 `65c35e4b699c7e15ccbe7ee35c005e4fc0a278d22238a2857e6ce2dadeda1b06`; owner `brianluby`; created October 6; review by October 20; expiry November 5, 2026; criterion `safe-to-deploy`.
+
+This authorizes incremental integration while source review remains outstanding. Existing native audit records, exemptions, import snapshot and legacy baseline remain unchanged. It grants no source-audit sign-off or release acceptance. The total owner-approved exception set is now 21 identities; the original 20-package table remains the record of the earlier decision.
