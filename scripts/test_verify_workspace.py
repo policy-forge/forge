@@ -945,10 +945,10 @@ class ClientFailureObservationTests(unittest.TestCase):
                 raise OSError("PRIVATE POSTLINK CLEANUP FAULT")
             return result
         output = self.directory / "evidence"
-        with mock.patch.object(verifier, "capture_identity", side_effect=[self.identity, after]) as capture, \
-             mock.patch.object(verifier, "tool_versions", return_value=tools), \
-             mock.patch.object(verifier, "run_command", side_effect=command), \
-             mock.patch.object(verifier, "atomic_receipt", side_effect=publish):
+        with unittest.mock.patch.object(verifier, "capture_identity", side_effect=[self.identity, after]) as capture, \
+             unittest.mock.patch.object(verifier, "tool_versions", return_value=tools), \
+             unittest.mock.patch.object(verifier, "run_command", side_effect=command), \
+             unittest.mock.patch.object(verifier, "atomic_receipt", side_effect=publish):
             receipt = verifier.verify(ROOT, self.directory / "not-a-real-binary", output,
                                       selected, build_outcome="success", client_failure_published=published_callback)
         self.assertEqual(capture.call_count, 2)
@@ -974,7 +974,7 @@ class ClientFailureObservationTests(unittest.TestCase):
     def test_nonzero_passed_looking_file_never_invokes_passed_reader(self):
         """A publication-failure file is a non-authorizing shape fact, not passed verification or operation counts."""
         self.write(client_receipt(["synthetic-operation"]))
-        with mock.patch.object(verifier, "read_client_receipt", side_effect=AssertionError("must not read authority")) as reader:
+        with unittest.mock.patch.object(verifier, "read_client_receipt", side_effect=AssertionError("must not read authority")) as reader:
             value = self.observe(self.completed(b"Maintained headless client receipt publication failed.\n"))
         reader.assert_not_called()
         self.assertEqual(value["producer_exit_code"], 1)
@@ -1018,30 +1018,30 @@ class ClientFailureObservationTests(unittest.TestCase):
         """Return fixed absence or invalid-kind facts before attempting to open links or named pipes."""
         self.assertEqual(self.observe()["inner_receipt_fact"], "not-found")
         for kind in (verifier.stat.S_IFLNK, verifier.stat.S_IFIFO, verifier.stat.S_IFDIR):
-            fake = mock.Mock(st_mode=kind | 0o600, st_size=10)
-            with self.subTest(kind=kind), mock.patch.object(Path, "lstat", return_value=fake), \
-                 mock.patch.object(verifier.os, "open") as opened:
+            fake = unittest.mock.Mock(st_mode=kind | 0o600, st_size=10)
+            with self.subTest(kind=kind), unittest.mock.patch.object(Path, "lstat", return_value=fake), \
+                 unittest.mock.patch.object(verifier.os, "open") as opened:
                 self.assertEqual(self.observe()["inner_receipt_fact"], "invalid-or-unreadable")
                 opened.assert_not_called()
 
     def test_private_input_bound_and_changed_generation_refuse_shape(self):
         """Reject oversized input before opening and a changed held generation before parsing."""
         self.write(self.failed_receipt())
-        with mock.patch.object(verifier, "MAX_CAPTURE", 8), mock.patch.object(verifier.os, "open") as opened:
+        with unittest.mock.patch.object(verifier, "MAX_CAPTURE", 8), unittest.mock.patch.object(verifier.os, "open") as opened:
             self.assertEqual(self.observe(self.completed(b""))["inner_receipt_fact"], "invalid-or-unreadable")
             opened.assert_not_called()
         before = self.path.stat()
-        altered = mock.Mock(**{key: getattr(before, key) for key in
+        altered = unittest.mock.Mock(**{key: getattr(before, key) for key in
                               ("st_dev", "st_ino", "st_mode", "st_size", "st_mtime_ns", "st_ctime_ns")})
         altered.st_mtime_ns += 1
-        with mock.patch.object(verifier.os, "fstat", side_effect=[before, altered]):
+        with unittest.mock.patch.object(verifier.os, "fstat", side_effect=[before, altered]):
             self.assertEqual(self.observe()["inner_receipt_fact"], "invalid-or-unreadable")
 
     def test_descriptor_is_closed_after_private_parse_failure(self):
         """Attempt the held descriptor close after invalid JSON without publishing raw errors."""
         self.path.write_bytes(b"SECRET is not JSON")
         real_close = verifier.os.close
-        with mock.patch.object(verifier.os, "close", wraps=real_close) as closed:
+        with unittest.mock.patch.object(verifier.os, "close", wraps=real_close) as closed:
             value = self.observe()
         self.assertEqual(closed.call_count, 1)
         self.assertEqual(value["inner_receipt_fact"], "invalid-or-unreadable")
@@ -1085,7 +1085,7 @@ class ClientFailureObservationTests(unittest.TestCase):
         self.assertEqual(set(value["identity"]["before_inputs"]), set(verifier.CLIENT_FAILURE_SOURCES))
         self.assertFalse(verifier.retain_client_failure_observation(self.directory, self.completed(code=9), self.path, self.identity))
         self.assertEqual(path.read_bytes(), raw)
-        with mock.patch.object(verifier, "MAX_CLIENT_FAILURE_OBSERVATION", 1):
+        with unittest.mock.patch.object(verifier, "MAX_CLIENT_FAILURE_OBSERVATION", 1):
             self.assertFalse(verifier.retain_client_failure_observation(self.directory, self.completed(), self.path, self.identity))
 
     def test_sidecar_write_fault_retains_primary_failure_remaining_suites_and_rechecks(self):
@@ -1139,12 +1139,12 @@ class ClientFailurePublicationTests(unittest.TestCase):
 
     def emit(self):
         """Use only this private runner-file fixture for the actual fixed flag emitter."""
-        with mock.patch.dict(verifier.os.environ, {"GITHUB_OUTPUT": str(self.runner_output)}):
+        with unittest.mock.patch.dict(verifier.os.environ, {"GITHUB_OUTPUT": str(self.runner_output)}):
             return verifier.emit_client_failure_publication_flag()
 
     def test_fresh_bounded_publication_emits_fixed_flag_once(self):
         """Authorize only a successfully published new closed sidecar while preserving the failed primary receipt."""
-        callback = mock.Mock(side_effect=self.emit)
+        callback = unittest.mock.Mock(side_effect=self.emit)
         receipt, output, _ = self.fixture.verify_fixture(published_callback=callback)
         callback.assert_called_once_with()
         self.assertEqual(self.runner_output.read_bytes(), b"client_failure_observation_published=true\n")
@@ -1156,7 +1156,7 @@ class ClientFailurePublicationTests(unittest.TestCase):
     def test_existing_sentinel_is_preserved_without_fresh_upload_flag(self):
         """Refuse a pre-existing arbitrary sentinel even though the fixed artifact path exists."""
         sentinel = b"SECRET STALE SENTINEL"
-        callback = mock.Mock(side_effect=self.emit)
+        callback = unittest.mock.Mock(side_effect=self.emit)
         receipt, output, _ = self.fixture.verify_fixture(existing_sidecar=sentinel, published_callback=callback)
         callback.assert_not_called()
         self.assertEqual((output / "workspace-client-failure-observation.json").read_bytes(), sentinel)
@@ -1166,7 +1166,7 @@ class ClientFailurePublicationTests(unittest.TestCase):
     def test_oversized_existing_sidecar_never_authorizes_upload(self):
         """Preserve an existing file exceeding the diagnostic cap without signaling fresh publication."""
         sentinel = b"PRIVATE" * 1000
-        callback = mock.Mock(side_effect=self.emit)
+        callback = unittest.mock.Mock(side_effect=self.emit)
         _, output, _ = self.fixture.verify_fixture(existing_sidecar=sentinel, published_callback=callback)
         callback.assert_not_called()
         self.assertEqual((output / "workspace-client-failure-observation.json").read_bytes(), sentinel)
@@ -1175,7 +1175,7 @@ class ClientFailurePublicationTests(unittest.TestCase):
 
     def test_publication_fault_keeps_flag_absent_and_later_suites_running(self):
         """A refused publication never emits a flag and does not hide primary failure, drift or later results."""
-        callback = mock.Mock(side_effect=self.emit)
+        callback = unittest.mock.Mock(side_effect=self.emit)
         receipt, output, _ = self.fixture.verify_fixture(publication_error=True, changed=True,
             selected=("maintained-client", "api-contract", "api-workflow"), published_callback=callback)
         callback.assert_not_called()
@@ -1188,7 +1188,7 @@ class ClientFailurePublicationTests(unittest.TestCase):
 
     def test_postlink_publisher_fault_leaves_file_without_upload_authority(self):
         """A passed-looking file left by a publisher cleanup fault is insufficient to invoke the callback."""
-        callback = mock.Mock(side_effect=self.emit)
+        callback = unittest.mock.Mock(side_effect=self.emit)
         receipt, output, _ = self.fixture.verify_fixture(postlink_error=True, published_callback=callback)
         self.assertTrue((output / "workspace-client-failure-observation.json").is_file())
         callback.assert_not_called()
@@ -1197,7 +1197,7 @@ class ClientFailurePublicationTests(unittest.TestCase):
 
     def test_callback_failure_is_secondary_after_actual_new_publication(self):
         """An emitter exception cannot suppress the original failed receipt or successful later suites."""
-        callback = mock.Mock(side_effect=OSError("SECRET OUTPUT TARGET"))
+        callback = unittest.mock.Mock(side_effect=OSError("SECRET OUTPUT TARGET"))
         receipt, output, _ = self.fixture.verify_fixture(published_callback=callback, changed=True,
             selected=("maintained-client", "api-contract", "api-workflow"))
         callback.assert_called_once_with()
@@ -1214,7 +1214,7 @@ class ClientFailurePublicationTests(unittest.TestCase):
 
     def test_passing_client_never_emits_failure_flag(self):
         """No upload authorization is produced when the original client reader and all suites pass."""
-        callback = mock.Mock(side_effect=self.emit)
+        callback = unittest.mock.Mock(side_effect=self.emit)
         receipt, _, _ = self.fixture.verify_fixture(passed=True, published_callback=callback)
         callback.assert_not_called()
         self.assertEqual(receipt["status"], "passed")
@@ -1222,14 +1222,14 @@ class ClientFailurePublicationTests(unittest.TestCase):
 
     def test_absent_or_nonregular_runner_file_is_refused_before_write(self):
         """Missing environment files and unsupported kinds cannot create an authorization target."""
-        with mock.patch.dict(verifier.os.environ, {}, clear=True):
+        with unittest.mock.patch.dict(verifier.os.environ, {}, clear=True):
             self.assertFalse(verifier.emit_client_failure_publication_flag())
-        with mock.patch.dict(verifier.os.environ, {"GITHUB_OUTPUT": str(self.fixture.directory / "missing")}):
+        with unittest.mock.patch.dict(verifier.os.environ, {"GITHUB_OUTPUT": str(self.fixture.directory / "missing")}):
             self.assertFalse(verifier.emit_client_failure_publication_flag())
         for mode in (verifier.stat.S_IFLNK, verifier.stat.S_IFDIR, verifier.stat.S_IFIFO):
-            fake = mock.Mock(st_mode=mode | 0o600, st_nlink=1, st_size=0)
-            with self.subTest(mode=mode), mock.patch.object(Path, "lstat", return_value=fake), \
-                 mock.patch.object(verifier.os, "open") as opened:
+            fake = unittest.mock.Mock(st_mode=mode | 0o600, st_nlink=1, st_size=0)
+            with self.subTest(mode=mode), unittest.mock.patch.object(Path, "lstat", return_value=fake), \
+                 unittest.mock.patch.object(verifier.os, "open") as opened:
                 self.assertFalse(self.emit())
                 opened.assert_not_called()
         self.assertEqual(self.runner_output.read_bytes(), b"")
@@ -1240,9 +1240,9 @@ class ClientFailurePublicationTests(unittest.TestCase):
         descriptor = verifier.os.open(self.runner_output,
             verifier.os.O_WRONLY | verifier.os.O_APPEND | getattr(verifier.os, "O_BINARY", 0))
         binary_flag = 1 << 29
-        with mock.patch.dict(verifier.os.environ, {"PRIVATE": "SECRET /private capability"}), \
-             mock.patch.object(verifier.os, "O_BINARY", binary_flag, create=True), \
-             mock.patch.object(verifier.os, "open", return_value=descriptor) as opened:
+        with unittest.mock.patch.dict(verifier.os.environ, {"PRIVATE": "SECRET /private capability"}), \
+             unittest.mock.patch.object(verifier.os, "O_BINARY", binary_flag, create=True), \
+             unittest.mock.patch.object(verifier.os, "open", return_value=descriptor) as opened:
             self.assertTrue(self.emit())
         opened.assert_called_once()
         self.assertEqual(opened.call_args.args[1] & binary_flag, binary_flag)
@@ -1255,7 +1255,7 @@ class ClientFailurePublicationTests(unittest.TestCase):
         def short_write(descriptor, raw):
             """Write one incomplete fixed line through the actual descriptor to exercise short-write accounting."""
             return real_write(descriptor, raw[:-5])
-        with mock.patch.object(verifier.os, "write", side_effect=short_write) as written:
+        with unittest.mock.patch.object(verifier.os, "write", side_effect=short_write) as written:
             self.assertFalse(self.emit())
         self.assertEqual(written.call_count, 1)
         self.assertNotEqual(self.runner_output.read_bytes(), b"client_failure_observation_published=true\n")
@@ -1267,7 +1267,7 @@ class ClientFailurePublicationTests(unittest.TestCase):
             """Close the actual private descriptor before raising a synthetic secondary cleanup fault."""
             real_close(descriptor)
             raise OSError("PRIVATE CLOSE FAULT")
-        with mock.patch.object(verifier.os, "close", side_effect=faulty_close):
+        with unittest.mock.patch.object(verifier.os, "close", side_effect=faulty_close):
             self.assertFalse(self.emit())
         self.assertEqual(self.runner_output.read_bytes(), b"client_failure_observation_published=true\n")
 
@@ -1277,8 +1277,8 @@ class ClientFailurePublicationTests(unittest.TestCase):
         output.mkdir()
         sentinel = output / "workspace-client-failure-observation.json"
         sentinel.write_bytes(b"STILL OWNED")
-        callback = mock.Mock(side_effect=self.emit)
-        with mock.patch.object(verifier, "run_command") as command, self.assertRaises(ValueError):
+        callback = unittest.mock.Mock(side_effect=self.emit)
+        with unittest.mock.patch.object(verifier, "run_command") as command, self.assertRaises(ValueError):
             verifier.verify(ROOT, self.fixture.directory / "absent-binary", output, verifier.SUITES,
                             client_failure_published=callback)
         command.assert_not_called()
