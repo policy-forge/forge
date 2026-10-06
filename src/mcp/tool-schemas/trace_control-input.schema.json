@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifact_key",
+    "control_id"
+  ],
+  "properties": {
+    "artifact_key": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "control_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "cursor": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      ]
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:draft:mcp-query:trace_control:1",
+  "description": "Closed domain tool arguments; protocol _meta remains extensible separately."
+}

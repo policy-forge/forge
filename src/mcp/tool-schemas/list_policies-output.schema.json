@@ -1,0 +1,594 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tool",
+    "availability",
+    "reason",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.mcp-query/1"
+    },
+    "tool": {
+      "const": "list_policies"
+    },
+    "availability": {
+      "enum": [
+        "available",
+        "unavailable"
+      ]
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "enum": [
+            "approval-unavailable",
+            "unapproved",
+            "noncurrent",
+            "invalid-artifact",
+            "incomplete-closure",
+            "source-span-unavailable",
+            "visibility-refused",
+            "unsupported-role",
+            "not-found",
+            "generation-changed",
+            "query-budget-exceeded",
+            "output-bound-exceeded",
+            "interrupted"
+          ]
+        }
+      ]
+    },
+    "data": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "generation",
+            "matched",
+            "emitted",
+            "next_cursor",
+            "rows"
+          ],
+          "properties": {
+            "generation": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "matched": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "emitted": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 50
+            },
+            "next_cursor": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 50,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "artifact_key",
+                  "native_identity",
+                  "raw_sha256",
+                  "lifecycle_state",
+                  "freshness_scope",
+                  "schedule_scope",
+                  "citation_label",
+                  "schedule"
+                ],
+                "properties": {
+                  "artifact_key": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  },
+                  "native_identity": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "model",
+                      "root_id",
+                      "document_version",
+                      "oscal_version"
+                    ],
+                    "properties": {
+                      "model": {
+                        "enum": [
+                          "catalog",
+                          "component-definition",
+                          "profile",
+                          "system-security-plan",
+                          "mapping-collection"
+                        ]
+                      },
+                      "root_id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 45
+                      },
+                      "document_version": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                      },
+                      "oscal_version": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                      }
+                    }
+                  },
+                  "raw_sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "lifecycle_state": {
+                    "const": "approved"
+                  },
+                  "freshness_scope": {
+                    "const": "complete-recorded-fingerprint-current"
+                  },
+                  "schedule_scope": {
+                    "enum": [
+                      "not-evaluated",
+                      "explicit-as-of"
+                    ]
+                  },
+                  "citation_label": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                  },
+                  "schedule": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "as_of",
+                          "next_review_date",
+                          "due_soon_days",
+                          "derived_status"
+                        ],
+                        "properties": {
+                          "as_of": {
+                            "type": "string",
+                            "minLength": 10,
+                            "maxLength": 10,
+                            "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+                            "description": "Canonical ASCII10-byte YYYY-MM-DD; runtime maintained chrono calendar parse required, no system clock."
+                          },
+                          "next_review_date": {
+                            "type": "string",
+                            "minLength": 10,
+                            "maxLength": 16,
+                            "pattern": "^[+-]?[0-9]{4,6}-[0-9]{2}-[0-9]{2}$",
+                            "description": "Actual intrinsically validated record.review.next_review_date serialized with existing chrono semantics. Calendar validity/canonical native serialization must be consumed; no source/native date admission is narrowed here."
+                          },
+                          "due_soon_days": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 65535
+                          },
+                          "derived_status": {
+                            "enum": [
+                              "approved",
+                              "due-soon",
+                              "overdue"
+                            ]
+                          }
+                        },
+                        "description": "Actual minimized evaluated same-capture schedule. as_of is admitted canonical profile date; next_review_date/due_soon_days are borrowed from validated record.review, while derived_status comes from status_from_captured. Drift/identity blockers always refuse; schedule-only due-soon/overdue does not alter recorded approval."
+                      }
+                    ]
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "required": [
+                        "schedule_scope"
+                      ],
+                      "properties": {
+                        "schedule_scope": {
+                          "const": "not-evaluated"
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "schedule": {
+                          "type": "null"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "required": [
+                        "schedule_scope"
+                      ],
+                      "properties": {
+                        "schedule_scope": {
+                          "const": "explicit-as-of"
+                        }
+                      }
+                    },
+                    "then": {
+                      "properties": {
+                        "schedule": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "as_of",
+                            "next_review_date",
+                            "due_soon_days",
+                            "derived_status"
+                          ],
+                          "properties": {
+                            "as_of": {
+                              "type": "string",
+                              "minLength": 10,
+                              "maxLength": 10,
+                              "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+                              "description": "Canonical ASCII10-byte YYYY-MM-DD; runtime maintained chrono calendar parse required, no system clock."
+                            },
+                            "next_review_date": {
+                              "type": "string",
+                              "minLength": 10,
+                              "maxLength": 16,
+                              "pattern": "^[+-]?[0-9]{4,6}-[0-9]{2}-[0-9]{2}$",
+                              "description": "Actual intrinsically validated record.review.next_review_date serialized with existing chrono semantics. Calendar validity/canonical native serialization must be consumed; no source/native date admission is narrowed here."
+                            },
+                            "due_soon_days": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 65535
+                            },
+                            "derived_status": {
+                              "enum": [
+                                "approved",
+                                "due-soon",
+                                "overdue"
+                              ]
+                            }
+                          },
+                          "description": "Actual minimized evaluated same-capture schedule. as_of is admitted canonical profile date; next_review_date/due_soon_days are borrowed from validated record.review, while derived_status comes from status_from_captured. Drift/identity blockers always refuse; schedule-only due-soon/overdue does not alter recorded approval."
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:draft:mcp-result:list_policies:1",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "availability": {
+            "const": "available"
+          }
+        },
+        "required": [
+          "availability"
+        ]
+      },
+      "then": {
+        "properties": {
+          "reason": {
+            "type": "null"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "generation",
+              "matched",
+              "emitted",
+              "next_cursor",
+              "rows"
+            ],
+            "properties": {
+              "generation": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "matched": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "emitted": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 50
+              },
+              "next_cursor": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  }
+                ]
+              },
+              "rows": {
+                "type": "array",
+                "maxItems": 50,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "artifact_key",
+                    "native_identity",
+                    "raw_sha256",
+                    "lifecycle_state",
+                    "freshness_scope",
+                    "schedule_scope",
+                    "citation_label",
+                    "schedule"
+                  ],
+                  "properties": {
+                    "artifact_key": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                    },
+                    "native_identity": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "model",
+                        "root_id",
+                        "document_version",
+                        "oscal_version"
+                      ],
+                      "properties": {
+                        "model": {
+                          "enum": [
+                            "catalog",
+                            "component-definition",
+                            "profile",
+                            "system-security-plan",
+                            "mapping-collection"
+                          ]
+                        },
+                        "root_id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 45
+                        },
+                        "document_version": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                        },
+                        "oscal_version": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                        }
+                      }
+                    },
+                    "raw_sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    "lifecycle_state": {
+                      "const": "approved"
+                    },
+                    "freshness_scope": {
+                      "const": "complete-recorded-fingerprint-current"
+                    },
+                    "schedule_scope": {
+                      "enum": [
+                        "not-evaluated",
+                        "explicit-as-of"
+                      ]
+                    },
+                    "citation_label": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                    },
+                    "schedule": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "as_of",
+                            "next_review_date",
+                            "due_soon_days",
+                            "derived_status"
+                          ],
+                          "properties": {
+                            "as_of": {
+                              "type": "string",
+                              "minLength": 10,
+                              "maxLength": 10,
+                              "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+                              "description": "Canonical ASCII10-byte YYYY-MM-DD; runtime maintained chrono calendar parse required, no system clock."
+                            },
+                            "next_review_date": {
+                              "type": "string",
+                              "minLength": 10,
+                              "maxLength": 16,
+                              "pattern": "^[+-]?[0-9]{4,6}-[0-9]{2}-[0-9]{2}$",
+                              "description": "Actual intrinsically validated record.review.next_review_date serialized with existing chrono semantics. Calendar validity/canonical native serialization must be consumed; no source/native date admission is narrowed here."
+                            },
+                            "due_soon_days": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 65535
+                            },
+                            "derived_status": {
+                              "enum": [
+                                "approved",
+                                "due-soon",
+                                "overdue"
+                              ]
+                            }
+                          },
+                          "description": "Actual minimized evaluated same-capture schedule. as_of is admitted canonical profile date; next_review_date/due_soon_days are borrowed from validated record.review, while derived_status comes from status_from_captured. Drift/identity blockers always refuse; schedule-only due-soon/overdue does not alter recorded approval."
+                        }
+                      ]
+                    }
+                  },
+                  "allOf": [
+                    {
+                      "if": {
+                        "required": [
+                          "schedule_scope"
+                        ],
+                        "properties": {
+                          "schedule_scope": {
+                            "const": "not-evaluated"
+                          }
+                        }
+                      },
+                      "then": {
+                        "properties": {
+                          "schedule": {
+                            "type": "null"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "if": {
+                        "required": [
+                          "schedule_scope"
+                        ],
+                        "properties": {
+                          "schedule_scope": {
+                            "const": "explicit-as-of"
+                          }
+                        }
+                      },
+                      "then": {
+                        "properties": {
+                          "schedule": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "required": [
+                              "as_of",
+                              "next_review_date",
+                              "due_soon_days",
+                              "derived_status"
+                            ],
+                            "properties": {
+                              "as_of": {
+                                "type": "string",
+                                "minLength": 10,
+                                "maxLength": 10,
+                                "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+                                "description": "Canonical ASCII10-byte YYYY-MM-DD; runtime maintained chrono calendar parse required, no system clock."
+                              },
+                              "next_review_date": {
+                                "type": "string",
+                                "minLength": 10,
+                                "maxLength": 16,
+                                "pattern": "^[+-]?[0-9]{4,6}-[0-9]{2}-[0-9]{2}$",
+                                "description": "Actual intrinsically validated record.review.next_review_date serialized with existing chrono semantics. Calendar validity/canonical native serialization must be consumed; no source/native date admission is narrowed here."
+                              },
+                              "due_soon_days": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 65535
+                              },
+                              "derived_status": {
+                                "enum": [
+                                  "approved",
+                                  "due-soon",
+                                  "overdue"
+                                ]
+                              }
+                            },
+                            "description": "Actual minimized evaluated same-capture schedule. as_of is admitted canonical profile date; next_review_date/due_soon_days are borrowed from validated record.review, while derived_status comes from status_from_captured. Drift/identity blockers always refuse; schedule-only due-soon/overdue does not alter recorded approval."
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "availability": {
+            "const": "unavailable"
+          }
+        },
+        "required": [
+          "availability"
+        ]
+      },
+      "then": {
+        "properties": {
+          "reason": {
+            "enum": [
+              "approval-unavailable",
+              "unapproved",
+              "noncurrent",
+              "invalid-artifact",
+              "incomplete-closure",
+              "source-span-unavailable",
+              "visibility-refused",
+              "unsupported-role",
+              "not-found",
+              "generation-changed",
+              "query-budget-exceeded",
+              "output-bound-exceeded",
+              "interrupted"
+            ]
+          },
+          "data": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
+  "description": "Full future query DTO draft, not existing ArtifactStatus output. Runtime UTF8 limits, exact provenance, native enums, count equality and selected-disclosure pairing remain additional required consumers. Explicit schedule_scope requires actual evaluated schedule DTO with date exactly the admitted profile.as_of. Unselected/unevaluated rows retain not-evaluated/null; native current approval is separate from due-soon/overdue facts."
+}

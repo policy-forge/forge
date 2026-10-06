@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifact_key",
+    "requirement_id"
+  ],
+  "properties": {
+    "artifact_key": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "requirement_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "include_excerpt": {
+      "type": "boolean"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:draft:mcp-query:get_requirement:1",
+  "description": "Closed domain tool arguments; protocol _meta remains extensible separately."
+}

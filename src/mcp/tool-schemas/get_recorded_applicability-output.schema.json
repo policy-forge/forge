@@ -1,0 +1,610 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tool",
+    "availability",
+    "reason",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.mcp-query/1"
+    },
+    "tool": {
+      "const": "get_recorded_applicability"
+    },
+    "availability": {
+      "enum": [
+        "available",
+        "unavailable"
+      ]
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "enum": [
+            "approval-unavailable",
+            "unapproved",
+            "noncurrent",
+            "invalid-artifact",
+            "incomplete-closure",
+            "source-span-unavailable",
+            "visibility-refused",
+            "unsupported-role",
+            "not-found",
+            "generation-changed",
+            "query-budget-exceeded",
+            "output-bound-exceeded",
+            "interrupted"
+          ]
+        }
+      ]
+    },
+    "data": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "generation",
+            "matched",
+            "emitted",
+            "next_cursor",
+            "rows"
+          ],
+          "properties": {
+            "generation": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "matched": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "emitted": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 50
+            },
+            "next_cursor": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              ]
+            },
+            "rows": {
+              "type": "array",
+              "maxItems": 50,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "control_id",
+                  "decision_state",
+                  "decision_source",
+                  "classification",
+                  "citations"
+                ],
+                "properties": {
+                  "control_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "decision_state": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "enum": [
+                          "applicable",
+                          "not-applicable",
+                          "deferred",
+                          "under-review"
+                        ]
+                      }
+                    ]
+                  },
+                  "decision_source": {
+                    "enum": [
+                      "explicit-record",
+                      "implicit-under-review"
+                    ]
+                  },
+                  "classification": {
+                    "enum": [
+                      "applicable-mapped",
+                      "applicable-reviewed-no-relationship",
+                      "applicable-unmapped",
+                      "not-applicable",
+                      "deferred",
+                      "under-review"
+                    ]
+                  },
+                  "citations": {
+                    "type": "array",
+                    "maxItems": 8,
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "artifact_key",
+                        "artifact_identity",
+                        "artifact_raw_sha256",
+                        "citation_label",
+                        "native_pointer",
+                        "source_key",
+                        "source_raw_sha256",
+                        "source_span",
+                        "source_state",
+                        "artifact_role"
+                      ],
+                      "properties": {
+                        "artifact_key": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                        },
+                        "artifact_identity": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "model",
+                                "root_id",
+                                "document_version",
+                                "oscal_version"
+                              ],
+                              "properties": {
+                                "model": {
+                                  "enum": [
+                                    "catalog",
+                                    "component-definition",
+                                    "profile",
+                                    "system-security-plan",
+                                    "mapping-collection"
+                                  ]
+                                },
+                                "root_id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 45
+                                },
+                                "document_version": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                                },
+                                "oscal_version": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "artifact_raw_sha256": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$"
+                        },
+                        "citation_label": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                        },
+                        "native_pointer": {
+                          "type": "string",
+                          "maxLength": 4096
+                        },
+                        "source_key": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                            }
+                          ]
+                        },
+                        "source_raw_sha256": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string",
+                              "pattern": "^[0-9a-f]{64}$"
+                            }
+                          ]
+                        },
+                        "source_span": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "start_byte",
+                                "end_byte"
+                              ],
+                              "properties": {
+                                "start_byte": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 10485760
+                                },
+                                "end_byte": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 10485760
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "source_state": {
+                          "enum": [
+                            "exact-captured-source",
+                            "native-only",
+                            "unavailable"
+                          ]
+                        },
+                        "artifact_role": {
+                          "enum": [
+                            "policy-source",
+                            "oscal-catalog-artifact",
+                            "oscal-component-artifact",
+                            "mapping-collection",
+                            "applicability-manifest",
+                            "applicability-report",
+                            "trace-report",
+                            "lifecycle-record",
+                            "lifecycle-source",
+                            "oscal-profile-artifact",
+                            "oscal-ssp-artifact",
+                            "framework-impact-manifest",
+                            "successor-map",
+                            "framework-impact-report",
+                            "framework-impact-dispositions"
+                          ]
+                        }
+                      }
+                    },
+                    "minItems": 1
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:draft:mcp-result:get_recorded_applicability:1",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "availability": {
+            "const": "available"
+          }
+        },
+        "required": [
+          "availability"
+        ]
+      },
+      "then": {
+        "properties": {
+          "reason": {
+            "type": "null"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "generation",
+              "matched",
+              "emitted",
+              "next_cursor",
+              "rows"
+            ],
+            "properties": {
+              "generation": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "matched": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "emitted": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 50
+              },
+              "next_cursor": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256
+                  }
+                ]
+              },
+              "rows": {
+                "type": "array",
+                "maxItems": 50,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "control_id",
+                    "decision_state",
+                    "decision_source",
+                    "classification",
+                    "citations"
+                  ],
+                  "properties": {
+                    "control_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4096
+                    },
+                    "decision_state": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "enum": [
+                            "applicable",
+                            "not-applicable",
+                            "deferred",
+                            "under-review"
+                          ]
+                        }
+                      ]
+                    },
+                    "decision_source": {
+                      "enum": [
+                        "explicit-record",
+                        "implicit-under-review"
+                      ]
+                    },
+                    "classification": {
+                      "enum": [
+                        "applicable-mapped",
+                        "applicable-reviewed-no-relationship",
+                        "applicable-unmapped",
+                        "not-applicable",
+                        "deferred",
+                        "under-review"
+                      ]
+                    },
+                    "citations": {
+                      "type": "array",
+                      "maxItems": 8,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "artifact_key",
+                          "artifact_identity",
+                          "artifact_raw_sha256",
+                          "citation_label",
+                          "native_pointer",
+                          "source_key",
+                          "source_raw_sha256",
+                          "source_span",
+                          "source_state",
+                          "artifact_role"
+                        ],
+                        "properties": {
+                          "artifact_key": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                          },
+                          "artifact_identity": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "model",
+                                  "root_id",
+                                  "document_version",
+                                  "oscal_version"
+                                ],
+                                "properties": {
+                                  "model": {
+                                    "enum": [
+                                      "catalog",
+                                      "component-definition",
+                                      "profile",
+                                      "system-security-plan",
+                                      "mapping-collection"
+                                    ]
+                                  },
+                                  "root_id": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 45
+                                  },
+                                  "document_version": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                                  },
+                                  "oscal_version": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "artifact_raw_sha256": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$"
+                          },
+                          "citation_label": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                          },
+                          "native_pointer": {
+                            "type": "string",
+                            "maxLength": 4096
+                          },
+                          "source_key": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+                              }
+                            ]
+                          },
+                          "source_raw_sha256": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "string",
+                                "pattern": "^[0-9a-f]{64}$"
+                              }
+                            ]
+                          },
+                          "source_span": {
+                            "anyOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "required": [
+                                  "start_byte",
+                                  "end_byte"
+                                ],
+                                "properties": {
+                                  "start_byte": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 10485760
+                                  },
+                                  "end_byte": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 10485760
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "source_state": {
+                            "enum": [
+                              "exact-captured-source",
+                              "native-only",
+                              "unavailable"
+                            ]
+                          },
+                          "artifact_role": {
+                            "enum": [
+                              "policy-source",
+                              "oscal-catalog-artifact",
+                              "oscal-component-artifact",
+                              "mapping-collection",
+                              "applicability-manifest",
+                              "applicability-report",
+                              "trace-report",
+                              "lifecycle-record",
+                              "lifecycle-source",
+                              "oscal-profile-artifact",
+                              "oscal-ssp-artifact",
+                              "framework-impact-manifest",
+                              "successor-map",
+                              "framework-impact-report",
+                              "framework-impact-dispositions"
+                            ]
+                          }
+                        }
+                      },
+                      "minItems": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "availability": {
+            "const": "unavailable"
+          }
+        },
+        "required": [
+          "availability"
+        ]
+      },
+      "then": {
+        "properties": {
+          "reason": {
+            "enum": [
+              "approval-unavailable",
+              "unapproved",
+              "noncurrent",
+              "invalid-artifact",
+              "incomplete-closure",
+              "source-span-unavailable",
+              "visibility-refused",
+              "unsupported-role",
+              "not-found",
+              "generation-changed",
+              "query-budget-exceeded",
+              "output-bound-exceeded",
+              "interrupted"
+            ]
+          },
+          "data": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ],
+  "description": "Full future query DTO draft with current native ControlDecision/GapClassification labels, no invented decision IDs or objective classifications. Runtime byte limits, source provenance, count equality and caller scope remain additional consumed checks."
+}

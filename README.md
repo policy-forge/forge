@@ -42,7 +42,7 @@ FORGE acts as a translation layer for the modern security stack. It enables the 
 
 Tooling Integration: Compatible with Open Policy Agent (OPA), GitHub Advanced Security, and standard CI/CD scanners.
 
-MCP Native: Designed to feed into the Model Context Protocol (MCP), allowing agents to query system governance as easily as they query a database.
+MCP local queries: [Seven read-only MCP tools](docs/mcp.md) retrieve recorded governance data through an explicitly selected, reviewed disclosure scope.
 
 ## ✨ Features
 

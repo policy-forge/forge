@@ -79,6 +79,31 @@ pub(crate) fn status_from_captured(
     as_of: Option<NaiveDate>,
 ) -> Result<StatusReport, ForgeError> {
     record::validate(record)?;
+    project_parsed(record, current, as_of)
+}
+
+/// Project from exact immutable complete parser output without validating it a second time.
+/// All captured tuple/path/hash validation and full report projection remain shared below.
+/// This plain helper does not establish either operand's byte provenance or currentness.
+///
+/// # Errors
+///
+/// Returns [`ForgeError::Lifecycle`] for the same captured correspondence/date errors as
+/// `status_from_captured`; invalid intrinsic records cannot construct the parsed input.
+pub(crate) fn status_from_parsed_captured(
+    parsed: &record::ParsedLifecycleRecord,
+    current: &CurrentArtifacts,
+    as_of: Option<NaiveDate>,
+) -> Result<StatusReport, ForgeError> {
+    project_parsed(parsed.record(), current, as_of)
+}
+
+/// Preserve complete existing tuple validation, projection order and private payload.
+fn project_parsed(
+    record: &LifecycleRecord,
+    current: &CurrentArtifacts,
+    as_of: Option<NaiveDate>,
+) -> Result<StatusReport, ForgeError> {
     validate_captured(record, current)?;
     let approved = approved_fingerprints(record);
     let mut blockers = Vec::new();
