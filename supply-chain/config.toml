@@ -59,6 +59,11 @@ criteria = "safe-to-deploy"
 version = "1.0.13"
 criteria = "safe-to-deploy"
 
+[[exemptions.anstyle]]
+version = "1.0.14"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
+
 [[exemptions.anstyle-parse]]
 version = "1.0.0"
 criteria = "safe-to-deploy"
@@ -78,6 +83,11 @@ criteria = "safe-to-deploy"
 [[exemptions.argon2]]
 version = "0.5.3"
 criteria = "safe-to-deploy"
+
+[[exemptions.argon2]]
+version = "0.6.0"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
 
 [[exemptions.atomic-waker]]
 version = "1.1.2"
@@ -110,6 +120,11 @@ criteria = "safe-to-deploy"
 [[exemptions.blake2]]
 version = "0.10.6"
 criteria = "safe-to-deploy"
+
+[[exemptions.blake2]]
+version = "0.11.0"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
 
 [[exemptions.block-buffer]]
 version = "0.10.4"
@@ -191,17 +206,37 @@ criteria = "safe-to-deploy"
 version = "4.6.1"
 criteria = "safe-to-deploy"
 
+[[exemptions.clap]]
+version = "4.6.7"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
+
 [[exemptions.clap_builder]]
 version = "4.6.0"
 criteria = "safe-to-deploy"
+
+[[exemptions.clap_builder]]
+version = "4.6.7"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
 
 [[exemptions.clap_derive]]
 version = "4.6.1"
 criteria = "safe-to-deploy"
 
+[[exemptions.clap_derive]]
+version = "4.6.7"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
+
 [[exemptions.clap_lex]]
 version = "1.0.0"
 criteria = "safe-to-deploy"
+
+[[exemptions.cmov]]
+version = "0.5.4"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
 
 [[exemptions.colorchoice]]
 version = "1.0.4"
@@ -266,6 +301,11 @@ criteria = "safe-to-deploy"
 [[exemptions.crypto-common]]
 version = "0.2.2"
 criteria = "safe-to-deploy"
+
+[[exemptions.ctutils]]
+version = "0.4.2"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
 
 [[exemptions.data-encoding]]
 version = "2.10.0"
@@ -388,6 +428,11 @@ criteria = "safe-to-deploy"
 [[exemptions.getrandom]]
 version = "0.4.2"
 criteria = "safe-to-deploy"
+
+[[exemptions.getrandom]]
+version = "0.4.3"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
 
 [[exemptions.half]]
 version = "2.7.1"
@@ -675,13 +720,28 @@ criteria = "safe-to-deploy"
 version = "0.5.0"
 criteria = "safe-to-deploy"
 
+[[exemptions.password-hash]]
+version = "0.6.1"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
+
 [[exemptions.pdf-extract]]
 version = "0.12.0"
 criteria = "safe-to-deploy"
 
+[[exemptions.pdf-extract]]
+version = "0.12.1"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
+
 [[exemptions.percent-encoding]]
 version = "2.3.2"
 criteria = "safe-to-deploy"
+
+[[exemptions.phc]]
+version = "0.6.1"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
 
 [[exemptions.pin-project-lite]]
 version = "0.2.17"
@@ -794,6 +854,11 @@ criteria = "safe-to-deploy"
 [[exemptions.rayon]]
 version = "1.11.0"
 criteria = "safe-to-deploy"
+
+[[exemptions.rayon]]
+version = "1.12.0"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
 
 [[exemptions.rayon-core]]
 version = "1.13.0"

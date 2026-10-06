@@ -165,7 +165,7 @@ loopback HTTP/1.1 listener with an Argon2id unlock; audited under PRD 069):
 | Hyper/Tokio glue | `hyper-util 0.1` (tokio) |
 | Body helpers | `http-body-util 0.1` |
 | Async runtime | `tokio 1` (rt-multi-thread, net, signal, time, sync) |
-| Password KDF | `argon2 0.5` (zeroize) |
+| Password KDF | `argon2 0.6` (zeroize) |
 | Constant-time comparison | `subtle 2` |
 | Secret hygiene | `zeroize 1` |
 | CSPRNG for salts and tokens | `getrandom 0.4` |
@@ -179,3 +179,9 @@ loopback HTTP/1.1 listener with an Argon2id unlock; audited under PRD 069):
 - Snapshot files in `tests/snapshots/` are checked into git. After changing serialization output, run `cargo insta review` to update them.
 - The `testing` module (`src/testing/`) is `#[doc(hidden)]` and only for test helpers; do not use it in production code paths.
 - Format conversion (`export` subcommand) auto-detects input format from file extension.
+
+The owner approved the October 6 updates in PRs #160–164, including Argon2’s
+transitive `cmov 0.5.4`, `ctutils 0.4.2` and `phc 0.6.1`. See the
+[exact decision and checksums](../docs/plans/2026-10-06-merge-dependency-update-decisions.md).
+The recorded temporary exceptions establish integration permission, not source
+audit credit, safety certification or release acceptance.

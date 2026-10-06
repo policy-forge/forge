@@ -73,7 +73,10 @@ this incoming 84-path documentation diff and its integration changes separately.
 The owner-approved [incremental dependency policy and 21 exact exceptions](2026-10-06-merge-dependency-decisions.md)
 permit integration within their existing scope and dates. They do not establish
 full source audits, strict-store acceptance or approval of newer identities.
-The five pending dependency-update PRs require their own graph and audit records.
+A later owner decision approved [the five dependency updates and 13 exact
+exceptions](2026-10-06-merge-dependency-update-decisions.md). Their proposed graph
+qualified independently; final repository and hosted checks remain pending in
+that integration candidate. The original 21 decisions retain their scope.
 Manifest `rust-version = "1.85"` is a declared minimum, not measured MSRV support.
 
 Original requirement/Ready checkboxes, owner decisions, tracker acceptance,
