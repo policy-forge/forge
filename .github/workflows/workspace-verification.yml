@@ -447,6 +447,24 @@ jobs:
         id: release-build
         run: cargo build --locked --offline --release
 
+      - name: Check bounded distro support observation
+        run: python -B scripts/test_observe_python_support_layout.py
+
+      - name: Observe fixed public distro support names without qualification credit
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/distro-support"
+          /usr/bin/python3 -I -S -B scripts/observe_python_support_layout.py > "$RUNNER_TEMP/distro-support/observation.json"
+
+      - name: Retain separate finite distro support observation
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: workspace-distro-support-${{ github.sha }}
+          path: ${{ runner.temp }}/distro-support/observation.json
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Verify calibrated headless denial with the unchanged client
         id: headless-denial-verification
         if: always()
