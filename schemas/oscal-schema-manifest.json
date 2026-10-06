@@ -76,6 +76,16 @@
       "role": "runtime"
     },
     {
+      "name": "oscal_poam_schema.json",
+      "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_poam_schema.json",
+      "local_path": "schemas/oscal_poam_schema.json",
+      "size": 148253,
+      "sha256": "f4fd94487408a9589954b5b92d88965c984d4f79b85365cc574b860898759437",
+      "format": "json-schema",
+      "model": "poam",
+      "role": "runtime"
+    },
+    {
       "name": "oscal_catalog_schema.xsd",
       "url": "https://github.com/usnistgov/OSCAL/releases/download/v1.2.3/oscal_catalog_schema.xsd",
       "local_path": "tests/fixtures/xsd/oscal_catalog_schema.xsd",

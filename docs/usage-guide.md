@@ -177,7 +177,7 @@ forge export component.json --format xml
 
 File extensions recognized: `.json`, `.xml`, `.yaml`, `.yml`.
 
-The Catalog or Component Definition model is detected from the document root. Current export deserializes into a typed model, validates that projection against the pinned OSCAL schemas and serializes it to the target format. Retain the original: native fields outside that typed model can be omitted, so this does not guarantee arbitrary native-tree preservation or fidelity across all three formats.
+The Catalog or Component Definition model is detected from the document root. For JSON/YAML inputs and JSON/YAML targets, export validates the complete decoded JSON-compatible tree against the pinned OSCAL schema and semantic checks before publication. Supported native fields and array order remain in that tree; invalid unknown schema fields are rejected rather than silently discarded. Only numeric values represented exactly as i64/u64 integers are admitted: every f64 representation is refused, including `1.0`, `1e0` and oversized JSON integers decoded as floating point. JSON object order, whitespace, original bytes and YAML tags/comments/anchors are outside this decoded-tree contract. XML input/output and direct typed helper APIs still use a partial model projection, so retain the original for those paths. See the [prerequisite scope and verification obligations](plans/2026-10-03-f09-lossless-prerequisite-rebase.md).
 
 ### 3.3 `validate` — Schema and Semantic Validation
 
@@ -744,13 +744,144 @@ The optional `--evidence-index` input is an identity-only PRD 060
 `forge.linkage-index/1` artifact. FORGE copies evidence keys and hashes, not
 content, and does not treat a link as sufficient evidence. Use `--baseline` to
 report stable-identity revision impacts; the default `--fail-on any` exits `1`
-when review actions exist. Static HTML is available with `--report-format html`.
+when review actions exist. The baseline must contain exactly one result epoch;
+a plural baseline exits `2` before publication, including with `--fail-on never`.
+Static HTML is available with `--report-format html`.
 The build remains local, JSON-only, deterministic, and validated against the
 pinned official OSCAL 1.2.3 Assessment Results schema. It records declared
 judgments without authenticating assessors or inferring compliance,
 effectiveness, certification, or remediation ownership. See
 [OSCAL Assessment Results](assessment-results.md) for the complete contract and
 trust boundaries.
+
+#### Append a sealed assessment epoch
+
+```bash
+forge assessment results append-epoch \
+  --request epoch-request.json \
+  --output next-assessment-results.json \
+  --report next-epoch-report.json
+```
+
+Both output names must be new portable JSON filenames on the request's parent.
+The saved report is always JSON. Optional `--view-format json|text|html` selects a
+complete stdout view after both files are published; omitted view leaves stdout
+empty. A valid append returns `1` for descriptive review actions, or `0` with
+`--fail-on never`; errors return `2` and a late error can leave complete files.
+This first profile requires unchanged context/actors and sealed ordered windows.
+See [sealed assessment epochs](assessment-results-epochs.md) for complete risk
+classification, continuity, bounds, source rebinding and remaining S-4 gates.
+
+#### Export explicitly reviewed risks to authored work
+
+Start with an empty scaffold from `forge poam init`. Supply a closed
+`forge.poam-risk-authoring/1` request containing the complete authored workflow
+and exact reviewed risk references:
+
+```bash
+forge assessment results export-poam \
+  --scaffold /absolute/bundle/empty-plan.json \
+  --authoring requests/reviewed-risks.json \
+  --as-of 2026-10-04 --output plan-workflow.json
+```
+
+`--authoring` is relative to the scaffold's parent. `--output` is a new single
+`.json` filename in that same directory; omit it for stdout. You supply every
+owner, date, milestone and planned initial history event. Export exits `0` for
+complete admitted output and `2` for invalid input or output failure; subsequent
+POA&M check/build retain their separate `0`/`1`/`2` meanings. See
+[reviewed-risk authoring](assessment-results-reviewed-risks.md) for source
+inventory selection, platform publication limits, consumption and remaining
+acceptance gates.
+
+### 3.14 `poam` — Check Sources and Authored Remediation Work
+
+`forge poam init` emits an unselected `forge.poam/1` scaffold from one exact
+Assessment Results result UUID and stable key plus its local Assessment Plan,
+SSP, Profile and Catalog companions. Document metadata is explicit; no work,
+actors, remediation ownership, deadlines or status assertions are inferred.
+
+```bash
+forge poam check --manifest ./assessment-bundle/poam.json \
+  --source-only --format json
+forge validate native-poam.json --schema-type poam
+```
+
+The first command verifies the captured source identities and emits a complete
+finding/risk inventory. It requires `--source-only`, refuses nonempty items,
+roles and parties. The second command performs
+native POA&M structural validation and the system-identity assembly check; it
+does not establish source binding or remediation workflow acceptance. POA&M
+format conversion through `forge export`, source trace and generic diff remain
+unsupported.
+See [POA&M source foundation](poam-foundation.md) for the exact inputs, bounded
+source profile, publication limits and remaining gates.
+
+An explicitly authored plan uses a separate workflow scope:
+
+```bash
+forge poam check --manifest ./assessment-bundle/authored.json \
+  --workflow --as-of 2026-02-06 --due-soon-days 7 --format json
+forge poam build --manifest ./assessment-bundle/authored.json \
+  --as-of 2026-02-06 --output native-poam.json --report schedule.json
+```
+
+Every item selects exact source finding/risk identities and supplies declared
+owners, dates, ordered milestones and attributed append-only history. The as-of
+date is required. Exit 0 means valid ungated state, 1 a valid schedule action,
+and 2 invalid input or publication. Completion/risk acceptance is refused. Both
+new output filenames use the manifest directory so relative native source links
+retain their base. Artifact/report publication is separate and may leave a new
+artifact if the later report fails. See [authored POA&M commands](poam-cli-workflow.md)
+for explicit baselines, bounds, portable destinations and remaining acceptance.
+
+Compare a prior declaration separately, including revisions refused by native
+production:
+
+```bash
+forge poam baseline --manifest ./assessment-bundle/authored.json \
+  --baseline prior.json --as-of 2026-02-06 --format json
+```
+
+Exit 0 means a complete comparison needs no review; 1 means its complete report
+needs review; 2 means invalid input/output. Prior source tuples are checked against
+the actual current source capture, without reconstructing historical freshness.
+See [baseline comparison](poam-baseline-comparison.md) for complete denominators,
+explicit reopening declarations, privacy and admission limits.
+
+Review explicitly paired native plans together:
+
+```bash
+forge poam portfolio --manifest ./assessment-bundle/authored.json \
+  --native native-poam.json --as-of 2026-02-06 --due-soon-days 7 \
+  --output-root ./portfolio-reports --report portfolio.json --html portfolio.html
+```
+
+The output directory must already exist and both filenames must be unused. Repeat
+`--manifest` and `--native` in matching order for up to 32 plans. Complete JSON
+and HTML retain summed per-plan counts, null/cancelled/future rows and inert source
+hrefs in their original bundle context. Outputs are separate: a later failure does
+not roll back an earlier file. See [portfolio reports](poam-portfolio.md) for the
+supported companion profile, stdout, dates, bounds and exit statuses.
+
+Prepare explicitly selected local outbound intent from one current native plan:
+
+```bash
+forge poam outbound --manifest ./assessment-bundle/authored.json \
+  --native native-poam.json --selection outbound-selection.json \
+  --as-of 2026-02-06 --due-soon-days 7 --output-root ./outbound-reports \
+  --report change-set.json
+```
+
+The closed selection chooses each item and `create`, `update`, or `close-request`
+intent explicitly. Native and selection inputs are single JSON filenames beside
+the manifest. The output directory must exist and the report filename must be new.
+Omit `--report` for stdout. Valid local handoff exits 0 regardless of schedule;
+invalid input/output exits 2. Eight actual originals are rechecked before output,
+and remote apply authority remains false. See [local outbound change sets](poam-outbound.md)
+for the selection format, complete native matching, minimized fields and bounds.
+
+Inspect local evidence with `forge poam evidence --manifest ./assessment-bundle/authored.json --links review/evidence-links.json --as-of 2026-10-04`. Add `--report inspection.json` to publish a new report beside the plan on Linux or macOS. See [local evidence inspection](poam-evidence-inspection.md) for explicit assertion bindings, complete counts and unchanged closure gates.
 
 ## 4. Global Options
 
@@ -941,6 +1072,7 @@ remain open.
 
 - [README.md](../README.md) — project overview and quick start
 - [Evidence and Implementation Linking](evidence-linkage.md) — exact subject/evidence metadata linkage, freshness, privacy, and baseline contracts
+- [Evidence overlays](evidence-overlays.md) — new Catalog/Component JSON documents, complete source preservation and generated metadata boundaries
 - [Contributing Guide](../CONTRIBUTING.md) — development setup and PR process
 - [Architecture Guide](architecture.md) — pipeline details and crate structure
 - `example_data/` — 25 sample policies

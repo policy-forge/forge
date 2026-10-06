@@ -444,8 +444,159 @@ def suite_binding(suite, identity, tools):
     return binding
 
 
+MAX_CLIENT_FAILURE_OBSERVATION = 2048
+CLIENT_FAILURE_SOURCES = (
+    "scripts/verify_workspace.py", "scripts/test_workspace_client.py", "scripts/workspace_client.py",
+)
+CLIENT_CAPTURE_FAILURES = (
+    "tool-unavailable", "suite-timeout", "subprocess-cleanup-unverified",
+    "subprocess-output-not-closed", "output-bound-exceeded",
+)
+
+
+def client_failure_inner_fact(path):
+    """Read only a bounded unchanged regular inner file; retain a fixed shape fact, never authority."""
+    try:
+        before = path.lstat()
+    except FileNotFoundError:
+        return "not-found"
+    except OSError:
+        return "invalid-or-unreadable"
+    if not stat.S_ISREG(before.st_mode) or before.st_size > MAX_CAPTURE:
+        return "invalid-or-unreadable"
+    flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
+    descriptor = None
+    try:
+        descriptor = os.open(path, flags)
+        opened = os.fstat(descriptor)
+        def generation(value):
+            """Compare the path and held file generation without publishing identities or timestamps."""
+            return (value.st_dev, value.st_ino, value.st_mode, value.st_size,
+                    value.st_mtime_ns, value.st_ctime_ns)
+        if not stat.S_ISREG(opened.st_mode) or generation(before) != generation(opened):
+            return "invalid-or-unreadable"
+        with os.fdopen(descriptor, "rb", closefd=False) as stream:
+            raw = stream.read(MAX_CAPTURE + 1)
+        if len(raw) > MAX_CAPTURE or generation(opened) != generation(os.fstat(descriptor)) or generation(opened) != generation(path.lstat()):
+            return "invalid-or-unreadable"
+        def object_pairs(items):
+            """Reject duplicate private JSON fields before retaining any diagnostic classification."""
+            value = {}
+            for key, item in items:
+                if key in value:
+                    raise ValueError("Duplicate diagnostic input")
+                value[key] = item
+            return value
+        value = json.loads(raw, object_pairs_hook=object_pairs,
+                           parse_constant=lambda _: (_ for _ in ()).throw(ValueError("Invalid diagnostic input")))
+        if not isinstance(value, dict):
+            return "invalid-or-unreadable"
+        failed_keys = {"schema_version", "status", "checks", "check_count", "failure"}
+        if set(value) == failed_keys and value["schema_version"] == "forge.workspace-client-verification/2" and value["status"] == "failed" and value["checks"] == [] and type(value["check_count"]) is int and value["check_count"] == 0 and value["failure"] == "client-conformance-failed":
+            return "closed-client-conformance-failed"
+        passed_keys = {"schema_version", "status", "checks", "check_count", "declared_operation_count",
+                       "observed_operations", "unobserved_operations", "operation_outcomes"}
+        if set(value) == passed_keys and value["schema_version"] == "forge.workspace-client-verification/2" and value["status"] == "passed":
+            # This is only a closed header/field-set observation. The passed /2
+            # reader is deliberately not invoked for a failed producer.
+            return "nonfailed-not-authority"
+        return "invalid-or-unreadable"
+    except (OSError, ValueError, TypeError, UnicodeError, RecursionError):
+        return "invalid-or-unreadable"
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def client_failure_observation(completed, client_path, identity):
+    """Construct a closed fixed-fact sidecar from this failed producer and its original source pins."""
+    code = completed["exit_code"]
+    if code is not None and (type(code) is not int or not -(2 ** 31) <= code < 2 ** 32):
+        raise ValueError("Invalid diagnostic exit")
+    failure = completed["failure"]
+    if failure is not None and failure not in CLIENT_CAPTURE_FAILURES:
+        raise ValueError("Invalid diagnostic capture failure")
+    output = completed["output"]
+    if not isinstance(output, bytes) or len(output) > MAX_CAPTURE:
+        raise ValueError("Invalid diagnostic capture")
+    commit = identity["source_commit"]
+    if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", commit):
+        raise ValueError("Invalid diagnostic identity")
+    inputs = {}
+    for name in CLIENT_FAILURE_SOURCES:
+        source = identity["inputs"][name]
+        if not isinstance(source, dict) or set(source) != {"sha256", "bytes"} or not isinstance(source["sha256"], str) or not re.fullmatch(r"[0-9a-f]{64}", source["sha256"]) or type(source["bytes"]) is not int or not 0 < source["bytes"] <= MAX_INPUT:
+            raise ValueError("Invalid diagnostic source pin")
+        inputs[name] = {"sha256": source["sha256"], "bytes": source["bytes"]}
+    banner = "unavailable" if failure is not None else "unknown"
+    if failure is None:
+        if output in (b"Maintained headless client conformance failed.\n", b"Maintained headless client conformance failed.\r\n"):
+            banner = "conformance-failed"
+        elif output in (b"Maintained headless client receipt publication failed.\n", b"Maintained headless client receipt publication failed.\r\n"):
+            banner = "publication-failed"
+    return {"schema_version": "forge.workspace-client-failure-observation/1",
+            "producer_exit_code": code, "subprocess_failure": failure,
+            "banner_outcome": banner, "inner_receipt_fact": client_failure_inner_fact(client_path),
+            "identity": {"tested_commit": commit, "before_inputs": inputs}}
+
+
+def retain_client_failure_observation(output_dir, completed, client_path, identity):
+    """Best-effort publish a separate at-most-2-KiB observation; never change original failure rules."""
+    try:
+        value = client_failure_observation(completed, client_path, identity)
+        if len(canonical_bytes(value)) > MAX_CLIENT_FAILURE_OBSERVATION:
+            return False
+        atomic_receipt(output_dir / "workspace-client-failure-observation.json", value)
+        return True
+    except Exception:
+        # This secondary observation cannot replace the primary suite failure,
+        # suppress its exit, skip remaining suites or bypass input rechecks.
+        return False
+
+
+def emit_client_failure_publication_flag():
+    """Append only the fixed runner flag after successful fresh sidecar publication; never authorize from existence."""
+    descriptor = None
+    accepted = False
+    try:
+        name = os.environ.get("GITHUB_OUTPUT")
+        if not name:
+            return False
+        path = Path(name)
+        before = path.lstat()
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > 1024 * 1024:
+            return False
+        flags = os.O_WRONLY | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
+        flags |= getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_CLOEXEC", 0)
+        flags |= getattr(os, "O_BINARY", 0)
+        descriptor = os.open(path, flags)
+        held = os.fstat(descriptor)
+        identity = (before.st_dev, before.st_ino)
+        if (not stat.S_ISREG(held.st_mode) or held.st_nlink != 1 or
+                (held.st_dev, held.st_ino) != identity or held.st_size > 1024 * 1024):
+            return False
+        line = b"client_failure_observation_published=true\n"
+        if os.write(descriptor, line) != len(line):
+            return False
+        after = path.lstat()
+        accepted = stat.S_ISREG(after.st_mode) and (after.st_dev, after.st_ino) == identity
+    except Exception:
+        accepted = False
+    finally:
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except Exception:
+                accepted = False
+    # A complete flag already written cannot be retracted after a later fault.
+    # Its prerequisite remains successful NEW bounded publication, never a stale file.
+    return accepted
+
+
+
 def verify(root, forge, output_dir, selected, timeout=900, expected_commit=None, build_outcome="unrecorded",
-           *, event="local", checkout_kind="local", requested_head=None, requested_base=None):
+           *, event="local", checkout_kind="local", requested_head=None, requested_base=None,
+           client_failure_published=None):
     """Run selected suites despite individual failures and publish a receipt for this slice; keep acceptance gates open."""
     if build_outcome not in BUILD_OUTCOMES:
         raise ValueError("Invalid build outcome")
@@ -501,6 +652,13 @@ def verify(root, forge, output_dir, selected, timeout=900, expected_commit=None,
                     except (ValueError, OSError, TypeError):
                         row["failure"] = "invalid-suite-receipt"
                 receipt["suites"][suite] = row
+                if suite == "maintained-client" and row["status"] == "failed":
+                    published = retain_client_failure_observation(output_dir, completed, client_path, before)
+                    if published and client_failure_published is not None:
+                        try:
+                            client_failure_published()
+                        except Exception:
+                            pass
         after = capture_identity(root, forge, min(timeout, 30))
         receipt["input_stability"] = "unchanged" if before == after else "changed"
         tools_complete = all(receipt["tools"][key] is not None for key in ("cargo", "rustc", "rust_host"))
@@ -540,7 +698,8 @@ def main():
         receipt = verify(root, args.forge.resolve(), args.output_dir, args.suite,
                          args.timeout, args.expected_commit, args.build_outcome, event=args.event,
                          checkout_kind=args.checkout_kind, requested_head=args.requested_head,
-                         requested_base=args.requested_base)
+                         requested_base=args.requested_base,
+                         client_failure_published=emit_client_failure_publication_flag)
     except (OSError, ValueError):
         print("Workspace verification could not publish a fresh receipt.", file=sys.stderr)
         return 2

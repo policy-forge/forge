@@ -201,11 +201,45 @@ Assessment Plan task references, optional evidence identity, explicit graph
 edges, all three conclusion object types, deterministic bytes, privacy, stale
 context, and independent validation against the official schema.
 
-This is engineering completion, not release approval. Compliance/Legal
+The current S-3 engineering slice adds `forge assessment results export-poam`.
+An empty maintained POA&M scaffold and a closed `forge.poam-risk-authoring/1`
+request bind explicit caller-reviewed risk tuples to complete caller-authored
+work. Owners, dates, milestones and initial planned histories are supplied, not
+inferred. The producer checks the five actual native originals, current workflow
+rules and native POA&M schema before emitting the complete `forge.poam/1`
+declaration. The source includes controls in `tests/risk_authoring_cli_test.rs`
+that consume exported declarations through maintained `poam check --workflow`,
+`poam build` and native validation; this status paragraph records their source
+scope, not a measured test result. Slice measurements and preserved historical
+receipts remain separate. See [reviewed-risk authoring](../assessment-results-reviewed-risks.md).
+
+This is engineering implementation, not release approval. Compliance/Legal
 terminology approval, Engineering product approval of the subset, three
 sanitized assessor workflows, independent downstream interoperability, the
-success-metric pilots, and human release approval remain open. S-3 stays with
-PRD 064 and S-4 remains deferred until multi-epoch workflows are validated.
+success-metric pilots, and human release approval remain open. S-3 remains
+unchecked pending the applicable reviewed-risk and PRD 064 acceptance gates;
+terminal approval remains refused pending D064.
+
+The first S-4 engineering profile adds `forge assessment results append-epoch`.
+It appends one sealed result with unchanged context/actors/receipts, preserves
+the complete old native result Values, and requires explicit risk-family
+classification and latest-member continuity. A required closed JSON companion
+retains all epoch/object/family/edge/reciprocal rows and complete counts. Later
+appends consume its actual pinned bytes and reconcile reconstructable history
+against the current captured native document. Historical previous-before raw
+hashes and old metadata leaves remain stored assertions. Existing old/nonlatest
+and new result selectors are retained; source declarations must explicitly bind
+the new raw native generation. The original one-result baseline interface remains
+separate. See [sealed assessment epochs](../assessment-results-epochs.md) and the
+[measured engineering verification](../plans/2026-10-04-f10-epochs-integration-verification.md)
+with its [machine receipt](../plans/2026-10-04-f10-epochs-integration-verification.json).
+The later Windows fixture correction is recorded separately in the [fresh measurement](../plans/2026-10-04-f10-epochs-windows-fixture-verification-v1.md)
+and [successor machine receipt](../plans/2026-10-04-f10-epochs-windows-fixture-verification-v1.json);
+the initial measurements and open acceptance gates remain preserved.
+
+S-4 remains unchecked: broader context generations, native-only continuity
+interoperability, representative assessor workflows and recorded owner acceptance
+remain open. The full goal-wide documentation review remains a final gate.
 
 ## Risks and Mitigations :yellow_circle: `@human-review`
 

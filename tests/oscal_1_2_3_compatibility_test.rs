@@ -170,6 +170,7 @@ fn legacy_v1_2_0_profile_remains_valid_against_the_current_schema() {
     assert_eq!(result.schema_version_used, "1.2.3");
 }
 
+/// Verify the complete runtime model allowlist and exact native assessment-context schema pins.
 #[test]
 fn runtime_schema_manifest_tracks_supported_models_and_assessment_context() {
     let command = forge::cli::Cli::command();
@@ -207,6 +208,7 @@ fn runtime_schema_manifest_tracks_supported_models_and_assessment_context() {
             "catalog",
             "component-definition",
             "mapping",
+            "poam",
             "profile",
             "ssp",
         ]),

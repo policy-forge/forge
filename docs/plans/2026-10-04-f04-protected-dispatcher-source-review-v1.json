@@ -1,0 +1,462 @@
+{
+  "schema": "forge.f04-protected-dispatcher.retained-source-review/1",
+  "frozen_index": {
+    "path": "/private/tmp/forge-f04-protected-dispatcher-independent-review-v1/index.json",
+    "bytes": 12139,
+    "sha256": "0658aff18e760065bdc5a6c7f0bcdddef57a6e5cd654d83ec75cfc5ab74c29e0"
+  },
+  "index": {
+    "schema": "forge.f04-protected-dispatcher-independent-review-index/1",
+    "status": "frozen bounded source/data review; no new material finding",
+    "artifacts": [
+      {
+        "path": "census-data-projection.json",
+        "sha256": "374024f6971107e86f4a8a2f65d112b336bc61585d708d836c960e7feee59a83",
+        "bytes": 3156
+      },
+      {
+        "path": "check.py",
+        "sha256": "fc64869b035982fc5cd8e9df045e99cbe9d893b9a7fa515aa217007eafa263f8",
+        "bytes": 2085
+      },
+      {
+        "path": "inputs/baseline/before/.github/workflows/workspace-verification.yml",
+        "sha256": "84ea7a8ff15bb1a6025f8256d6bf50227912395d375af3acedc7c2d84eb38f52",
+        "bytes": 21089
+      },
+      {
+        "path": "inputs/baseline/candidate/.github/workflows/workspace-verification.yml",
+        "sha256": "6f974c7e252e87fe0f570af3dc7c77224d9a76fc90c48dbc4b75d37fcf4a5645",
+        "bytes": 22817
+      },
+      {
+        "path": "inputs/baseline/candidate/scripts/run_workspace_stdlib_closure.py",
+        "sha256": "6d29c920c52dc4a5a198c942909ca0ae8f584a29b70e95c6b30acf6e001318d7",
+        "bytes": 55813
+      },
+      {
+        "path": "inputs/baseline/candidate/scripts/test_run_workspace_stdlib_closure.py",
+        "sha256": "9fc296e5f4d7be7a2550f90cf495c353de656906bbc48ad9af591b3e3edc629a",
+        "bytes": 16842
+      },
+      {
+        "path": "inputs/baseline/support/direct_child_owner.py.txt",
+        "sha256": "bcabcc1b76c37284276eac904b5453d3254eb1b2eddf7a5a9ec52a273b5ecff4",
+        "bytes": 2426
+      },
+      {
+        "path": "inputs/baseline/support/root_bootstrap.py.txt",
+        "sha256": "09a50df8c9533df821b49a61790d646dd65cb7e941c44d1ff9d746b4ba56922f",
+        "bytes": 25308
+      },
+      {
+        "path": "inputs/baseline-index.json",
+        "sha256": "1ff1a7cb49d3167a727d0ec3e7e1081d1911614b7b6332158ee5e033d661872f",
+        "bytes": 10894
+      },
+      {
+        "path": "inputs/baseline-limitations.md",
+        "sha256": "da8f35b80f2d07dbe438d737620a2415fd4d77929fdd6b7c12ce570ad0732c52",
+        "bytes": 6322
+      },
+      {
+        "path": "inputs/corrected/protected_runner.py.txt",
+        "sha256": "caff8e34f0999ad5cd9c2757d4c95899548510b5b80809b0cec18696ef7e8ffb",
+        "bytes": 7742
+      },
+      {
+        "path": "inputs/corrected/root_bootstrap.py.txt",
+        "sha256": "cdc9fb12f9d4168e8ea38f8bb3b785ca9ca6be010b4dd484493762fc67106156",
+        "bytes": 25402
+      },
+      {
+        "path": "inputs/corrected/scripts/run_workspace_stdlib_closure.py",
+        "sha256": "214b3a39bf4398757a3f05d857ea8dceb61b2298ff9e742455a3ae0f78c40db3",
+        "bytes": 56003
+      },
+      {
+        "path": "inputs/corrected/scripts/test_run_workspace_stdlib_closure.py",
+        "sha256": "a704398c8093040b23f06897c9571c8ded1f84a70694dbf7b7758d7c911967de",
+        "bytes": 16973
+      },
+      {
+        "path": "inputs/corrected/scripts/test_workspace_os_denial.py",
+        "sha256": "dc14528c40964dcf2052f63568df44b832c5cb361f54b7fb8d63458b466f7b4c",
+        "bytes": 98928
+      },
+      {
+        "path": "inputs/corrected/scripts/verify_workspace_os_denial.py",
+        "sha256": "f20550b4ce971a55c7f95d5b38c91b4d592846dec69529b19ec222edbd8d3309",
+        "bytes": 72591
+      },
+      {
+        "path": "inputs/measured-embedded-bootstrap.py",
+        "sha256": "cdc9fb12f9d4168e8ea38f8bb3b785ca9ca6be010b4dd484493762fc67106156",
+        "bytes": 25402
+      },
+      {
+        "path": "inputs/measured-embedded-runner.py",
+        "sha256": "caff8e34f0999ad5cd9c2757d4c95899548510b5b80809b0cec18696ef7e8ffb",
+        "bytes": 7742
+      },
+      {
+        "path": "inputs/measurement-v3.json",
+        "sha256": "8052689b09cd549ff2ea086d8a7e2d986d95d396171880e5bce955a8d4b39953",
+        "bytes": 1576335
+      },
+      {
+        "path": "inputs/ordinary-job-v3.json",
+        "sha256": "48b019d6b241bb4c4af5bb6e84cb4da8d875ddc0525cd0158f5a6eb3135e4b5c",
+        "bytes": 1478209
+      },
+      {
+        "path": "inputs/ordinary-job-v3.log",
+        "sha256": "b4e9a421ddbc27abccbd0d6cfd9673ff3c7e2d8948395c1fb000a635a0f2dd07",
+        "bytes": 17928
+      },
+      {
+        "path": "inputs/ordinary-tests-v3.log",
+        "sha256": "4379a97302c0a5248bae73b86ecac774ca68aabdac696d11840f55b90133f1c7",
+        "bytes": 37745
+      },
+      {
+        "path": "inputs/original-P1-review.json",
+        "sha256": "6b92e8c666e0c97b0a46ce53eb1ab87344823f253af61e3fce18a41e9d88645c",
+        "bytes": 2219
+      },
+      {
+        "path": "inputs/protected-physical-fixture.py",
+        "sha256": "2979c8a8e5930ee9ce8ec042695a260cd9453e0e73fb0c4f2278a00e2b6603e6",
+        "bytes": 23161
+      },
+      {
+        "path": "inputs/root-correction-v3.json",
+        "sha256": "4c6bf3570c5b64548eb43f47d6c4f2c49b6c86b46d751f31f135244f81346131",
+        "bytes": 2901
+      },
+      {
+        "path": "origins.json",
+        "sha256": "861fd3970afc433ed571a648d08b854d7d9977cd728cff09798adea74d1d13c7",
+        "bytes": 6374
+      },
+      {
+        "path": "review.json",
+        "sha256": "d9e9167579d74f6c286aa0b866a17e6e793ce170aa165e8211c0aba57fb59061",
+        "bytes": 7272
+      },
+      {
+        "path": "review.md",
+        "sha256": "5b8229233cbafb2d34b57a535d36d9271905130a2e735fb8146fb0fd8f3c9420",
+        "bytes": 2850
+      },
+      {
+        "path": "workflow-addition.txt",
+        "sha256": "93bb263b9857b4b81b42a15859fcf5bac55805621e90faade6a0495614611c39",
+        "bytes": 1728
+      }
+    ],
+    "origins": [
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-root-correction-v3.json",
+        "snapshot": "inputs/root-correction-v3.json",
+        "sha256": "4c6bf3570c5b64548eb43f47d6c4f2c49b6c86b46d751f31f135244f81346131",
+        "bytes": 2901
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-controls-adapter-v2/index.json",
+        "snapshot": "inputs/baseline-index.json",
+        "sha256": "1ff1a7cb49d3167a727d0ec3e7e1081d1911614b7b6332158ee5e033d661872f",
+        "bytes": 10894
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-controls-root-review-v1.json",
+        "snapshot": "inputs/original-P1-review.json",
+        "sha256": "6b92e8c666e0c97b0a46ce53eb1ab87344823f253af61e3fce18a41e9d88645c",
+        "bytes": 2219
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-controls-adapter-v2/limitations.md",
+        "snapshot": "inputs/baseline-limitations.md",
+        "sha256": "da8f35b80f2d07dbe438d737620a2415fd4d77929fdd6b7c12ce570ad0732c52",
+        "bytes": 6322
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-root-correction-v3/protected_runner.py.txt",
+        "snapshot": "inputs/corrected/protected_runner.py.txt",
+        "sha256": "caff8e34f0999ad5cd9c2757d4c95899548510b5b80809b0cec18696ef7e8ffb",
+        "bytes": 7742
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-root-correction-v3/root_bootstrap.py.txt",
+        "snapshot": "inputs/corrected/root_bootstrap.py.txt",
+        "sha256": "cdc9fb12f9d4168e8ea38f8bb3b785ca9ca6be010b4dd484493762fc67106156",
+        "bytes": 25402
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-root-correction-v3/scripts/run_workspace_stdlib_closure.py",
+        "snapshot": "inputs/corrected/scripts/run_workspace_stdlib_closure.py",
+        "sha256": "214b3a39bf4398757a3f05d857ea8dceb61b2298ff9e742455a3ae0f78c40db3",
+        "bytes": 56003
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-root-correction-v3/scripts/test_run_workspace_stdlib_closure.py",
+        "snapshot": "inputs/corrected/scripts/test_run_workspace_stdlib_closure.py",
+        "sha256": "a704398c8093040b23f06897c9571c8ded1f84a70694dbf7b7758d7c911967de",
+        "bytes": 16973
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-root-correction-v3/scripts/test_workspace_os_denial.py",
+        "snapshot": "inputs/corrected/scripts/test_workspace_os_denial.py",
+        "sha256": "dc14528c40964dcf2052f63568df44b832c5cb361f54b7fb8d63458b466f7b4c",
+        "bytes": 98928
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-root-correction-v3/scripts/verify_workspace_os_denial.py",
+        "snapshot": "inputs/corrected/scripts/verify_workspace_os_denial.py",
+        "sha256": "f20550b4ce971a55c7f95d5b38c91b4d592846dec69529b19ec222edbd8d3309",
+        "bytes": 72591
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-controls-adapter-v2/candidate/scripts/run_workspace_stdlib_closure.py",
+        "snapshot": "inputs/baseline/candidate/scripts/run_workspace_stdlib_closure.py",
+        "sha256": "6d29c920c52dc4a5a198c942909ca0ae8f584a29b70e95c6b30acf6e001318d7",
+        "bytes": 55813
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-controls-adapter-v2/candidate/scripts/test_run_workspace_stdlib_closure.py",
+        "snapshot": "inputs/baseline/candidate/scripts/test_run_workspace_stdlib_closure.py",
+        "sha256": "9fc296e5f4d7be7a2550f90cf495c353de656906bbc48ad9af591b3e3edc629a",
+        "bytes": 16842
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-controls-adapter-v2/candidate/.github/workflows/workspace-verification.yml",
+        "snapshot": "inputs/baseline/candidate/.github/workflows/workspace-verification.yml",
+        "sha256": "6f974c7e252e87fe0f570af3dc7c77224d9a76fc90c48dbc4b75d37fcf4a5645",
+        "bytes": 22817
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-controls-adapter-v2/before/.github/workflows/workspace-verification.yml",
+        "snapshot": "inputs/baseline/before/.github/workflows/workspace-verification.yml",
+        "sha256": "84ea7a8ff15bb1a6025f8256d6bf50227912395d375af3acedc7c2d84eb38f52",
+        "bytes": 21089
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-controls-adapter-v2/support/root_bootstrap.py.txt",
+        "snapshot": "inputs/baseline/support/root_bootstrap.py.txt",
+        "sha256": "09a50df8c9533df821b49a61790d646dd65cb7e941c44d1ff9d746b4ba56922f",
+        "bytes": 25308
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-controls-adapter-v2/support/direct_child_owner.py.txt",
+        "snapshot": "inputs/baseline/support/direct_child_owner.py.txt",
+        "sha256": "bcabcc1b76c37284276eac904b5453d3254eb1b2eddf7a5a9ec52a273b5ecff4",
+        "bytes": 2426
+      },
+      {
+        "origin": "/private/tmp/forge-f04-leaf-closure-job-python-complete-embedded-v3.json",
+        "snapshot": "inputs/ordinary-job-v3.json",
+        "sha256": "48b019d6b241bb4c4af5bb6e84cb4da8d875ddc0525cd0158f5a6eb3135e4b5c",
+        "bytes": 1478209
+      },
+      {
+        "origin": "/private/tmp/forge-f04-leaf-closure-job-python-complete-embedded-v3.log",
+        "snapshot": "inputs/ordinary-job-v3.log",
+        "sha256": "b4e9a421ddbc27abccbd0d6cfd9673ff3c7e2d8948395c1fb000a635a0f2dd07",
+        "bytes": 17928
+      },
+      {
+        "origin": "/private/tmp/forge-f04-python-managed-embedded-v3/measurement.json",
+        "snapshot": "inputs/measurement-v3.json",
+        "sha256": "8052689b09cd549ff2ea086d8a7e2d986d95d396171880e5bce955a8d4b39953",
+        "bytes": 1576335
+      },
+      {
+        "origin": "/private/tmp/forge-f04-python-managed-embedded-v3/tests.log",
+        "snapshot": "inputs/ordinary-tests-v3.log",
+        "sha256": "4379a97302c0a5248bae73b86ecac774ca68aabdac696d11840f55b90133f1c7",
+        "bytes": 37745
+      },
+      {
+        "origin": "/private/tmp/forge-f04-python-managed-embedded-v3/embedded-bootstrap.py",
+        "snapshot": "inputs/measured-embedded-bootstrap.py",
+        "sha256": "cdc9fb12f9d4168e8ea38f8bb3b785ca9ca6be010b4dd484493762fc67106156",
+        "bytes": 25402
+      },
+      {
+        "origin": "/private/tmp/forge-f04-python-managed-embedded-v3/embedded-runner.py",
+        "snapshot": "inputs/measured-embedded-runner.py",
+        "sha256": "caff8e34f0999ad5cd9c2757d4c95899548510b5b80809b0cec18696ef7e8ffb",
+        "bytes": 7742
+      },
+      {
+        "origin": "/private/tmp/forge-f04-protected-stdlib-controls-adapter-v2/before/scripts/test_workspace_stdlib_closure.py",
+        "snapshot": "inputs/protected-physical-fixture.py",
+        "sha256": "2979c8a8e5930ee9ce8ec042695a260cd9453e0e73fb0c4f2278a00e2b6603e6",
+        "bytes": 23161
+      }
+    ],
+    "closing_origin_equality": true,
+    "review": "review.json",
+    "human_readable": "review.md",
+    "pure_replay_for_Root": "rtk proxy python3 -B /private/tmp/forge-f04-protected-dispatcher-independent-review-v1/check.py",
+    "checker_invoked_by_author": false,
+    "acceptance": false
+  },
+  "complete_review": {
+    "schema": "forge.f04-protected-dispatcher.independent-source-readback/1",
+    "status": "completed bounded literal source and retained data review; no product/helper/candidate execution",
+    "findings": [],
+    "disposition": "No validated new material defect in the reviewed new dispatcher/embedded bootstrap/runner/stop-latch delta; not independent approval of historic engines or runtime qualification",
+    "exact_sources": [
+      {
+        "path": "scripts/run_workspace_stdlib_closure.py",
+        "pin": {
+          "sha256": "214b3a39bf4398757a3f05d857ea8dceb61b2298ff9e742455a3ae0f78c40db3",
+          "bytes": 56003
+        },
+        "job_before_after_exact": true
+      },
+      {
+        "path": "scripts/test_run_workspace_stdlib_closure.py",
+        "pin": {
+          "sha256": "a704398c8093040b23f06897c9571c8ded1f84a70694dbf7b7758d7c911967de",
+          "bytes": 16973
+        },
+        "job_before_after_exact": true
+      },
+      {
+        "path": "scripts/test_workspace_os_denial.py",
+        "pin": {
+          "sha256": "dc14528c40964dcf2052f63568df44b832c5cb361f54b7fb8d63458b466f7b4c",
+          "bytes": 98928
+        },
+        "job_before_after_exact": true
+      },
+      {
+        "path": "scripts/verify_workspace_os_denial.py",
+        "pin": {
+          "sha256": "f20550b4ce971a55c7f95d5b38c91b4d592846dec69529b19ec222edbd8d3309",
+          "bytes": 72591
+        },
+        "job_before_after_exact": true
+      }
+    ],
+    "source_checks": [
+      {
+        "anchor": "corrected/scripts/run_workspace_stdlib_closure.py:41",
+        "facts": "default SIGCHLD and sole main Python thread required before spawn/wait/signal; unsupported ownership fails closed"
+      },
+      {
+        "anchor": "corrected/scripts/run_workspace_stdlib_closure.py:61",
+        "facts": "specific waitpid only, reaped status latched with original Popen returncode; no synthetic successful exit on ECHILD/changed ownership"
+      },
+      {
+        "anchor": "corrected/scripts/run_workspace_stdlib_closure.py:82",
+        "facts": "stop-attempt latch set before observation/signal; reap prevents signal; timeout cannot renew wait/signal; no numeric group signals"
+      },
+      {
+        "anchor": "corrected/root_bootstrap.py.txt:65",
+        "facts": "same bounded direct-child latch in actual embedded bootstrap; fixed runner has no subprocess tree claim"
+      },
+      {
+        "anchor": "corrected/root_bootstrap.py.txt:116",
+        "facts": "fixed four source keys, exact pin/decoded length,131072 each/524288 aggregate/800000 envelope; no source-selected argv"
+      },
+      {
+        "anchor": "corrected/root_bootstrap.py.txt:154",
+        "facts": "held root-directory relative no-follow protected copies, actual generation/raw pin checks, fixed runner import after full copy protection"
+      },
+      {
+        "anchor": "corrected/root_bootstrap.py.txt:347",
+        "facts": "started uncertain/unreaped runner forbids copy removal; changed/unpinned entries retained; independently close handles; no recursive foreign cleanup"
+      },
+      {
+        "anchor": "corrected/protected_runner.py.txt:63",
+        "facts": "unique fixed executed IDs and exact discovered names; failure events separate from cases; no skipped/failed/unclean campaign credit"
+      },
+      {
+        "anchor": "corrected/protected_runner.py.txt:102",
+        "facts": "per actual testcase fixture cleanup observation only; fixed /root synthetic prefix, no arbitrary sibling deletion"
+      },
+      {
+        "anchor": "corrected/scripts/run_workspace_stdlib_closure.py:288",
+        "facts": "closed whole positive requires normal outer/runner exits,22 discovered/ran/passed/fixturechecks/absent,zero negative events,exact copy/source/runner pins,all cleanup and no force/fault"
+      },
+      {
+        "anchor": "corrected/scripts/run_workspace_stdlib_closure.py:317",
+        "facts": "negative retained output closed to bounded counters/fixed codes/pins; no raw stderr,exceptions,fixture content or unknown fields"
+      },
+      {
+        "anchor": "baseline/candidate/.github/workflows/workspace-verification.yml:406",
+        "facts": "additive ordinary-control/protected-campaign/separate upload with requested head/base/tested identity; exact reversal preserves every original workflow byte"
+      }
+    ],
+    "literal_embedding_checks": {
+      "dispatcher_BOOTSTRAP_repr_exact": true,
+      "dispatcher_RUNNER_repr_exact": true,
+      "bootstrap_RUNNER_repr_exact": true,
+      "measured_bootstrap_and_runner_bytes_exact": true,
+      "fixed_fixture_22_names_equal": true,
+      "workflow_reverse_exact": true
+    },
+    "original_P1": {
+      "original_receipt": "inputs/original-P1-review.json",
+      "history_preserved": true,
+      "current_source_disposition": "numeric process-group signals removed; no after-reap/repeated-timeout signal path under explicit fixed-source owner assumptions",
+      "no_PID_reuse_or_native_demonstration": true
+    },
+    "retained_Root_evidence": {
+      "job": "inputs/ordinary-job-v3.json",
+      "exit_code": 0,
+      "source_unchanged": true,
+      "python": "3.14.8 (main, Sep 30 2026, 17:55:09) [Clang 21.0.0 (clang-2100.3.34.2)]",
+      "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+      "registered_literal_testcases": 165,
+      "actual_ordinary_tests_run": 143,
+      "failures": 0,
+      "errors": 0,
+      "skipped_events": [
+        {
+          "test": "setUpClass (f04_measured_controls_1.PhysicalLeafClosureControls)",
+          "reason": "Linux UID0 physical controls require separate Root execution"
+        }
+      ],
+      "physical_class_planned_cases": 22,
+      "actual_physical_case_execution": 0,
+      "census_projection": "census-data-projection.json",
+      "function_docs": {
+        "documented": 463,
+        "whole": 463,
+        "selected": 209
+      },
+      "classes": 31,
+      "modules": 8,
+      "protected_runner_lines": {
+        "positive": 0,
+        "whole": 102
+      },
+      "embedded_bootstrap_lines": {
+        "positive": 76,
+        "whole": 340
+      },
+      "qualification": "Root actual local Python3.14.8/macOS ordinary/mock events; class skip is separate from143cases, not22passes. Compile/assignment/docs are not body execution. No fresh Linux physical/native/IP-denial or acceptance."
+    },
+    "remaining_limits": [
+      "Explicit default-SIGCHLD/one-main-thread/fixed reviewed no-subprocess runner assumption; not arbitrary loaded C wait-owner or process-tree proof",
+      "Privileged distro interpreter/bootstrap/ELF/libc/loaded modules and source authorization independently unqualified; copy pin is not attestation",
+      "No actual root bootstrap main or protected runner execution in this local ordinary campaign; runner102 line opportunities all zero",
+      "Hosted Linux synthetic physical campaign, actual target/runtime denial, observed egress, owner/human/full F04 and whole-goal acceptance remain pending"
+    ],
+    "exclusions": [
+      "own historical leaf engine/capture/POAM/domain/helper correctness",
+      "independent runtime/compiler/AST collector/tool correctness approval",
+      "source copy pin as authority/authentication",
+      "fresh native/root/Linux/platform/IP-denial/human acceptance",
+      "current managed branch attestation beyond retained Root job pins"
+    ],
+    "author_actions": "pure stdlib source/text/JSON/rawhash/diff/literal repr comparison and TEMP bookkeeping only; no candidate import/checker/AST/helper/parser/compiler/runtime/native/product/Git/network/tracker/managed mutation"
+  },
+  "human_readable": "# Protected dispatcher V2 and Root stop-latch V3 readback\n\nNo validated new material source defect was found in this bounded review. The ordinary supervisor and actual embedded bootstrap use the same original direct-child wait owner, require default SIGCHLD and a sole main Python thread, latch one stop attempt, and never signal after a verified reap or renew signaling after an unsuccessful settlement. The fixed runner creates no subprocesses; this is not a process-tree or arbitrary loaded C wait-owner guarantee.\n\nThe privileged bootstrap bounds the fixed four copied source bodies and the complete stdin envelope, protects no-follow exclusive root-owned copies before fixture import, and rechecks complete generations/pins. A started runner with uncertain or unreaped ownership prevents source-copy deletion. Unpinned/changed files and unknown leftovers are retained with cleanup unverified. Output admission requires normal outer/runner exits, exact fixed IDs, all22 case and fixture counts, zero negative events and all copy/cleanup/source/tool predicates. Redacted negative output remains closed; raw exception/stderr/fixture data is discarded.\n\nThe exact22 runner names match the retained physical test class. The workflow change is solely additive; removing the retained addition yields the previous workflow byte-for-byte. The dispatcher embeds the exact retained bootstrap and runner literals, and Root's measured embedded source copies match those exact bytes.\n\nRoot's actual local job is exit0 and all four corrected source pins match its before/after capture. The test log says Ran143 / OK with one separate PhysicalLeafClosureControls setUpClass skip. There were165 registered testcase IDs:143 ordinary cases executed and22 physical cases were not executed. The retained data's zero failures/errors do not grant physical credit. Literal JSON projection reconciles463/463 documented functions,209 selected functions,31 classes and8 documented modules. The protected runner has0/102 positive local executable lines; the bootstrap has76/340 in ordinary mocked declarations, not privileged main execution.\n\nThe original P1 group-signal finding/receipt and V1/V2 histories remain unchanged. This review qualifies the source correction, not actual PID reuse or native behavior. No candidate, checker, AST/helper/parser/compiler, product/native/Linux/administrative program or network operation was executed by this reviewer. Historical authored leaf/capture/domain primitives and collector correctness are excluded. Loaded-byte/bootstrap/source authorization, hosted Linux controls, actual denial/egress, real owners, human acceptance and the full goal remain open.\n\nExact source anchors, hashes, job/census data and limitations are in review.json and the frozen inputs. Root alone may run the pure byte-pin replay after reading check.py.\n",
+  "Root_readback": "Complete checker/index/review read; pure replay passed 29 artifacts and 23 actual origins; current reviewed source pins match.",
+  "qualification": "Source review only; own historical engine/capture/domain correctness excluded. No native/root/Linux, owner, audit, product or release acceptance."
+}

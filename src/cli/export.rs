@@ -11,10 +11,10 @@ use crate::error::ForgeError;
 use crate::oscal::catalog::CatalogEnvelope;
 use crate::oscal::component_definition::ComponentDefinitionEnvelope;
 
-/// Wrapper enum for deserialized OSCAL models during the export pipeline.
+/// Catalog/Component carrier for legacy typed helpers and the XML projection.
 ///
-/// Used internally to carry either a Catalog or Component Definition
-/// through deserialize → validate → serialize stages.
+/// These envelopes represent only the native fields implemented by Forge's
+/// generation structs. JSON/YAML CLI export preserves the original value instead.
 #[derive(Debug)]
 pub enum OscalModel {
     /// An OSCAL Catalog envelope (wraps [`CatalogEnvelope`]).
@@ -47,12 +47,14 @@ pub fn detect_format(path: &Path) -> Result<OutputFormat, ForgeError> {
 ///
 /// Detects the OSCAL model type (Catalog vs `ComponentDefinition`) and
 /// deserializes into the appropriate envelope struct.
+/// This legacy typed helper may discard native fields absent from those structs;
+/// [`export_artifact`] preserves complete JSON/YAML trees for JSON/YAML targets.
 ///
 /// # Errors
 /// - JSON parse, model-detection, and envelope-cast failures are normalized to
 ///   `ForgeError::ExportInvalidOscal`.
-/// - XML and YAML parsers may return `ForgeError::Serialization` for format
-///   syntax failures before a model can be identified.
+/// - XML syntax failures may return `ForgeError::Serialization`; YAML syntax
+///   failures retain `ForgeError::YamlSerialization` and its decoder source.
 /// - Every format uses `ForgeError::ExportInvalidOscal` for an unsupported or
 ///   malformed OSCAL envelope after parsing.
 pub fn deserialize_oscal(content: &str, format: OutputFormat) -> Result<OscalModel, ForgeError> {
@@ -112,6 +114,9 @@ fn oscal_model_from_value(
                     .to_string(),
             })
         }
+        crate::validate::OscalModelType::Poam => Err(ForgeError::ExportInvalidOscal {
+            detail: "Export of OSCAL POA&M documents is not yet supported".to_string(),
+        }),
         crate::validate::OscalModelType::Mapping => Err(ForgeError::ExportInvalidOscal {
             detail: "Export of OSCAL Control Mapping documents is not yet supported".to_string(),
         }),
@@ -211,8 +216,12 @@ fn deserialize_from_yaml_format(content: &str) -> Result<OscalModel, ForgeError>
 
 /// Serialize an OSCAL model to a string in the specified format.
 ///
+/// This typed helper serializes the supplied projection; it cannot recover native
+/// fields already discarded while building that model.
+///
 /// # Errors
-/// - `ForgeError::Serialization` if serialization fails
+/// - `ForgeError::Serialization` for JSON/XML serialization failures.
+/// - `ForgeError::YamlSerialization` for YAML serialization failures.
 pub fn serialize_oscal(model: &OscalModel, format: OutputFormat) -> Result<String, ForgeError> {
     debug!(format = ?format, "Serializing OSCAL model");
     match format {
@@ -242,9 +251,9 @@ pub fn serialize_oscal(model: &OscalModel, format: OutputFormat) -> Result<Strin
 
 /// Convert the strongly typed model to the canonical JSON validation representation.
 ///
-/// The envelope serde representations are lossless for supported export models:
-/// this same value is schema-validated and, for JSON targets, emitted without a
-/// second full model serialization.
+/// These generated-model envelopes are a partial projection used by the legacy
+/// typed helpers and XML path. Complete JSON/YAML inputs must instead be validated
+/// and emitted from their original decoded value to preserve native fields.
 fn model_json_value(
     model: &OscalModel,
 ) -> Result<(serde_json::Value, crate::validate::OscalModelType), ForgeError> {
@@ -268,7 +277,8 @@ fn model_json_value(
     }
 }
 
-fn validate_oscal_json_value(
+/// Validate the supplied JSON tree using schema and semantic checks.
+pub(crate) fn validate_oscal_json_value(
     json_value: &serde_json::Value,
     model_type: crate::validate::OscalModelType,
 ) -> Result<(), ForgeError> {
@@ -291,12 +301,100 @@ fn validate_oscal_json_value(
 
 /// Validate an OSCAL model using full validation (schema + semantic checks).
 ///
+/// Validation covers the supplied typed projection. Use [`export_artifact`] to
+/// validate the complete original JSON/YAML artifact before CLI publication.
+///
 /// # Errors
 /// - `ForgeError::SchemaValidation` if validation fails
 pub fn validate_oscal_model(model: &OscalModel) -> Result<(), ForgeError> {
     debug!("Validating OSCAL model (schema + semantic)");
     let (json_value, model_type) = model_json_value(model)?;
     validate_oscal_json_value(&json_value, model_type)
+}
+
+/// Decode the original JSON/YAML tree; XML retains its existing typed projection.
+///
+/// The caller bounds raw bytes. Postdecode checks cap decoded depth at 100 and
+/// each decoded string/key at the raw input length. YAML presentation/tag and
+/// decoder-allocation preservation are separate from native JSON-tree equality.
+pub(crate) fn export_json_value(
+    content: &str,
+    source_format: OutputFormat,
+) -> Result<(serde_json::Value, crate::validate::OscalModelType), ForgeError> {
+    let limits = crate::json_strict::Limits { max_depth: 100, max_string_bytes: content.len() };
+    let value = match source_format {
+        OutputFormat::Json => {
+            crate::json_strict::parse_value(content.as_bytes(), "export artifact", limits)
+                .map_err(|error| ForgeError::ExportInvalidOscal { detail: error.to_string() })?
+        }
+        OutputFormat::Yaml => {
+            crate::json_strict::parse_yaml_value(content, limits).map_err(|error| match error {
+                crate::json_strict::StrictYamlError::Decode { source } => {
+                    ForgeError::YamlSerialization {
+                        context: "YAML deserialization failed".to_string(),
+                        source,
+                    }
+                }
+                crate::json_strict::StrictYamlError::Bounds { source } => {
+                    ForgeError::ExportInvalidOscal { detail: source.to_string() }
+                }
+            })?
+        }
+        OutputFormat::Xml => return model_json_value(&deserialize_oscal(content, source_format)?),
+    };
+    validate_export_integer_numbers(&value)?;
+    let model_type = crate::validate::detect_model_type(&value).map_err(|_| ForgeError::ExportInvalidOscal {
+        detail: "Input does not contain one recognized OSCAL root key ('catalog' or 'component-definition')".to_string(),
+    })?;
+    match model_type {
+        crate::validate::OscalModelType::Catalog
+        | crate::validate::OscalModelType::ComponentDefinition => Ok((value, model_type)),
+        crate::validate::OscalModelType::Profile => Err(ForgeError::ExportInvalidOscal {
+            detail: "Export of OSCAL Profile documents is not yet supported".to_string(),
+        }),
+        crate::validate::OscalModelType::SystemSecurityPlan => {
+            Err(ForgeError::ExportInvalidOscal {
+                detail: "Export of OSCAL System Security Plan documents is not yet supported"
+                    .to_string(),
+            })
+        }
+        crate::validate::OscalModelType::Poam => Err(ForgeError::ExportInvalidOscal {
+            detail: "Export of OSCAL POA&M documents is not yet supported".to_string(),
+        }),
+        crate::validate::OscalModelType::Mapping => Err(ForgeError::ExportInvalidOscal {
+            detail: "Export of OSCAL Control Mapping documents is not yet supported".to_string(),
+        }),
+    }
+}
+
+/// Refuse numeric values not carried exactly as an i64 or u64 before publication.
+///
+/// This export-only prerequisite deliberately rejects every f64 representation,
+/// including integral decimal/exponent spellings such as `1.0` and `1e0` and
+/// oversized JSON integers decoded through floating point. Existing strict parser
+/// users keep their own numeric contracts. The caller has already capped decoded
+/// depth, so this walk reaches nested arrays and mappings without a new parser.
+fn validate_export_integer_numbers(value: &serde_json::Value) -> Result<(), ForgeError> {
+    match value {
+        serde_json::Value::Number(number) if !number.is_i64() && !number.is_u64() => {
+            Err(ForgeError::ExportInvalidOscal {
+                detail: "JSON/YAML export supports only exact i64/u64 integer numeric values; floating or oversized numeric values are unsupported".to_string(),
+            })
+        }
+        serde_json::Value::Array(values) => {
+            for child in values {
+                validate_export_integer_numbers(child)?;
+            }
+            Ok(())
+        }
+        serde_json::Value::Object(values) => {
+            for child in values.values() {
+                validate_export_integer_numbers(child)?;
+            }
+            Ok(())
+        }
+        _ => Ok(()),
+    }
 }
 
 /// Execute the full export pipeline: read → detect → deserialize → validate → serialize → write.
@@ -328,10 +426,9 @@ pub fn export_artifact(
         return Err(ForgeError::ExportEmptyInput { path: input_path.to_path_buf() });
     }
 
-    let model = deserialize_oscal(&content, source_format)?;
+    let (json_value, model_type) = export_json_value(&content, source_format)?;
     debug!("Deserialization complete");
 
-    let (json_value, model_type) = model_json_value(&model)?;
     validate_oscal_json_value(&json_value, model_type)?;
     debug!("Validation passed");
 
@@ -339,7 +436,11 @@ pub fn export_artifact(
         OutputFormat::Json => serde_json::to_string_pretty(&json_value).map_err(|error| {
             ForgeError::Serialization(format!("JSON serialization failed: {error}"))
         })?,
-        OutputFormat::Xml | OutputFormat::Yaml => serialize_oscal(&model, target_format)?,
+        OutputFormat::Yaml => crate::export::yaml::serialize_to_yaml(&json_value)?,
+        OutputFormat::Xml => {
+            let model = oscal_model_from_value(json_value, "validated input")?;
+            serialize_oscal(&model, target_format)?
+        }
     };
     debug!("Serialization complete");
 
@@ -794,5 +895,101 @@ mod tests {
         assert!(
             matches!(error, ForgeError::ExportInvalidOscal { detail } if detail.contains("not a regular file"))
         );
+    }
+
+    /// Exact signed and unsigned boundaries survive both supported data decoders.
+    #[test]
+    fn export_integer_boundaries_round_trip_without_numeric_projection() {
+        let original = serde_json::json!({
+            "component-definition": {"numeric-boundaries": [i64::MIN, 0, i64::MAX, u64::MAX]}
+        });
+        let json = serde_json::to_string(&original).unwrap();
+        let (decoded, _) = super::export_json_value(&json, super::OutputFormat::Json).unwrap();
+        assert_eq!(decoded, original);
+        let yaml = crate::export::yaml::serialize_to_yaml(&decoded).unwrap();
+        let (returned, _) = super::export_json_value(&yaml, super::OutputFormat::Yaml).unwrap();
+        assert_eq!(returned, original);
+        // This parser/guard fixture intentionally does not claim schema validity.
+    }
+
+    /// Nested JSON numbers cannot round silently or use floating representation.
+    #[test]
+    fn export_json_refuses_floating_and_oversized_numeric_values() {
+        for number in [
+            "18446744073709551616",
+            "-9223372036854775809",
+            "9007199254740993.0",
+            "443.0",
+            "443e0",
+            "1.0",
+            "1e0",
+            "0.1",
+        ] {
+            let content = format!("{{\"catalog\":{{\"nested\":[{{\"value\":{number}}}]}}}}");
+            assert!(matches!(
+                super::export_json_value(&content, super::OutputFormat::Json),
+                Err(crate::error::ForgeError::ExportInvalidOscal { .. })
+            ));
+        }
+    }
+
+    /// YAML overflow and floating forms fail rather than establish numeric fidelity.
+    #[test]
+    fn export_yaml_refuses_floating_and_oversized_numeric_values() {
+        for number in [
+            "18446744073709551616",
+            "-9223372036854775809",
+            "9007199254740993.0",
+            "443.0",
+            "443e0",
+            "1.0",
+            "1e0",
+            "0.1",
+        ] {
+            let content = format!("catalog:\n  nested:\n    - value: {number}\n");
+            assert!(super::export_json_value(&content, super::OutputFormat::Yaml).is_err());
+        }
+    }
+
+    /// Both typed and complete-tree JSON/YAML paths refuse POA&M before publication.
+    ///
+    /// The empty recognized root deliberately proves model refusal precedes
+    /// schema validation; it does not claim to be a valid native POA&M fixture.
+    #[test]
+    fn poam_export_is_refused_without_replacing_or_creating_destinations() {
+        let value = serde_json::json!({"plan-of-action-and-milestones": {}});
+        let json = serde_json::to_string(&value).unwrap();
+        let yaml = crate::export::yaml::serialize_to_yaml(&value).unwrap();
+        let directory = tempfile::tempdir().unwrap();
+        for (extension, content, format) in [
+            ("json", json.as_str(), OutputFormat::Json),
+            ("yaml", yaml.as_str(), OutputFormat::Yaml),
+        ] {
+            let typed = deserialize_oscal(content, format).unwrap_err();
+            assert!(matches!(
+                typed,
+                ForgeError::ExportInvalidOscal { detail }
+                    if detail == "Export of OSCAL POA&M documents is not yet supported"
+            ));
+            let input = directory.path().join(format!("poam.{extension}"));
+            std::fs::write(&input, content.as_bytes()).unwrap();
+            for target in [OutputFormat::Json, OutputFormat::Yaml, OutputFormat::Xml] {
+                let existing = directory.path().join("existing-output");
+                let missing = directory.path().join("missing-output");
+                let sentinel = b"original destination\0\xff\n";
+                std::fs::write(&existing, sentinel).unwrap();
+                for destination in [&existing, &missing] {
+                    let error = export_artifact(&input, target, Some(destination)).unwrap_err();
+                    assert!(matches!(
+                        error,
+                        ForgeError::ExportInvalidOscal { detail }
+                            if detail == "Export of OSCAL POA&M documents is not yet supported"
+                    ));
+                    assert_eq!(std::fs::read(&existing).unwrap(), sentinel);
+                    assert!(!missing.exists());
+                    assert_eq!(std::fs::read(&input).unwrap(), content.as_bytes());
+                }
+            }
+        }
     }
 }

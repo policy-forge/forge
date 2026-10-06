@@ -1,0 +1,518 @@
+{
+  "schema": "forge.f04-inspected-hosted-qualification/1",
+  "recorded_utc": "2026-10-04T22:22:44.316923+00:00",
+  "source_head": "2659faf1228af6b37f40b8d29def8a724df25892",
+  "run_id": 37238681717,
+  "linux_job_id": 111542800089,
+  "tested_checkout": {
+    "binding": "workflow-context-and-commit-object",
+    "event": "pull_request",
+    "hosted_context_asserted": true,
+    "kind": "pull-request-merge",
+    "ordered_parents": [
+      "58422646deacc8abefca40b9dfe0080e5888c024",
+      "2659faf1228af6b37f40b8d29def8a724df25892"
+    ],
+    "requested_base": "58422646deacc8abefca40b9dfe0080e5888c024",
+    "requested_head": "2659faf1228af6b37f40b8d29def8a724df25892",
+    "tested_commit": "c4eca87c8f53336caa9e4ea9025fca6c40d4a9a5"
+  },
+  "frozen_download_packet": {
+    "path": "/private/tmp/forge-f04-pr213-fixed-tool-linux-artifacts-v1/index.json",
+    "bytes": 18756,
+    "sha256": "7298fed11900f3bac5fa2d5e732d61086ba725e5ec887c532b5ac3d9605f1016",
+    "physical_credit_at_download": 0
+  },
+  "inspected_result": {
+    "synthetic_linux_root_physical_controls": {
+      "discovered": 22,
+      "ran": 22,
+      "passed": 22,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "cleanup_verified": true,
+      "source_and_tools_unchanged": true,
+      "scope": "synthetic-linux-root-filesystem-controls-only"
+    },
+    "runtime_stdlib": {
+      "state": "incomplete",
+      "failure": "tool-untrusted",
+      "diagnostic": {
+        "exit_code": null,
+        "phase": "stdlib-entry",
+        "reason": "unsupported-link"
+      }
+    },
+    "ip_denial_producer": "not-run",
+    "attempted_egress": {
+      "count": null,
+      "state": "unmeasured"
+    },
+    "historical_observer": "unavailable",
+    "acceptance": false
+  },
+  "complete_authentic_download_packet": {
+    "schema": "forge.f04-fixed-tool-hosted-artifacts/1",
+    "recorded_utc": "2026-10-04T22:11:20.143534+00:00",
+    "run_id": 37238681717,
+    "head": "2659faf1228af6b37f40b8d29def8a724df25892",
+    "inventory_pin": {
+      "bytes": 9189,
+      "sha256": "853989087807a61af4cbdfaadeac8fd076ce99a7d8f17754e4388eec8d30602e"
+    },
+    "artifacts": [
+      {
+        "artifact": {
+          "id": 11316925014,
+          "node_id": "MDg6QXJ0aWZhY3QxMTMxNjkyNTAxNA==",
+          "name": "workspace-headless-ip-denial-c4eca87c8f53336caa9e4ea9025fca6c40d4a9a5",
+          "size_in_bytes": 2182,
+          "url": "https://api.github.com/repos/policy-forge/forge/actions/artifacts/11316925014",
+          "archive_download_url": "https://api.github.com/repos/policy-forge/forge/actions/artifacts/11316925014/zip",
+          "expired": false,
+          "digest": "sha256:6d1acc6e4ce08f98acb268aea23ae52fc6aea2bbe72e55ddfa87fad1d5d69fa6",
+          "created_at": "2026-10-04T22:07:52Z",
+          "updated_at": "2026-10-04T22:07:52Z",
+          "expires_at": "2026-10-18T22:07:51Z",
+          "workflow_run": {
+            "id": 37238681717,
+            "repository_id": 1154202574,
+            "head_repository_id": 1154202574,
+            "head_branch": "codex/f04-stdlib-leaf-closure",
+            "head_sha": "2659faf1228af6b37f40b8d29def8a724df25892"
+          }
+        },
+        "archive_pin": {
+          "bytes": 2182,
+          "sha256": "6d1acc6e4ce08f98acb268aea23ae52fc6aea2bbe72e55ddfa87fad1d5d69fa6"
+        },
+        "members": [
+          {
+            "name": "workspace-os-denial-verification.json",
+            "pin": {
+              "bytes": 4234,
+              "sha256": "ee5f7fb6bc6378e64c0bb45a0b14a9fe014639b63bea2c4d8bc3d64c9191dff7"
+            },
+            "value": {
+              "acceptance_eligible": false,
+              "attempted_egress": {
+                "count": null,
+                "state": "unmeasured"
+              },
+              "build": {
+                "binding": "workflow-step-assertion",
+                "features": "default",
+                "locked": true,
+                "offline": true,
+                "outcome": "success",
+                "profile": "release"
+              },
+              "checkout": {
+                "binding": "workflow-context-and-commit-object",
+                "event": "pull_request",
+                "hosted_context_asserted": true,
+                "kind": "pull-request-merge",
+                "ordered_parents": [
+                  "58422646deacc8abefca40b9dfe0080e5888c024",
+                  "2659faf1228af6b37f40b8d29def8a724df25892"
+                ],
+                "requested_base": "58422646deacc8abefca40b9dfe0080e5888c024",
+                "requested_head": "2659faf1228af6b37f40b8d29def8a724df25892",
+                "tested_commit": "c4eca87c8f53336caa9e4ea9025fca6c40d4a9a5"
+              },
+              "cleanup": {
+                "forced": false,
+                "state": "verified-not-created"
+              },
+              "diagnostic": {
+                "exit_code": null,
+                "phase": "stdlib-entry",
+                "reason": "unsupported-link"
+              },
+              "failure": "tool-untrusted",
+              "identity": {
+                "inputs": {
+                  ".gitattributes": {
+                    "bytes": 1281,
+                    "sha256": "0fa10e8db304b4895524a6f9afeca8adf8cdd8a175066cfeae2e645a319c9022"
+                  },
+                  ".github/workflows/ci.yml": {
+                    "bytes": 3784,
+                    "sha256": "64598cc95fde89036e925066d475000e82504e9c77abb68a97739b043b9523d7"
+                  },
+                  ".github/workflows/workspace-verification.yml": {
+                    "bytes": 22817,
+                    "sha256": "6f974c7e252e87fe0f570af3dc7c77224d9a76fc90c48dbc4b75d37fcf4a5645"
+                  },
+                  "Cargo.lock": {
+                    "bytes": 74338,
+                    "sha256": "5b899b7f1bf0ab12075c1bf5542f308b1f1ca7c18fedec84a4926510ee4f846f"
+                  },
+                  "Cargo.toml": {
+                    "bytes": 2344,
+                    "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+                  },
+                  "docs/api/capability-matrix.json": {
+                    "bytes": 18564,
+                    "sha256": "fab2a434b56ea593eeb4fcc41b120deecb36dfb32480ba10d8d1dfafe8df9db5"
+                  },
+                  "docs/api/forge-workspace-v1.openapi.yaml": {
+                    "bytes": 123394,
+                    "sha256": "edfbf9743eb48aef92082fd9276baea8f08413dce84f477b8683775d842b040f"
+                  },
+                  "schemas/forge.workspace-1.schema.json": {
+                    "bytes": 4223,
+                    "sha256": "bd1f36ec1b4199b2155afa66f6235450cbad7a76224680550ca46dcc2d43cbf0"
+                  },
+                  "scripts/test_verify_workspace.py": {
+                    "bytes": 83516,
+                    "sha256": "29c3459324a9ab9c1dc1190d2bc939cd8e0db124632550a7ebfe8f8a87d0f9ad"
+                  },
+                  "scripts/test_verify_workspace_os_denial.py": {
+                    "bytes": 146653,
+                    "sha256": "f5cac25f37a65e8e667396d482ad2232a9fbd163c45c93fed9d7a92ac4013851"
+                  },
+                  "scripts/test_workspace_client.py": {
+                    "bytes": 51984,
+                    "sha256": "b276830bdb07ad92677fa12818ebab7f76e71b1573c28e40cd9f27eeaf9bdd7d"
+                  },
+                  "scripts/test_workspace_os_denial.py": {
+                    "bytes": 98928,
+                    "sha256": "dc14528c40964dcf2052f63568df44b832c5cb361f54b7fb8d63458b466f7b4c"
+                  },
+                  "scripts/verify_workspace.py": {
+                    "bytes": 39640,
+                    "sha256": "ba8404a4d035ca8e41a8e7ab37d16d1ccaf20d88fa6d3371a8c0532d37137cf2"
+                  },
+                  "scripts/verify_workspace_os_denial.py": {
+                    "bytes": 72591,
+                    "sha256": "f20550b4ce971a55c7f95d5b38c91b4d592846dec69529b19ec222edbd8d3309"
+                  },
+                  "scripts/workspace_client.py": {
+                    "bytes": 76377,
+                    "sha256": "4a65e9b0c6c567042249920313172ef55e8bbdcc4addecdc15b180a87b0a0591"
+                  },
+                  "src/workspace/assets.rs": {
+                    "bytes": 2928,
+                    "sha256": "2cb4805490cb2f6cf6dd333894fa0afa3424897c0c1e169568e10d909aed5f90"
+                  },
+                  "tests/api_contract_validation.rs": {
+                    "bytes": 97850,
+                    "sha256": "77f1faf5b22d3bfee2c5a9daba23566982d7e03ed523a67c0eb8c5155221841a"
+                  },
+                  "tests/workspace_cli_test.rs": {
+                    "bytes": 177839,
+                    "sha256": "9a255f807ca79bd5907385d3ab11cef03d5d91045802c901096cbc702ac050b2"
+                  },
+                  "ui/workspace.css": {
+                    "bytes": 4863,
+                    "sha256": "d942a8cce951ca8f3064b09795e15148e704ffb897ddde29e39917f24da94ab2"
+                  },
+                  "ui/workspace.js": {
+                    "bytes": 220116,
+                    "sha256": "fa157dbfa0dc837c4f7a5936206f9300f8144c2736a10929cf1775ba7f05fc1b"
+                  }
+                },
+                "ordered_parents": [
+                  "58422646deacc8abefca40b9dfe0080e5888c024",
+                  "2659faf1228af6b37f40b8d29def8a724df25892"
+                ],
+                "provided_release_binary": {
+                  "bytes": 33825720,
+                  "sha256": "68449663df71260e707c82a12e08a668397c51350ee45d37fea2008e42e20ed7"
+                },
+                "source_commit": "c4eca87c8f53336caa9e4ea9025fca6c40d4a9a5",
+                "tracked_source_clean": true
+              },
+              "input_stability": "unchanged",
+              "pending_gates": [
+                "full-F04-Must-and-Should-acceptance",
+                "runtime-attempted-egress-observation",
+                "browser-and-remaining-platform-matrix",
+                "manual-assistive-technology-and-human-acceptance",
+                "D069-accepted-source-audits",
+                "release-qualification",
+                "final-integrated-documentation-review"
+              ],
+              "producer": {
+                "exit_code": null,
+                "failure": null,
+                "receipt": null,
+                "receipt_pin": null,
+                "status": "not-run"
+              },
+              "schema_version": "forge.workspace-os-denial-verification/2",
+              "scope": "linux-headless-ip-network-denial-prerequisite",
+              "status": "incomplete",
+              "tool_stability": "unverified",
+              "tools": null,
+              "truth_state": "synthetic-development"
+            }
+          }
+        ]
+      },
+      {
+        "artifact": {
+          "id": 11316617719,
+          "node_id": "MDg6QXJ0aWZhY3QxMTMxNjYxNzcxOQ==",
+          "name": "workspace-stdlib-closure-physical-controls-c4eca87c8f53336caa9e4ea9025fca6c40d4a9a5",
+          "size_in_bytes": 1636,
+          "url": "https://api.github.com/repos/policy-forge/forge/actions/artifacts/11316617719",
+          "archive_download_url": "https://api.github.com/repos/policy-forge/forge/actions/artifacts/11316617719/zip",
+          "expired": false,
+          "digest": "sha256:d0bb694022eca4d8ee448bed1b0333e01e86af3c2da97aa3755ef5c861812098",
+          "created_at": "2026-10-04T22:05:51Z",
+          "updated_at": "2026-10-04T22:05:51Z",
+          "expires_at": "2026-10-18T22:05:50Z",
+          "workflow_run": {
+            "id": 37238681717,
+            "repository_id": 1154202574,
+            "head_repository_id": 1154202574,
+            "head_branch": "codex/f04-stdlib-leaf-closure",
+            "head_sha": "2659faf1228af6b37f40b8d29def8a724df25892"
+          }
+        },
+        "archive_pin": {
+          "bytes": 1636,
+          "sha256": "d0bb694022eca4d8ee448bed1b0333e01e86af3c2da97aa3755ef5c861812098"
+        },
+        "members": [
+          {
+            "name": "workspace-stdlib-closure-physical-controls.json",
+            "pin": {
+              "bytes": 4068,
+              "sha256": "ce1b3080fcbf63eb09a43105f8fc1290d8b3f44477ed3842f30019df7fb79b4e"
+            },
+            "value": {
+              "acceptance": false,
+              "bootstrap_pin": {
+                "bytes": 25402,
+                "sha256": "cdc9fb12f9d4168e8ea38f8bb3b785ca9ca6be010b4dd484493762fc67106156"
+              },
+              "failure": null,
+              "outer": {
+                "exit_code": 0,
+                "fault": null,
+                "output_closed": true,
+                "reaped": true
+              },
+              "physical_result": {
+                "environment": true,
+                "execution": {
+                  "discovered": 22,
+                  "errors": 0,
+                  "exact_ids": true,
+                  "expected_failures": 0,
+                  "failures": 0,
+                  "fixture_absent": 22,
+                  "fixture_checks": 22,
+                  "passed": 22,
+                  "protocol_valid": true,
+                  "ran": 22,
+                  "schema_version": "forge.stdlib-closure-case-run/1",
+                  "skips": 0,
+                  "unexpected_successes": 0
+                },
+                "fault": null,
+                "process": {
+                  "close_fault": false,
+                  "deadline": false,
+                  "exit_code": 0,
+                  "forced": false,
+                  "output_bound": false,
+                  "output_closed": true,
+                  "ownership_verified": true,
+                  "reaped": true,
+                  "started": true
+                },
+                "protected_copy": true,
+                "protected_directory_removed": true,
+                "runner_pin": {
+                  "bytes": 7742,
+                  "sha256": "caff8e34f0999ad5cd9c2757d4c95899548510b5b80809b0cec18696ef7e8ffb"
+                },
+                "schema_version": "forge.stdlib-closure-root-run/1",
+                "source_pins": {
+                  "test_workspace_os_denial.py": {
+                    "bytes": 98928,
+                    "sha256": "dc14528c40964dcf2052f63568df44b832c5cb361f54b7fb8d63458b466f7b4c"
+                  },
+                  "test_workspace_stdlib_closure.py": {
+                    "bytes": 23161,
+                    "sha256": "2979c8a8e5930ee9ce8ec042695a260cd9453e0e73fb0c4f2278a00e2b6603e6"
+                  },
+                  "verify_workspace.py": {
+                    "bytes": 39640,
+                    "sha256": "ba8404a4d035ca8e41a8e7ab37d16d1ccaf20d88fa6d3371a8c0532d37137cf2"
+                  },
+                  "verify_workspace_os_denial.py": {
+                    "bytes": 72591,
+                    "sha256": "f20550b4ce971a55c7f95d5b38c91b4d592846dec69529b19ec222edbd8d3309"
+                  }
+                },
+                "source_unchanged": true
+              },
+              "qualification": {
+                "bootstrap_trust": "not-evaluated",
+                "human_authorization": "not-established",
+                "ip_denial": "not-evaluated",
+                "loaded_bytes": "not-evaluated"
+              },
+              "requested_context": {
+                "event": "pull_request",
+                "expected_tested_commit": "c4eca87c8f53336caa9e4ea9025fca6c40d4a9a5",
+                "kind": "pull-request-merge",
+                "requested_base": "58422646deacc8abefca40b9dfe0080e5888c024",
+                "requested_head": "2659faf1228af6b37f40b8d29def8a724df25892"
+              },
+              "runner_pin": {
+                "bytes": 7742,
+                "sha256": "caff8e34f0999ad5cd9c2757d4c95899548510b5b80809b0cec18696ef7e8ffb"
+              },
+              "schema_version": "forge.stdlib-closure-physical-controls/1",
+              "scope": "synthetic-linux-root-filesystem-controls-only",
+              "source_identity": {
+                "checkout": {
+                  "binding": "workflow-context-and-commit-object",
+                  "event": "pull_request",
+                  "hosted_context_asserted": true,
+                  "kind": "pull-request-merge",
+                  "ordered_parents": [
+                    "58422646deacc8abefca40b9dfe0080e5888c024",
+                    "2659faf1228af6b37f40b8d29def8a724df25892"
+                  ],
+                  "requested_base": "58422646deacc8abefca40b9dfe0080e5888c024",
+                  "requested_head": "2659faf1228af6b37f40b8d29def8a724df25892",
+                  "tested_commit": "c4eca87c8f53336caa9e4ea9025fca6c40d4a9a5"
+                },
+                "head_blob_matches": {
+                  ".github/workflows/workspace-verification.yml": true,
+                  "scripts/run_workspace_stdlib_closure.py": true,
+                  "scripts/test_workspace_os_denial.py": true,
+                  "scripts/test_workspace_stdlib_closure.py": true,
+                  "scripts/verify_workspace.py": true,
+                  "scripts/verify_workspace_os_denial.py": true
+                },
+                "source_basis": "exact-head-blobs",
+                "source_pins": {
+                  ".github/workflows/workspace-verification.yml": {
+                    "bytes": 22817,
+                    "sha256": "6f974c7e252e87fe0f570af3dc7c77224d9a76fc90c48dbc4b75d37fcf4a5645"
+                  },
+                  "scripts/run_workspace_stdlib_closure.py": {
+                    "bytes": 56007,
+                    "sha256": "4bb1946b6cb54b058acafecde1f42595f73d9262577c18687e13d7402402986e"
+                  },
+                  "scripts/test_workspace_os_denial.py": {
+                    "bytes": 98928,
+                    "sha256": "dc14528c40964dcf2052f63568df44b832c5cb361f54b7fb8d63458b466f7b4c"
+                  },
+                  "scripts/test_workspace_stdlib_closure.py": {
+                    "bytes": 23161,
+                    "sha256": "2979c8a8e5930ee9ce8ec042695a260cd9453e0e73fb0c4f2278a00e2b6603e6"
+                  },
+                  "scripts/verify_workspace.py": {
+                    "bytes": 39640,
+                    "sha256": "ba8404a4d035ca8e41a8e7ab37d16d1ccaf20d88fa6d3371a8c0532d37137cf2"
+                  },
+                  "scripts/verify_workspace_os_denial.py": {
+                    "bytes": 72591,
+                    "sha256": "f20550b4ce971a55c7f95d5b38c91b4d592846dec69529b19ec222edbd8d3309"
+                  }
+                }
+              },
+              "source_unchanged": true,
+              "status": "passed",
+              "tools": {
+                "python": {
+                  "pin": {
+                    "bytes": 8020928,
+                    "sha256": "e50d468e8b0adfb05733f5b87b3cff34829c4a8c1aea50c865aa8bdfe4bb150f"
+                  },
+                  "resolved": "/usr/bin/python3.12",
+                  "selected": "/usr/bin/python3"
+                },
+                "sudo": {
+                  "pin": {
+                    "bytes": 282032,
+                    "sha256": "f9ab14e43e9eab21ed6856c807b2eb19e55d3f4bee4b396702d611a9449c32b3"
+                  },
+                  "resolved": "/usr/bin/sudo",
+                  "selected": "/usr/bin/sudo"
+                }
+              },
+              "tools_unchanged": true
+            }
+          }
+        ]
+      },
+      {
+        "artifact": {
+          "id": 11316408714,
+          "node_id": "MDg6QXJ0aWZhY3QxMTMxNjQwODcxNA==",
+          "name": "workspace-stdlib-gate-c4eca87c8f53336caa9e4ea9025fca6c40d4a9a5",
+          "size_in_bytes": 323,
+          "url": "https://api.github.com/repos/policy-forge/forge/actions/artifacts/11316408714",
+          "archive_download_url": "https://api.github.com/repos/policy-forge/forge/actions/artifacts/11316408714/zip",
+          "expired": false,
+          "digest": "sha256:66b0f6589236a18be8c8f3ec52f507bd6026e1edee15c7f083b6e2b4106a58d3",
+          "created_at": "2026-10-04T22:07:53Z",
+          "updated_at": "2026-10-04T22:07:53Z",
+          "expires_at": "2026-10-18T22:07:52Z",
+          "workflow_run": {
+            "id": 37238681717,
+            "repository_id": 1154202574,
+            "head_repository_id": 1154202574,
+            "head_branch": "codex/f04-stdlib-leaf-closure",
+            "head_sha": "2659faf1228af6b37f40b8d29def8a724df25892"
+          }
+        },
+        "archive_pin": {
+          "bytes": 323,
+          "sha256": "66b0f6589236a18be8c8f3ec52f507bd6026e1edee15c7f083b6e2b4106a58d3"
+        },
+        "members": [
+          {
+            "name": "stdlib-gate-observation.json",
+            "pin": {
+              "bytes": 264,
+              "sha256": "42464fbd7d909165605e799ad2a1e14612c79e247851ab6c0ccb00925e3b10f1"
+            },
+            "value": {
+              "identity": null,
+              "mode_022_bits": null,
+              "object_id": null,
+              "object_kind": null,
+              "object_stat_stable": null,
+              "outcome": "unavailable",
+              "phase": null,
+              "reason": null,
+              "root_index": null,
+              "schema_version": "forge.stdlib-gate-observation/2",
+              "source_predicate": null,
+              "uid_is_root": null
+            }
+          }
+        ]
+      }
+    ],
+    "physical_credit": 0,
+    "qualification": "Retained actual hosted results for Root inspection; no automatic physical/IP-denial/egress/product acceptance."
+  },
+  "preserved_measurement": {
+    "path": "docs/plans/2026-10-04-f04-fixed-tool-verification-v1.json",
+    "bytes": 2411067,
+    "sha256": "e58e1d8c9401db61ba7804518e7e83ca747bfcded462634a0d382dc1e9332a06"
+  },
+  "guide_previous_prefix": {
+    "bytes": 23075,
+    "sha256": "b0e00ac821ea4a5d7d315546622e09c643aeed24bb485be87a4da1eeb27a64ee"
+  },
+  "limits": [
+    "Synthetic root filesystem campaign only; no IP-denial, loaded-byte or bootstrap trust qualification.",
+    "The unsupported-link receipt exposes no object/subcondition; no inference of its path or policy class.",
+    "No branch/MC-DC/full body coverage follows from case success; fresh local trace and old LLVM remain separately scoped.",
+    "No dependency audit, owner/client/corpus/product/platform/release acceptance or final roadmap documentation closure."
+  ]
+}

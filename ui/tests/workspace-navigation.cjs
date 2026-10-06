@@ -4214,3 +4214,156 @@ test("Staged2.4 selection stays absent from the unchanged2.3 source panel", asyn
   assert.equal(app.requests.some(row => row.route.startsWith("/project/source-transfer-stages")), false);
   staged24Unconfirmed(app);
 });
+
+
+// Confirmation copy controls are source-level proposals, not rendered browser or acceptance evidence.
+// They consume the complete selected asset and actual route/field/dialog handlers through the existing fake DOM.
+
+/** Dispatch an actual source export, change the profile, then explicitly review the retained original route. */
+async function copy24ReviewAfterProfileChange(profile, summary) {
+  const waiting = deferred();
+  const fixture = staged24Fixture();
+  const proposed = {...proposedWrite(), operation_type:"report-export",
+    target:{status:"create", path:"exports/copy-review.json"}, semantic_summary:summary,
+    exact_bytes_sha256:fixture.hash, input_hashes:[{resource_id:"res_copyreview1234", sha256:"9".repeat(64)}]};
+  const route = profile === "staged" ? "/project/source-stream-exports" : "/project/source-bundle-exports";
+  const {app} = await staged24App({[route]:() => waiting.promise,
+    ["/effects/previews/" + proposed.preview_id]:() => proposed}, false, fixture);
+  const parts = staged24Parts(app);
+  parts.profile.value = profile;await parts.profile.fire("change");
+  parts.target.value = proposed.target.path;await parts.target.fire("input");
+  parts.exportAck.checked = true;await parts.exportAck.fire("change");
+  parts.export.focus();const preparation = parts.export.fire("click");await settle();
+  const requests = app.requests.filter(row => row.route === route);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].options.method, "POST");
+  assert.deepEqual(JSON.parse(requests[0].options.body), {target_path:proposed.target.path,
+    acknowledge_sensitive_metadata:true, acknowledge_source_content:true});
+  parts.profile.value = profile === "staged" ? "inline" : "staged";
+  await parts.profile.fire("change");
+  waiting.resolve(operation("succeeded", {kind:"export", result:{preview:proposed}}));
+  await preparation;assert.equal(app.byId("preview-dialog").open, false);
+  const row = app.document.querySelector('[data-operation-id="' + operationId + '"]');assert(row);
+  const review = app.byButton("Review prepared write", row).fire("click");await settle();
+  const discard = app.document.querySelector('dialog[open]');
+  if (discard?.getAttribute("aria-labelledby") === "discard-title") await app.byButton("Discard edits", discard).fire("click");
+  await review;assert.equal(app.byId("preview-dialog").open, true);
+  assert.equal(app.requests.filter(item => item.route === route).length, 1);
+  staged24Unconfirmed(app);
+  return {app, parts, proposed, route};
+}
+
+/** The shorter staged lead is selected by the dispatched route while all server facts remain visible. */
+test("Confirmation copy uses the retained staged route after the form switches to inline", async () => {
+  const summary = "Server fact: whole100 planned files; a10MiB declaration; shared quota may refuse; <script>literal private metadata</script>.";
+  const {app, parts, proposed} = await copy24ReviewAfterProfileChange("staged", summary);
+  assert.equal(parts.profile.value, "inline");
+  const content = app.byId("preview-content");
+  assert.equal(content.children[2].textContent,
+    "Save the complete project index and exact registered source bytes to the selected file. Source content, labels, keys, paths and hashes may be sensitive and are included without redaction. Review the changes below, then confirm to save and enable the download. The limit is 10 MiB; available session capacity may be lower.");
+  const detail = content.querySelectorAll("h3").find(item => item.textContent === "Server details");assert(detail);
+  const position = content.children.indexOf(detail);
+  assert.equal(content.children[position + 1].textContent, summary.replace("whole100", "whole 100").replace("a10MiB", "a 10 MiB"));
+  assert.doesNotMatch(content.textContent, /whole100|a10MiB/);
+  assert(content.textContent.includes(proposed.exact_bytes_sha256));
+  assert(content.textContent.includes(proposed.target_version));
+  assert(content.textContent.includes("res_copyreview1234"));
+  assert(content.textContent.includes("9".repeat(64)));
+  assert(content.textContent.includes(proposed.diff_text));
+  assert.equal(content.querySelectorAll("script").length, 0);
+  assert.equal(app.document.activeElement, content.querySelector("h2"));
+  app.byButton("Confirm this exact write", app.byId("preview-dialog"));
+  await app.byButton("Keep editing", app.byId("preview-dialog")).fire("click");
+  assert.equal(app.byId("preview-dialog").open, false);staged24Unconfirmed(app);
+});
+
+/** An inline receipt keeps its original summary even when the current form now selects staged transfer. */
+test("Confirmation copy does not relabel an inline export from the mutable staged choice", async () => {
+  const summary = "Server inline fact: 1,048,429-byte bundle limit and exact registered bytes remain included.";
+  const {app, parts, proposed} = await copy24ReviewAfterProfileChange("inline", summary);
+  assert.equal(parts.profile.value, "staged");
+  const content = app.byId("preview-content");
+  assert.equal(content.children[2].textContent, summary);
+  assert.equal(content.querySelectorAll("h3").some(item => item.textContent === "Server details"), false);
+  assert.doesNotMatch(content.textContent, /The limit is 10 MiB/);
+  assert(content.textContent.includes(proposed.exact_bytes_sha256));
+  await app.byButton("Keep editing", app.byId("preview-dialog")).fire("click");
+  staged24Unconfirmed(app);
+});
+
+/** Complete restore facts and the original final acknowledgment remain necessary after the presentation change. */
+test("Confirmation copy retains every restore fact and full server summary without sending an unacknowledged write", async () => {
+  const fixture = staged24Fixture();
+  fixture.reply.preview.semantic_summary = "Server-specific restore fact: publication is index last; an unlisted retired file remains on disk. <script>literal detail</script>";
+  const {app} = await staged24App({}, false, fixture);
+  const parts = await staged24Choose(app, fixture);
+  parts.prepare.focus();await parts.prepare.fire("click");
+  const dialog = app.byId("preview-dialog");assert.equal(dialog.open, true);
+  const content = app.byId("preview-content");
+  assert(content.textContent.includes("Replace the complete project index, including its label and registrations"));
+  assert(content.textContent.includes("restore the exact bytes to every listed target."));
+  assert.doesNotMatch(content.textContent, /restore the exact bytes of every listed file\./);
+  assert(content.textContent.includes("Files not listed as targets stay on disk. Nothing is written until you confirm this restore."));
+  assert(content.textContent.includes("other local tools may read a mix of old and new files"));
+  assert(content.textContent.includes("Confirming these changes does not approve the data."));
+  assert(content.textContent.includes("Complete planned files: 4 of 100"));
+  assert.doesNotMatch(content.textContent, /of100/);
+  assert(content.textContent.includes("Every target in publication order; index last"));
+  for (const target of fixture.reply.preview.targets) {
+    assert(content.textContent.includes(target.path));
+    assert(content.textContent.includes(target.exact_bytes_sha256));
+    assert(content.textContent.includes(target.target_version));
+    assert(content.textContent.includes(target.diff_text));
+  }
+  for (const binding of fixture.reply.preview.input_bindings) {
+    assert(content.textContent.includes(binding.path));
+    for (const fact of [binding.current, binding.proposed].filter(Boolean)) {
+      assert(content.textContent.includes(fact.sha256));
+      if (fact.resource_id) assert(content.textContent.includes(fact.resource_id));
+    }
+  }
+  assert(content.textContent.includes(fixture.reply.preview.directories[0].nearest_existing_parent_version));
+  assert(content.textContent.includes(fixture.reply.replacement.previous_index.label));
+  assert(content.textContent.includes(fixture.reply.replacement.proposed_index.label));
+  assert(content.textContent.includes(fixture.reply.replacement.supplied_index_sha256));
+  assert(content.textContent.includes(fixture.reply.replacement.proposed_index_sha256));
+  const facts = content.querySelector("[data-bundle-panel]");
+  assert.equal(facts.children.at(-2).textContent, "Server details");
+  assert.equal(facts.children.at(-1).textContent, fixture.reply.preview.semantic_summary);
+  assert.equal(content.querySelectorAll("script").length, 0);
+  assert.doesNotMatch(content.textContent, /synthetic-private-source-receipt-token/);
+  const ack = app.byLabel("I reviewed every target, input binding, directory and index replacement; restore these exact bytes");
+  const confirm = app.byButton("Confirm this exact source restore", dialog);
+  assert.equal(ack.checked, false);assert.equal(confirm.getAttribute("aria-disabled"), "true");
+  await confirm.fire("click");staged24Unconfirmed(app);
+  ack.checked = true;await ack.fire("change");
+  assert.equal(confirm.getAttribute("aria-disabled"), "false");staged24Unconfirmed(app);
+  await app.byButton("Keep editing", dialog).fire("click");
+  assert.equal(dialog.open, false);assert.equal(app.document.activeElement, parts.prepare);
+  staged24Unconfirmed(app);
+});
+
+for (const version of ["2.3.0", "2.4.0"]) {
+  /** Meaningful spaced limits leave each original sensitive-data and replacement acknowledgment in the actual form. */
+  test("Confirmation copy preserves preparation acknowledgments and spaced limits on " + version, async () => {
+    const app = await source23App({}, false, version);const parts = source23Parts(app);
+    assert(parts.panel.textContent.includes("Inline bundle limit: 1,048,429 bytes."));
+    assert(parts.panel.textContent.includes("100 distinct planned file paths, including the index and any export destination."));
+    assert.equal(parts.panel.textContent.includes("Staged bundle limit: 10 MiB, sent in 32 KiB parts."), version === "2.4.0");
+    if (version === "2.4.0") assert(parts.panel.textContent.includes("Available capacity may require a smaller bundle."));
+    assert.doesNotMatch(parts.panel.textContent, /whole100|a10MiB|of100/);
+    assert.equal(parts.exportAck.checked, false);
+    for (const ack of [parts.indexAck, parts.sourceAck, parts.filesAck]) assert.equal(ack.checked, false);
+    parts.target.value = "exports/copy.json";await parts.target.fire("input");
+    await parts.export.fire("click");
+    const selected = await source23Choose(app);
+    for (const ack of [selected.indexAck, selected.sourceAck, selected.filesAck]) {
+      ack.checked = false;await ack.fire("change");
+      assert.equal(selected.prepare.getAttribute("aria-disabled"), "true");
+      await selected.prepare.fire("click");
+      ack.checked = true;await ack.fire("change");
+    }
+    assert.equal(app.requests.some(row => row.route.startsWith("/project/source-bundle-") || row.route.startsWith("/project/source-transfer-stages") || row.route === "/project/source-stream-exports"), false);
+    assert.equal(app.byId("preview-dialog").open, false);staged24Unconfirmed(app);
+  });
+}

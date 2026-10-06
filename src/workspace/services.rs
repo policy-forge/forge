@@ -1671,4 +1671,51 @@ mod source_plan_capture_controls {
             matches!(validate_proposed_sources(&index,&[("wrong-key",b"bytes")],&mut NoopControl),Err(WorkError::Failed(error)) if error.code=="validation-failed")
         );
     }
+
+    /// Native POA&M validation must not admit the document under an existing workspace OSCAL role.
+    #[test]
+    fn poam_model_does_not_expand_existing_workspace_role_admission() {
+        let value = json!({
+            "plan-of-action-and-milestones": {
+                "uuid": "3360ade4-47bf-4b4b-ad32-2576dcaa0001",
+                "metadata": {
+                    "title": "Workspace role refusal fixture",
+                    "last-modified": "2026-10-02T00:00:00Z",
+                    "version": "1",
+                    "oscal-version": "1.2.3"
+                },
+                "import-ssp": {"href": "ssp.json"},
+                "poam-items": [{
+                    "uuid": "3360ade4-47bf-4b4b-ad32-2576dcaa0002",
+                    "title": "Explicit synthetic item",
+                    "description": "Native structure only; no remediation acceptance."
+                }]
+            }
+        });
+        let native = crate::validate::run_full_validation(
+            "workspace role refusal fixture",
+            &value,
+            crate::OscalModelType::Poam,
+        )
+        .unwrap();
+        assert!(native.is_valid());
+        let bytes = serde_json::to_vec(&value).unwrap();
+        for role in [
+            Role::OscalCatalogArtifact,
+            Role::OscalComponentArtifact,
+            Role::OscalProfileArtifact,
+            Role::OscalSspArtifact,
+            Role::MappingCollection,
+        ] {
+            let resource = Resource {
+                key: "poam-refusal".to_string(),
+                role,
+                path: "native-poam.json".to_string(),
+            };
+            assert!(
+                !validate_bytes(&resource, &bytes),
+                "POA&M must not inherit an incompatible role"
+            );
+        }
+    }
 }

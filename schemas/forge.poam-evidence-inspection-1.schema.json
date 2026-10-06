@@ -1,0 +1,513 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "validation_scope",
+    "plan_key",
+    "as_of",
+    "plan_sha256",
+    "bindings_sha256",
+    "linkage_manifest_sha256",
+    "current_source_sha256",
+    "current_result_uuid",
+    "current_result_key",
+    "terminal_admitted",
+    "artifact_validated",
+    "review_required",
+    "summary",
+    "rows",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "forge.poam-evidence-inspection/1"
+    },
+    "status": {
+      "const": "complete"
+    },
+    "validation_scope": {
+      "const": "readonly-declaration-and-current-source-evidence-metadata"
+    },
+    "plan_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "as_of": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "format": "date"
+    },
+    "plan_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "bindings_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "linkage_manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "current_source_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "current_result_uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "current_result_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 65536
+    },
+    "terminal_admitted": {
+      "const": false
+    },
+    "artifact_validated": {
+      "const": false
+    },
+    "review_required": {
+      "type": "boolean"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items",
+        "milestones",
+        "history_events",
+        "closure_assertions",
+        "bindings_supplied",
+        "assertion_rows",
+        "distinct_referenced_evidence",
+        "distinct_captured_local_evidence",
+        "linkage_evidence",
+        "linkage_links",
+        "unbound",
+        "mismatched",
+        "current",
+        "expiring",
+        "expired",
+        "changed",
+        "unavailable",
+        "unverified_uri",
+        "future_assertions",
+        "captured_original_generations",
+        "matched",
+        "binding_unavailable",
+        "freshness_unmeasured"
+      ],
+      "properties": {
+        "items": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "milestones": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "history_events": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "closure_assertions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "bindings_supplied": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "assertion_rows": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "distinct_referenced_evidence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "distinct_captured_local_evidence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "linkage_evidence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "linkage_links": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "unbound": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "mismatched": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "current": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "expiring": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "expired": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "changed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "unavailable": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "unverified_uri": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "future_assertions": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "captured_original_generations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10137
+        },
+        "matched": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "binding_unavailable": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "freshness_unmeasured": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        }
+      }
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Row"
+      },
+      "minItems": 0,
+      "maxItems": 100000
+    },
+    "boundary": {
+      "const": "Current byte/hash and date metadata plus explicit author associations only; no evidence content, authenticity, sufficiency, effectiveness, closure admission or compliance judgment."
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:forge:proposed:poam-evidence-inspection:1",
+  "$defs": {
+    "Locator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "item_key",
+        "milestone_key",
+        "event_key",
+        "assertion_evidence_key"
+      ],
+      "properties": {
+        "item_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "milestone_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "event_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "assertion_evidence_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "SourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "key",
+        "uuid",
+        "result_uuid",
+        "sha256"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "finding",
+            "risk"
+          ]
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 65536
+        },
+        "uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "result_uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "Row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "locator",
+        "item_uuid",
+        "milestone_uuid",
+        "assertion_sha256",
+        "linkage_project_key",
+        "link_key",
+        "link_id",
+        "linkage_evidence_key",
+        "freshness",
+        "match_status",
+        "approved_sha256",
+        "observed_sha256",
+        "approved_size",
+        "observed_size",
+        "local_bytes_revalidated",
+        "asserted_after_as_of",
+        "source_refs",
+        "recorded_valid_through"
+      ],
+      "properties": {
+        "locator": {
+          "$ref": "#/$defs/Locator"
+        },
+        "item_uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        },
+        "milestone_uuid": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assertion_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "linkage_project_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16384
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "link_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16384
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "link_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "linkage_evidence_key": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16384
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "freshness": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "current",
+                "expiring",
+                "expired",
+                "changed",
+                "unavailable",
+                "unverified-uri"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "match_status": {
+          "type": "string",
+          "enum": [
+            "unbound",
+            "matched",
+            "wrong-link-membership",
+            "reference-kind-mismatch",
+            "href-mismatch",
+            "hash-mismatch",
+            "unavailable"
+          ]
+        },
+        "approved_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observed_sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approved_size": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observed_size": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 52428800
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "local_bytes_revalidated": {
+          "type": "boolean"
+        },
+        "asserted_after_as_of": {
+          "type": "boolean"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceReference"
+          },
+          "minItems": 1,
+          "maxItems": 1000
+        },
+        "recorded_valid_through": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 16,
+              "pattern": "^[-+]?[0-9]{4,6}-[0-9]{2}-[0-9]{2}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "$comment": "Design only, not shipped/compiled. Required nulls are emitted exactly; runtime checks complete counter reconciliation, relationship uniqueness and UTF8 byte ceilings before output."
+}

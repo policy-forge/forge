@@ -548,6 +548,7 @@ fn fingerprint(
     })
 }
 
+/// Map each detected native model to its exact root for recorded lifecycle identity.
 fn model_root(model: crate::OscalModelType) -> &'static str {
     match model {
         crate::OscalModelType::Catalog => "catalog",
@@ -555,6 +556,7 @@ fn model_root(model: crate::OscalModelType) -> &'static str {
         crate::OscalModelType::Profile => "profile",
         crate::OscalModelType::SystemSecurityPlan => "system-security-plan",
         crate::OscalModelType::Mapping => "mapping-collection",
+        crate::OscalModelType::Poam => "plan-of-action-and-milestones",
     }
 }
 

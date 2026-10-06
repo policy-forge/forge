@@ -1446,7 +1446,8 @@ pub(crate) fn read_confined_local_file(
     Ok((bytes, (identity.volume, identity.file)))
 }
 
-fn has_normalized_path_spelling(path: &Path) -> bool {
+/// Require raw normalized spelling while preserving both Windows separator forms.
+pub(crate) fn has_normalized_path_spelling(path: &Path) -> bool {
     let normalized: PathBuf = path.components().collect();
     // Components remove internal `.` and redundant separators. Compare the raw
     // spelling too, while preserving both separator spellings accepted on Windows.
@@ -2444,3 +2445,11 @@ mod tests {
         }
     }
 }
+
+/// Sealed original capture and bounded current inspection for the POA&M companion.
+pub(crate) mod fresh;
+
+/// Complete native JSON overlays consuming held fresh linkage generations.
+pub(crate) mod overlay;
+/// Confined no-replacement publication of the prepared overlay.
+pub(crate) mod overlay_cli;

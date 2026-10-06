@@ -158,7 +158,10 @@ fn validate_artifacts(artifacts: &[OutputArtifact]) -> Result<(), ForgeError> {
     Ok(())
 }
 
-fn validate_relative(path: &str) -> Result<(), ForgeError> {
+/// Apply the exact portable publication path profile before a caller emits any output.
+/// # Errors
+/// Returns an authoring error for nonportable, aliased or overbound path spellings.
+pub(crate) fn validate_relative(path: &str) -> Result<(), ForgeError> {
     if path.is_empty() || path.len() > 1024 || path.split('/').count() > 32 {
         return Err(error("output path is empty or exceeds its bounds"));
     }
