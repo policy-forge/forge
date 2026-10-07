@@ -22,7 +22,7 @@ form button { margin-top: 16px; }
 .skip { position: absolute; left: 12px; top: -100px; background: white; padding: 10px; z-index: 5; }
 .skip:focus { top: 12px; }
 #workspace { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: 72vh; }
-#workspace[hidden], [hidden] { display: none; }
+#workspace[hidden], [hidden] { display: none !important; }
 nav { padding: 30px 16px; border-right: 1px solid var(--border); background: #eef1ed; }
 nav button { display: block; width: 100%; text-align: left; background: transparent; border-color: transparent; color: #30443b; margin-bottom: 8px; font-size: 14px; }
 nav button:hover, nav button[aria-current=page] { background: #dce8df; border-color: #a8bfae; color: #163d2d; }
