@@ -32,7 +32,7 @@ const receipt={format:'forge.s6-native-browser-development/1',status:'error',mod
    if(target.origin!==origin){receipt.non_loopback_requests++;await route.abort();return;}
    if(target.pathname.startsWith('/api/')){
     if(!target.pathname.startsWith('/api/v2/')){routeViolations.push(target.pathname);await route.abort();return;}
-    if(!['GET','HEAD','OPTIONS'].includes(request.method())&&!/^\/api\/v2\/(?:session\/(?:unlock|shutdown)|project\/bundle-verifications)$/.test(target.pathname))mutatingApiRequests++;
+    if(!['GET','HEAD','OPTIONS'].includes(request.method())&&!(request.method()==='POST'&&/^\/api\/v2\/(?:session\/(?:unlock|shutdown)|project\/bundle-verifications)$/.test(target.pathname)))mutatingApiRequests++;
     requests.add(request.method()+' '+target.pathname.replace(/(?:res|op|prev)_[0-9a-z]+/g,'{id}'));receipt.requests=[...requests].sort();
    }await route.continue();
   });

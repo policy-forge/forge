@@ -1,7 +1,8 @@
 "use strict";
 /** Report only the exact approved UI-local dependency graph; never launch or download a browser. */
 // Threat model: a local, read-only run with no concurrent writer to ui/node_modules or docs/. Pins below are deliberate
-// and must change in lockstep with docs/development-tools/hosted-chrome.json; any mismatch is a hard failure by design.
+// and must change in lockstep with docs/development-tools/hosted-chrome.json; any mismatch, including the Node pin vs
+// runtime.node in that manifest, is a hard failure by design.
 const fs=require("node:fs"),path=require("node:path"),crypto=require("node:crypto"),Module=require("node:module");
 const root=path.resolve(__dirname,"..");
 /** Capture stable bounded regular descriptors; optionally retain only bounded JSON bytes. */
@@ -64,11 +65,13 @@ function main() {
  const requireUi=Module.createRequire(path.join(root,"ui/tests/workspace.cjs"));
  const playwright=requireUi.resolve("playwright");const requirePlaywright=Module.createRequire(playwright);const core=requirePlaywright.resolve("playwright-core");
  const packages=[packagePin("playwright",playwright),packagePin("playwright-core",core)];
- const expected=JSON.parse(readBounded(path.join(root,"docs/development-tools/hosted-chrome.json"),1048576,true).raw.toString("utf8")).qualified_installed_package_trees.packages;
+ const manifest=JSON.parse(readBounded(path.join(root,"docs/development-tools/hosted-chrome.json"),1048576,true).raw.toString("utf8"));
+ if(typeof manifest.runtime?.node!=="string"||process.version!=="v"+manifest.runtime.node)throw Error("runtime-manifest");
+ const expected=manifest.qualified_installed_package_trees.packages;
  if(expected.length!==2)throw Error("tree-scope");
  for(let index=0;index<2;index++){for(const field of ["name","files","bytes","tree_sha256"]){if(packages[index][field]!==expected[index][field])throw Error("archive-tree-mismatch");}
   for(const field of ["manifest","entry"]){if(JSON.stringify(packages[index][field])!==JSON.stringify(expected[index][field]))throw Error("archive-entry-mismatch");}}
  if(fs.existsSync(path.join(directory,"fsevents")))throw Error("optional-installed");
- process.stdout.write(JSON.stringify({schema_version:"forge.hosted-chrome-tools/1",node:"24.19.0",packages,optional_omitted:true,installed_lock:filePin(path.join(directory,".package-lock.json"),1048576)})+"\n");
+ process.stdout.write(JSON.stringify({schema_version:"forge.hosted-chrome-tools/1",node:manifest.runtime.node,packages,optional_omitted:true,installed_lock:filePin(path.join(directory,".package-lock.json"),1048576)})+"\n");
 }
 try{main();}catch(_error){process.stderr.write("Approved local browser tooling is unverified.\n");process.exitCode=1;}

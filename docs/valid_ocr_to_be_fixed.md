@@ -2,7 +2,7 @@
 
 **Status 2026-10-06:** V1 to V4 and L1 to L4 are fixed in the working tree (uncommitted). L5 is left for the plan's author. V3 and V4 were syntax-checked only: `ui/node_modules` (Playwright) is not installed here, so the browser run still needs executing on a machine that has it.
 
-Validated 2026-10-06 against the working tree. Each finding was checked against the code or data it cites. Findings are ordered by priority. The rejected findings are in [`ivalid_ocr_findings.md`](ivalid_ocr_findings.md).
+Validated 2026-10-06 against the working tree. Each finding was checked against the code or data it cites. Findings are ordered by priority. The rejected findings are in [`invalid_ocr_findings.md`](invalid_ocr_findings.md).
 
 ## V1. `receipt-expired-410.json` fixture says `retryable: true`; the runtime says `false` — FIXED
 
@@ -12,9 +12,9 @@ Validated 2026-10-06 against the working tree. Each finding was checked against 
   - `src/workspace/effects.rs:649` returns `Error::new("receipt-expired", "The preview expired. Prepare a new preview.", false)`.
   - `src/workspace/source_transfers.rs:523` and `:539` also use `false`.
   - `ui/tests/workspace.cjs` injects `receipt-expired` with `retryable:false`.
-  - Only this fixture disagrees. Resending the same receipt cannot succeed, so a client that trusts the fixture would retry blindly.
+  - The v1 fixture `docs/api/fixtures/error/receipt-expired-410.json` had the same value (found in PR review; the original check only searched the v2 directory). Both are fixed. Resending the same receipt cannot succeed, so a client that trusts the fixture would retry blindly.
 - **Proposed fix:**
-  1. Set `"retryable": false` in the fixture.
+  1. Set `"retryable": false` in both the v1 and v2 fixtures.
   2. Make the fixture message match the runtime wording, or leave it if the contract only pins the code.
   3. Check `docs/api/forge-workspace-v2.openapi.yaml` for any `receipt-expired` example that repeats `retryable: true`.
   4. Run `cargo test --test api_contract_validation`. Update the recorded fixture hashes or counts in `docs/api/fixtures-v2/index.json` if that test checks them.
@@ -68,7 +68,7 @@ Validated 2026-10-06 against the working tree. Each finding was checked against 
 
 # Low priority: true, but optional hardening or cleanup
 
-These were first rejected in `ivalid_ocr_findings.md` as not worth fixing. On re-triage they are accurate observations with no failing scenario today. Do them opportunistically.
+These were first rejected in `invalid_ocr_findings.md` as not worth fixing. On re-triage they are accurate observations with no failing scenario today. Do them opportunistically.
 
 - **[FIXED] L1. `ui/workspace.css:25` `[hidden]` can lose to later `display` rules.**
   - `[hidden]` has specificity (0,1,0), the same as `.cards` and `.view-heading`, and those rules come later.
