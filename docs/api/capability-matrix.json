@@ -274,9 +274,9 @@
     "action": "Enforce read-only launch mode",
     "golden_path_step": "cross-cutting",
     "user_stories": ["US-7"],
-    "operations": ["registerResource", "uploadResource", "preparePolicyConversion", "putApplicabilityDraft", "putMappingDraft", "analyzeApplicability", "buildMapping", "commitEffectPreview", "prepareReportExport", "initializeApplicabilityDraft", "initializeMappingDraft"],
+    "operations": ["registerResource", "uploadResource", "preparePolicyConversion", "putApplicabilityDraft", "putMappingDraft", "analyzeApplicability", "buildMapping", "commitEffectPreview", "prepareReportExport", "initializeApplicabilityDraft", "initializeMappingDraft", "cancelOperation"],
     "authorization": "browser-write",
-    "notes": "Every mutation returns the typed read-only-session error with no file change (AC-2), covering the permission-denied UX state; all read operations in CM-02, CM-06, CM-07, CM-11 through CM-13, CM-16 through CM-18, CM-20, CM-22 through CM-25, and CM-30 keep working."
+    "notes": "Every mutation returns the typed read-only-session error with no file change (AC-2), covering the permission-denied UX state; all read operations in CM-02, CM-03, CM-06, CM-07, CM-11 through CM-13, CM-16 through CM-18, CM-20, CM-22 through CM-25, CM-27, CM-30, CM-38, and CM-39 keep working."
   },
   {
     "id": "CM-32",

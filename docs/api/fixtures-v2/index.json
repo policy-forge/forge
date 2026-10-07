@@ -650,7 +650,7 @@
       "kind": "request",
       "schema": "openapi:components/schemas/ProjectBundleImportRequest",
       "expectation": "invalid",
-      "description": "Only1 or2 are selected."
+      "description": "Only 1 or 2 are selected."
     },
     {
       "file": "project-bundle-effects/import-extra-property-invalid.json",
@@ -678,21 +678,21 @@
       "kind": "request",
       "schema": "openapi:components/schemas/ProjectBundleImportRequest",
       "expectation": "invalid",
-      "description": "Bundle1/index2 is not a valid pair."
+      "description": "Bundle 1/index 2 is not a valid pair."
     },
     {
       "file": "project-bundle-effects/import-index1-new-role-invalid.json",
       "kind": "request",
       "schema": "openapi:components/schemas/ProjectBundleImportRequest",
       "expectation": "invalid",
-      "description": "Index1 retains its original seven-role authority."
+      "description": "Index 1 retains its original seven-role authority."
     },
     {
       "file": "project-bundle-effects/import-downgrade-invalid.json",
       "kind": "request",
       "schema": "openapi:components/schemas/ProjectBundleImportRequest",
       "expectation": "invalid",
-      "description": "Bundle2 cannot select target1 in preadmission."
+      "description": "Bundle 2 cannot select target 1 in preadmission."
     },
     {
       "file": "project-bundle-effects/import-preview-v2-valid.json",
@@ -713,7 +713,7 @@
       "kind": "response",
       "schema": "openapi:components/schemas/ProjectBundleImportPreview",
       "expectation": "valid",
-      "description": "Explicit1-to-2 has separate supplied/proposed normalized hashes and complete versions."
+      "description": "Explicit 1-to-2 has separate supplied/proposed normalized hashes and complete versions."
     },
     {
       "file": "project-bundle-effects/preview-missing-replacement-invalid.json",
@@ -755,7 +755,7 @@
       "kind": "response",
       "schema": "openapi:components/schemas/ProjectBundleImportPreview",
       "expectation": "invalid",
-      "description": "Whole consumed-file count cannot exceed100."
+      "description": "Whole consumed-file count cannot exceed 100."
     },
     {
       "file": "project-bundle-effects/preview-negative-count-invalid.json",
@@ -790,7 +790,7 @@
       "kind": "response",
       "schema": "openapi:components/schemas/ProjectBundleImportPreview",
       "expectation": "invalid",
-      "description": "Only the complete existing index1 or index2 shape is admitted."
+      "description": "Only the complete existing index 1 or index 2 shape is admitted."
     },
     {
       "file": "project-bundle-effects/preview-missing-validation-invalid.json",
@@ -846,7 +846,7 @@
       "kind": "error",
       "schema": "openapi:components/schemas/Error",
       "expectation": "invalid",
-      "description": "API2 errors remain closed; no arbitrary diagnostic code."
+      "description": "API 2 errors remain closed; no arbitrary diagnostic code."
     },
     {
       "file": "project-bundle-effects/metadata-export-result-valid.json",
@@ -909,14 +909,14 @@
       "kind": "request",
       "schema": "openapi:components/schemas/PrepareProjectSourceBundleImportRequest",
       "expectation": "valid",
-      "description": "Explicit incoming1 to target2 selection; current index no-downgrade is separately checked natively."
+      "description": "Explicit incoming 1 to target 2 selection; current index no-downgrade is separately checked natively."
     },
     {
       "file": "project-source-bundle/import-index2-downgrade-invalid.json",
       "kind": "request",
       "schema": "openapi:components/schemas/PrepareProjectSourceBundleImportRequest",
       "expectation": "invalid",
-      "description": "Closed conditional refuses incoming2 selector1; current2 selector1 remains native refusal."
+      "description": "Closed conditional refuses incoming 2 selector 1; current 2 selector 1 remains native refusal."
     },
     {
       "file": "project-source-bundle/export-acknowledgments-valid.json",
@@ -937,7 +937,7 @@
       "kind": "response",
       "schema": "openapi:components/schemas/SourceRestorePreview",
       "expectation": "invalid",
-      "description": "Required preknown ID prevents losing lookup authority merely because202 was lost."
+      "description": "Required preknown ID prevents losing lookup authority merely because 202 was lost."
     },
     {
       "file": "project-source-bundle/import-response-valid.json",
@@ -1119,7 +1119,7 @@
       "kind": "request",
       "schema": "openapi:components/schemas/WorkspaceSourceBundle4",
       "expectation": "valid",
-      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: nonfinal content chunk is not32768 bytes"
+      "description": "Synthetic schema-valid shape; compiler execution pending. Native-only distinction: nonfinal content chunk is not 32768 bytes"
     },
     {
       "file": "project-staged-source/create-valid.json",
