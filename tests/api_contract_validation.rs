@@ -128,12 +128,11 @@ fn rewrite_component_refs(value: &Value) -> Value {
             let rewritten: Map<String, Value> = entries
                 .iter()
                 .map(|(key, child)| {
-                    if key == "$ref" {
-                        if let Some(target) = child.as_str() {
-                            if let Some(name) = target.strip_prefix("#/components/schemas/") {
-                                return (key.clone(), Value::String(format!("#/$defs/{name}")));
-                            }
-                        }
+                    if key == "$ref"
+                        && let Some(target) = child.as_str()
+                        && let Some(name) = target.strip_prefix("#/components/schemas/")
+                    {
+                        return (key.clone(), Value::String(format!("#/$defs/{name}")));
                     }
                     (key.clone(), rewrite_component_refs(child))
                 })
@@ -408,20 +407,21 @@ fn openapi_paths_operations_and_security_invariants_hold() {
     // An empty security-requirement object `{}` silently makes authentication
     // optional for an operation; only the unlock operation may opt out, and it
     // must do so with an explicit empty requirements list (`security: []`).
-    if let Some(requirements) = global_security {
-        if has_empty_security_requirement(requirements) {
-            errors.push("document-level security contains an empty requirement object".into());
-        }
+    if let Some(requirements) = global_security
+        && has_empty_security_requirement(requirements)
+    {
+        errors.push("document-level security contains an empty requirement object".into());
     }
     for operation in &found {
         let operation_object = &document["paths"][&operation.path][operation.method];
-        if let Some(Value::Array(requirements)) = operation_object.get("security") {
-            if !requirements.is_empty() && has_empty_security_requirement(requirements) {
-                errors.push(format!(
-                    "{} {} declares an empty security requirement object",
-                    operation.method, operation.path
-                ));
-            }
+        if let Some(Value::Array(requirements)) = operation_object.get("security")
+            && !requirements.is_empty()
+            && has_empty_security_requirement(requirements)
+        {
+            errors.push(format!(
+                "{} {} declares an empty security requirement object",
+                operation.method, operation.path
+            ));
         }
     }
 
@@ -472,10 +472,10 @@ fn openapi_paths_operations_and_security_invariants_hold() {
                     }
                     None => parameter,
                 };
-                if resolved.get("in").and_then(Value::as_str) == Some("path") {
-                    if let Some(name) = resolved.get("name").and_then(Value::as_str) {
-                        declared.insert(name.to_string());
-                    }
+                if resolved.get("in").and_then(Value::as_str) == Some("path")
+                    && let Some(name) = resolved.get("name").and_then(Value::as_str)
+                {
+                    declared.insert(name.to_string());
                 }
             }
             for name in &template_names {
@@ -563,12 +563,11 @@ fn collect_internal_ref_errors(root: &Value, node: &Value, path: &str) -> Vec<St
     let mut errors = Vec::new();
     match node {
         Value::Object(entries) => {
-            if let Some(Value::String(target)) = entries.get("$ref") {
-                if let Some(pointer) = target.strip_prefix('#') {
-                    if root.pointer(pointer).is_none() {
-                        errors.push(format!("{path}: unresolved $ref {target}"));
-                    }
-                }
+            if let Some(Value::String(target)) = entries.get("$ref")
+                && let Some(pointer) = target.strip_prefix('#')
+                && root.pointer(pointer).is_none()
+            {
+                errors.push(format!("{path}: unresolved $ref {target}"));
             }
             for (key, child) in entries {
                 if key != "$ref" {
