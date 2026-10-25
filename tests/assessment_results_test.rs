@@ -428,6 +428,42 @@ fn build_is_schema_valid_deterministic_and_content_minimizing() {
     assert_eq!(report_bytes, std::fs::read(&fixture.report).unwrap());
 }
 
+/// Verify that `forge validate` auto-detects and accepts builder output, and rejects a broken copy.
+#[test]
+fn built_assessment_results_pass_forge_validate() {
+    let fixture = fixture();
+    let build = run(&[
+        "assessment",
+        "results",
+        "build",
+        "--manifest",
+        fixture.manifest.to_str().unwrap(),
+        "--output",
+        fixture.output.to_str().unwrap(),
+        "--report",
+        fixture.report.to_str().unwrap(),
+    ]);
+    assert_eq!(build.status.code(), Some(0), "{}", String::from_utf8_lossy(&build.stderr));
+
+    let validated = run(&["validate", fixture.output.to_str().unwrap(), "--format", "json"]);
+    let stderr = String::from_utf8_lossy(&validated.stderr);
+    assert_eq!(validated.status.code(), Some(0), "{stderr}");
+    let report: Value = serde_json::from_slice(&validated.stdout).unwrap();
+    assert_eq!(report["model_type"], "assessment-results");
+    assert_eq!(report["is_valid"], true);
+    assert_eq!(report["schema_error_count"], 0);
+
+    let mut broken: Value = serde_json::from_slice(&std::fs::read(&fixture.output).unwrap())
+        .expect("builder output is JSON");
+    broken["assessment-results"].as_object_mut().unwrap().remove("results");
+    let broken_path = fixture.directory.path().join("broken-assessment-results.json");
+    write_json(&broken_path, &broken);
+    let rejected = run(&["validate", broken_path.to_str().unwrap()]);
+    let stderr = String::from_utf8_lossy(&rejected.stderr);
+    assert_eq!(rejected.status.code(), Some(3), "{stderr}");
+    assert!(stderr.contains("required field missing: results"), "{stderr}");
+}
+
 #[test]
 fn invalid_graph_stale_context_and_missing_provenance_exit_two_without_output() {
     let invalid_graph_fixture = fixture();

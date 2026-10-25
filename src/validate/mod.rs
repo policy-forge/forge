@@ -860,4 +860,67 @@ mod tests {
             assert!(!error.message.contains("::"), "Rust path leaked: {}", error.message);
         }
     }
+
+    /// Verify that an `assessment-results` object root is detected as Assessment Results.
+    #[test]
+    fn detect_model_type_assessment_results() {
+        let json = serde_json::json!({ "assessment-results": {} });
+        assert_eq!(detect_model_type(&json).unwrap(), OscalModelType::AssessmentResults);
+        assert_eq!(OscalModelType::AssessmentResults.to_string(), "assessment-results");
+    }
+
+    /// Verify that an Assessment Results root alongside another model root is ambiguous.
+    #[test]
+    fn detect_model_type_rejects_catalog_and_assessment_results_ambiguity() {
+        let json = serde_json::json!({ "catalog": {}, "assessment-results": {} });
+        let error = detect_model_type(&json).expect_err("multiple roots must be ambiguous");
+        assert!(matches!(error, ValidateError::AmbiguousArtifact { .. }));
+        assert!(error.to_string().contains("assessment-results"));
+    }
+
+    /// Verify that the embedded schema is the pinned v1.2.3 Assessment Results schema.
+    #[test]
+    fn load_schema_assessment_results_returns_pinned_schema() {
+        let schema = load_schema(OscalModelType::AssessmentResults).unwrap();
+        assert_eq!(
+            schema.get("$id").and_then(Value::as_str),
+            Some("http://csrc.nist.gov/ns/oscal/1.2.3/oscal-ar-schema.json")
+        );
+        let first = compiled_validator(OscalModelType::AssessmentResults).unwrap();
+        let second = compiled_validator(OscalModelType::AssessmentResults).unwrap();
+        assert!(std::ptr::eq(first, second));
+    }
+
+    /// Verify full validation accepts a minimal native AR and reports a missing `import-ap`.
+    #[test]
+    fn full_validation_assessment_results_schema_boundary() {
+        let mut json = serde_json::json!({
+            "assessment-results": {
+                "uuid": "6f1d2c3b-4a5e-4f60-8a71-9b2c3d4e5f60",
+                "metadata": {
+                    "title": "Schema boundary fixture",
+                    "last-modified": "2026-10-25T00:00:00Z",
+                    "version": "1.0",
+                    "oscal-version": "1.2.3"
+                },
+                "import-ap": { "href": "assessment-plan.json" },
+                "results": [{
+                    "uuid": "6f1d2c3b-4a5e-4f60-8a71-9b2c3d4e5f61",
+                    "title": "Explicit fixture result",
+                    "description": "Tests native structure without asserting a conclusion.",
+                    "start": "2026-10-25T00:00:00Z",
+                    "reviewed-controls": { "control-selections": [{ "include-all": {} }] }
+                }]
+            }
+        });
+        let report =
+            run_full_validation("ar.json", &json, OscalModelType::AssessmentResults).unwrap();
+        assert!(report.is_valid(), "minimal AR must be valid: {:#?}", report.errors());
+
+        json["assessment-results"].as_object_mut().unwrap().remove("import-ap");
+        let report =
+            run_full_validation("ar.json", &json, OscalModelType::AssessmentResults).unwrap();
+        assert!(!report.is_valid());
+        assert!(report.errors().iter().any(|error| error.message.contains("import-ap")));
+    }
 }

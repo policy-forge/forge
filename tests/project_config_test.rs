@@ -536,3 +536,28 @@ fn bare_relative_forge_config_selector_works() {
         run_with_env(dir.path(), &["config", "check"], [("FORGE_CONFIG", ".forge.toml")]);
     assert_eq!(code, Some(0), "FORGE_CONFIG bare relative name: {stderr}");
 }
+
+/// `validate.schema-type = "assessment-results"` is admitted, reported and applied (#70).
+#[test]
+fn validate_schema_type_assessment_results_from_config() {
+    let dir = TempDir::new().unwrap();
+    write_config(
+        dir.path(),
+        "schema-version = 1\n[validate]\nschema-type = \"assessment-results\"\n",
+    );
+    let (stdout, stderr, code) = run(dir.path(), &["config", "check"]);
+    assert_eq!(code, Some(0), "stderr: {stderr}");
+    assert!(stdout.contains("assessment-results"), "{stdout}");
+
+    let catalog = dir.path().join("catalog.json");
+    fs::write(
+        &catalog,
+        r#"{"catalog": {"uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "metadata": {
+            "title": "Test", "last-modified": "2026-01-01T00:00:00Z",
+            "version": "1.0", "oscal-version": "1.2.3"}}}"#,
+    )
+    .unwrap();
+    let (_, stderr, code) = run(dir.path(), &["validate", catalog.to_str().unwrap()]);
+    assert_eq!(code, Some(3), "configured AR schema must apply to validate: {stderr}");
+    assert!(stderr.contains("assessment-results"), "{stderr}");
+}
