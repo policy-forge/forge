@@ -37,6 +37,14 @@ const MAX_OBJECTS: usize = 10_000;
 const MAX_RELATIONSHIPS: usize = 100_000;
 /// Exact extension namespace already consumed by the maintained native producer.
 const NS: &str = model::FORGE_ASSESSMENT_RESULTS_NS;
+/// Refusal for a different Assessment Plan or context generation, which needs a new document.
+const CONTEXT_GENERATION: &str = "epoch Assessment Plan or context generation differs from the prior document; start a new Assessment Results document";
+/// Optional additive request roster of backward-only new-finding observation links.
+const LINKS: &str = "prior_observation_links";
+/// Risk-only native continuity family-key property, shared with the source profile.
+const FAMILY_PROPERTY: &str = source::CONTINUITY_FAMILY_PROPERTY;
+/// Risk-only native continuity predecessor-UUID property, shared with the source profile.
+const PREDECESSOR_PROPERTY: &str = source::CONTINUITY_PREDECESSOR_PROPERTY;
 /// Fixed minimized assertion boundary used by the versioned report module.
 const TRUST_BOUNDARY: &str = "Caller-authored assessment and continuity assertions; identity and structure checks do not authenticate actors, evaluate evidence, or authorize remediation.";
 /// Surrogate fixed-width digests used only by nonretaining prospective accounting.
@@ -155,10 +163,14 @@ pub(crate) fn prepare_with_view(
         &source_declaration,
         &mut capture,
     )?;
+    let links = resolve_links(old_document, &request, &mut capture)?;
+    let prospective_actors = ReportActors::authored(old_document, next_raw)?;
     let prospective = ReportMirror {
         old: old_document,
         next: Next::Authored(&next_raw["result"]),
         plan: &plan,
+        links: &links,
+        actors: &prospective_actors,
         source: &source_declaration,
         output: native_output.to_str().ok_or_else(|| error("epoch native filename is not UTF8"))?,
         raw_hash: HASH,
@@ -169,27 +181,25 @@ pub(crate) fn prepare_with_view(
     };
     let accounting =
         preflight_projection(next_raw, prior, &source_declaration, &prospective, view)?;
-    let built_value = build_next_native(next_raw, &actual, old_document, &plan, accounting.native)?;
+    let built_value =
+        build_next_native(next_raw, &actual, old_document, &plan, &links, accounting.native)?;
     let next_document = document(&built_value)?;
     let next_result = one_result(next_document)?;
-    let native = encode_limited(
-        &AppendEnvelope { old: prior, next_document, next_result },
+    let additions = validate_same_envelope(old_document, next_document)?;
+    let native = encode_native(
+        &AppendEnvelope { old: prior, next_document, next_result, additions: &additions },
+        &actual,
         accounting.envelope,
-        true,
+        &mut capture,
     )?;
-    if native.len() > accounting.envelope {
-        return Err(error("epoch native output exceeded its complete admitted ceiling"));
-    }
-    let final_value = strict(&native, MAX_NATIVE, 128)?;
-    reverse_oracle(prior, &final_value, next_result)?;
-    source::validate_derived_epoch_graph(&actual, &final_value, &mut capture)
-        .map_err(|_| error("epoch complete derived native graph is invalid"))?;
-    drop(final_value);
     let native_hash = sha256_hex(&native);
+    let actual_actors = ReportActors::native(&additions)?;
     let actual_mirror = ReportMirror {
         old: old_document,
         next: Next::Native(next_result),
         plan: &plan,
+        links: &links,
+        actors: &actual_actors,
         source: &source_declaration,
         output: prospective.output,
         raw_hash: &native_hash,
@@ -219,6 +229,24 @@ pub(crate) fn prepare_with_view(
     Ok(prepared)
 }
 
+/// Encode the complete appended native, then prove its reversal and derived graph validity.
+fn encode_native(
+    envelope: &AppendEnvelope<'_>,
+    actual: &CapturedEpochSource<'_>,
+    ceiling: usize,
+    capture: &mut CaptureSession,
+) -> Result<Vec<u8>, ForgeError> {
+    let native = encode_limited(envelope, ceiling, true)?;
+    if native.len() > ceiling {
+        return Err(error("epoch native output exceeded its complete admitted ceiling"));
+    }
+    let final_value = strict(&native, MAX_NATIVE, 128)?;
+    reverse_oracle(envelope.old, &final_value, envelope.next_result, envelope.additions)?;
+    source::validate_derived_epoch_graph(actual, &final_value, capture)
+        .map_err(|_| error("epoch complete derived native graph is invalid"))?;
+    Ok(native)
+}
+
 /// Admit the complete explicit prior source and require exactly the same next context.
 fn decode_prior_source(request: &Value) -> Result<SourceManifest, ForgeError> {
     let source_declaration: SourceManifest = decode_bounded(&request["prior_source"], MAX_REQUEST)?;
@@ -232,7 +260,7 @@ fn decode_prior_source(request: &Value) -> Result<SourceManifest, ForgeError> {
         .map_err(|_| error("epoch context declaration encoding failed"))?
         != request["next_epoch"]["context"]
     {
-        return Err(error("epoch contexts differ from complete actual prior declaration"));
+        return Err(error(CONTEXT_GENERATION));
     }
     Ok(source_declaration)
 }
@@ -243,6 +271,7 @@ fn build_next_native(
     actual: &source::CapturedEpochSource<'_>,
     old_document: &Value,
     plan: &ContinuityPlan<'_>,
+    links: &[ObservationLink<'_>],
     native_ceiling: usize,
 ) -> Result<Value, ForgeError> {
     let compact_next = encode_limited(next_raw, MAX_REQUEST, false)?;
@@ -253,17 +282,203 @@ fn build_next_native(
         .map_err(|_| error("epoch next native construction is invalid"))?;
     let built_bytes = encode_limited(&built.artifact, native_ceiling, true)?;
     drop(built);
-    let built_value = strict(&built_bytes, MAX_NATIVE, 128)?;
+    let mut built_value = strict(&built_bytes, MAX_NATIVE, 128)?;
     drop(built_bytes);
+    decorate_next(&mut built_value, plan, links)?;
+    if add(encoded_count(&built_value, native_ceiling)?, 1)? > native_ceiling {
+        return Err(error("epoch decorated next native exceeds its admitted ceiling"));
+    }
     assessment_results::validate_completed_json(&built_value)
         .map_err(|_| error("epoch next native schema is invalid"))?;
     let next_document = document(&built_value)?;
-    validate_same_envelope(old_document, next_document)?;
+    let additions = validate_same_envelope(old_document, next_document)?;
     validate_append_window(old_document, next_document)?;
     let next_result = one_result(next_document)?;
-    check_new_identities(old_document, next_document, next_result)?;
-    plan.validate_actual_next(old_document, next_result)?;
+    check_new_identities(old_document, next_document, next_result, &additions)?;
+    plan.validate_actual_next(next_document, next_result)?;
     Ok(built_value)
+}
+
+/// One validated backward link from a new finding to an earlier-epoch observation.
+struct ObservationLink<'a> {
+    /// Exact next authored finding key receiving the reference.
+    finding_key: &'a str,
+    /// Actual earlier observation object, preserved unchanged.
+    object: &'a Value,
+}
+
+/// Resolve every requested backward observation link against earlier native epochs only.
+///
+/// The observation must already exist in the prior document, so a same-epoch or
+/// forward reference cannot resolve. Only kind `observation` is admitted; links to
+/// earlier findings or risks are refused by kind. Rows are sorted for determinism.
+fn resolve_links<'a>(
+    old: &'a Value,
+    request: &'a Value,
+    capture: &mut CaptureSession,
+) -> Result<Vec<ObservationLink<'a>>, ForgeError> {
+    let rows = optional_array(request.get(LINKS), MAX_OBJECTS)?;
+    capture
+        .relationships(rows.len())
+        .map_err(|_| error("epoch observation link relationship budget exceeded"))?;
+    let findings = array(&request["next_epoch"]["result"]["findings"], MAX_OBJECTS)?;
+    let mut seen = BTreeSet::new();
+    let mut links = Vec::with_capacity(rows.len());
+    for row in rows {
+        let finding_key = text(&row["finding_key"])?;
+        if findings.iter().filter(|finding| finding["key"].as_str() == Some(finding_key)).count()
+            != 1
+        {
+            return Err(error("epoch observation link names an absent next finding"));
+        }
+        let object = resolve_observation(old, &row["observation"])?;
+        if !seen.insert((finding_key, text(&object["uuid"])?)) {
+            return Err(error("epoch observation link is duplicated"));
+        }
+        links.push(ObservationLink { finding_key, object });
+    }
+    links.sort_by(|left, right| {
+        (left.finding_key, left.object["uuid"].as_str())
+            .cmp(&(right.finding_key, right.object["uuid"].as_str()))
+    });
+    Ok(links)
+}
+
+/// Resolve one complete observation tuple in an earlier epoch of the actual prior document.
+fn resolve_observation<'a>(document: &'a Value, value: &Value) -> Result<&'a Value, ForgeError> {
+    validate_object_reference(value, "observation")?;
+    let key = text(&value["key"])?;
+    for result in array(&document["results"], MAX_EPOCHS - 1)? {
+        if result["uuid"] == value["result_uuid"] {
+            let mut found = None;
+            for object in optional_array(result.get("observations"), MAX_OBJECTS)? {
+                if property(object, "stable-key")? == key && found.replace(object).is_some() {
+                    return Err(error("epoch native observation key is duplicated"));
+                }
+            }
+            let object =
+                found.ok_or_else(|| error("epoch linked observation is absent from its epoch"))?;
+            if object["uuid"] != value["uuid"]
+                || source::canonical_epoch_object_sha256(object)?
+                    != text(&value["expected_sha256"])?
+            {
+                return Err(error("epoch linked observation differs from its actual native tuple"));
+            }
+            return Ok(object);
+        }
+    }
+    Err(error("epoch linked observation is not in an earlier epoch of the prior document"))
+}
+
+/// Whether a value satisfies the OSCAL property-value string profile.
+fn oscal_string(value: &str) -> bool {
+    !value.is_empty()
+        && value.trim() == value
+        && !value.contains(['\n', '\r', '\u{2028}', '\u{2029}'])
+}
+
+/// Add native continuity props to continued risks and backward links to new findings.
+///
+/// Each continued risk gains the family key and its predecessor's risk UUID as
+/// Forge-namespaced props; first family members carry neither. Declared content
+/// digests are unchanged; computed whole-object digests include the props.
+fn decorate_next(
+    built: &mut Value,
+    plan: &ContinuityPlan<'_>,
+    links: &[ObservationLink<'_>],
+) -> Result<(), ForgeError> {
+    let result = built
+        .pointer_mut("/assessment-results/results/0")
+        .ok_or_else(|| error("epoch next native has no result"))?;
+    for edge in plan.edges.values() {
+        let Endpoint::Native { object: predecessor, .. } = edge.predecessor else {
+            return Err(error("epoch recurrence predecessor is not actual native"));
+        };
+        let risk = keyed_mut(result, "risks", edge.successor.key()?)?;
+        let props = risk
+            .get_mut("props")
+            .and_then(Value::as_array_mut)
+            .ok_or_else(|| error("epoch next risk props are invalid"))?;
+        props.push(serde_json::json!({"name": FAMILY_PROPERTY, "ns": NS, "value": edge.family}));
+        props.push(serde_json::json!({
+            "name": PREDECESSOR_PROPERTY, "ns": NS, "value": text(&predecessor["uuid"])?
+        }));
+    }
+    for link in links {
+        let finding = keyed_mut(result, "findings", link.finding_key)?;
+        finding
+            .get_mut("related-observations")
+            .and_then(Value::as_array_mut)
+            .ok_or_else(|| error("epoch next finding observations are invalid"))?
+            .push(serde_json::json!({"observation-uuid": text(&link.object["uuid"])?}));
+    }
+    Ok(())
+}
+
+/// Borrow one next-result conclusion mutably by its unique Forge stable key.
+fn keyed_mut<'a>(
+    result: &'a mut Value,
+    field: &str,
+    key: &str,
+) -> Result<&'a mut Value, ForgeError> {
+    let rows = result
+        .get_mut(field)
+        .and_then(Value::as_array_mut)
+        .ok_or_else(|| error("epoch next conclusion roster is absent"))?;
+    let mut index = None;
+    for (position, row) in rows.iter().enumerate() {
+        if property(row, "stable-key")? == key && index.replace(position).is_some() {
+            return Err(error("epoch next conclusion key is duplicated"));
+        }
+    }
+    let index = index.ok_or_else(|| error("epoch next conclusion key is absent"))?;
+    Ok(&mut rows[index])
+}
+
+/// Role IDs and party UUIDs added by this append, as reported change rows.
+struct ReportActors<'a> {
+    /// Added role IDs in maintained next order.
+    roles: Vec<&'a str>,
+    /// Added party UUIDs, or fixed-width surrogates before actual construction.
+    parties: Vec<&'a str>,
+}
+
+impl<'a> ReportActors<'a> {
+    /// Prospective additions from the authored roster, with surrogate party UUIDs.
+    fn authored(old: &Value, next: &'a Value) -> Result<Self, ForgeError> {
+        let old_roles = array(&old["metadata"]["roles"], 1_000)?;
+        let old_parties = array(&old["metadata"]["parties"], 1_000)?;
+        let mut roles = Vec::new();
+        for role in array(&next["roles"], 1_000)? {
+            if !old_roles.iter().any(|row| row["id"] == role["id"]) {
+                roles.push(text(&role["id"])?);
+            }
+        }
+        let mut parties = Vec::new();
+        for party in array(&next["parties"], 1_000)? {
+            let key = text(&party["key"])?;
+            let mut known = false;
+            for row in old_parties {
+                known |= property(row, "stable-key")? == key;
+            }
+            if !known {
+                parties.push(UUID);
+            }
+        }
+        Ok(Self { roles, parties })
+    }
+
+    /// Actual additions from the maintained next document.
+    fn native(additions: &ActorAdditions<'a>) -> Result<Self, ForgeError> {
+        Ok(Self {
+            roles: additions.roles.iter().map(|row| text(&row["id"])).collect::<Result<_, _>>()?,
+            parties: additions
+                .parties
+                .iter()
+                .map(|row| text(&row["uuid"]))
+                .collect::<Result<_, _>>()?,
+        })
+    }
 }
 
 /// Complete held report and delivery buffers admitted by the prospective encoded ceilings.
@@ -408,17 +623,17 @@ fn parse_request(bytes: &[u8]) -> Result<Value, ForgeError> {
     if !validator.is_valid(&value) {
         return Err(error("epoch request does not satisfy its closed offline schema"));
     }
-    closed(
-        &value,
-        &[
-            "schema_version",
-            "prior_source",
-            "next_epoch",
-            "prior_report",
-            "seed_families",
-            "new_risks",
-        ],
-    )?;
+    let root_fields = [
+        "schema_version",
+        "prior_source",
+        "next_epoch",
+        "prior_report",
+        "seed_families",
+        "new_risks",
+        LINKS,
+    ];
+    // The additive link roster is optional; every other root field stays required.
+    closed(&value, &root_fields[..if value.get(LINKS).is_some() { 7 } else { 6 }])?;
     if value["schema_version"] != "forge.assessment-epoch-append/1" {
         return Err(error("epoch request version is unsupported"));
     }
@@ -471,6 +686,11 @@ fn parse_request(bytes: &[u8]) -> Result<Value, ForgeError> {
                 }
             }
         }
+    }
+    for row in optional_array(value.get(LINKS), MAX_OBJECTS)? {
+        closed(row, &["finding_key", "observation"])?;
+        text(&row["finding_key"])?;
+        validate_object_reference(&row["observation"], "observation")?;
     }
     if !value["prior_report"].is_null() {
         closed(&value["prior_report"], &["artifact", "expected_sha256"])?;
@@ -938,26 +1158,75 @@ fn window(result: &Value, start: &str, end: Option<&str>) -> Result<(), ForgeErr
     Ok(())
 }
 
-/// Validate complete same-context metadata/receipts before borrowing prior native containers.
-fn validate_same_envelope(old: &Value, next: &Value) -> Result<(), ForgeError> {
-    if old["uuid"] != next["uuid"]
-        || old["import-ap"] != next["import-ap"]
-        || old.get("back-matter") != next.get("back-matter")
-    {
-        return Err(error("epoch native root, import or complete receipts changed"));
+/// Metadata roles and parties added by the appended epoch; earlier entries stay unchanged.
+#[derive(Default)]
+struct ActorAdditions<'a> {
+    /// Added maintained role Values, in maintained next order.
+    roles: Vec<&'a Value>,
+    /// Added maintained party Values, in maintained next order.
+    parties: Vec<&'a Value>,
+}
+
+/// Validate same-context metadata/receipts and return additive roles and parties only.
+///
+/// Every earlier role and party must reappear Value-equal in the next document;
+/// a changed or omitted earlier actor refuses. Receipts must be unchanged.
+fn validate_same_envelope<'a>(
+    old: &Value,
+    next: &'a Value,
+) -> Result<ActorAdditions<'a>, ForgeError> {
+    if old["uuid"] != next["uuid"] || old["import-ap"] != next["import-ap"] {
+        return Err(error(CONTEXT_GENERATION));
+    }
+    if old.get("back-matter") != next.get("back-matter") {
+        return Err(error("epoch native receipts changed; earlier back-matter must be unchanged"));
     }
     let left =
         old["metadata"].as_object().ok_or_else(|| error("epoch prior metadata is invalid"))?;
     let right =
         next["metadata"].as_object().ok_or_else(|| error("epoch next metadata is invalid"))?;
     if left.len() != right.len()
+        || left.keys().any(|key| !right.contains_key(key))
         || left.iter().any(|(key, value)| {
-            !matches!(key.as_str(), "version" | "last-modified") && right.get(key) != Some(value)
+            !matches!(key.as_str(), "version" | "last-modified" | "roles" | "parties")
+                && right.get(key) != Some(value)
         })
     {
-        return Err(error("epoch complete unchanged metadata or actors differ"));
+        return Err(error("epoch complete unchanged metadata differs"));
     }
-    Ok(())
+    Ok(ActorAdditions {
+        roles: added_actors(old, next, "roles", "id")?,
+        parties: added_actors(old, next, "parties", "uuid")?,
+    })
+}
+
+/// Require every earlier actor row unchanged in the next roster and return the new rows.
+fn added_actors<'a>(
+    old: &Value,
+    next: &'a Value,
+    field: &str,
+    id: &str,
+) -> Result<Vec<&'a Value>, ForgeError> {
+    let before = array(&old["metadata"][field], 1_000)?;
+    let after = array(&next["metadata"][field], 1_000)?;
+    for earlier in before {
+        let mut matches = after.iter().filter(|row| row[id] == earlier[id]);
+        match (matches.next(), matches.next()) {
+            (Some(row), None) if row == earlier => {}
+            (None, _) => {
+                return Err(error(
+                    "epoch next epoch omits an earlier role or party; repeat earlier actors unchanged",
+                ));
+            }
+            _ => return Err(error("epoch next epoch changes an earlier role or party")),
+        }
+    }
+    let additions: Vec<_> =
+        after.iter().filter(|row| !before.iter().any(|earlier| earlier[id] == row[id])).collect();
+    if add(before.len(), additions.len())? > 1_000 {
+        return Err(error("epoch complete actor roster bound exceeded"));
+    }
+    Ok(additions)
 }
 
 /// Apply exact instant ordering to old last window, next sealed window and modified time.
@@ -987,12 +1256,23 @@ fn validate_append_window(old: &Value, next: &Value) -> Result<(), ForgeError> {
 }
 
 /// Scan every prior native UUID and key before any generated new result is appended.
-fn check_new_identities(old: &Value, next: &Value, result: &Value) -> Result<(), ForgeError> {
+fn check_new_identities(
+    old: &Value,
+    next: &Value,
+    result: &Value,
+    additions: &ActorAdditions<'_>,
+) -> Result<(), ForgeError> {
     let mut uuids = BTreeSet::new();
     collect_uuids(old, &mut uuids)?;
     let new_uuid = text(&result["uuid"])?;
     if uuids.contains(new_uuid) {
         return Err(error("epoch appended result UUID collides"));
+    }
+    for party in &additions.parties {
+        let party_uuid = text(&party["uuid"])?;
+        if uuids.contains(party_uuid) || party_uuid == new_uuid {
+            return Err(error("epoch added party UUID collides with an earlier native UUID"));
+        }
     }
     let new_key = property(result, "stable-key")?;
     let mut new_ids = BTreeSet::new();
@@ -1123,9 +1403,14 @@ fn preflight_projection(
     }
     // The 8192-per-risk record allowance includes <=1024 bytes for finite f64
     // decimal Display confidence. It is not a 24/32-byte scientific JSON claim.
+    // Each continuation adds two props (family key <=256 UTF8 bytes, escaped at
+    // most sixfold); each backward link adds one observation reference.
     let next_native_ceiling = add(
-        add(add(mul(6, next_manifest_bytes)?, mul(8192, records)?)?, mul(512, references)?)?,
-        mul(18, paths)?,
+        add(
+            add(add(mul(6, next_manifest_bytes)?, mul(8192, records)?)?, mul(512, references)?)?,
+            mul(18, paths)?,
+        )?,
+        add(mul(4096, report.plan.edges.len())?, mul(512, report.links.len())?)?,
     )?;
     let report_json_ceiling = epoch_report::count_json(report)
         .map_err(|_| error("epoch complete prospective report exceeds its bound"))?;
@@ -1164,6 +1449,8 @@ struct AppendEnvelope<'a> {
     next_document: &'a Value,
     /// Actual maintained exactly one new result, appended after the untouched prefix.
     next_result: &'a Value,
+    /// Roles and parties appended after the untouched earlier metadata rosters.
+    additions: &'a ActorAdditions<'a>,
 }
 
 impl Serialize for AppendEnvelope<'_> {
@@ -1182,6 +1469,7 @@ impl Serialize for AppendEnvelope<'_> {
                         old: value,
                         next: self.next_document,
                         result: self.next_result,
+                        additions: self.additions,
                     },
                 )?;
             } else {
@@ -1200,6 +1488,8 @@ struct AppendDocument<'a> {
     next: &'a Value,
     /// Exactly one admitted next result.
     result: &'a Value,
+    /// Roles and parties appended after the untouched earlier metadata rosters.
+    additions: &'a ActorAdditions<'a>,
 }
 impl Serialize for AppendDocument<'_> {
     /// Retain every original document field and exact old array order.
@@ -1213,7 +1503,11 @@ impl Serialize for AppendDocument<'_> {
             match key.as_str() {
                 "metadata" => out.serialize_entry(
                     key,
-                    &AppendMetadata { old: value, next: &self.next["metadata"] },
+                    &AppendMetadata {
+                        old: value,
+                        next: &self.next["metadata"],
+                        additions: self.additions,
+                    },
                 )?,
                 "results" => {
                     out.serialize_entry(key, &AppendResults { old: value, new: self.result })?;
@@ -1225,15 +1519,17 @@ impl Serialize for AppendDocument<'_> {
     }
 }
 
-/// Borrow exact old metadata, changing only the two explicitly supplied admitted leaves.
+/// Borrow exact old metadata, changing two supplied leaves and appending new actors.
 struct AppendMetadata<'a> {
     /// Actual original metadata whose complete keys and all other Values are retained.
     old: &'a Value,
     /// Actual maintained metadata providing explicit version and last-modified leaves.
     next: &'a Value,
+    /// Roles and parties appended after the untouched earlier rosters.
+    additions: &'a ActorAdditions<'a>,
 }
 impl Serialize for AppendMetadata<'_> {
-    /// Preserve every other metadata Value and its container presence.
+    /// Preserve every other metadata Value, its container presence and earlier actor order.
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let map = self
             .old
@@ -1241,14 +1537,43 @@ impl Serialize for AppendMetadata<'_> {
             .ok_or_else(|| serde::ser::Error::custom("invalid epoch metadata"))?;
         let mut out = serializer.serialize_map(Some(map.len()))?;
         for (key, value) in map {
-            out.serialize_entry(
-                key,
-                if matches!(key.as_str(), "version" | "last-modified") {
-                    &self.next[key]
-                } else {
-                    value
-                },
-            )?;
+            match key.as_str() {
+                "version" | "last-modified" => out.serialize_entry(key, &self.next[key])?,
+                "roles" => out.serialize_entry(
+                    key,
+                    &ExtendedRoster { old: value, added: &self.additions.roles },
+                )?,
+                "parties" => out.serialize_entry(
+                    key,
+                    &ExtendedRoster { old: value, added: &self.additions.parties },
+                )?,
+                _ => out.serialize_entry(key, value)?,
+            }
+        }
+        out.end()
+    }
+}
+
+/// Serialize an untouched earlier roster followed by the appended maintained rows.
+struct ExtendedRoster<'a> {
+    /// Complete actual earlier roster array in its original order.
+    old: &'a Value,
+    /// Maintained new rows appended once, after every earlier row.
+    added: &'a [&'a Value],
+}
+impl Serialize for ExtendedRoster<'_> {
+    /// Emit every earlier row unchanged, then each added row.
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let rows = self
+            .old
+            .as_array()
+            .ok_or_else(|| serde::ser::Error::custom("invalid epoch actor roster"))?;
+        let mut out = serializer.serialize_seq(Some(rows.len() + self.added.len()))?;
+        for row in rows {
+            out.serialize_element(row)?;
+        }
+        for row in self.added {
+            out.serialize_element(row)?;
         }
         out.end()
     }
@@ -1278,7 +1603,15 @@ impl Serialize for AppendResults<'_> {
 }
 
 /// Require the complete final decoded tree to reverse to the actual original.
-fn reverse_oracle(prior: &Value, final_value: &Value, next: &Value) -> Result<(), ForgeError> {
+///
+/// Every earlier result, receipt, role and party must be Value-equal and in its
+/// original position; only the new result and the exact actor additions follow.
+fn reverse_oracle(
+    prior: &Value,
+    final_value: &Value,
+    next: &Value,
+    additions: &ActorAdditions<'_>,
+) -> Result<(), ForgeError> {
     let old = document(prior)?;
     let new = document(final_value)?;
     let before = array(&old["results"], MAX_EPOCHS - 1)?;
@@ -1328,18 +1661,32 @@ fn reverse_oracle(prior: &Value, final_value: &Value, next: &Value) -> Result<()
         return Err(error("epoch metadata container presence changed"));
     }
     for (key, value) in before_metadata {
-        if !after_metadata.contains_key(key)
-            || (!matches!(key.as_str(), "version" | "last-modified")
-                && after_metadata.get(key) != Some(value))
-        {
+        let preserved = match (key.as_str(), after_metadata.get(key)) {
+            (_, None) => false,
+            ("version" | "last-modified", Some(_)) => true,
+            ("roles", Some(after)) => extends(value, after, &additions.roles)?,
+            ("parties", Some(after)) => extends(value, after, &additions.parties)?,
+            (_, Some(after)) => after == value,
+        };
+        if !preserved {
             return Err(error("epoch original metadata tree changed"));
         }
     }
     // Complete borrowed virtual reversal: every outer/document/metadata member
-    // above is Value-equal after substituting exactly the two old leaves, and
-    // every result is Value-equal after removing exactly the last new result.
+    // above is Value-equal after substituting exactly the two old leaves and
+    // removing exactly the appended actor rows, and every result is Value-equal
+    // after removing exactly the last new result.
     // No duplicate complete historical byte buffer or parsed tree is created.
     Ok(())
+}
+
+/// Whether `after` is exactly the earlier roster followed by exactly the added rows.
+fn extends(before: &Value, after: &Value, added: &[&Value]) -> Result<bool, ForgeError> {
+    let before = array(before, 1_000)?;
+    let after = array(after, 1_000)?;
+    Ok(after.len() == add(before.len(), added.len())?
+        && &after[..before.len()] == before
+        && after[before.len()..].iter().zip(added).all(|(row, expected)| row == *expected))
 }
 
 /// Nonretaining compact-byte counter with a strict whole encoding ceiling.
@@ -1550,10 +1897,20 @@ impl<'a> ContinuityPlan<'a> {
             }
             let successor =
                 Endpoint::Authored { result: &next["result"], risk, position: old_results.len() };
-            validate_continuity_provenance(old, &next["result"], &class["provenance"], true)?;
+            validate_continuity_provenance(
+                Actors::Authored(next),
+                &next["result"],
+                &class["provenance"],
+                true,
+            )?;
             let key = family_key(&class["family_key"])?;
             if !touched.insert(key) {
                 return Err(error("epoch append branches or merges a family"));
+            }
+            if !class["prior"].is_null() && !oscal_string(key) {
+                return Err(error(
+                    "epoch continued family key must be a valid OSCAL property value without leading or trailing whitespace or line breaks",
+                ));
             }
             if class["prior"].is_null() {
                 if plan.families.contains_key(key) {
@@ -1645,7 +2002,7 @@ impl<'a> ContinuityPlan<'a> {
                     return Err(error("epoch initial risk is seeded more than once"));
                 }
                 validate_continuity_provenance(
-                    self.old,
+                    Actors::Native(self.old),
                     endpoint.result(),
                     &row["provenance"],
                     true,
@@ -1705,7 +2062,7 @@ impl<'a> ContinuityPlan<'a> {
             }
             previous_position = successor.position();
             validate_continuity_provenance(
-                self.old,
+                Actors::Native(self.old),
                 successor.result(),
                 &edge["provenance"],
                 false,
@@ -1742,7 +2099,11 @@ impl<'a> ContinuityPlan<'a> {
         }
         let mut risk_count = 0;
         for result in array(&self.old["results"], MAX_EPOCHS - 1)? {
-            risk_count = add(risk_count, optional_array(result.get("risks"), MAX_OBJECTS)?.len())?;
+            let risks = optional_array(result.get("risks"), MAX_OBJECTS)?;
+            risk_count = add(risk_count, risks.len())?;
+            for risk in risks {
+                validate_native_continuity_props(risk, edges)?;
+            }
         }
         if assigned.len() != risk_count {
             return Err(error("epoch prior ledger does not cover every actual risk"));
@@ -1758,7 +2119,7 @@ impl<'a> ContinuityPlan<'a> {
     }
 
     /// Resolve every proposed successor to the actual maintained typed next result.
-    fn validate_actual_next(&self, old: &Value, next: &Value) -> Result<(), ForgeError> {
+    fn validate_actual_next(&self, next_document: &Value, next: &Value) -> Result<(), ForgeError> {
         if optional_array(next.get("risks"), MAX_OBJECTS)?.len() != self.classified {
             return Err(error("epoch typed next risk denominator differs"));
         }
@@ -1771,17 +2132,48 @@ impl<'a> ContinuityPlan<'a> {
             }
         }
         for edge in self.edges.values() {
-            validate_continuity_provenance(old, next, edge.provenance, true)?;
+            validate_continuity_provenance(
+                Actors::Native(next_document),
+                next,
+                edge.provenance,
+                true,
+            )?;
         }
         Ok(())
     }
 }
 
+/// Require any native continuity props on a historical risk to match its report edge.
+///
+/// Risks appended before native continuity props existed may lack them; a risk
+/// that carries them must be the successor of exactly that family and predecessor.
+fn validate_native_continuity_props(risk: &Value, edges: &[Value]) -> Result<(), ForgeError> {
+    let family = optional_property(risk, FAMILY_PROPERTY)?;
+    let predecessor = optional_property(risk, PREDECESSOR_PROPERTY)?;
+    if family.is_none() && predecessor.is_none() {
+        return Ok(());
+    }
+    let matched = edges.iter().any(|edge| {
+        edge["successor"]["uuid"] == risk["uuid"]
+            && edge["family_key"].as_str() == family
+            && edge["predecessor"]["uuid"].as_str() == predecessor
+    });
+    if !matched {
+        return Err(error("epoch native continuity props differ from the prior report edges"));
+    }
+    Ok(())
+}
+
 /// Validate a complete risk reference without coercing kind, key, UUID or digest.
 fn validate_reference(value: &Value) -> Result<(), ForgeError> {
+    validate_object_reference(value, "risk")
+}
+
+/// Validate a complete object reference of one exact kind; other kinds are refused.
+fn validate_object_reference(value: &Value, kind: &str) -> Result<(), ForgeError> {
     closed(value, &["kind", "key", "uuid", "result_uuid", "expected_sha256"])?;
-    if value["kind"] != "risk" {
-        return Err(error("epoch continuity endpoint kind is not risk"));
+    if value["kind"] != kind {
+        return Err(error("epoch reference kind is not supported for this endpoint"));
     }
     text(&value["key"])?;
     canonical_uuid(text(&value["uuid"])?)?;
@@ -1844,21 +2236,53 @@ fn reference_identity(endpoint: Endpoint<'_>) -> Result<(&str, &str), ForgeError
     }
 }
 
-/// Bind caller/report provenance to exact unchanged actor/role and the selected sealed window.
+/// Actor roster used to resolve a continuity assessor and role.
+#[derive(Clone, Copy)]
+enum Actors<'a> {
+    /// A complete native document whose metadata holds parties and roles.
+    Native(
+        /// Native document root (`assessment-results` member).
+        &'a Value,
+    ),
+    /// The caller's next authoring manifest, including roles and parties it adds.
+    Authored(
+        /// Complete next `forge.assessment-results/1` authoring declaration.
+        &'a Value,
+    ),
+}
+
+impl Actors<'_> {
+    /// Require exactly one party with the assessor key and a role with the role ID.
+    fn require(self, assessor: &str, role: &Value) -> Result<(), ForgeError> {
+        let roles = match self {
+            Self::Native(document) => {
+                native_actor(document, assessor)?;
+                array(&document["metadata"]["roles"], 1_000)?
+            }
+            Self::Authored(next) => {
+                let parties = array(&next["parties"], 1_000)?;
+                if parties.iter().filter(|party| party["key"] == assessor).count() != 1 {
+                    return Err(error("epoch assessor key is absent or duplicated"));
+                }
+                array(&next["roles"], 1_000)?
+            }
+        };
+        if !roles.iter().any(|row| &row["id"] == role) {
+            return Err(error("epoch continuity role is absent"));
+        }
+        Ok(())
+    }
+}
+
+/// Bind caller/report provenance to an exact declared actor/role and the selected sealed window.
 fn validate_continuity_provenance(
-    document: &Value,
+    actors: Actors<'_>,
     result: &Value,
     provenance: &Value,
     rationale: bool,
 ) -> Result<(), ForgeError> {
     validate_provenance_shape(provenance, rationale)?;
-    native_actor(document, text(&provenance["assessor_key"])?)?;
-    if !array(&document["metadata"]["roles"], 1000)?
-        .iter()
-        .any(|role| role["id"] == provenance["role_id"])
-    {
-        return Err(error("epoch continuity role is absent"));
-    }
+    actors.require(text(&provenance["assessor_key"])?, &provenance["role_id"])?;
     window(result, text(&provenance["start"])?, provenance["end"].as_str())
 }
 
@@ -2113,6 +2537,9 @@ fn validate_previous_changes(
             })?;
         }
     }
+    for row in backward_link_rows(last)? {
+        require(row)?;
+    }
     for family in families {
         let first = resolve_reference(old, &family["first"])?;
         if first.position() == results.len() - 1 {
@@ -2176,6 +2603,30 @@ fn validate_previous_changes(
     validate_previous_metadata_changes(changes, old, expected)
 }
 
+/// Reconstruct one change row per backward observation reference in a native result.
+fn backward_link_rows(result: &Value) -> Result<Vec<ChangeRow<'_>>, ForgeError> {
+    let local: BTreeSet<_> = optional_array(result.get("observations"), MAX_OBJECTS)?
+        .iter()
+        .map(|observation| observation["uuid"].as_str())
+        .collect();
+    let mut rows = Vec::new();
+    for finding in optional_array(result.get("findings"), MAX_OBJECTS)? {
+        for related in optional_array(finding.get("related-observations"), MAX_OBJECTS)? {
+            let uuid = text(&related["observation-uuid"])?;
+            if !local.contains(&Some(uuid)) {
+                rows.push(ChangeRow {
+                    code: "prior-observation-linked",
+                    locator: Some(locator(result, finding, "finding")?),
+                    family_key: None,
+                    old: None,
+                    new: Some(Cow::Borrowed(uuid)),
+                });
+            }
+        }
+    }
+    Ok(rows)
+}
+
 /// Check asserted metadata leaves and final roster cardinality after all native actions.
 fn validate_previous_metadata_changes(
     changes: &[Value],
@@ -2201,6 +2652,24 @@ fn validate_previous_metadata_changes(
             if key == "last-modified" && instant(text(&row["old"])?)? > instant(text(&row["new"])?)?
             {
                 return Err(error("epoch previous asserted modified-time change is reversed"));
+            }
+            expected = add(expected, 1)?;
+        }
+    }
+    // Which actors the previous append added is asserted history (the generation
+    // before it is not captured); each row must still name a current actor once.
+    for (code, field, id) in [("role-added", "roles", "id"), ("party-added", "parties", "uuid")] {
+        let current = array(&old["metadata"][field], 1_000)?;
+        let mut seen = BTreeSet::new();
+        for row in changes.iter().filter(|row| row["code"] == code) {
+            let value = text(&row["new"])?;
+            if !row["locator"].is_null()
+                || !row["family_key"].is_null()
+                || !row["old"].is_null()
+                || !seen.insert(value)
+                || !current.iter().any(|actor| actor[id] == value)
+            {
+                return Err(error("epoch previous asserted actor addition is incoherent"));
             }
             expected = add(expected, 1)?;
         }
@@ -2444,6 +2913,10 @@ struct ReportMirror<'a> {
     next: Next<'a>,
     /// Complete privately validated family/classification ledger.
     plan: &'a ContinuityPlan<'a>,
+    /// Validated backward new-finding observation links, in deterministic order.
+    links: &'a [ObservationLink<'a>],
+    /// Roles and parties added by this append.
+    actors: &'a ReportActors<'a>,
     /// Exact actual five-source declaration, not an independently reconstructed pin map.
     source: &'a SourceManifest,
     /// Explicit portable native output filename.
@@ -2963,6 +3436,7 @@ impl Rows<'_> {
             new: Some(Cow::Borrowed(m.next.key()?)),
         }))?;
         self.visit_object_changes(push)?;
+        self.visit_link_changes(push)?;
         for (code, old, new) in [
             ("document-version-changed", text(&m.old["metadata"]["version"])?, m.next_version),
             (
@@ -2978,6 +3452,18 @@ impl Rows<'_> {
                     family_key: None,
                     old: Some(Cow::Borrowed(old)),
                     new: Some(Cow::Borrowed(new)),
+                }))?;
+            }
+        }
+        for (code, values) in [("role-added", &m.actors.roles), ("party-added", &m.actors.parties)]
+        {
+            for value in values {
+                push(Row::Change(ChangeRow {
+                    code,
+                    locator: None,
+                    family_key: None,
+                    old: None,
+                    new: Some(Cow::Borrowed(*value)),
                 }))?;
             }
         }
@@ -3039,6 +3525,36 @@ impl Rows<'_> {
                     }
                 }
             }
+        }
+        Ok(())
+    }
+
+    /// Emit one row per backward new-finding link to an earlier-epoch observation.
+    fn visit_link_changes(
+        &self,
+        push: &mut impl FnMut(Row<'_>) -> Result<(), ForgeError>,
+    ) -> Result<(), ForgeError> {
+        let m = self.mirror;
+        for link in m.links {
+            let locator = match m.next {
+                Next::Native(result) => {
+                    locator(result, keyed(result, "findings", link.finding_key)?, "finding")?
+                }
+                Next::Authored(result) => ObjectLocator {
+                    result_key: text(&result["key"])?,
+                    result_uuid: UUID,
+                    kind: "finding",
+                    key: link.finding_key,
+                    uuid: UUID,
+                },
+            };
+            push(Row::Change(ChangeRow {
+                code: "prior-observation-linked",
+                locator: Some(locator),
+                family_key: None,
+                old: None,
+                new: Some(Cow::Borrowed(text(&link.object["uuid"])?)),
+            }))?;
         }
         Ok(())
     }
@@ -3110,6 +3626,17 @@ impl ReportMirror<'_> {
         // the original complete request document in its own borrowed field.
         &self.plan.next_document["last_modified"]
     }
+}
+
+/// Borrow one native conclusion by its unique Forge stable key.
+fn keyed<'a>(result: &'a Value, field: &str, key: &str) -> Result<&'a Value, ForgeError> {
+    let mut found = None;
+    for object in optional_array(result.get(field), MAX_OBJECTS)? {
+        if property(object, "stable-key")? == key && found.replace(object).is_some() {
+            return Err(error("epoch native conclusion key is duplicated"));
+        }
+    }
+    found.ok_or_else(|| error("epoch native conclusion key is absent"))
 }
 
 /// Construct a real native epoch row without reconstructing any old Value.
@@ -3946,7 +4473,7 @@ mod tests {
         final_value["assessment-results"]["metadata"]["last-modified"] =
             json!("2026-01-02T00:00:00Z");
         final_value["assessment-results"]["results"].as_array_mut().unwrap().push(next.clone());
-        reverse_oracle(&prior, &final_value, &next).unwrap();
+        reverse_oracle(&prior, &final_value, &next, &ActorAdditions::default()).unwrap();
         for alteration in 0..5 {
             let mut bad = final_value.clone();
             match alteration {
@@ -3961,7 +4488,42 @@ mod tests {
                 3 => bad["extension"]["complete"] = json!([1, 2]),
                 _ => bad["unexpected"] = json!(true),
             }
-            assert!(reverse_oracle(&prior, &bad, &next).is_err());
+            assert!(reverse_oracle(&prior, &bad, &next, &ActorAdditions::default()).is_err());
+        }
+    }
+
+    /// The reverse oracle admits exactly the declared appended actors after unchanged earlier rows.
+    #[test]
+    fn reverse_oracle_admits_only_exact_appended_actors() {
+        let role = json!({"id":"assessor","title":"Assessor"});
+        let new_role = json!({"id":"reviewer","title":"Reviewer"});
+        let party = json!({"uuid":UUID,"type":"person","name":"Earlier","props":[]});
+        let new_party = json!({"uuid":"22222222-2222-4222-8222-222222222222","type":"person",
+            "name":"Added","props":[]});
+        let prior = json!({"assessment-results":{"uuid":UUID,"metadata":{"version":"1",
+            "last-modified":"2026-01-01T00:00:00Z","roles":[role],"parties":[party]},
+            "results":[{"uuid":UUID}]}});
+        let next = json!({"uuid":"11111111-1111-4111-8111-111111111111"});
+        let mut final_value = prior.clone();
+        let document = &mut final_value["assessment-results"];
+        document["results"].as_array_mut().unwrap().push(next.clone());
+        document["metadata"]["roles"].as_array_mut().unwrap().push(new_role.clone());
+        document["metadata"]["parties"].as_array_mut().unwrap().push(new_party.clone());
+        let additions = ActorAdditions { roles: vec![&new_role], parties: vec![&new_party] };
+        reverse_oracle(&prior, &final_value, &next, &additions).unwrap();
+        assert!(reverse_oracle(&prior, &final_value, &next, &ActorAdditions::default()).is_err());
+        for alteration in 0..4 {
+            let mut bad = final_value.clone();
+            let metadata = &mut bad["assessment-results"]["metadata"];
+            match alteration {
+                0 => metadata["parties"][0]["name"] = json!("Changed earlier party"),
+                1 => metadata["roles"][0]["title"] = json!("Changed earlier role"),
+                2 => metadata["parties"].as_array_mut().unwrap().swap(0, 1),
+                _ => {
+                    metadata["roles"].as_array_mut().unwrap().remove(0);
+                }
+            }
+            assert!(reverse_oracle(&prior, &bad, &next, &additions).is_err(), "case {alteration}");
         }
     }
 
