@@ -208,8 +208,8 @@ in force. All stages share the original resource/work allowance and cooperative
 fresh budget. Logical reservations are not an allocator heap guarantee;
 checkpoints do not hard-preempt an individual native/parser call.
 
-The candidate uses the existing Linux/macOS guarded no-replace publisher and
-retains production Windows publication refusal. No new platform qualification
+The candidate uses the shared guarded no-replace publisher, which supports
+Linux, macOS and Windows ([Windows file publication](authoring.md#windows-file-publication)). No new platform qualification
 follows from that source choice. Destinations must be new and parent directories
 must exist. Namespace reservation before capture is lexical; it is not an
 observation that a destination is absent. Complete input checks run after

@@ -98,8 +98,9 @@ case-folded filename collisions. Inputs are read through confined, single-link
 capture and the actual source, file identities and complete original declaration
 bytes are rechecked before stdout or no-replacement publication. This is a
 bounded observation of those inputs; it is not an atomic filesystem snapshot.
-File publication uses the existing Linux/macOS support. Unsupported platform
-publication fails closed; no Windows result is inferred from local tests.
+File publication uses the shared publisher on Linux, macOS and Windows
+([Windows file publication](authoring.md#windows-file-publication)). Other platforms fail closed. Windows behavior is exercised only by
+hosted CI tests.
 
 The [authored command guide](poam-cli-workflow.md) covers native production and
 schedule reports. The open implementation stack also provides [portfolio JSON/static HTML](poam-portfolio.md),

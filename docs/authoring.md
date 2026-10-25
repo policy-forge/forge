@@ -218,6 +218,53 @@ budget. They do not inherit the narrower authoring-contract string or manifest
 limits. Each confined read is bounded by the remaining aggregate budget before
 allocation.
 
+## Windows file publication
+
+Single-file outputs share one no-replace file publisher. These include review
+queues, responses, merges and notification exports; POA&M scaffold manifests,
+authored native builds and reports, baseline, evidence-inspection, portfolio and
+outbound reports; reviewed-risk exports; assessment-result epoch pairs;
+evidence overlays; and authoring-pack scaffolds. It supports Linux, macOS and Windows. Directory generation
+publication (`forge author build`, suggestion and reuse generations) still
+supports only Linux and macOS, because the standard library offers no atomic
+no-replace directory rename on Windows. Other platforms refuse both kinds of
+publication before staging.
+
+On Windows the publisher uses only the standard library, with no new
+dependency and no `unsafe` code. Each root and parent directory is opened
+without following reparse points (symlinks and junctions) and held without
+delete sharing. A reparse point anywhere on the path is refused. The file is
+created as new in a private staging directory next to the destination. It is
+held so that no other process can write, rename or delete it, written
+completely and flushed. One hard-link call then creates the destination name.
+That call fails if any entry already exists at the name, so an existing file,
+link or reparse point is never replaced, and a concurrent winner keeps its
+bytes. The destination appears only with the complete, flushed contents. The
+staging name is removed afterwards.
+
+The Windows guarantees differ from the Unix publisher:
+
+- Names are resolved by path, not by descriptor-relative calls. Containment
+  depends on the held, no-delete-share handles and on the reparse refusal.
+- No directory flush is issued. Durability of the new directory entry after a
+  power loss depends on NTFS metadata journaling, not on an explicit sync.
+- The staging directory and the published file inherit the parent directory's
+  access control list. There is no private 0700/0600 mode, so the published
+  file is as readable as its parent allows.
+- Between the hard link and the removal of the staging name, the file briefly
+  has two names. If that removal fails, the command reports an error after the
+  complete destination exists, and a hard-link alias stays in the private
+  staging directory. Inspect and remove it before retrying. Commands that
+  refuse hard-linked inputs will refuse the published file until then.
+- Volumes without hard-link support, such as FAT or exFAT, fail closed without
+  creating the destination.
+
+These properties are covered by tests on the hosted `windows-latest` CI job.
+They are not an installed-platform or owner qualification of Windows support.
+The owner disposition that tracks this shared Windows path is recorded in
+[docs/plans/2026-10-25-owner-dispositions.md](plans/2026-10-25-owner-dispositions.md)
+(Cross-cutting, Windows publication).
+
 ## Reuse candidates (PRD-066 Phase 0)
 
 ```sh

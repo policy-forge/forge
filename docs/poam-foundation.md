@@ -36,8 +36,8 @@ versions, with empty items, roles and parties. It creates no remediation
 owners, dates, status assertions or selected work. `--output` is a new `.json`
 filename directly in the bundle root. Existing destinations, source files,
 symlinks, hard links and special files are preserved. Atomic no-replace file
-publication is implemented for Linux/macOS; unsupported platforms
-fail without creating output. Omitting `--output` emits the same scaffold on
+publication is implemented for Linux, macOS and Windows
+([Windows file publication](authoring.md#windows-file-publication)); other platforms fail without creating output. Omitting `--output` emits the same scaffold on
 stdout and requires saving it in the same bundle root to preserve relative pins.
 
 ## Check exact source integrity
@@ -109,6 +109,6 @@ The open implementation stack includes [nonterminal workflow/check/build](poam-c
 [local outbound handoffs](poam-outbound.md) and [local evidence inspection](poam-evidence-inspection.md).
 These technical commands retain separate admission scopes. D064 editable authority
 and accepted terminal/reopening semantics, PRD 063 source acceptance, evidence
-sufficiency, Windows file publication, independent OSCAL consumer qualification
+sufficiency, Windows file-publication qualification beyond hosted CI tests, independent OSCAL consumer qualification
 and authentic remediation-team evaluation remain open. No source check or synthetic
 fixture supplies those approvals.

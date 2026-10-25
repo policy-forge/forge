@@ -140,8 +140,9 @@ report publication, and before any selected stdout byte. Files use the existing
 confined no-replace publisher. Publication of the two files is independent: a late
 failure can leave the first complete file, both complete files, or partial stdout.
 Published files are not rolled back. An existing destination is never overwritten.
-The current publisher supports Linux and macOS; a Windows publication attempt
-returns an error.
+The publisher supports Linux, macOS and Windows. On Windows it uses a std-only
+no-replace hard link with weaker containment and durability; see
+[Windows file publication](authoring.md#windows-file-publication).
 
 ## Consume an explicitly selected epoch
 

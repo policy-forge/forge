@@ -54,7 +54,7 @@ These classifications do not establish source eligibility, effective remediation
 
 ## Publication and limits
 
-Both requested outputs are fully prepared and bounded before anything is emitted. Output collision checks compare complete absolute paths against every captured authoring, native and source input, including conservative ASCII case aliases. Inputs are rechecked immediately before JSON publication and again before HTML publication. Each output is published separately with no replacement; if a later recheck or HTML write fails, earlier JSON or stdout output is not rolled back. Treat exit 2 as failure even if a file looks valid. File publication uses the existing Linux/macOS no-replacement publisher and refuses unsupported platforms; stdout is a separate destination.
+Both requested outputs are fully prepared and bounded before anything is emitted. Output collision checks compare complete absolute paths against every captured authoring, native and source input, including conservative ASCII case aliases. Inputs are rechecked immediately before JSON publication and again before HTML publication. Each output is published separately with no replacement; if a later recheck or HTML write fails, earlier JSON or stdout output is not rolled back. Treat exit 2 as failure even if a file looks valid. File publication uses the no-replacement publisher on Linux, macOS and Windows ([Windows file publication](authoring.md#windows-file-publication)) and refuses other platforms; stdout is a separate destination.
 
 Native hrefs remain display text relative to each original plan bundle. The HTML never activates them as links, and changing `--output-root` does not rebase them. Keep the original bundle context when interpreting those references.
 

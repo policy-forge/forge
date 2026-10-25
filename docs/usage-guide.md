@@ -923,7 +923,7 @@ See the [portable review queue guide](review-queues.md) for the private source,
 policy, Impact and link formats, exact commands, source requirements, sharing
 limits and remaining acceptance gates. Inputs and outputs are explicit paths
 under an absolute project root; output files must be new. Publication uses the
-Linux/macOS no-replace publisher and refuses on Windows. Identifiers and hashes
+no-replace publisher on Linux, macOS and Windows ([Windows file publication](authoring.md#windows-file-publication)). Identifiers and hashes
 can still contain sensitive project metadata.
 
 Lifecycle re-review uses a separate [closed `/2` exchange candidate](lifecycle-review-exchange.md).
