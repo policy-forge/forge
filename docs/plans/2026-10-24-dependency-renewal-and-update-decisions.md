@@ -1,6 +1,6 @@
 # Dependency exception renewal and update decision — approved October 24, 2026
 
-This packet covers four owner decisions made on October 24, 2026:
+This packet covers five owner decisions made on October 24, 2026:
 
 1. Renewal of the 34 existing owned exceptions whose review deadline
    (October 20, 2026) had passed.
@@ -10,6 +10,9 @@ This packet covers four owner decisions made on October 24, 2026:
    advisories failing `cargo audit`.
 4. `tokio` 1.53.3 in place of 1.53.2, and a reviewed `deny.toml` ignore for
    the unmaintained `unsafe-libyaml`.
+5. Follow-up exceptions for `tokio` 1.54.1 and `toml` 1.1.8 (with three
+   transitive `toml` crates), after Dependabot PRs #237 and #236 merged on
+   October 25 without supply-chain updates.
 
 Neither decision signs off a source audit or releases the product.
 
@@ -117,6 +120,29 @@ After Decision 3, `cargo deny check` still failed on two advisories:
   approved a `deny.toml` ignore with review by 2026-12-31, the same treatment
   as the existing `ttf-parser` (RUSTSEC-2026-0192) entry.
 
+## Decision 5: tokio 1.54.1 and toml 1.1.8 (October 25, 2026)
+
+Dependabot re-targeted PRs #237 and #236 at newer versions, and they were
+merged on October 25 without matching supply-chain changes. `main` then
+failed the inventory gate (stale `Cargo.lock` digest and a retired `tokio`
+1.53.3 exception) and `cargo vet`. The owner approved exceptions for the
+merged identities, including three transitive crates that `toml` 1.1.8
+pulled in. The `tokio` and `toml` exceptions move to the new identities.
+The other three are new entries. All five have matching cargo-vet exemptions.
+Owner `brianluby`; created October 25, review by November 7, expiry
+November 23, 2026; same source as above.
+
+| Crate | Version | Criteria | PR | Archive SHA-256 |
+| --- | --- | --- | --- | --- |
+| tokio | 1.53.3 → 1.54.1 | safe-to-deploy | #237 | `b52fd3255258d26fac7264ab5a76b53c13367136dc011d3d6ad4f8ed070396a3` |
+| toml | 1.1.6+spec-1.1.0 → 1.1.8+spec-1.1.0 | safe-to-deploy | #236 | `20489e00e4d8741d6be680764cc12e270655e375a20d1011e844a9c3379e678d` |
+| serde_spanned | 1.1.1 → 1.1.2 | safe-to-deploy | #236 (transitive) | `4e7523beb55eece201a2356bee0bbca0d1ab466c14c07703b2e0ee6d42cb0c2c` |
+| toml_datetime | 1.1.1+spec-1.1.0 → 1.1.2+spec-1.1.0 | safe-to-deploy | #236 (transitive) | `2b86d767906c6c42421dcba507eb9d203e779497710a47782a224bb871653053` |
+| toml_parser | 1.1.3+spec-1.1.0 → 1.1.5+spec-1.1.0 | safe-to-deploy | #236 (transitive) | `baa693a8032d7e1cada7d0041e96126df243179ff061456783ac7f12bda4744c` |
+
+The owned set is now 47 entries. After this change, the inventory gate as of
+2026-10-25 reports outcome `clean`, and `cargo vet --locked` succeeds.
+
 ## Evidence and limits
 
 - `python3 scripts/dependency_graph.py check`: exit 0 after refresh.
@@ -149,5 +175,11 @@ When `cargo deny` then reported the `tokio` and `unsafe-libyaml` advisories,
 the assistant asked: "Do you approve both, moving `tokio` to 1.53.3 and adding
 the `unsafe-libyaml` ignore with a 2026-12-31 review date?" The owner answered
 **"yes"**.
+
+On October 25, after #236 and #237 merged, the assistant asked: "Do you approve
+exceptions for `tokio` 1.54.1 and `toml` 1.1.8 so I can open it?" The owner
+answered **"Fix it."** The assistant then reported that `toml` 1.1.8 also needs
+`serde_spanned` 1.1.2, `toml_datetime` 1.1.2 and `toml_parser` 1.1.5, which it
+had not named, and asked for approval. The owner answered **"Approve"**.
 The specific review and expiry dates above were chosen by the assistant within
 the existing 14-day review and 90-day policy limits; the owner can shorten them.
