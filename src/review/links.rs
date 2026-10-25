@@ -246,10 +246,10 @@ fn inspect(
         for value in ids {
             ledger.checkpoint(control)?;
             let current = id(value, ledger)?;
-            if let Some(prior) = previous {
-                if compared(prior, current, ledger)? != Ordering::Less {
-                    return Err(ContractError::Invalid);
-                }
+            if let Some(prior) = previous
+                && compared(prior, current, ledger)? != Ordering::Less
+            {
+                return Err(ContractError::Invalid);
             }
             previous = Some(current);
         }

@@ -291,6 +291,7 @@ pub fn build(
     manifest: &AssessmentResultsManifest,
     context: &LoadedContext,
 ) -> Result<BuiltAssessmentResults, ForgeError> {
+    super::manifest::validate(manifest)?;
     validate_references(manifest, context)?;
 
     let document_key = &manifest.document.key;

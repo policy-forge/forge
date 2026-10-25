@@ -247,10 +247,10 @@ fn classify(
     if compare(&document.responded_at, as_of, ledger)?.is_gt() {
         return Ok(ResponseClassification::Future);
     }
-    if let Some(due) = &item.due_at {
-        if !compare(&document.responded_at, due, ledger)?.is_lt() {
-            return Ok(ResponseClassification::Late);
-        }
+    if let Some(due) = &item.due_at
+        && !compare(&document.responded_at, due, ledger)?.is_lt()
+    {
+        return Ok(ResponseClassification::Late);
     }
     Ok(ResponseClassification::Current)
 }
@@ -266,10 +266,10 @@ fn retire(
     let mut targets = reserved(registry.len(), ledger)?;
     for (index, &class) in classes.iter().enumerate().take(registry.len()) {
         visit(ledger, control)?;
-        if class == ResponseClassification::Current {
-            if let Some(target) = registry.target(index) {
-                targets.push(target);
-            }
+        if class == ResponseClassification::Current
+            && let Some(target) = registry.target(index)
+        {
+            targets.push(target);
         }
     }
     for target in targets {
@@ -447,10 +447,10 @@ fn state(
     if complete && facts.decisive & 2 == 0 {
         return Ok(TentativeState::SeatsFilled);
     }
-    if let Some(due) = &item.due_at {
-        if !compare(as_of, due, ledger)?.is_lt() {
-            return Ok(TentativeState::Expired);
-        }
+    if let Some(due) = &item.due_at
+        && !compare(as_of, due, ledger)?.is_lt()
+    {
+        return Ok(TentativeState::Expired);
     }
     if facts.active.is_present() {
         return Ok(TentativeState::InReview);

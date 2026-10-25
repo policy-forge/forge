@@ -883,7 +883,7 @@ fn exit_code_2_for_no_structure_detected() {
 fn exit_code_3_for_invalid_document_validate_command() {
     let dir = TempDir::new().unwrap();
     let invalid_document = dir.path().join("invalid-oscal.json");
-    std::fs::write(&invalid_document, r#"{\"not-oscal\": true}"#)
+    std::fs::write(&invalid_document, r#"{"not-oscal": true}"#)
         .expect("failed to write invalid OSCAL fixture");
 
     let output = forge_bin()

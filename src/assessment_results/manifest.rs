@@ -375,7 +375,7 @@ pub fn parse(bytes: &[u8]) -> Result<AssessmentResultsManifest, ForgeError> {
     Ok(manifest)
 }
 
-fn validate(manifest: &AssessmentResultsManifest) -> Result<(), ForgeError> {
+pub(crate) fn validate(manifest: &AssessmentResultsManifest) -> Result<(), ForgeError> {
     if manifest.schema_version != MANIFEST_SCHEMA_VERSION {
         return Err(error(format!(
             "unsupported schema_version '{}'; expected {MANIFEST_SCHEMA_VERSION}",

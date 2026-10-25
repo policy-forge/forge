@@ -7,6 +7,7 @@
 use forge::testing::assert_semantic_equivalence;
 use serde_json::Value;
 use std::fs;
+use std::io::{Read as _, Seek as _};
 use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
@@ -17,10 +18,12 @@ fn forge_bin() -> Command {
 }
 
 fn run_forge(args: &[&str]) -> std::process::Output {
+    let stdout_file = tempfile::tempfile().expect("stdout capture");
+    let stderr_file = tempfile::tempfile().expect("stderr capture");
     let mut child = forge_bin()
         .args(args)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stdout(Stdio::from(stdout_file.try_clone().expect("stdout clone")))
+        .stderr(Stdio::from(stderr_file.try_clone().expect("stderr clone")))
         .spawn()
         .expect("failed to execute forge");
     let deadline = Instant::now() + Duration::from_secs(120);
@@ -41,7 +44,13 @@ fn run_forge(args: &[&str]) -> std::process::Output {
         }
         thread::sleep(Duration::from_millis(10));
     }
-    let output = child.wait_with_output().expect("failed to collect forge output");
+    let mut output = child.wait_with_output().expect("failed to collect forge output");
+    let mut stdout_file = stdout_file;
+    let mut stderr_file = stderr_file;
+    stdout_file.rewind().unwrap();
+    stderr_file.rewind().unwrap();
+    stdout_file.read_to_end(&mut output.stdout).unwrap();
+    stderr_file.read_to_end(&mut output.stderr).unwrap();
     assert!(
         output.status.success(),
         "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",

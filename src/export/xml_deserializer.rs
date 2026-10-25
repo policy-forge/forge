@@ -216,8 +216,8 @@ struct XmlDescription {
 struct XmlCapability {
     #[serde(rename = "@uuid")]
     uuid: String,
-    #[serde(default)]
-    name: Option<String>,
+    #[serde(rename = "@name")]
+    name: String,
     #[serde(default)]
     description: Option<XmlDescription>,
     #[serde(default, rename = "control-implementation")]
@@ -458,7 +458,7 @@ fn convert_capability(
         .collect::<Result<Vec<_>, _>>()?;
     Ok(crate::oscal::component_definition::Capability {
         uuid: uuid.to_string(),
-        name: xml.name.unwrap_or_default(),
+        name: xml.name,
         description: xml.description.map(|d| d.paragraphs.join("\n")).unwrap_or_default(),
         control_implementations,
     })

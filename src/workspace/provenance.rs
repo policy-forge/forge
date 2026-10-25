@@ -98,6 +98,11 @@ impl Graph {
                 let item = super::domain::mapping_manifest(snapshot)?;
                 let manifest = crate::mapping::manifest::parse(&item.captured.bytes)
                     .map_err(|_| Error::invalid())?;
+                // Per (side, resource): subject id -> analysis control id, hashed once.
+                let mut control_index: std::collections::HashMap<
+                    (String, String),
+                    std::collections::HashMap<String, &str>,
+                > = std::collections::HashMap::new();
                 for subject in super::domain::subjects(snapshot)? {
                     let subject_id = subject["subject_id"].as_str().ok_or_else(Error::invalid)?;
                     let kind =
@@ -109,13 +114,35 @@ impl Graph {
                     if let Some(analysis) = &snapshot.analysis {
                         let source = snapshot
                             .item(subject["resource_id"].as_str().ok_or_else(Error::invalid)?)?;
-                        if source.captured.sha256 == analysis.framework.raw_sha256
-                            && analysis
-                                .controls
-                                .iter()
-                                .any(|control| subject["label"] == control.control_id)
-                        {
-                            refs.push(json!({"kind":"control","id":opaque("prov", &[&analysis.framework.raw_sha256,subject["label"].as_str().ok_or_else(Error::invalid)?])}));
+                        if source.captured.sha256 == analysis.framework.raw_sha256 {
+                            let side = subject["side"].as_str().ok_or_else(Error::invalid)?;
+                            let resource =
+                                subject["resource_id"].as_str().ok_or_else(Error::invalid)?;
+                            let controls = control_index
+                                .entry((side.to_owned(), resource.to_owned()))
+                                .or_insert_with(|| {
+                                    analysis
+                                        .controls
+                                        .iter()
+                                        .map(|control| {
+                                            (
+                                                opaque(
+                                                    "subj",
+                                                    &[
+                                                        side,
+                                                        resource,
+                                                        "control",
+                                                        &control.control_id,
+                                                    ],
+                                                ),
+                                                control.control_id.as_str(),
+                                            )
+                                        })
+                                        .collect()
+                                });
+                            if let Some(control_id) = controls.get(subject_id) {
+                                refs.push(json!({"kind":"control","id":opaque("prov", &[&analysis.framework.raw_sha256,control_id])}));
+                            }
                         }
                     }
                     graph.insert(json!({"entry_id":opaque("prov", &[subject_id]),"kind":kind,"label":bounded_label(subject["label"].as_str().ok_or_else(Error::invalid)?),"fingerprint":subject["fingerprint"],"refs":refs}))?;

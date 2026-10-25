@@ -950,10 +950,10 @@ fn validate_scope(
             return Err(policy_failure());
         }
     }
-    if let Some(key) = &profile.search_index_key {
-        if !matches!(companion(project, key, admission)?, Companion::SearchIndex { .. }) {
-            return Err(policy_failure());
-        }
+    if let Some(key) = &profile.search_index_key
+        && !matches!(companion(project, key, admission)?, Companion::SearchIndex { .. })
+    {
+        return Err(policy_failure());
     }
     Ok(())
 }
@@ -974,10 +974,10 @@ fn validate_roster(
         identities.admit(resource.key(), resource.label(), resource.path(), admission)?;
     }
     for resource in &project.resources {
-        if let Some(key) = &resource.lifecycle_key {
-            if base(project, key, admission)?.role != Role::LifecycleRecord {
-                return Err(policy_failure());
-            }
+        if let Some(key) = &resource.lifecycle_key
+            && base(project, key, admission)?.role != Role::LifecycleRecord
+        {
+            return Err(policy_failure());
         }
     }
     for resource in &project.companion_resources {

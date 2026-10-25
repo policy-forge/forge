@@ -529,12 +529,12 @@ fn register<E, F: FnMut(AuthoringCharge) -> Result<(), E>>(
     a.work(0, bytes.len(), 0)?;
     let digest = sha256_hex(bytes);
     a.step()?;
-    if let Some(expected) = expected {
-        if !a.equal(expected, &digest)? {
-            return Err(BorrowedAuthoringError::Domain(super::error(format!(
-                "{role} SHA-256 does not match its exact byte pin"
-            ))));
-        }
+    if let Some(expected) = expected
+        && !a.equal(expected, &digest)?
+    {
+        return Err(BorrowedAuthoringError::Domain(super::error(format!(
+            "{role} SHA-256 does not match its exact byte pin"
+        ))));
     }
     roster.push(InputFingerprint {
         role: role.to_owned(),

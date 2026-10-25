@@ -1,7 +1,7 @@
 //! Export pipeline performance benchmarks (T047).
 //!
 //! Benchmarks `export_artifact()` converting a large OSCAL JSON catalog (~500KB+)
-//! to XML format through the full deserialize-validate-serialize pipeline.
+//! to XML format through the full deserialize-validate-serialize pipeline, including file writes.
 //!
 //! Target: < 1 second per export (SC-005, Constitution VI).
 //!
@@ -56,6 +56,8 @@ fn bench_export_pipeline(c: &mut Criterion) {
     let json_path = temp_dir.path().join("large-catalog.json");
     std::fs::write(&json_path, &catalog_json).expect("bench setup: write catalog fixture failed");
 
+    let xml_output = temp_dir.path().join("output.xml");
+    let yaml_output = temp_dir.path().join("output.yaml");
     let mut group = c.benchmark_group("export_pipeline");
 
     group.bench_function("catalog_json_to_xml", |b| {
@@ -63,7 +65,7 @@ fn bench_export_pipeline(c: &mut Criterion) {
             forge::cli::export::export_artifact(
                 black_box(&json_path),
                 forge::cli::OutputFormat::Xml,
-                None,
+                Some(black_box(&xml_output)),
             )
             .expect("catalog JSON export benchmark must succeed");
         });
@@ -74,7 +76,7 @@ fn bench_export_pipeline(c: &mut Criterion) {
             forge::cli::export::export_artifact(
                 black_box(&json_path),
                 forge::cli::OutputFormat::Yaml,
-                None,
+                Some(black_box(&yaml_output)),
             )
             .expect("catalog JSON export benchmark must succeed");
         });

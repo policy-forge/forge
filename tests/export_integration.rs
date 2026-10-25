@@ -3,6 +3,7 @@
 //! Tests binary invocation via `std::process::Command`.
 
 use std::ffi::{OsStr, OsString};
+use std::io::{Read as _, Seek as _};
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::thread;
@@ -74,11 +75,13 @@ where
     S: AsRef<OsStr>,
 {
     let args: Vec<OsString> = args.into_iter().map(|arg| arg.as_ref().to_os_string()).collect();
+    let stdout_file = tempfile::tempfile().expect("stdout capture");
+    let stderr_file = tempfile::tempfile().expect("stderr capture");
     let mut child = Command::new(env!("CARGO_BIN_EXE_forge"))
         .args(["export"])
         .args(&args)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stdout(Stdio::from(stdout_file.try_clone().expect("stdout clone")))
+        .stderr(Stdio::from(stderr_file.try_clone().expect("stderr clone")))
         .spawn()
         .expect("failed to execute forge binary");
     let deadline = Instant::now() + Duration::from_secs(120);
@@ -103,8 +106,14 @@ where
     let exit_code = output.status.code().unwrap_or_else(|| {
         panic!("forge export {:?} terminated without an exit code: {:?}", args, output.status)
     });
-    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+    let mut stdout_file = stdout_file;
+    let mut stderr_file = stderr_file;
+    stdout_file.rewind().unwrap();
+    stderr_file.rewind().unwrap();
+    let mut stdout = String::new();
+    let mut stderr = String::new();
+    stdout_file.read_to_string(&mut stdout).unwrap();
+    stderr_file.read_to_string(&mut stderr).unwrap();
     (exit_code, stdout, stderr)
 }
 
@@ -115,6 +124,21 @@ fn cli_export_json_to_xml_stdout() {
     require_fixture(CATALOG_JSON);
     let (exit_code, stdout, _stderr) = run_export([CATALOG_JSON, "--format", "xml"]);
     assert_eq!(exit_code, 0, "Expected exit code 0");
+    assert_catalog_xml(&stdout);
+}
+
+#[test]
+fn cli_export_drains_output_larger_than_a_pipe_buffer() {
+    let dir = TempDir::new().unwrap();
+    let mut value: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(CATALOG_JSON).unwrap()).unwrap();
+    value["catalog"]["metadata"]["title"] = serde_json::json!("Synthetic title ".repeat(16_384));
+    let path = dir.path().join("large.json");
+    std::fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
+    let (code, stdout, stderr) =
+        run_export([path.as_os_str(), OsStr::new("--format"), OsStr::new("xml")]);
+    assert_eq!(code, 0, "{stderr}");
+    assert!(stdout.len() > 128 * 1024);
     assert_catalog_xml(&stdout);
 }
 

@@ -22,11 +22,12 @@ while [[ -h "${SOURCE}" ]]; do
     [[ "${SOURCE}" != /* ]] && SOURCE="${SOURCE_DIR}/${SOURCE}"
 done
 SCRIPT_DIR="$(cd -P "$(dirname "${SOURCE}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+REPO_ROOT="$(cd -P "${SCRIPT_DIR}/.." && pwd)"
+DEFAULT_DEST="${REPO_ROOT}/.oscal-catalogs"
 
 WHICH="all"
 CLEAN=0
-DEST="${REPO_ROOT}/.oscal-catalogs"
+DEST="${DEFAULT_DEST}"
 REGISTRY_API="https://registry.oscal.io/api/v1/catalogs"
 
 usage() {
@@ -54,9 +55,32 @@ log() { echo "[fetch-oscal] $*"; }
 CURL=(curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 15 -m 600)
 
 mkdir -p "${DEST}"
+DEST="$(cd -P "${DEST}" && pwd)"
+MARKER="${DEST}/.forge-oscal-catalogs"
+HOME_REAL="$(cd -P "${HOME:-/}" 2>/dev/null && pwd || echo "${HOME:-/}")"
+if [[ "${CLEAN}" -eq 1 && ( "${DEST}" == / || "${DEST}" == "${REPO_ROOT}" || "${DEST}" == "${HOME_REAL}" ) ]]; then
+    echo "[fetch-oscal] refusing to clean a protected destination: ${DEST}" >&2
+    exit 2
+fi
+if [[ -L "${MARKER}" || ( -e "${MARKER}" && ! -f "${MARKER}" ) ]]; then
+    echo "[fetch-oscal] refusing to use a destination whose marker is not a regular file: ${MARKER}" >&2
+    exit 2
+fi
+# The marker records that this script owns DEST. Adopt only a destination that
+# is empty (freshly created) or is the default scratch folder, which script
+# versions predating the marker populated without one.
+if [[ ! -f "${MARKER}" ]]; then
+    if [[ -z "$(ls -A "${DEST}")" || "${DEST}" == "${DEFAULT_DEST}" ]]; then
+        : > "${MARKER}"
+    elif [[ "${CLEAN}" -eq 1 ]]; then
+        echo "[fetch-oscal] refusing to clean an unmarked, non-empty destination: ${DEST}" >&2
+        echo "[fetch-oscal] (create ${MARKER} if this folder is a fetch-oscal scratch folder)" >&2
+        exit 2
+    fi
+fi
 if [[ "${CLEAN}" -eq 1 ]]; then
     log "cleaning ${DEST}"
-    find "${DEST}" -mindepth 1 -delete
+    find "${DEST}" -mindepth 1 ! -path "${MARKER}" -delete
 fi
 
 FAILURES=()

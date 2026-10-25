@@ -922,11 +922,11 @@ impl Store {
     pub(crate) fn source_worker_released(&mut self, operation_id: &str, nonce: &str) {
         if let Some(claim) =
             self.retention_claims.get_mut(&RetentionOwner::Source(operation_id.into()))
+            && claim.nonce == nonce
+            && claim.worker
         {
-            if claim.nonce == nonce && claim.worker {
-                claim.worker = false;
-                claim.records = claim.records.saturating_sub(1);
-            }
+            claim.worker = false;
+            claim.records = claim.records.saturating_sub(1);
         }
     }
 
@@ -996,11 +996,12 @@ impl Store {
         if durable["operation_id"] != operation_id {
             return Err(recovery_required());
         }
-        if let Some(job) = self.sources.jobs.get_mut(operation_id) {
-            if job.accepted && matches!(durable["state"].as_str(), Some("pending" | "running")) {
-                job.value["cancel_requested"] = json!(true);
-                job.value["updated_at"] = json!(now());
-            }
+        if let Some(job) = self.sources.jobs.get_mut(operation_id)
+            && job.accepted
+            && matches!(durable["state"].as_str(), Some("pending" | "running"))
+        {
+            job.value["cancel_requested"] = json!(true);
+            job.value["updated_at"] = json!(now());
         }
         self.source_operation(operation_id, durable)
     }
@@ -1012,12 +1013,12 @@ impl Store {
         if durable["operation_id"] != operation_id {
             return Err(recovery_required());
         }
-        if matches!(durable["state"].as_str(), Some("pending" | "running")) {
-            if let Some(job) = self.sources.jobs.get(operation_id).filter(|job| job.accepted) {
-                durable["cancel_requested"] = job.value["cancel_requested"].clone();
-                durable["progress"] = job.value["progress"].clone();
-                durable["updated_at"] = job.value["updated_at"].clone();
-            }
+        if matches!(durable["state"].as_str(), Some("pending" | "running"))
+            && let Some(job) = self.sources.jobs.get(operation_id).filter(|job| job.accepted)
+        {
+            durable["cancel_requested"] = job.value["cancel_requested"].clone();
+            durable["progress"] = job.value["progress"].clone();
+            durable["updated_at"] = job.value["updated_at"].clone();
         }
         contract::validate_for(contract::ApiMajor::V2, "SourceRestoreOperation", &durable)?;
         Ok(durable)

@@ -167,12 +167,10 @@ impl Corpus {
             unique_keys("document control_ids", &document.control_ids, false)?;
         }
         for document in &self.documents {
-            if let Some(previous) = &document.supersedes {
-                if !keys.contains(previous.as_str()) || previous == &document.key {
-                    return Err(error(
-                        "document supersedes must name another document in this corpus",
-                    ));
-                }
+            if let Some(previous) = &document.supersedes
+                && (!keys.contains(previous.as_str()) || previous == &document.key)
+            {
+                return Err(error("document supersedes must name another document in this corpus"));
             }
         }
         Ok(())

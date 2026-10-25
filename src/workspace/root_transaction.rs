@@ -295,10 +295,9 @@ impl JournalRecord {
             }
             if let Some(target) =
                 self.targets.iter().find(|target| target.path.eq_ignore_ascii_case(path))
+                && (target.path != *path || target.before.as_ref() != Some(facts))
             {
-                if target.path != *path || target.before.as_ref() != Some(facts) {
-                    return Err(recovery_required());
-                }
+                return Err(recovery_required());
             }
             union.insert(path.to_ascii_lowercase());
         }
@@ -1702,10 +1701,10 @@ impl Root {
             prefix.push_str(name);
             let child = super::unix_open(&parent, std::ffi::OsStr::new(name), true)
                 .map_err(|_| recovery_required())?;
-            if let Some(planned) = record.directories.iter().find(|dir| dir.path == prefix) {
-                if planned.created_identity != Some(directory_identity(&child)?) {
-                    return Err(recovery_required());
-                }
+            if let Some(planned) = record.directories.iter().find(|dir| dir.path == prefix)
+                && planned.created_identity != Some(directory_identity(&child)?)
+            {
+                return Err(recovery_required());
             }
             parent = child;
         }

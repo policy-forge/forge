@@ -117,7 +117,7 @@ fn extract_actual_value(json: &Value, pointer: &str) -> String {
 }
 
 fn pointer_has_sensitive_key(pointer: &str) -> bool {
-    pointer.rsplit('/').next().map(unescape_pointer_segment).is_some_and(|key| {
+    pointer.split('/').map(unescape_pointer_segment).any(|key| {
         let key = key.to_ascii_lowercase();
         [
             "password",
@@ -315,6 +315,28 @@ mod tests {
         assert_eq!(pointer_to_json_path("/cards/123"), "$.cards['123']");
         let json = serde_json::json!({"cards": ["zero"]});
         assert_eq!(pointer_to_json_path_for_instance("/cards/0", &json), "$.cards[0]");
+    }
+
+    #[test]
+    fn descendants_of_sensitive_keys_are_redacted() {
+        let json = serde_json::json!({
+            "password": {"hash": "hidden"},
+            "credentials": {"username": "hidden"},
+            "api_key": ["hidden"],
+            "tokens": {"primary": {"value": "hidden"}},
+            "a/token": {"value": "hidden"},
+            "public": {"value": "visible"}
+        });
+        for pointer in [
+            "/password/hash",
+            "/credentials/username",
+            "/api_key/0",
+            "/tokens/primary/value",
+            "/a~1token/value",
+        ] {
+            assert_eq!(extract_actual_value(&json, pointer), "[redacted]", "{pointer}");
+        }
+        assert_eq!(extract_actual_value(&json, "/public/value"), "\"visible\"");
     }
 
     #[test]

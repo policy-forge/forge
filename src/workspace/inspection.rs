@@ -45,12 +45,11 @@ impl<'a> Query<'a> {
                 return Err(Error::invalid());
             }
         }
-        if let Some(size) = values.get("page_size") {
-            if !size.bytes().all(|byte| byte.is_ascii_digit())
-                || !size.parse::<usize>().is_ok_and(|size| (1..=200).contains(&size))
-            {
-                return Err(Error::invalid());
-            }
+        if let Some(size) = values.get("page_size")
+            && (!size.bytes().all(|byte| byte.is_ascii_digit())
+                || !size.parse::<usize>().is_ok_and(|size| (1..=200).contains(&size)))
+        {
+            return Err(Error::invalid());
         }
         for (name, variants) in [
             ("state", &["draft", "in-review", "approved", "superseded", "retired"][..]),

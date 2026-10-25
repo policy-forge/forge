@@ -234,9 +234,18 @@ mod unix {
         Published,
     }
 
+    /// Name of the generation directory inside the private staging wrapper.
+    const GENERATION: &CStr = c"generation";
+
+    /// A private wrapper directory holding the staged generation.
+    ///
+    /// The generation is built at `wrapper/generation` and published by renaming it
+    /// relative to the held wrapper descriptor, so substituting the wrapper pathname
+    /// in the destination parent cannot change the published object.
     struct StagingDirectory {
         parent: File,
         name: CString,
+        wrapper: File,
         directories: BTreeMap<String, File>,
         files: Vec<(String, CString)>,
         committed: bool,
@@ -247,9 +256,19 @@ mod unix {
             let name =
                 c_string(OsStr::new(&format!(".forge-authoring-stage-{}", uuid::Uuid::new_v4())))?;
             make_directory(&parent, &name)?;
-            let directory = match open_at(&parent, &name, true, false) {
+            let wrapper = match open_at(&parent, &name, true, false) {
+                Ok(wrapper) => wrapper,
+                Err(cause) => {
+                    unlink(&parent, &name, true);
+                    return Err(cause);
+                }
+            };
+            let directory = match make_directory(&wrapper, GENERATION)
+                .and_then(|()| open_at(&wrapper, GENERATION, true, false))
+            {
                 Ok(directory) => directory,
                 Err(cause) => {
+                    unlink(&wrapper, GENERATION, true);
                     unlink(&parent, &name, true);
                     return Err(cause);
                 }
@@ -257,6 +276,7 @@ mod unix {
             Ok(Self {
                 parent,
                 name,
+                wrapper,
                 directories: BTreeMap::from([(String::new(), directory)]),
                 files: Vec::new(),
                 committed: false,
@@ -307,6 +327,7 @@ mod unix {
             for directory in self.directories.values().rev() {
                 directory.sync_all().map_err(io_error)?;
             }
+            self.wrapper.sync_all().map_err(io_error)?;
             self.parent.sync_all().map_err(io_error)
         }
     }
@@ -314,6 +335,8 @@ mod unix {
     impl Drop for StagingDirectory {
         fn drop(&mut self) {
             if self.committed {
+                // The generation moved out; only the empty wrapper remains.
+                unlink(&self.parent, &self.name, true);
                 return;
             }
             for (parent, name) in &self.files {
@@ -329,6 +352,7 @@ mod unix {
                     unlink(directory, &name, true);
                 }
             }
+            unlink(&self.wrapper, GENERATION, true);
             unlink(&self.parent, &self.name, true);
         }
     }
@@ -360,7 +384,7 @@ mod unix {
         }
         staging.sync()?;
         hook(PublishEvent::BeforeRename)?;
-        rename_no_replace(&staging.parent, &staging.name, &staging.parent, &name, "generation")?;
+        rename_no_replace(&staging.wrapper, GENERATION, &staging.parent, &name, "generation")?;
         staging.committed = true;
         hook(PublishEvent::Published)?;
         staging.parent.sync_all().map_err(|cause| {
@@ -608,6 +632,34 @@ mod tests {
             });
             assert!(result.is_err());
             assert_eq!(std::fs::read_dir(&root).unwrap().count(), 0);
+        }
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn replaced_staging_directory_is_not_published() {
+        use super::unix::{PublishEvent, publish_with_hook};
+        let root = tempfile::tempdir().unwrap();
+        let root = root.path().canonicalize().unwrap();
+        let artifacts = artifacts();
+        publish_with_hook(&root, "generated", &artifacts, |event| {
+            if event == PublishEvent::BeforeRename {
+                let staging = std::fs::read_dir(&root).unwrap().next().unwrap().unwrap().path();
+                std::fs::rename(&staging, root.join("held-original")).unwrap();
+                std::fs::create_dir_all(staging.join("generation")).unwrap();
+                std::fs::write(staging.join("generation").join("attacker"), b"substituted")
+                    .unwrap();
+            }
+            Ok(())
+        })
+        .unwrap();
+        // The held staged generation is published; the substituted pathname is ignored.
+        assert!(!root.join("generated").join("attacker").exists());
+        for artifact in &artifacts {
+            assert_eq!(
+                std::fs::read(root.join("generated").join(&artifact.relative_path)).unwrap(),
+                artifact.bytes
+            );
         }
     }
 

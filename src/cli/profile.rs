@@ -195,7 +195,7 @@ pub fn execute(
 /// (i.e., an unpaired value) or an ID is empty after trimming. In practice clap's
 /// `num_args = 2` prevents the former, but the check is retained as a defensive invariant.
 fn parse_set_param_pairs(set_params: &[String]) -> Result<Vec<(String, String)>, ForgeError> {
-    if set_params.len() % 2 != 0 {
+    if !set_params.len().is_multiple_of(2) {
         return Err(ForgeError::InvalidArgument(format!(
             "--set-param requires ID VALUE pairs but received an odd number of arguments ({})",
             set_params.len()
@@ -203,7 +203,9 @@ fn parse_set_param_pairs(set_params: &[String]) -> Result<Vec<(String, String)>,
     }
 
     set_params
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| {
             let id = pair[0].trim();
             let value = &pair[1];

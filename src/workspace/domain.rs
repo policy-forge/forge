@@ -574,6 +574,7 @@ pub(crate) fn initialize(
     mapping: bool,
 ) -> Result<Vec<u8>> {
     let destination = request["target_path"].as_str().ok_or_else(invalid)?;
+    validate_path(destination)?;
     let stage = stage(snapshot)?;
     let resource = |id: &str| -> Result<crate::mapping::manifest::ResourceManifest> {
         let item = snapshot.item(id)?;
@@ -781,6 +782,17 @@ mod tests {
         let snapshot =
             Snapshot::capture(&crate::workspace::root::Root::open(dir.path()).unwrap()).unwrap();
         (dir, snapshot)
+    }
+
+    #[test]
+    fn initialization_rejects_escaping_destinations_before_staging() {
+        let (_directory, snapshot) = staged_fixture();
+        for path in ["../outside.json", "/outside.json", "C:\\outside.json", "a/../../outside.json"]
+        {
+            assert!(
+                initialize(&snapshot, &serde_json::json!({"target_path": path}), true).is_err()
+            );
+        }
     }
 
     /// A later unrelated registration is still a staging boundary. Interrupting

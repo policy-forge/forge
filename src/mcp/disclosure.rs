@@ -653,10 +653,10 @@ impl InputLedger {
         if count > ORIGINAL_LIMIT || size > limit as u64 || bytes > RAW_LIMIT as u64 {
             return Err(limit_failure());
         }
-        if let Some(identity) = opened.identity() {
-            if !self.identities.insert(identity) {
-                return Err(policy_failure());
-            }
+        if let Some(identity) = opened.identity()
+            && !self.identities.insert(identity)
+        {
+            return Err(policy_failure());
         }
         self.count = count;
         self.bytes = bytes;
@@ -913,10 +913,10 @@ fn validate_scope(
             }
         }
     }
-    if let Some(index) = profile["search_index_key"].as_str() {
-        if !known.contains(index) {
-            return Err(policy_failure());
-        }
+    if let Some(index) = profile["search_index_key"].as_str()
+        && !known.contains(index)
+    {
+        return Err(policy_failure());
     }
     for key in profile["source_text_keys"].as_array().ok_or_else(policy_failure)? {
         let key = key.as_str().ok_or_else(policy_failure)?;

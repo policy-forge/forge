@@ -860,6 +860,24 @@ fn cross_reviewer_withdrawal_refuses_even_with_exact_prior_hash() {
     ));
 }
 
+#[test]
+fn cross_role_withdrawal_refuses_even_for_the_same_reviewer() {
+    let mut queue = queue_fixture();
+    queue.roles.insert(0, RoleDefinition { key: "audit".into() });
+    queue.reviewers[0].role_keys.insert(0, "audit".into());
+    queue.items[0]
+        .assignments
+        .insert(0, Assignment { reviewer_key: "reviewer".into(), role_key: "audit".into() });
+    rebind(&mut queue);
+    let prior = vote(&queue, 1, "reviewer", "review", Disposition::Approve);
+    let mut marker = withdrawal(&queue, 2, &prior);
+    marker.reviewer_role = "audit".into();
+    assert!(matches!(
+        run(&queue, &[prior, marker], "2026-10-04T12:00:00Z"),
+        Err(ContractError::InvalidChain)
+    ));
+}
+
 /// An exact prior UUID/hash cannot cross the complete queue/item/policy snapshot.
 #[test]
 fn changed_binding_withdrawal_refuses_before_retirement() {

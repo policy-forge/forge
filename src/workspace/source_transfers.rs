@@ -122,7 +122,7 @@ impl DecodedPart {
         }
         let mut bytes = Vec::new();
         bytes.try_reserve_exact(size).map_err(|_| capacity())?;
-        for pair in hex.as_bytes().chunks_exact(2) {
+        for pair in hex.as_bytes().as_chunks::<2>().0 {
             bytes.push(nibble(pair[0])? * 16 + nibble(pair[1])?);
         }
         control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;

@@ -170,7 +170,12 @@ fn compare_primitives(
         return;
     }
     if let (Value::Number(expected_number), Value::Number(actual_number)) = (expected, actual)
-        && expected_number.as_f64() == actual_number.as_f64()
+        && expected_number.as_f64().zip(actual_number.as_f64()).is_some_and(|(left, right)| {
+            const EXACT_INTEGER_LIMIT: f64 = 9_007_199_254_740_992.0;
+            left.partial_cmp(&right) == Some(std::cmp::Ordering::Equal)
+                && left.abs() < EXACT_INTEGER_LIMIT
+                && right.abs() < EXACT_INTEGER_LIMIT
+        })
     {
         return;
     }
@@ -488,6 +493,18 @@ mod tests {
         assert_eq!(surplus.description, "missing element");
         assert_eq!(surplus.expected.as_deref(), Some("\"surplus\""));
         assert!(surplus.actual.is_none());
+    }
+
+    #[test]
+    fn distinct_large_integers_are_not_equivalent() {
+        for (left, right) in [
+            (json!(9_007_199_254_740_993_u64), json!(9_007_199_254_740_992_u64)),
+            (json!(u64::MAX), json!(u64::MAX - 1)),
+            (json!(-9_007_199_254_740_993_i64), json!(-9_007_199_254_740_992_i64)),
+            (json!(9_007_199_254_740_993_u64), json!(9_007_199_254_740_992.0)),
+        ] {
+            assert!(!assert_semantic_equivalence(&left, &right).is_equivalent);
+        }
     }
 
     #[test]

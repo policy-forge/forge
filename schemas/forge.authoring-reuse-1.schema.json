@@ -41,7 +41,7 @@
   "$defs": {
     "sha256": {
       "type": "string",
-      "pattern": "^[0-9a-f]{64}$"
+      "pattern": "^[0-9a-f]{64}$(?![\\s\\S])"
     },
     "text": {
       "type": "string",
@@ -67,7 +67,7 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 1024,
-      "pattern": "^(?!/)(?!.*[\\\\:])[^\\u0000-\\u001f\\u007f]+$",
+      "pattern": "^(?!/)(?!.*[\\\\:])[^\\u0000-\\u001f\\u007f-\\u009f]+$(?![\\s\\S])",
       "$comment": "Lexical preflight only: runtime additionally rejects non-canonical, aliasing and escaping paths."
     },
     "reason": {

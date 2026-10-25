@@ -430,12 +430,11 @@ fn locator(
         }
     }
     for row in &result.sources {
-        if let Some(key) = &row.resolved_catalog_key {
-            if result.sources[key_slot(&result, key, ledger, control)?].model
+        if let Some(key) = &row.resolved_catalog_key
+            && result.sources[key_slot(&result, key, ledger, control)?].model
                 != SourceModel::ResolvedCatalog
-            {
-                return Err(ContractError::Binding);
-            }
+        {
+            return Err(ContractError::Binding);
         }
     }
     Ok(result)

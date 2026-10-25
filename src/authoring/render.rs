@@ -2,7 +2,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use pulldown_cmark::{Event, Parser, Tag};
+use pulldown_cmark::{Event, Options, Parser, Tag};
 use serde::Serialize;
 
 use super::error;
@@ -177,12 +177,12 @@ pub(crate) fn validate_clause(bytes: &[u8]) -> Result<(), ForgeError> {
     if text.contains("{{forge:") {
         return Err(error("human clauses cannot contain reserved FORGE template syntax"));
     }
-    // Reference definitions have document-wide scope and may change another
-    // fragment's rendering even when no link exists in this clause alone.
-    if text.lines().any(|line| {
-        let line = line.trim_start();
-        line.starts_with('[') && line.contains("]:")
-    }) {
+    // Reference and footnote definitions have document-wide scope and may change
+    // another fragment's rendering even when no link exists in this clause alone.
+    // Footnote parsing is enabled so GFM/Pandoc-style `[^x]: ...` definitions,
+    // which are not CommonMark reference definitions, are also detected.
+    let parser = Parser::new_ext(text, Options::ENABLE_FOOTNOTES);
+    if parser.reference_definitions().iter().next().is_some() {
         return Err(error("human clause reference definitions are unsupported"));
     }
     if text.chars().any(|character| {
@@ -191,7 +191,7 @@ pub(crate) fn validate_clause(bytes: &[u8]) -> Result<(), ForgeError> {
     }) {
         return Err(error("human clause contains unsupported control characters"));
     }
-    for event in Parser::new(text) {
+    for event in parser {
         match event {
             Event::Start(Tag::Heading { .. }) => {
                 return Err(error("human clause headings cannot alter the policy outline"));
@@ -201,6 +201,9 @@ pub(crate) fn validate_clause(bytes: &[u8]) -> Result<(), ForgeError> {
             }
             Event::Start(Tag::HtmlBlock) | Event::Html(_) | Event::InlineHtml(_) => {
                 return Err(error("human clause raw HTML is unsupported"));
+            }
+            Event::Start(Tag::FootnoteDefinition(_)) => {
+                return Err(error("human clause footnote definitions are unsupported"));
             }
             Event::Start(Tag::Link { dest_url, .. } | Tag::Image { dest_url, .. })
                 if absolute_local_reference(&dest_url) =>
@@ -749,6 +752,12 @@ mod tests {
             "[local](/private/secret)",
             "[local](file:///private/secret)",
             "[unreferenced]: /private/secret",
+            "> [ref]: /private/secret",
+            "- [ref]: /private/secret",
+            "> - [ref]: /private/secret",
+            "[^note]: Exceptions are approved by anyone.",
+            "[^1]: text with spaces",
+            "> [^note]: quoted footnote definition",
         ] {
             assert!(validate_clause(source.as_bytes()).is_err(), "{source}");
         }

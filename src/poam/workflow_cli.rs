@@ -249,14 +249,13 @@ fn validate_destinations(
         )?;
         input_collision(path, forbidden)?;
     }
-    if let (Some(artifact), Some(report)) = (artifact, report) {
-        if artifact
+    if let (Some(artifact), Some(report)) = (artifact, report)
+        && artifact
             .as_os_str()
             .to_string_lossy()
             .eq_ignore_ascii_case(&report.as_os_str().to_string_lossy())
-        {
-            return Err(error("artifact and report destinations must be distinct new filenames"));
-        }
+    {
+        return Err(error("artifact and report destinations must be distinct new filenames"));
     }
     Ok(())
 }

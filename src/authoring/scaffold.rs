@@ -81,9 +81,9 @@ pub fn execute(manifest_path: &Path) -> Result<(), ForgeError> {
     let destination = prepared.project.authoring_pack.path.clone();
     manifest::validate_local_path("authoring_pack.path", &destination)?;
     let bytes = render(&empty_pack(&prepared.project))?;
-    // Revalidate every captured source through the confined traversal before publishing.
-    prepared.verify_inputs()?;
-    output::publish_new_file(&prepared.root, &destination, &bytes)
+    output::publish_new_file_guarded(&prepared.root, &destination, &bytes, || {
+        prepared.verify_inputs()
+    })
 }
 
 #[cfg(test)]

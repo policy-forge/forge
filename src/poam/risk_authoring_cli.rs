@@ -36,8 +36,21 @@ pub(crate) fn execute(
         .verify_inputs()
         .map_err(|_| error("risk authoring original generations changed or are unsafe"))?;
     if let Some(output) = output {
-        crate::authoring::output::publish_new_file(prepared.root(), output, prepared.bytes())
-            .map_err(|_| error("cannot publish a new complete risk workflow"))
+        let mut fenced = false;
+        let published = crate::authoring::output::publish_new_file_guarded(
+            prepared.root(),
+            output,
+            prepared.bytes(),
+            || {
+                prepared.verify_inputs().map_err(|_| {
+                    fenced = true;
+                    error("risk authoring original generations changed or are unsafe")
+                })
+            },
+        );
+        published.map_err(|cause| {
+            if fenced { cause } else { error("cannot publish a new complete risk workflow") }
+        })
     } else {
         std::io::stdout()
             .lock()

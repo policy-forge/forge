@@ -1003,7 +1003,10 @@ mod tests {
     fn raced_components_preserve_no_follow_and_private_mode_checks() {
         use std::os::unix::fs::{PermissionsExt as _, symlink};
         let fixture_home = std::env::var_os("HOME").expect("native private-state test home");
-        let fixture = tempfile::tempdir_in(fixture_home).unwrap();
+        let fixture = tempfile::Builder::new()
+            .permissions(std::fs::Permissions::from_mode(0o700))
+            .tempdir_in(fixture_home)
+            .unwrap();
         let parent = File::open(fixture.path()).unwrap();
         let child = fixture.path().join("shared");
         std::fs::write(&child, b"conflicting file").unwrap();

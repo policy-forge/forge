@@ -565,13 +565,11 @@ pub fn serialize_catalog_to_xml(catalog: &OscalCatalog) -> Result<String, ForgeE
         &catalog.metadata.oscal_version,
     )?;
 
-    for group in &catalog.groups {
-        write_group(&mut writer, group)?;
-    }
-
-    // Root-level controls (CatalogType permits control* after group*)
     for control in &catalog.controls {
         write_control(&mut writer, control)?;
+    }
+    for group in &catalog.groups {
+        write_group(&mut writer, group)?;
     }
 
     if let Some(bm) = &catalog.back_matter {
@@ -616,6 +614,17 @@ pub fn serialize_component_definition_to_xml(
 
     for component in &component_def.components {
         write_component(&mut writer, component)?;
+    }
+    for capability in &component_def.capabilities {
+        let mut element = BytesStart::new("capability");
+        element.push_attribute(("uuid", capability.uuid.as_str()));
+        element.push_attribute(("name", capability.name.as_str()));
+        writer.write_event(Event::Start(element)).map_err(map_xml_err)?;
+        write_markup_element(&mut writer, "description", &capability.description)?;
+        for implementation in &capability.control_implementations {
+            write_control_implementation(&mut writer, implementation)?;
+        }
+        writer.write_event(Event::End(BytesEnd::new("capability"))).map_err(map_xml_err)?;
     }
 
     if let Some(bm) = &component_def.back_matter {
@@ -1189,6 +1198,14 @@ mod tests {
     }
 
     #[test]
+    fn catalog_root_controls_precede_groups() {
+        let mut catalog = test_catalog();
+        catalog.controls.push(test_control("root-control", "Root control"));
+        let xml = serialize_catalog_to_xml(&catalog).unwrap();
+        assert!(xml.find("<control id=\"root-control\"").unwrap() < xml.find("<group").unwrap());
+    }
+
+    #[test]
     fn test_serialize_catalog_complete_structure() {
         let catalog = test_catalog();
         let xml = serialize_catalog_to_xml(&catalog).unwrap();
@@ -1389,6 +1406,31 @@ mod tests {
         let cd = test_component_def();
         let xml = serialize_component_definition_to_xml(&cd).unwrap();
         assert!(xml.contains(r#"uuid="660e8400-e29b-41d4-a716-446655440000""#));
+    }
+
+    #[test]
+    fn capabilities_survive_xml_round_trip() {
+        let mut document = test_component_def();
+        document.capabilities.push(crate::oscal::component_definition::Capability {
+            uuid: "880e8400-e29b-41d4-a716-446655440000".into(),
+            name: "Sample capability".into(),
+            description: "Explicit & complete".into(),
+            control_implementations: vec![
+                crate::oscal::implemented_requirements::ControlImplementation {
+                    uuid: "990e8400-e29b-41d4-a716-446655440000".into(),
+                    source: "catalog.json".into(),
+                    description: "Implementation".into(),
+                    implemented_requirements: vec![],
+                },
+            ],
+        });
+        let xml = serialize_component_definition_to_xml(&document).unwrap();
+        let restored =
+            super::super::xml_deserializer::deserialize_component_from_xml(&xml).unwrap();
+        assert_eq!(
+            serde_json::to_value(restored).unwrap()["component-definition"]["capabilities"],
+            serde_json::to_value(&document).unwrap()["capabilities"]
+        );
     }
 
     #[test]
