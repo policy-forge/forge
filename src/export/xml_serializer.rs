@@ -357,6 +357,13 @@ fn write_control_implementation<W: Write>(
     writer: &mut Writer<W>,
     ci: &crate::oscal::implemented_requirements::ControlImplementation,
 ) -> Result<(), ForgeError> {
+    // OSCAL XSD: implemented-requirement minOccurs="1".
+    if ci.implemented_requirements.is_empty() {
+        return Err(ForgeError::Serialization(format!(
+            "control-implementation '{}' has no implemented-requirement; OSCAL requires at least one",
+            ci.uuid
+        )));
+    }
     let mut elem = BytesStart::new("control-implementation");
     elem.push_attribute(("uuid", ci.uuid.as_str()));
     elem.push_attribute(("source", ci.source.as_str()));
@@ -616,6 +623,14 @@ pub fn serialize_component_definition_to_xml(
         write_component(&mut writer, component)?;
     }
     for capability in &component_def.capabilities {
+        // OSCAL XSD: capability description minOccurs="1"; an empty
+        // markup-multiline cannot be represented, so refuse rather than omit.
+        if capability.description.is_empty() {
+            return Err(ForgeError::Serialization(format!(
+                "capability '{}' has an empty description; OSCAL requires one",
+                capability.uuid
+            )));
+        }
         let mut element = BytesStart::new("capability");
         element.push_attribute(("uuid", capability.uuid.as_str()));
         element.push_attribute(("name", capability.name.as_str()));
@@ -1420,17 +1435,56 @@ mod tests {
                     uuid: "990e8400-e29b-41d4-a716-446655440000".into(),
                     source: "catalog.json".into(),
                     description: "Implementation".into(),
-                    implemented_requirements: vec![],
+                    implemented_requirements: vec![
+                        crate::oscal::implemented_requirements::ImplementedRequirement {
+                            uuid: "aa0e8400-e29b-41d4-a716-446655440000".into(),
+                            control_id: "POL-AC-001".into(),
+                            description: "Requirement".into(),
+                            props: vec![],
+                            links: vec![],
+                        },
+                    ],
                 },
             ],
         });
         let xml = serialize_component_definition_to_xml(&document).unwrap();
+        assert!(xml.contains(r#"name="Sample capability""#));
         let restored =
             super::super::xml_deserializer::deserialize_component_from_xml(&xml).unwrap();
         assert_eq!(
             serde_json::to_value(restored).unwrap()["component-definition"]["capabilities"],
             serde_json::to_value(&document).unwrap()["capabilities"]
         );
+    }
+
+    #[test]
+    fn capabilities_violating_oscal_cardinality_are_refused() {
+        let capability = || crate::oscal::component_definition::Capability {
+            uuid: "880e8400-e29b-41d4-a716-446655440000".into(),
+            name: "Sample capability".into(),
+            description: "Described".into(),
+            control_implementations: vec![],
+        };
+        let mut empty_description = test_component_def();
+        let mut undescribed = capability();
+        undescribed.description = String::new();
+        empty_description.capabilities.push(undescribed);
+        let error = serialize_component_definition_to_xml(&empty_description).unwrap_err();
+        assert!(error.to_string().contains("empty description"), "{error}");
+
+        let mut empty_requirements = test_component_def();
+        let mut unimplemented = capability();
+        unimplemented.control_implementations.push(
+            crate::oscal::implemented_requirements::ControlImplementation {
+                uuid: "990e8400-e29b-41d4-a716-446655440000".into(),
+                source: "catalog.json".into(),
+                description: "Implementation".into(),
+                implemented_requirements: vec![],
+            },
+        );
+        empty_requirements.capabilities.push(unimplemented);
+        let error = serialize_component_definition_to_xml(&empty_requirements).unwrap_err();
+        assert!(error.to_string().contains("no implemented-requirement"), "{error}");
     }
 
     #[test]

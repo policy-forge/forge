@@ -18,8 +18,8 @@ fn forge_bin() -> Command {
 }
 
 fn run_forge(args: &[&str]) -> std::process::Output {
-    let stdout_file = tempfile::tempfile().expect("stdout capture");
-    let stderr_file = tempfile::tempfile().expect("stderr capture");
+    let mut stdout_file = tempfile::tempfile().expect("stdout capture");
+    let mut stderr_file = tempfile::tempfile().expect("stderr capture");
     let mut child = forge_bin()
         .args(args)
         .stdout(Stdio::from(stdout_file.try_clone().expect("stdout clone")))
@@ -33,20 +33,23 @@ fn run_forge(args: &[&str]) -> std::process::Output {
         }
         if Instant::now() >= deadline {
             child.kill().expect("failed to kill timed-out forge");
-            let output =
-                child.wait_with_output().expect("failed to collect timed-out forge output");
+            child.wait().expect("failed to reap timed-out forge");
+            // Output went to the capture files, not the child's pipes.
+            let (mut stdout, mut stderr) = (Vec::new(), Vec::new());
+            stdout_file.rewind().unwrap();
+            stderr_file.rewind().unwrap();
+            stdout_file.read_to_end(&mut stdout).unwrap();
+            stderr_file.read_to_end(&mut stderr).unwrap();
             panic!(
                 "forge {:?} timed out after 120s\nstdout: {}\nstderr: {}",
                 args,
-                String::from_utf8_lossy(&output.stdout),
-                String::from_utf8_lossy(&output.stderr)
+                String::from_utf8_lossy(&stdout),
+                String::from_utf8_lossy(&stderr)
             );
         }
         thread::sleep(Duration::from_millis(10));
     }
     let mut output = child.wait_with_output().expect("failed to collect forge output");
-    let mut stdout_file = stdout_file;
-    let mut stderr_file = stderr_file;
     stdout_file.rewind().unwrap();
     stderr_file.rewind().unwrap();
     stdout_file.read_to_end(&mut output.stdout).unwrap();

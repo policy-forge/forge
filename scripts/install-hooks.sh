@@ -41,8 +41,14 @@ if ! chmod +x "${TEMP_HOOK}"; then
 fi
 
 if [[ -e "${PRE_COMMIT_HOOK}" || -L "${PRE_COMMIT_HOOK}" ]]; then
-    if [[ -L "${PRE_COMMIT_HOOK}" ]] || ! cmp -s "${TEMP_HOOK}" "${PRE_COMMIT_HOOK}"; then
+    if [[ -L "${PRE_COMMIT_HOOK}" || ! -f "${PRE_COMMIT_HOOK}" ]] || ! cmp -s "${TEMP_HOOK}" "${PRE_COMMIT_HOOK}"; then
         echo "[install-hooks] refusing to replace existing hook: ${PRE_COMMIT_HOOK}" >&2
+        exit 1
+    fi
+    # Git silently skips a non-executable hook; report it rather than modify the file.
+    if [[ ! -x "${PRE_COMMIT_HOOK}" ]]; then
+        echo "[install-hooks] existing hook is not executable: ${PRE_COMMIT_HOOK}" >&2
+        echo "[install-hooks] run: chmod +x '${PRE_COMMIT_HOOK}'" >&2
         exit 1
     fi
 else

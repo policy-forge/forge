@@ -25,25 +25,17 @@ pub(crate) fn execute(
     if prepared.input_paths().any(|original| paths_alias(&destination, &original)) {
         return Err(ForgeError::Linkage("overlay output aliases an original input".into()));
     }
-    let mut fenced = false;
-    let published = crate::authoring::output::publish_new_file_guarded(
+    crate::authoring::output::publish_new_file_fenced(
         prepared.root(),
         output,
         prepared.bytes(),
         || {
             prepared.verify_inputs().map_err(|_| {
-                fenced = true;
                 ForgeError::Linkage("overlay original generations changed or are unsafe".into())
             })
         },
-    );
-    published.map_err(|error| {
-        if fenced {
-            error
-        } else {
-            ForgeError::Linkage("cannot publish a new complete evidence overlay".into())
-        }
-    })
+        || ForgeError::Linkage("cannot publish a new complete evidence overlay".into()),
+    )
 }
 
 /// Compare complete native path components using conservative ASCII case folding.

@@ -111,6 +111,25 @@ pub(crate) fn publish_new_file_guarded(
     })
 }
 
+/// Like [`publish_new_file_guarded`], but replaces every publisher failure with
+/// the caller's fixed domain error while surfacing fence errors unchanged.
+/// Keeps native filesystem causes out of caller diagnostics.
+/// # Errors
+/// Returns the caller fence error, or `publish_error()` for any other failure.
+pub(crate) fn publish_new_file_fenced(
+    root: &Path,
+    relative_path: &Path,
+    bytes: &[u8],
+    mut before_rename: impl FnMut() -> Result<(), ForgeError>,
+    publish_error: impl FnOnce() -> ForgeError,
+) -> Result<(), ForgeError> {
+    let mut fenced = false;
+    let published = publish_new_file_guarded(root, relative_path, bytes, || {
+        before_rename().inspect_err(|_| fenced = true)
+    });
+    published.map_err(|cause| if fenced { cause } else { publish_error() })
+}
+
 fn publish_new_file_with_hook(
     root: &Path,
     relative_path: &Path,
@@ -911,5 +930,29 @@ mod guarded_file_tests {
         assert_eq!(calls, 1);
         assert_eq!(std::fs::read(root.join("review.json")).unwrap(), b"preserved\n");
         assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
+    }
+
+    /// Fence errors surface unchanged; other publisher failures become the caller's fixed error.
+    #[test]
+    fn fenced_publication_maps_only_non_fence_failures() {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path().canonicalize().unwrap();
+        let fixed = || ForgeError::Linkage("fixed publish canary".into());
+        let error = publish_new_file_fenced(
+            &root,
+            Path::new("out.json"),
+            b"x\n",
+            || Err(ForgeError::Validation("fence canary".into())),
+            fixed,
+        )
+        .unwrap_err();
+        assert_eq!(error.to_string(), "Validation error: fence canary");
+        std::fs::write(root.join("out.json"), b"existing\n").unwrap();
+        let error = publish_new_file_fenced(&root, Path::new("out.json"), b"x\n", || Ok(()), fixed)
+            .unwrap_err();
+        assert!(
+            matches!(error, ForgeError::Linkage(ref message) if message == "fixed publish canary")
+        );
+        assert_eq!(std::fs::read(root.join("out.json")).unwrap(), b"existing\n");
     }
 }

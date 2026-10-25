@@ -128,18 +128,10 @@ fn publish(
     root: &Path,
     path: &Path,
     bytes: &[u8],
-    mut before_rename: impl FnMut() -> Result<(), ForgeError>,
+    before_rename: impl FnMut() -> Result<(), ForgeError>,
 ) -> Result<(), ForgeError> {
-    let mut fenced = false;
-    let published = crate::authoring::output::publish_new_file_guarded(root, path, bytes, || {
-        before_rename().inspect_err(|_| fenced = true)
-    });
-    published.map_err(|cause| {
-        if fenced {
-            cause
-        } else {
-            error("cannot publish new portfolio output; destination may exist or be unsafe")
-        }
+    crate::authoring::output::publish_new_file_fenced(root, path, bytes, before_rename, || {
+        error("cannot publish new portfolio output; destination may exist or be unsafe")
     })
 }
 
