@@ -2753,6 +2753,91 @@ mod tests {
         assert_eq!(std::fs::read_dir(project.path()).unwrap().count(), 1);
     }
 
+    /// A process stop between journal generations after the first owned publication
+    /// leaves a durable pre-decision `Publishing` record. Read-only startup refuses
+    /// settlement and preserves the observed bytes; fresh writable recovery then
+    /// conditionally rolls back every owned publication, including an index that was
+    /// published but never journaled, and verifies original state and cleanup.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn restart_after_interrupted_publication_rolls_back_owned_targets() {
+        for interrupt_before_index in [true, false] {
+            let (project, private, root, ordinary) = fixture();
+            drop(ordinary);
+            let state =
+                super::super::transaction_state::owned_test_state_stopping_after_first_publication(
+                    &root,
+                    std::fs::File::open(private.path()).unwrap(),
+                )
+                .unwrap();
+            std::fs::write(project.path().join("policy.md"), b"old").unwrap();
+            let original = root.read("policy.md", 10).unwrap();
+            let proposed = proposed("policy.md", b"new");
+            let new_index = proposed.last().unwrap().1.clone();
+            let plan = root.plan_restore_targets(proposed, Vec::new(), &mut NoopControl).unwrap();
+            let accepted = root
+                .accept_restore(
+                    &plan,
+                    &state,
+                    "op_d4d4d4d4d4d4".into(),
+                    16,
+                    "a".repeat(64),
+                    "b".repeat(64),
+                    reply("op_d4d4d4d4d4d4"),
+                    Instant::now() + Duration::from_secs(30),
+                )
+                .unwrap();
+            let result = if interrupt_before_index {
+                root.run_restore(plan, &state, accepted, &mut AfterPublish { state: &state })
+            } else {
+                root.run_restore(plan, &state, accepted, &mut NoopControl)
+            }
+            .unwrap();
+            assert!(result.access_blocked);
+            assert_eq!(result.operation["state"], "recovery-required");
+            assert_eq!(result.operation["write_outcome"], "unknown");
+            assert_eq!(result.operation["cleanup_state"], "unverified");
+            assert!(state.require_access().is_err());
+            assert_eq!(std::fs::read(project.path().join("policy.md")).unwrap(), b"new");
+            let index = project.path().join(INDEX_PATH);
+            if interrupt_before_index {
+                assert!(!index.exists());
+            } else {
+                assert_eq!(std::fs::read(&index).unwrap(), new_index);
+            }
+            drop(state);
+
+            let recovered = super::super::transaction_state::owned_test_state(
+                &root,
+                std::fs::File::open(private.path()).unwrap(),
+            )
+            .unwrap();
+            let records = recovered.records().unwrap();
+            assert_eq!(records.len(), 1);
+            assert_eq!(records[0].phase, Phase::Publishing);
+            assert_eq!(records[0].write_outcome, WriteOutcome::Unmeasured);
+            assert!(records[0].targets[0].published.is_some());
+            assert!(records[0].targets[1].published.is_none());
+            assert!(recovered.require_access().is_err());
+            assert!(recovered.recover(&root, false).is_err());
+            assert_eq!(std::fs::read(project.path().join("policy.md")).unwrap(), b"new");
+            assert_eq!(index.exists(), !interrupt_before_index);
+
+            recovered.recover(&root, true).unwrap();
+            assert!(recovered.require_access().is_ok());
+            let observed = recovered.observe_outcome("op_d4d4d4d4d4d4").unwrap();
+            assert_eq!(observed["state"], "failed");
+            assert_eq!(observed["write_outcome"], "none");
+            assert_eq!(observed["cleanup_state"], "verified");
+            assert!(observed["result"].is_null());
+            let restored = root.read("policy.md", 10).unwrap();
+            assert_eq!(restored.identity, original.identity);
+            assert_eq!(restored.sha256, original.sha256);
+            assert!(!index.exists());
+            assert_eq!(std::fs::read_dir(project.path()).unwrap().count(), 1);
+        }
+    }
+
     /// Observe actual durable progress and cancel only after every target published,
     /// before the complete-result verification and durable commit decision.
     #[cfg(any(target_os = "linux", target_os = "macos"))]

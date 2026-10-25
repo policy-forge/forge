@@ -898,6 +898,72 @@ pub(super) fn owned_test_state_after_commit_decision_fault(
     })
 }
 
+/// Test-only wrapper simulating a process stop between journal generations: after
+/// it durably installs the first generation recording a published target, every
+/// later replacement fails without touching the native journal. No production
+/// branch injects this fault.
+#[cfg(all(test, unix))]
+struct StopAfterFirstPublicationStorage {
+    /// Actual qualified native storage moved from the same owned private constructor.
+    native: Box<dyn JournalStorage + Send>,
+    /// Latched once a published-target generation is durable; never cleared.
+    stopped: std::sync::atomic::AtomicBool,
+}
+
+#[cfg(all(test, unix))]
+impl JournalStorage for StopAfterFirstPublicationStorage {
+    /// Delegate exact fixed-file reads to the actual native owner.
+    fn read(&self, name: &str) -> Result<Option<Vec<u8>>> {
+        self.native.read(name)
+    }
+    /// Install real generations until one records a published target, then stop.
+    fn replace(&self, raw: &[u8], expected: Option<&[u8]>) -> Result<()> {
+        use std::sync::atomic::Ordering;
+        if self.stopped.load(Ordering::Acquire) {
+            return Err(recovery_required());
+        }
+        let envelope: serde_json::Value =
+            serde_json::from_slice(raw).map_err(|_| recovery_required())?;
+        let published = envelope["payload"]["records"]
+            .as_array()
+            .ok_or_else(recovery_required)?
+            .iter()
+            .filter_map(|record| record["targets"].as_array())
+            .flatten()
+            .any(|target| !target["published"].is_null());
+        self.native.replace(raw, expected)?;
+        if published {
+            self.stopped.store(true, Ordering::Release);
+        }
+        Ok(())
+    }
+}
+
+/// Consume a fully qualified owned test state whose journal stops accepting
+/// generations after the first durable published-target record. The original
+/// lock, source predicates and fixed journal names remain unchanged.
+#[cfg(all(test, unix))]
+pub(super) fn owned_test_state_stopping_after_first_publication(
+    root: &Root,
+    directory: File,
+) -> Result<TransactionState> {
+    let TransactionState { root, inner } = owned_test_state(root, directory)?;
+    let StateInner { storage, payload, blocked, durable } =
+        inner.into_inner().map_err(|_| recovery_required())?;
+    Ok(TransactionState {
+        root,
+        inner: Mutex::new(StateInner {
+            storage: Box::new(StopAfterFirstPublicationStorage {
+                native: storage,
+                stopped: std::sync::atomic::AtomicBool::new(false),
+            }),
+            payload,
+            blocked,
+            durable,
+        }),
+    })
+}
+
 /// Source-only storage fault proposals; execution is exclusively Root-owned.
 #[cfg(test)]
 mod tests {
