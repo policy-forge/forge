@@ -1937,8 +1937,8 @@ impl Root {
                 record.targets[index].backup = None;
                 if target.before.is_none() {
                     // A created target's staged payload was renamed into place and the
-                    // unlink above removed that exact owned object; its auxiliary slot is
-                    // now verified empty, matching the reconcile_target recovery branch.
+                    // unlink above removed that exact owned object; auxiliary cleanup then
+                    // verifies the empty slot, matching the reconcile_target recovery branch.
                     record.targets[index].staged = None;
                 }
                 persist(state, record)?;
