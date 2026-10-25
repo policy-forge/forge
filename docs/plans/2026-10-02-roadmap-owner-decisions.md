@@ -2,6 +2,8 @@
 
 Date: 2026-10-02 (America/Los_Angeles). Baseline: `aef0ab24f77559593b6d0b4fe5027f8a5eaa857e`.
 Status: **Proposed; no owner disposition recorded by this packet.**
+Dispositions for D064 and D068 were later recorded in
+[the 2026-10-25 owner dispositions](2026-10-25-owner-dispositions.md); this packet is unchanged.
 
 These packets make unresolved choices reviewable. Their contents are evidence and
 proposals, never authorization. Previously recorded authoring dispositions and
