@@ -2922,6 +2922,23 @@ fn portfolio_native_requires_every_plan_and_rejects_stable_or_file_aliases() {
     assert!(!root.join("portfolio-report.html").exists());
 }
 
+/// Regenerate the native pair for an admitted terminal plan and check its as-of asserted counts.
+fn portfolio_native_assert_asserted_counts(fixture: &Fixture, plan: &Value, state: &str, at: &str) {
+    use forge::poam::portfolio;
+    let admitted =
+        portfolio_native_pair(fixture, plan, "closure-authoring.json", "closure-native.json");
+    let prepared =
+        portfolio::prepare_native_portfolio(std::slice::from_ref(&admitted), "2026-01-07", 7)
+            .unwrap();
+    prepared.verify_inputs().unwrap();
+    let json: Value = serde_json::from_slice(prepared.json()).unwrap();
+    let past = usize::from(at == "2026-01-06T00:00:00Z");
+    let expected = if state == "completed-asserted" { (past, 0) } else { (0, past) };
+    assert_eq!(json["counts"]["completed_asserted"], json!(expected.0), "{state} {at}");
+    assert_eq!(json["counts"]["accepted_risk_asserted"], json!(expected.1), "{state} {at}");
+    assert!(!String::from_utf8_lossy(prepared.json()).contains("authorized"));
+}
+
 /// Past and future D064 assertions are admitted in supplied native portfolios and counted at as-of.
 #[test]
 fn portfolio_native_admits_asserted_terminal_records_and_counts_them_at_as_of() {
@@ -2996,29 +3013,7 @@ fn portfolio_native_admits_asserted_terminal_records_and_counts_them_at_as_of() 
                 portfolio::prepare_native_portfolio(std::slice::from_ref(&input), "2026-01-07", 7)
                     .is_err()
             );
-            let admitted = portfolio_native_pair(
-                &fixture,
-                &refused,
-                "closure-authoring.json",
-                "closure-native.json",
-            );
-            let prepared = portfolio::prepare_native_portfolio(
-                std::slice::from_ref(&admitted),
-                "2026-01-07",
-                7,
-            )
-            .unwrap();
-            prepared.verify_inputs().unwrap();
-            let json: Value = serde_json::from_slice(prepared.json()).unwrap();
-            let past = at == "2026-01-06T00:00:00Z";
-            let (completed, accepted) = if state == "completed-asserted" {
-                (usize::from(past), 0)
-            } else {
-                (0, usize::from(past))
-            };
-            assert_eq!(json["counts"]["completed_asserted"], json!(completed), "{state} {at}");
-            assert_eq!(json["counts"]["accepted_risk_asserted"], json!(accepted), "{state} {at}");
-            assert!(!String::from_utf8_lossy(prepared.json()).contains("authorized"));
+            portfolio_native_assert_asserted_counts(&fixture, &refused, state, at);
             std::fs::write(root.join("closure-native.json"), &original_native).unwrap();
             portfolio_native_unchanged(&source_originals);
             std::fs::write(&input.manifest, &original_author).unwrap();
