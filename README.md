@@ -124,8 +124,8 @@ forge export catalog.yaml --format json --output catalog.json
 
 ### Validate
 
-Validate an OSCAL artifact against FORGE's pinned OSCAL v1.2.3 JSON schema. Auto-detection selects Catalog, Component Definition, Profile, System Security Plan, Control Mapping, or POA&M from the document root; `metadata.oscal-version` is reported but never selects or downloads a schema.
-The explicit `--schema-type` override supports Catalog, Component Definition, System Security Plan, Control Mapping, and POA&M; Profile documents currently require auto-detection.
+Validate an OSCAL artifact against FORGE's pinned OSCAL v1.2.3 JSON schema. Auto-detection selects Catalog, Component Definition, Profile, System Security Plan, Control Mapping, POA&M, or Assessment Results from the document root; `metadata.oscal-version` is reported but never selects or downloads a schema.
+The explicit `--schema-type` override supports Catalog, Component Definition, System Security Plan, Control Mapping, POA&M, and Assessment Results; Profile documents currently require auto-detection.
 
 ```bash
 # Validate with human-readable output
@@ -142,7 +142,15 @@ forge validate mapping.json --schema-type mapping
 
 # Validate an OSCAL System Security Plan artifact
 forge validate ssp.json --schema-type system-security-plan
+
+# Validate an OSCAL Assessment Results artifact (auto-detected, or explicit)
+forge validate assessment-results.json --schema-type assessment-results
 ```
+
+Assessment Results validation checks the native document against the pinned
+`oscal_assessment-results_schema.json` only; it does not re-check the
+`forge assessment results build` context graph, and `--round-trip`, export and
+diff do not accept Assessment Results.
 
 Newly generated Catalog, Component Definition, Profile, Assessment Plan, and
 SSP artifacts declare OSCAL `1.2.3`. Existing Catalog, Component Definition,

@@ -60,6 +60,16 @@ inventory of all post-v1.1.0 changes.
   `forge.authoring-reuse/1` (report: text, JSON, and opt-in inert HTML), with a
   deterministic lexical score, exact spans and source hashes. Usefulness,
   rubric, threat-model, privacy/legal and release gates remain open.
+- `forge validate` auto-detects OSCAL Assessment Results JSON from its
+  `assessment-results` root and validates it against the already-vendored
+  `schemas/oscal_assessment-results_schema.json`, with the usual text/JSON
+  reports and exit codes. `--schema-type assessment-results` and
+  `validate.schema-type = "assessment-results"` select it explicitly. This is
+  native schema conformance only, not an assessment conclusion; `export`,
+  `diff` and `trace` still refuse Assessment Results, and `--round-trip` does
+  not support them. Approved as a
+  small scope expansion beyond PRD 054 (F10 in
+  `docs/plans/2026-10-25-owner-dispositions.md`).
 
 ### Changed
 
@@ -81,6 +91,11 @@ inventory of all post-v1.1.0 changes.
   policy as the POA&M HTML report except that the review page pins its constant
   stylesheet by hash instead of allowing `'unsafe-inline'`. Exported HTML bytes
   therefore change; the recorded content does not.
+- The public `OscalModelType` and `cli::SchemaType` enums gain an
+  `AssessmentResults` variant. Neither is `#[non_exhaustive]`, so downstream
+  exhaustive matches need a new arm; this falls under the recorded `2.0.0`
+  major-release decision. A document that also carries an `assessment-results`
+  root next to another model root is now reported as ambiguous.
 
 ## [1.1.0] — 2026-06-09
 

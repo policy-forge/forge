@@ -222,7 +222,7 @@ After preparation, the component pipeline:
 
 - **`Strategy`** — Conversion target: `Catalog` or `Component`.
 - **`OutputFormat`** — Serialization format: `Json`, `Xml`, `Yaml`.
-- **`OscalModelType`** — General detected model: `Catalog`, `ComponentDefinition`, `Profile`, `SystemSecurityPlan` or `Mapping`. Assessment Results uses a dedicated builder validator. General validation support does not imply support by the two-model `export` command.
+- **`OscalModelType`** — General detected model: `Catalog`, `ComponentDefinition`, `Profile`, `SystemSecurityPlan`, `Mapping` or `AssessmentResults`. `forge validate` checks Assessment Results against the pinned schema; `forge assessment results build` keeps its dedicated builder validator. General validation support does not imply support by the two-model `export` command.
 
 ### Pipeline Output (src/pipeline.rs)
 

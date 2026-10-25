@@ -93,7 +93,7 @@ resolves to `1`.
 | `convert.to` | `catalog`, `component-definition`, or `ssp` | `--to` | none |
 | `convert.import-ssp` | Non-empty URI/reference string | `--import-ssp` | none |
 | `convert.summary` | Boolean (`--summary` / `--no-summary`) | `--summary` | `false` |
-| `validate.schema-type` | `catalog` or `component-definition` | `--schema-type` | auto-detect |
+| `validate.schema-type` | `catalog`, `component-definition`, or `assessment-results` | `--schema-type` | auto-detect |
 | `validate.format` | `text` or `json` | `--format` | `text` |
 | `validate.output` | Project-relative path | `--output` | stdout |
 | `validate.timeout-seconds` | Integer `1..=3600` | `--timeout` | `30` |

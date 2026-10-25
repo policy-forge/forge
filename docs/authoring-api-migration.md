@@ -19,6 +19,10 @@ bump. (Owner disposition, 2026-09-11; see [authoring gates](authoring-gates.md).
 - `forge::error::ForgeError` is a public enum that gained authoring variants
   (for example `Authoring` and `AuthoringActionRequired`) in Phase 1. Phase 2 did
   not change it further, but it is part of this gate.
+- `forge::OscalModelType` and `forge::cli::SchemaType` are public,
+  non-`#[non_exhaustive]` enums that gained an `AssessmentResults` variant when
+  `forge validate` started accepting Assessment Results (ticket #70). Add an arm
+  or a trailing `_ => ...` to exhaustive matches.
 - New public modules and types were added under `forge::authoring` (closed
   manifest types, plan/provenance types, `execute_*` entry points) and new
   closed JSON schemas were added. Additions are not breaking by themselves.
