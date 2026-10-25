@@ -1908,6 +1908,130 @@ pub(crate) mod tests {
         assert_eq!(std::fs::read(f.root.join("alice.json")).unwrap(), response);
     }
 
+    /// Initialize one queue through the real CLI with an explicit ID and destination.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    fn initialize_as(root: &Path, id: &str, output: &str) {
+        invoke(
+            root,
+            "init",
+            &[
+                "--sources",
+                "locator.json",
+                "--policy",
+                "request.json",
+                "--queue-id",
+                id,
+                "--created-at",
+                "2026-08-22T17:05:00Z",
+                "--output",
+                output,
+            ],
+        )
+        .unwrap();
+    }
+
+    /// AC-3 through the real CLI: actual native subject drift, a same-ID regenerated
+    /// queue and a merge of the old approvals classify both as stale; the old
+    /// responses stay recorded and unchanged and fill no quorum seat. A different
+    /// queue ID classifies the same originals as foreign, also without quorum.
+    #[test]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    fn genuine_cli_subject_drift_regenerated_queue_keeps_old_approvals_out_of_quorum() {
+        use super::super::wire::{ItemState, ResponseClassification};
+        for (id, classification) in [
+            ("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", ResponseClassification::Stale),
+            ("dddddddd-dddd-4ddd-8ddd-dddddddddddd", ResponseClassification::Foreign),
+        ] {
+            let f = command_fixture(false);
+            initialize(&f.root);
+            respond(&f.root, "alice", "approve", "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", "a.json")
+                .unwrap();
+            respond(&f.root, "bob", "approve", "cccccccc-cccc-4ccc-8ccc-cccccccccccc", "b.json")
+                .unwrap();
+            let responses = [PathBuf::from("a.json"), PathBuf::from("b.json")];
+            let originals: Vec<_> =
+                responses.iter().map(|path| std::fs::read(f.root.join(path)).unwrap()).collect();
+            let decode_queue = |name: &str| {
+                let raw = std::fs::read(f.root.join(name)).unwrap();
+                let queue = super::super::decode::decode_queue(
+                    &raw,
+                    &mut ContractLedger::default(),
+                    &mut NoopControl,
+                )
+                .unwrap();
+                let item = &queue.document().items[0];
+                (item.subject_id.clone(), item.subject_sha256.clone())
+            };
+            let old = decode_queue("queue.json");
+            supersession_refresh_source(&f.root, false);
+            initialize_as(&f.root, id, "regenerated.json");
+            let new = decode_queue("regenerated.json");
+            assert_eq!(new.0, old.0);
+            assert_ne!(new.1, old.1);
+            invoke(
+                &f.root,
+                "merge",
+                &[
+                    "--sources",
+                    "locator.json",
+                    "--queue",
+                    "regenerated.json",
+                    "--response",
+                    "a.json",
+                    "--response",
+                    "b.json",
+                    "--as-of",
+                    "2026-08-22T17:07:00Z",
+                    "--output",
+                    "dispositions.json",
+                ],
+            )
+            .unwrap();
+            let raw = std::fs::read(f.root.join("dispositions.json")).unwrap();
+            let parsed = super::super::decode::decode_dispositions(
+                &raw,
+                &mut ContractLedger::default(),
+                &mut NoopControl,
+            )
+            .unwrap();
+            let document = parsed.document();
+            assert_eq!(
+                document.currentness,
+                super::super::wire::RecordedCurrentness::RecordedCurrent
+            );
+            assert_eq!(document.counts.states.quorum_met, 0);
+            assert_eq!(document.responses.len(), 2);
+            for (recorded, original) in document.responses.iter().zip(&originals) {
+                assert_eq!(recorded.classification, classification);
+                assert_eq!(recorded.raw_sha256, sha256_hex(original));
+            }
+            let item = &document.items[0];
+            assert!(item.met_seats.is_empty());
+            assert_eq!(item.unmet_seats.len(), 2);
+            assert_eq!(
+                item.state == ItemState::Stale,
+                classification == ResponseClassification::Stale
+            );
+            assert_ne!(item.state, ItemState::QuorumMet);
+            assert!(!String::from_utf8(raw).unwrap().contains("SENSITIVE_REVIEW_RATIONALE"));
+            for (path, original) in responses.iter().zip(&originals) {
+                assert_eq!(&std::fs::read(f.root.join(path)).unwrap(), original);
+            }
+        }
+    }
+
+    /// Two real CLI `init` runs from identical inputs publish identical queue bytes.
+    #[test]
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    fn genuine_cli_init_publishes_identical_bytes_at_distinct_destinations() {
+        let f = command_fixture(true);
+        initialize_as(&f.root, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "queue-a.json");
+        initialize_as(&f.root, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", "queue-b.json");
+        let first = std::fs::read(f.root.join("queue-a.json")).unwrap();
+        assert_eq!(first, std::fs::read(f.root.join("queue-b.json")).unwrap());
+        assert!(first.ends_with(b"\n"));
+    }
+
     /// Actual author and unknown reviewer assertions cannot produce a successful response file.
     #[test]
     #[cfg(any(target_os = "linux", target_os = "macos"))]

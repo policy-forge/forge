@@ -69,12 +69,17 @@ fn write_policy(fixture: &Fixture, selected: &[&str]) {
 
 /// Call the actual initialized-domain workflow with every path and declaration explicit.
 fn initialize(fixture: &Fixture, output: &Path) -> Result<(), CommandError> {
+    initialize_as(fixture, QUEUE_ID, output)
+}
+
+/// Call the actual workflow with an explicit asserted queue revision identifier.
+fn initialize_as(fixture: &Fixture, queue_id: &str, output: &Path) -> Result<(), CommandError> {
     init(
         &InitOptions {
             project_root: fixture.root(),
             sources: Path::new("locator.json"),
             policy: Path::new("review-policy.json"),
-            queue_id: QUEUE_ID,
+            queue_id,
             created_at: "2026-10-04T10:00:00Z",
             output,
         },
@@ -919,5 +924,143 @@ fn actual_due_equality_expires_incomplete_current_quorum_and_preserves_timely_vo
         .unwrap();
     assert_eq!(std::fs::read(fixture.root().join("expired-dispositions.json")).unwrap(), bytes);
     assert_private_absent(&fixture, &bytes);
+    assert_native_unchanged(&fixture, &originals);
+}
+
+/// Separate asserted revision identity for the regenerated-queue foreign control.
+const OTHER_QUEUE_ID: &str = "99999999-9999-4999-8999-999999999999";
+
+/// AC-3 setup: two actual current approvals fill quorum, then one real native
+/// control statement change regenerates every native/report/lifecycle original
+/// and a fresh queue is initialized at a new destination with `queue_id`.
+/// Returns the old response paths and the complete current status bytes.
+fn merge_old_responses_after_actual_subject_drift(
+    fixture: &Fixture,
+    queue_id: &str,
+) -> (Vec<PathBuf>, Vec<u8>) {
+    let responses = vec![
+        response(fixture, 0, Disposition::Approve),
+        response(fixture, 1, Disposition::Approve),
+    ];
+    assert_status(&status_bytes(fixture, &responses), ItemState::QuorumMet, 2, 2, 0);
+    let old_raw = std::fs::read(fixture.root().join("queue.json")).unwrap();
+    let old =
+        decode::decode_queue(&old_raw, &mut ContractLedger::default(), &mut NoopControl).unwrap();
+    fixture.refresh_framework_statement_for_supersession();
+    let mut writer = Vec::new();
+    assert!(status(&options(fixture, &responses), &mut writer, &mut NoopControl).is_err());
+    assert_eq!(writer, Vec::<u8>::new());
+    initialize_as(fixture, queue_id, Path::new("regenerated-queue.json")).unwrap();
+    let new_raw = std::fs::read(fixture.root().join("regenerated-queue.json")).unwrap();
+    let new =
+        decode::decode_queue(&new_raw, &mut ContractLedger::default(), &mut NoopControl).unwrap();
+    let (old_item, new_item) = (&old.document().items[0], &new.document().items[0]);
+    assert_eq!(new_item.key, old_item.key);
+    assert_eq!(new_item.subject_id, old_item.subject_id);
+    assert_ne!(new_item.subject_sha256, old_item.subject_sha256);
+    assert!(new.document().source_pins != old.document().source_pins);
+    let mut regenerated = options(fixture, &responses);
+    regenerated.queue = Path::new("regenerated-queue.json");
+    let mut bytes = Vec::new();
+    status(&regenerated, &mut bytes, &mut NoopControl).unwrap();
+    merge(&regenerated, Path::new("drift-dispositions.json"), &mut NoopControl).unwrap();
+    assert_eq!(std::fs::read(fixture.root().join("drift-dispositions.json")).unwrap(), bytes);
+    (responses, bytes)
+}
+
+/// Every old response original remains recorded, unchanged and outside quorum.
+fn assert_old_responses_preserved_without_quorum(
+    fixture: &Fixture,
+    responses: &[PathBuf],
+    bytes: &[u8],
+    classification: crate::review::wire::ResponseClassification,
+) -> ItemState {
+    let closed =
+        decode::decode_dispositions(bytes, &mut ContractLedger::default(), &mut NoopControl)
+            .unwrap();
+    let document = closed.document();
+    assert_eq!(document.currentness, RecordedCurrentness::RecordedCurrent);
+    assert_eq!(document.counts.response_files, 2);
+    assert_eq!(document.counts.unique_responses, 2);
+    assert_eq!(document.counts.states.quorum_met, 0);
+    assert_eq!(document.responses.len(), 2);
+    for ((recorded, path), id) in document.responses.iter().zip(responses).zip(RESPONSE_IDS) {
+        let actual = std::fs::read(fixture.root().join(path)).unwrap();
+        assert_eq!(recorded.response_id, id);
+        assert_eq!(recorded.classification, classification);
+        assert_eq!(recorded.disposition, Disposition::Approve);
+        assert_eq!(recorded.raw_sha256, crate::hashing::sha256_hex(&actual));
+    }
+    let item = &document.items[0];
+    assert_ne!(item.state, ItemState::QuorumMet);
+    assert_eq!(item.required_seats, 2);
+    assert!(item.met_seats.is_empty());
+    assert_eq!(item.unmet_seats.len(), 2);
+    assert_eq!(item.dissent_ids, Vec::<String>::new());
+    assert_private_absent(fixture, bytes);
+    item.state
+}
+
+/// AC-3: after real subject drift, a same-ID regenerated queue classifies the
+/// old approvals as stale; they stay recorded and fill no quorum seat.
+#[test]
+fn actual_subject_drift_same_queue_id_keeps_old_approvals_stale_without_quorum() {
+    let fixture = initialized(false, &["c1"]);
+    let (responses, bytes) = merge_old_responses_after_actual_subject_drift(&fixture, QUEUE_ID);
+    let state = assert_old_responses_preserved_without_quorum(
+        &fixture,
+        &responses,
+        &bytes,
+        crate::review::wire::ResponseClassification::Stale,
+    );
+    assert_eq!(state, ItemState::Stale);
+    let closed =
+        decode::decode_dispositions(&bytes, &mut ContractLedger::default(), &mut NoopControl)
+            .unwrap();
+    assert_eq!(closed.document().counts.states.stale, 1);
+    assert_eq!(
+        closed.document().items[0].response_ids.iter().map(String::as_str).collect::<Vec<_>>(),
+        &RESPONSE_IDS[..2]
+    );
+}
+
+/// AC-3 variant: a regenerated queue with a different asserted ID treats the old
+/// approvals as foreign evidence; they stay recorded and fill no quorum seat.
+#[test]
+fn actual_subject_drift_other_queue_id_keeps_old_approvals_foreign_without_quorum() {
+    let fixture = initialized(false, &["c1"]);
+    let (responses, bytes) =
+        merge_old_responses_after_actual_subject_drift(&fixture, OTHER_QUEUE_ID);
+    let state = assert_old_responses_preserved_without_quorum(
+        &fixture,
+        &responses,
+        &bytes,
+        crate::review::wire::ResponseClassification::Foreign,
+    );
+    assert_eq!(state, ItemState::Assigned);
+    let closed =
+        decode::decode_dispositions(&bytes, &mut ContractLedger::default(), &mut NoopControl)
+            .unwrap();
+    assert_eq!(closed.document().queue_id, OTHER_QUEUE_ID);
+    assert_eq!(closed.document().counts.states.stale, 0);
+    assert_eq!(closed.document().counts.states.assigned, 1);
+}
+
+/// Separate real `init` invocations from identical inputs publish identical bytes;
+/// only the new destination differs.
+#[test]
+fn actual_init_publishes_identical_bytes_at_distinct_destinations() {
+    let fixture = Fixture::new(true);
+    write_policy(&fixture, &["c1", "c2"]);
+    let originals = native_originals(&fixture);
+    initialize(&fixture, Path::new("queue-a.json")).unwrap();
+    initialize(&fixture, Path::new("queue-b.json")).unwrap();
+    let first = std::fs::read(fixture.root().join("queue-a.json")).unwrap();
+    assert_eq!(first, std::fs::read(fixture.root().join("queue-b.json")).unwrap());
+    let queue =
+        decode::decode_queue(&first, &mut ContractLedger::default(), &mut NoopControl).unwrap();
+    assert_eq!(queue.document().queue_id, QUEUE_ID);
+    assert_eq!(queue.document().items.len(), 2);
+    assert!(!String::from_utf8(first).unwrap().contains("queue-a.json"));
     assert_native_unchanged(&fixture, &originals);
 }
