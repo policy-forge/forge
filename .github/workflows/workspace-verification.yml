@@ -103,7 +103,7 @@ jobs:
 
       - name: Retain native Unix staged source flow outcome
         if: ${{ always() && runner.os != 'Windows' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-staged-source-flow-${{ matrix.os }}-${{ github.sha }}
           path: workspace-staged-source-flow/receipt.json
@@ -112,7 +112,7 @@ jobs:
 
       - name: Retain native Unix source flow outcome
         if: ${{ always() && runner.os != 'Windows' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-source-flow-${{ matrix.os }}-${{ github.sha }}
           path: workspace-source-flow/receipt.json
@@ -121,7 +121,7 @@ jobs:
 
       - name: Retain native metadata bundle boundary outcome
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-metadata-bundle-${{ matrix.os }}-${{ github.sha }}
           path: workspace-bundle-boundaries.json
@@ -155,7 +155,7 @@ jobs:
 
       - name: Retain redacted verification receipt
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-api-${{ matrix.os }}-${{ github.sha }}
           path: workspace-evidence/workspace-verification.json
@@ -164,7 +164,7 @@ jobs:
 
       - name: Retain separate bounded maintained-client failure observation
         if: ${{ failure() && steps.api-verification.outcome == 'failure' && steps.api-verification.outputs.client_failure_observation_published == 'true' && hashFiles('workspace-evidence/workspace-client-failure-observation.json') != '' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-client-failure-${{ matrix.os }}-${{ github.sha }}
           path: workspace-evidence/workspace-client-failure-observation.json
@@ -226,7 +226,7 @@ jobs:
 
       - name: Retain redacted native console verification
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-windows-console-${{ github.sha }}
           path: windows-console-evidence/workspace-windows-console-verification.json
@@ -334,7 +334,7 @@ jobs:
 
       - name: Retain source browser receipts and synthetic screenshots
         if: ${{ always() && steps.source-browser.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-source-browser-${{ github.sha }}
           path: |
@@ -358,7 +358,7 @@ jobs:
 
       - name: Retain staged source browser receipts and synthetic screenshots
         if: ${{ always() && steps.staged-source-browser.outcome != 'skipped' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-staged-source-browser-${{ github.sha }}
           path: |
@@ -371,7 +371,7 @@ jobs:
 
       - name: Retain bounded redacted hosted-Chrome receipt
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-installed-chrome-${{ github.sha }}
           path: hosted-chrome-evidence/workspace-hosted-chrome-verification.json
@@ -433,7 +433,7 @@ jobs:
 
       - name: Retain separate redacted synthetic physical control receipt
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-stdlib-closure-physical-controls-${{ github.sha }}
           path: protected-stdlib-controls-evidence/workspace-stdlib-closure-physical-controls.json
@@ -461,7 +461,7 @@ jobs:
 
       - name: Retain separate finite distro support observation
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-distro-support-${{ github.sha }}
           path: ${{ runner.temp }}/distro-support/observation.json
@@ -489,7 +489,7 @@ jobs:
 
       - name: Retain bounded redacted IP-denial prerequisite receipt
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-headless-ip-denial-${{ github.sha }}
           path: |
@@ -500,7 +500,7 @@ jobs:
 
       - name: Retain actual fixed stdlib rejection-site inventory detail v2
         if: ${{ failure() && steps.headless-denial-verification.outcome == 'failure' && steps.headless-denial-verification.outputs.stdlib_link_detail_published == 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-stdlib-link-detail-v2-${{ github.sha }}
           path: headless-ip-denial-evidence/stdlib-unsupported-link-diagnostic-v2.json
@@ -524,7 +524,7 @@ jobs:
 
       - name: Retain separate bounded stat-predicate sidecar
         if: ${{ failure() && steps.headless-denial-verification.outcome == 'failure' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-stdlib-gate-${{ github.sha }}
           path: stdlib-gate-evidence/stdlib-gate-observation.json
@@ -547,7 +547,7 @@ jobs:
 
       - name: Retain newly published bounded link-chain facts
         if: ${{ failure() && steps.headless-denial-verification.outcome == 'failure' && steps.stdlib-link-chain-observation.outputs.stdlib_link_chain_published == 'true' && hashFiles('stdlib-link-chain-evidence/stdlib-link-chain-observation.json') != '' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: workspace-stdlib-link-chain-${{ github.sha }}
           path: stdlib-link-chain-evidence/stdlib-link-chain-observation.json
