@@ -576,6 +576,7 @@ fn model_root(model: crate::OscalModelType) -> &'static str {
         crate::OscalModelType::SystemSecurityPlan => "system-security-plan",
         crate::OscalModelType::Mapping => "mapping-collection",
         crate::OscalModelType::Poam => "plan-of-action-and-milestones",
+        crate::OscalModelType::AssessmentResults => "assessment-results",
     }
 }
 

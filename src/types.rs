@@ -7,8 +7,8 @@ use clap::ValueEnum;
 /// Distinguishes between the OSCAL document types that FORGE can
 /// detect and process: [Catalog][crate::oscal::catalog::OscalCatalog],
 /// [`ComponentDefinition`][crate::oscal::component_definition::ComponentDefinition], and
-/// [Profile][crate::oscal::profile::OscalProfile], System Security Plans, plus Control Mapping
-/// collections.
+/// [Profile][crate::oscal::profile::OscalProfile], System Security Plans, Control Mapping
+/// collections, Plans of Action and Milestones, and Assessment Results.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OscalModelType {
     /// An OSCAL Catalog containing groups and controls.
@@ -23,6 +23,8 @@ pub enum OscalModelType {
     Mapping,
     /// An OSCAL Plan of Action and Milestones.
     Poam,
+    /// An OSCAL Assessment Results document.
+    AssessmentResults,
 }
 
 impl OscalModelType {
@@ -36,6 +38,7 @@ impl OscalModelType {
             Self::SystemSecurityPlan => "system-security-plan",
             Self::Mapping => "mapping-collection",
             Self::Poam => "plan-of-action-and-milestones",
+            Self::AssessmentResults => "assessment-results",
         }
     }
 }

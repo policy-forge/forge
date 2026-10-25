@@ -148,7 +148,7 @@ pub enum Commands {
         input: PathBuf,
 
         /// Override auto-detected OSCAL model type (catalog, component-definition,
-        /// system-security-plan, or mapping)
+        /// system-security-plan, mapping, or assessment-results)
         #[arg(long, value_enum, conflicts_with = "round_trip")]
         schema_type: Option<SchemaType>,
 
@@ -2223,6 +2223,9 @@ pub enum SchemaType {
     Mapping,
     /// Validate a native OSCAL Plan of Action and Milestones.
     Poam,
+    /// Validate against the OSCAL Assessment Results schema.
+    #[value(name = "assessment-results")]
+    AssessmentResults,
 }
 
 /// Raw convert-command arguments captured from clap before resolution.

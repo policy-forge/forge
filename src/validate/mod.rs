@@ -116,7 +116,8 @@ pub enum ValidateError {
 ///
 /// Inspects top-level object roots: `catalog` → `Catalog`,
 /// `component-definition` → `ComponentDefinition`, `profile` → `Profile`,
-/// `system-security-plan` → `SystemSecurityPlan`, and `mapping-collection` → `Mapping`.
+/// `system-security-plan` → `SystemSecurityPlan`, `mapping-collection` → `Mapping`,
+/// `plan-of-action-and-milestones` → `Poam`, and `assessment-results` → `AssessmentResults`.
 /// Roots mapped to `null` or another
 /// non-object value are ignored. Exactly one recognized root must be present.
 ///
@@ -132,6 +133,7 @@ pub fn detect_model_type(json: &Value) -> Result<OscalModelType, ValidateError> 
         ("system-security-plan", OscalModelType::SystemSecurityPlan),
         ("mapping-collection", OscalModelType::Mapping),
         ("plan-of-action-and-milestones", OscalModelType::Poam),
+        ("assessment-results", OscalModelType::AssessmentResults),
     ];
     let found: Vec<_> = roots
         .iter()
@@ -173,6 +175,9 @@ pub fn load_schema(model_type: OscalModelType) -> Result<Value, ValidateError> {
             include_str!("../../schemas/oscal_mapping_schema.json")
         }
         OscalModelType::Poam => include_str!("../../schemas/oscal_poam_schema.json"),
+        OscalModelType::AssessmentResults => {
+            include_str!("../../schemas/oscal_assessment-results_schema.json")
+        }
     };
 
     let schema =
@@ -191,6 +196,7 @@ static PROFILE_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 static SSP_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 static MAPPING_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 static POAM_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
+static ASSESSMENT_RESULTS_VALIDATOR: OnceLock<jsonschema::Validator> = OnceLock::new();
 
 /// Return the process-wide compiled validator for an OSCAL model.
 ///
@@ -206,6 +212,7 @@ pub(crate) fn compiled_validator(
         OscalModelType::SystemSecurityPlan => &SSP_VALIDATOR,
         OscalModelType::Mapping => &MAPPING_VALIDATOR,
         OscalModelType::Poam => &POAM_VALIDATOR,
+        OscalModelType::AssessmentResults => &ASSESSMENT_RESULTS_VALIDATOR,
     };
     if let Some(validator) = cell.get() {
         return Ok(validator);

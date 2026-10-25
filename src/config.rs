@@ -577,6 +577,7 @@ fn validate_validate(project_root: &Path, raw: &RawValidate) -> Result<ValidateS
             ("system-security-plan", SchemaType::SystemSecurityPlan),
             ("mapping", SchemaType::Mapping),
             ("poam", SchemaType::Poam),
+            ("assessment-results", SchemaType::AssessmentResults),
         ],
     )?;
     let format = parse_enum(

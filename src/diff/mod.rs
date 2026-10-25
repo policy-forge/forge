@@ -117,7 +117,8 @@ fn to_artifact_type(json: &serde_json::Value, path: &Path) -> Result<ArtifactTyp
             unsupported @ (OscalModelType::Profile
             | OscalModelType::SystemSecurityPlan
             | OscalModelType::Mapping
-            | OscalModelType::Poam),
+            | OscalModelType::Poam
+            | OscalModelType::AssessmentResults),
         ) => Err(ForgeError::DiffError(format!(
             "'{}': {} artifacts are not supported by diff; expected Catalog or ComponentDefinition",
             path.display(),

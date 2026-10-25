@@ -178,7 +178,8 @@ fn check_missing_references(json: &Value, model_type: OscalModelType) -> Vec<Val
         | OscalModelType::Profile
         | OscalModelType::SystemSecurityPlan
         | OscalModelType::Mapping
-        | OscalModelType::Poam => vec![],
+        | OscalModelType::Poam
+        | OscalModelType::AssessmentResults => vec![],
     }
 }
 
