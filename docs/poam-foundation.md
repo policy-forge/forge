@@ -61,7 +61,8 @@ Exit 0 means valid foundation/source integrity; exit 2 means invalid,
 unsupported, stale or unsafe input. There is no schedule/review exit 1 in this
 foundation. Nonempty items/roles/parties remain unsupported in source-only mode.
 The separate [authored workflow commands](poam-cli-workflow.md) validate
-nonterminal work and generate native output with an explicit as-of date; they
+authored work, including D064 asserted terminal states, and generate native output
+with an explicit as-of date; they
 retain their own schedule/action exits and pending full F08 acceptance.
 
 ## Source and bounds
@@ -104,11 +105,12 @@ source binding or the planned remediation workflow checks.
 
 ## Remaining gates
 
-The open implementation stack includes [nonterminal workflow/check/build](poam-cli-workflow.md),
+The open implementation stack includes [workflow check/build](poam-cli-workflow.md),
 [baseline comparison](poam-baseline-comparison.md), [portfolio JSON and static HTML](poam-portfolio.md),
 [local outbound handoffs](poam-outbound.md) and [local evidence inspection](poam-evidence-inspection.md).
-These technical commands retain separate admission scopes. D064 editable authority
-and accepted terminal/reopening semantics, PRD 063 source acceptance, evidence
-sufficiency, Windows file-publication qualification beyond hosted CI tests, independent OSCAL consumer qualification
+These technical commands retain separate admission scopes. D064 terminal and
+reopen semantics are implemented per the [owner dispositions](plans/2026-10-25-owner-dispositions.md),
+pending review. PRD 063 source acceptance, evidence sufficiency, Windows
+file-publication qualification beyond hosted CI tests, independent OSCAL consumer qualification
 and authentic remediation-team evaluation remain open. No source check or synthetic
 fixture supplies those approvals.

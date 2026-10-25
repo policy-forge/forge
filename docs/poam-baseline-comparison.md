@@ -72,7 +72,12 @@ historical state or trim events to that date.
 `revision_rules_compatible` does not establish a new artifact's validity,
 authenticated ownership, effectiveness, evidence sufficiency or approval.
 
-## Explicit proposed reopening relationships
+## Reopen and supersession relationships
+
+Reopening is admitted (D064, [owner dispositions](plans/2026-10-25-owner-dispositions.md))
+only as a new item whose manifest declares `"supersedes": "<terminal item key>"`.
+`reopen_declarations` lists every such link on an item added in this revision,
+plus every explicit relation supplied with `--reopens`.
 
 Optional `--reopens relations.json` accepts a closed JSON array of relationships.
 Each member must contain exactly `previous_item_key`, `current_item_key` and
@@ -81,10 +86,15 @@ file bytes, an existing terminal prior item and a distinct new item key present 
 the current declaration. Duplicate or contradictory relations fail. Similar prose
 or source selections never infer a relationship.
 
-Every reported relationship has `accepted_for_build: false` and requires review.
-It does not reopen a source finding, authenticate an actor or enable a terminal
-revision in `poam build/check`. The D064 closure/supersession disposition remains
-required for accepted terminal workflows.
+A relationship has `accepted_for_build: true` only when the current manifest links
+the new item to the terminal item and that terminal record is unchanged from the
+baseline. An explicit relation without the manifest link, or a link whose
+superseded record was rewritten, reports `accepted_for_build: false`, adds the
+`reopening-unadmitted` refusal and makes `revision_rules_compatible` false. Adding,
+removing or changing `supersedes` on an existing item reports the `supersedes`
+change and the `supersession-changed` refusal. Any reported relationship requires
+review (exit 1). A relationship does not reopen a source finding or authenticate an
+actor, and terminal history is never rewritten.
 
 ## Input and publication integrity
 
@@ -106,7 +116,7 @@ The [authored command guide](poam-cli-workflow.md) covers native production and
 schedule reports. The open implementation stack also provides [portfolio JSON/static HTML](poam-portfolio.md),
 [local outbound handoffs](poam-outbound.md) and [local evidence inspection](poam-evidence-inspection.md).
 Those commands do not turn comparison compatibility or local byte/date observations
-into accepted closure/reopening semantics, evidence sufficiency or remote connector
-authority. Full F08 acceptance still requires the D064 disposition, independent
-consumer qualification, representative plans and real pilot judgments. The full
+into verified closure, evidence sufficiency or remote connector authority. Full F08
+acceptance still requires independent consumer qualification, representative plans
+and real pilot judgments. The full
 goal-wide documentation review and release gates remain open.

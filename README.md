@@ -295,9 +295,11 @@ forge poam check --manifest ./assessment-bundle/poam.json \
 The inventory includes every finding and risk in that result, including satisfied
 findings and closed risks. It does not validate remediation ownership, schedule,
 review or closure. Separate authored `poam check --workflow --as-of YYYY-MM-DD`
-and `poam build` commands validate nonterminal ownership/history/schedules and
-generate native JSON from exact source selections. Completion and risk acceptance
-remain refused pending the recorded closure decision. `poam baseline` reports
+and `poam build` commands validate ownership/history/schedules and generate
+native JSON from exact source selections. `completed-asserted` and
+`accepted-risk-asserted` are admitted only with an independent reviewer assertion
+and hashed, time-stamped evidence (D064); they are assertions, not verified
+closure. Reopening is a new item that `supersedes` the terminal item. `poam baseline` reports
 complete prior/current identity and field changes against the current source
 capture, including refused revisions, without creating a native artifact. See
 [baseline comparison](docs/poam-baseline-comparison.md) and the
