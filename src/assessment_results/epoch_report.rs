@@ -148,6 +148,12 @@ pub(crate) enum ChangeCode {
     RecurrenceRationaleChanged,
     /// Original native status strings differ across an explicitly paired recurrence.
     RecurrenceStatusChanged,
+    /// A new finding explicitly references an observation from an earlier epoch.
+    PriorObservationLinked,
+    /// The appended epoch added a metadata role; earlier roles are unchanged.
+    RoleAdded,
+    /// The appended epoch added a metadata party; earlier parties are unchanged.
+    PartyAdded,
 }
 
 /// Full native risk reference reuses the current tuple; runtime admission requires kind Risk.
@@ -586,6 +592,9 @@ const CHANGE_CODES: &[&str] = &[
     "recurrence-content-changed",
     "recurrence-rationale-changed",
     "recurrence-status-changed",
+    "prior-observation-linked",
+    "role-added",
+    "party-added",
 ];
 
 /// Borrow a complete closed map only after checking every required key and map length.
