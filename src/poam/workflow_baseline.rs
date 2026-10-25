@@ -2,8 +2,9 @@
 //!
 //! No comparison creates a native artifact or weakens workflow admission. Prior
 //! declarations receive a bounded structural profile, not prior freshness or
-//! authority. Removals, rewritten history, terminal mutations and explicit reopen
-//! declarations remain visible refusals rather than accepted artifact revisions.
+//! authority. Removals, rewritten history and terminal mutations remain visible
+//! refusals. Reopening is admitted only as a new item whose manifest `supersedes`
+//! link names a terminal item (D064); every relation is reported with its admission.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -23,7 +24,7 @@ use crate::json_strict::{self, Limits};
 /// Complete comparison report version, independent of schedule and native schemas.
 pub const BASELINE_SCHEMA_VERSION: &str = "forge.poam-baseline/1";
 
-/// Exact declared identity relation; this is not accepted reopening or a native link.
+/// Exact caller-declared identity relation, admitted only when the manifest carries the same link.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ReopenDeclaration {
@@ -81,6 +82,8 @@ pub enum ChangedField {
     MilestoneOrder,
     /// Explicit milestone dependency keys changed.
     Dependencies,
+    /// Explicit item supersession link changed; links are immutable once declared.
+    Supersedes,
 }
 
 /// Minimal responsibility projection; IDs can still identify people and be sensitive.
@@ -123,6 +126,8 @@ pub struct RecordProjection {
     pub milestone_order: Vec<String>,
     /// Complete explicit milestone dependency keys; empty for item rows.
     pub dependencies: Vec<String>,
+    /// Exact superseded item key for an item that reopens terminal work; null otherwise.
+    pub supersedes: Option<String>,
 }
 
 /// One stable union row, retaining both projections even when the revision is refused.
@@ -178,7 +183,7 @@ pub struct ReferenceRow {
     pub matches_current_capture: bool,
 }
 
-/// Explicit author relation reported as refused reopening; never inferred from similar prose or refs.
+/// Explicit reopen/supersession relation; never inferred from similar prose or refs.
 #[derive(Debug, Serialize)]
 pub struct ReopenRow {
     /// Exact previous item identity.
@@ -189,7 +194,7 @@ pub struct ReopenRow {
     pub previous_item_key: String,
     /// Exact distinct current immutable key.
     pub current_item_key: String,
-    /// Fixed false until a separately approved terminal/supersession admission exists.
+    /// True only when the current manifest links the new item to the unchanged terminal item.
     pub accepted_for_build: bool,
 }
 
@@ -201,8 +206,6 @@ pub enum Refusal {
     EmptyPrevious,
     /// Current inspection is explicitly empty and cannot be built as authored work.
     EmptyCurrent,
-    /// Prior or current history contains still-undisposed completion/risk acceptance.
-    UndisposedTerminal,
     /// Exact current document modification time moved backward.
     ModificationTimeRegressed,
     /// Prior item or milestone identity is absent in current declarations.
@@ -213,8 +216,10 @@ pub enum Refusal {
     TerminalMutation,
     /// Current source tuples fail exact current native membership.
     CurrentReferenceStale,
-    /// Explicit proposed reopening remains outside accepted build authority.
+    /// A reopen relation lacks the current manifest link or its unchanged terminal item.
     ReopeningUnadmitted,
+    /// An item's supersession link was added, removed or changed after declaration.
+    SupersessionChanged,
 }
 
 /// Complete source-derived readonly comparison; no native output can be obtained from it.
@@ -262,7 +267,7 @@ pub struct BaselineReport {
     pub previous_refs_not_current: usize,
     /// Current references not matching current capture; any nonzero count refuses artifact revision.
     pub current_refs_not_current: usize,
-    /// Complete explicit proposed reopen relations, all refused for build.
+    /// Complete reopen relations: explicit declarations plus manifest links added in this revision.
     pub reopen_declarations: Vec<ReopenRow>,
     /// Fixed assertion, authority, privacy and comparison scope boundary.
     pub boundary: &'static str,
@@ -314,8 +319,9 @@ impl PreparedComparison {
 /// Prepare readonly M13 comparison from original declarations and an actual current native capture.
 ///
 /// Both raw author declarations and optional reopen data are duplicate-safe and bounded.
-/// Current references can be reported stale, but receive no artifact authority. Terminal
-/// and removal observations remain descriptive refusals. Prior source files are not loaded
+/// Current references can be reported stale, but receive no artifact authority. Removal
+/// and terminal-mutation observations remain descriptive refusals; reopening is admitted
+/// only through an explicit manifest supersession link. Prior source files are not loaded
 /// and their historic freshness or authority is never inferred from a current comparison.
 /// # Errors
 /// Refuses invalid complete structural/history input, distinct plan keys, malformed explicit
@@ -439,18 +445,14 @@ fn compare(
     let current_refs_not_current =
         references.iter().filter(|row| !row.previous && !row.matches_current_capture).count();
     let reopen_declarations = reopen_rows(previous, current, previous_sha, reopens)?;
+    let unadmitted = reopen_declarations.iter().any(|row| !row.accepted_for_build);
     let revision_rules_compatible = workflow::validate_successor(previous, current).is_ok()
         && current_refs_not_current == 0
-        && reopen_declarations.is_empty();
+        && !unadmitted;
     let items = counts(&rows, EntityKind::Item);
     let milestones = counts(&rows, EntityKind::Milestone);
-    let refusal_observations = refusals(
-        previous,
-        current,
-        &rows,
-        current_refs_not_current,
-        !reopen_declarations.is_empty(),
-    )?;
+    let refusal_observations =
+        refusals(previous, current, &rows, current_refs_not_current, unadmitted)?;
     Ok(BaselineReport {
         schema_version: BASELINE_SCHEMA_VERSION,
         as_of: as_of.into(),
@@ -474,7 +476,7 @@ fn compare(
         previous_refs_not_current,
         current_refs_not_current,
         reopen_declarations,
-        boundary: "Author assertions only. Prior freshness and actor authority unverified. Reopen/removal/history refusals never authorize an artifact. IDs can be sensitive; prose, names and private paths are omitted.",
+        boundary: "Author assertions only. Prior freshness and actor authority unverified. Terminal completion and risk acceptance are asserted outcomes, never verified closure. Removal/history refusals never authorize an artifact. IDs can be sensitive; prose, names and private paths are omitted.",
     })
 }
 
@@ -497,7 +499,7 @@ fn refusals(
     current: &WorkflowManifest,
     rows: &[ChangeRow],
     stale: usize,
-    reopened: bool,
+    unadmitted_reopen: bool,
 ) -> Result<Vec<Refusal>, ForgeError> {
     let mut values = Vec::new();
     if previous.items.is_empty() {
@@ -505,16 +507,6 @@ fn refusals(
     }
     if current.items.is_empty() {
         values.push(Refusal::EmptyCurrent);
-    }
-    let undisposed = |manifest: &WorkflowManifest| {
-        manifest.items.iter().any(|item| {
-            item.history.iter().chain(item.milestones.iter().flat_map(|step| &step.history)).any(
-                |event| matches!(event.to, State::CompletedAsserted | State::AcceptedRiskAsserted),
-            )
-        })
-    };
-    if undisposed(previous) || undisposed(current) {
-        values.push(Refusal::UndisposedTerminal);
     }
     let before = chrono::DateTime::parse_from_rfc3339(&previous.document.last_modified)
         .map_err(|_| error("invalid prior modification time"))?;
@@ -550,8 +542,13 @@ fn refusals(
     if stale > 0 {
         values.push(Refusal::CurrentReferenceStale);
     }
-    if reopened {
+    if unadmitted_reopen {
         values.push(Refusal::ReopeningUnadmitted);
+    }
+    if previous.items.iter().any(|item| {
+        current_items.get(item.key.as_str()).is_some_and(|next| item.supersedes != next.supersedes)
+    }) {
+        values.push(Refusal::SupersessionChanged);
     }
     Ok(values)
 }
@@ -649,6 +646,7 @@ fn changes(a: &RecordProjection, b: &RecordProjection) -> Vec<ChangedField> {
         (a.source_refs != b.source_refs, ChangedField::Sources),
         (a.milestone_order != b.milestone_order, ChangedField::MilestoneOrder),
         (a.dependencies != b.dependencies, ChangedField::Dependencies),
+        (a.supersedes != b.supersedes, ChangedField::Supersedes),
     ] {
         if different {
             fields.push(field);
@@ -676,6 +674,7 @@ fn item_projection(
         source_refs: references,
         milestone_order: item.milestones.iter().map(|step| step.key.clone()).collect(),
         dependencies: Vec::new(),
+        supersedes: item.supersedes.clone(),
     })
 }
 
@@ -696,6 +695,7 @@ fn step_projection(
         source_refs: Vec::new(),
         milestone_order: Vec::new(),
         dependencies: step.depends_on.clone(),
+        supersedes: None,
     })
 }
 
@@ -811,7 +811,11 @@ fn reference_rows(
     rows
 }
 
-/// Require each explicit relation to bind exact old/new keys and raw prior bytes; always refuse reopening for build.
+/// Report explicit relations and manifest supersession links added in this revision.
+///
+/// Explicit relations must bind exact old/new keys and raw prior bytes. A relation is
+/// accepted for build only when the current manifest links the new item to a terminal
+/// item whose terminal record is unchanged from the prior declaration.
 fn reopen_rows(
     previous: &WorkflowManifest,
     current: &WorkflowManifest,
@@ -822,7 +826,7 @@ fn reopen_rows(
     let new: BTreeMap<_, _> = current.items.iter().map(|item| (item.key.as_str(), item)).collect();
     let mut prior_keys = BTreeSet::new();
     let mut current_keys = BTreeSet::new();
-    let mut rows = Vec::new();
+    let mut relations = BTreeSet::new();
     for value in values {
         let before = old
             .get(value.previous_item_key.as_str())
@@ -838,22 +842,31 @@ fn reopen_rows(
                 "explicit reopen relation has an invalid or duplicate exact identity binding",
             ));
         }
-        rows.push(ReopenRow {
-            previous_uuid: identity::item(&previous.document.key, &value.previous_item_key)
-                .to_string(),
-            current_uuid: identity::item(&current.document.key, &value.current_item_key)
-                .to_string(),
-            previous_item_key: value.previous_item_key.clone(),
-            current_item_key: value.current_item_key.clone(),
-            accepted_for_build: false,
-        });
+        relations.insert((value.previous_item_key.as_str(), value.current_item_key.as_str()));
     }
-    rows.sort_by(|a, b| {
-        a.previous_item_key
-            .cmp(&b.previous_item_key)
-            .then(a.current_item_key.cmp(&b.current_item_key))
-    });
-    Ok(rows)
+    for item in &current.items {
+        if let Some(prior) = &item.supersedes
+            && !old.contains_key(item.key.as_str())
+        {
+            relations.insert((prior.as_str(), item.key.as_str()));
+        }
+    }
+    Ok(relations
+        .into_iter()
+        .map(|(prior, next)| {
+            let linked =
+                new.get(next).is_some_and(|item| item.supersedes.as_deref() == Some(prior));
+            let terminal = new.get(prior).is_some_and(|item| item.state.terminal())
+                && old.get(prior).is_none_or(|before| new.get(prior) == Some(before));
+            ReopenRow {
+                previous_uuid: identity::item(&previous.document.key, prior).to_string(),
+                current_uuid: identity::item(&current.document.key, next).to_string(),
+                previous_item_key: prior.to_string(),
+                current_item_key: next.to_string(),
+                accepted_for_build: linked && terminal,
+            }
+        })
+        .collect())
 }
 
 /// Report generic invalid comparison input without arbitrary private path/source exception text.
@@ -1149,9 +1162,9 @@ mod tests {
         }
     }
 
-    /// Explicit cancelled-item reopening is reported refused; overlapping source refs do not imply a link.
+    /// An explicit relation without the manifest link is refused; overlapping source refs do not imply a link.
     #[test]
-    fn reopening_requires_exact_prior_bytes_and_new_identity_without_build_authority() {
+    fn reopening_requires_exact_prior_bytes_and_new_identity_and_a_manifest_link() {
         let mut previous = declaration();
         previous["items"][0]["state"] = json!("cancelled");
         previous["items"][0]["history"].as_array_mut().unwrap().push(json!({"key":"cancel","actor":{"role_id":"owner","party_key":"alice"},
@@ -1207,6 +1220,121 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    /// Cancelled `work` plus a new item whose history begins after the cancellation.
+    fn terminal_with_successor(link: bool) -> (Value, Value) {
+        let mut previous = declaration();
+        previous["items"][0]["state"] = json!("cancelled");
+        previous["items"][0]["history"].as_array_mut().unwrap().push(json!({"key":"cancel","actor":{"role_id":"owner","party_key":"alice"},
+            "at":"2026-01-04T00:00:00Z","from":"planned","to":"cancelled","rationale":"Explicit plan cancellation","closure":null}));
+        let mut current = previous.clone();
+        let mut new = declaration()["items"][0].clone();
+        new["key"] = json!("new-work");
+        new["history"][0]["at"] = json!("2026-01-05T00:00:00Z");
+        if link {
+            new["supersedes"] = json!("work");
+        }
+        current["items"].as_array_mut().unwrap().push(new);
+        (previous, current)
+    }
+
+    /// A manifest supersession link is reported and admitted for build, with or without an explicit relation.
+    #[test]
+    fn manifest_supersession_link_is_reported_and_accepted_for_build() {
+        let (previous, current) = terminal_with_successor(true);
+        let a = serde_json::to_vec(&previous).unwrap();
+        let b = serde_json::to_vec(&current).unwrap();
+        let old = parse_declaration(&a).unwrap();
+        let new = parse_declaration(&b).unwrap();
+        let sha = sha256_hex(&a);
+        let implicit =
+            compare(&old, &new, &inventory(&old), &sha, &sha256_hex(&b), "2026-02-06", &[])
+                .unwrap();
+        assert_eq!(implicit.reopen_declarations.len(), 1);
+        let row = &implicit.reopen_declarations[0];
+        assert!(row.accepted_for_build);
+        assert_eq!(
+            (row.previous_item_key.as_str(), row.current_item_key.as_str()),
+            ("work", "new-work")
+        );
+        assert_eq!(row.previous_uuid, identity::item("plan", "work").to_string());
+        assert!(implicit.revision_rules_compatible);
+        assert!(!implicit.refusal_observations.contains(&Refusal::ReopeningUnadmitted));
+        assert!(review_required(&implicit));
+        assert_eq!(implicit.items.added, 1);
+        let added = implicit.rows.iter().find(|row| row.item_key == "new-work").unwrap();
+        assert_eq!(added.current.as_ref().unwrap().supersedes.as_deref(), Some("work"));
+        let relation = ReopenDeclaration {
+            previous_item_key: "work".into(),
+            current_item_key: "new-work".into(),
+            previous_manifest_sha256: sha.clone(),
+        };
+        let explicit = compare(
+            &old,
+            &new,
+            &inventory(&old),
+            &sha,
+            &sha256_hex(&b),
+            "2026-02-06",
+            std::slice::from_ref(&relation),
+        )
+        .unwrap();
+        assert_eq!(explicit.reopen_declarations.len(), 1);
+        assert!(explicit.reopen_declarations[0].accepted_for_build);
+        assert!(explicit.revision_rules_compatible);
+        assert!(workflow::validate_successor(&old, &new).is_ok());
+        let first = super::super::workflow_model::json_line(&explicit).unwrap();
+        let again = compare(
+            &old,
+            &new,
+            &inventory(&old),
+            &sha,
+            &sha256_hex(&b),
+            "2026-02-06",
+            std::slice::from_ref(&relation),
+        )
+        .unwrap();
+        assert_eq!(first, super::super::workflow_model::json_line(&again).unwrap());
+    }
+
+    /// Rewriting the superseded terminal record or changing a declared link is never admitted.
+    #[test]
+    fn supersession_never_rewrites_terminal_history_or_changes_links() {
+        let (previous, mut current) = terminal_with_successor(true);
+        current["items"][0]["history"][1]["rationale"] = json!("Rewritten cancellation");
+        let report = compared(&previous, &current);
+        assert!(!report.reopen_declarations[0].accepted_for_build);
+        assert!(!report.revision_rules_compatible);
+        assert!(report.refusal_observations.contains(&Refusal::ReopeningUnadmitted));
+        assert!(report.refusal_observations.contains(&Refusal::RewrittenHistory));
+        let (_, linked) = terminal_with_successor(true);
+        let (_, unlinked) = terminal_with_successor(false);
+        let report = compared(&unlinked, &linked);
+        assert!(report.refusal_observations.contains(&Refusal::SupersessionChanged));
+        assert!(!report.revision_rules_compatible);
+        let row = report.rows.iter().find(|row| row.item_key == "new-work").unwrap();
+        assert_eq!(row.changes, vec![ChangedField::Supersedes]);
+        assert!(report.reopen_declarations.is_empty());
+        let report = compared(&linked, &unlinked);
+        assert!(report.refusal_observations.contains(&Refusal::SupersessionChanged));
+    }
+
+    /// Asserted terminal history is admitted in comparisons; no undisposed-terminal refusal remains.
+    #[test]
+    fn asserted_terminal_history_compares_without_a_pending_closure_refusal() {
+        let mut previous = declaration();
+        previous["items"][0]["source_refs"][0]["kind"] = json!("risk");
+        let mut current = previous.clone();
+        current["items"][0]["state"] = json!("accepted-risk-asserted");
+        current["items"][0]["history"].as_array_mut().unwrap().push(json!({"key":"accept","actor":{"role_id":"owner","party_key":"alice"},
+            "at":"2026-01-10T00:00:00Z","from":"planned","to":"accepted-risk-asserted","rationale":"Declared acceptance",
+            "closure":{"reviewer":{"role_id":"reviewer","party_key":"bob"},"reviewed_at":"2026-01-10T12:00:00Z","rationale":"Independent review",
+                "evidence":[{"key":"proof","href":"evidence/proof.json","expected_sha256":"c".repeat(64),"captured_at":"2026-01-09T00:00:00Z"}]}}));
+        let report = compared(&previous, &current);
+        assert!(report.refusal_observations.is_empty(), "{:?}", report.refusal_observations);
+        assert!(report.revision_rules_compatible);
+        assert!(report.rows[0].changes.contains(&ChangedField::Status));
     }
 
     /// Terminal edits and backward modification instants are reported using existing core refusal rules.
