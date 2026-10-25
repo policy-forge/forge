@@ -407,3 +407,29 @@ fn same_recorded_original_renders_identical_complete_bytes() {
     let html = rendered(&value);
     assert!(html.contains(&crate::hashing::sha256_hex(&raw)));
 }
+
+/// A meta Content-Security-Policy denies every remote or scripted load; only the
+/// constant inline stylesheet is allowed, and no inline style attribute exists.
+#[test]
+fn content_security_policy_denies_remote_loads_and_allows_only_inline_stylesheet() {
+    let html = rendered(&document_fixture());
+    let policy = "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; \
+        style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; img-src 'none'\">";
+    assert_eq!(html.matches("http-equiv=\"Content-Security-Policy\"").count(), 1);
+    let head_end = html.find("</head>").unwrap();
+    let position = html.find(policy).unwrap();
+    assert!(html.find("<meta charset=\"utf-8\">").unwrap() < position);
+    assert!(position < html.find("<title>").unwrap());
+    assert!(position < html.find("<style>").unwrap());
+    assert_eq!(html.matches("<style>").count(), 1);
+    assert!(!html.contains(" style="));
+    for active in
+        ["<script", "<link", "<img", "<iframe", "<object", "<embed", "<form", " src=", "@import"]
+    {
+        assert!(!html.contains(active), "unexpected active or remote construct {active}");
+    }
+    assert!(!html[..head_end].contains("url("));
+    for remote in ["http:", "https:", "//"] {
+        assert!(!html.contains(&format!("href=\"{remote}")));
+    }
+}
