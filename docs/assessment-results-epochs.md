@@ -2,9 +2,10 @@
 
 This command appends one sealed result epoch to an existing FORGE
 Assessment Results artifact. It preserves every existing result and records
-caller-declared risk families in a separate, complete JSON companion. Assessment
-and continuity assertions do not authenticate an assessor, evaluate evidence, or
-authorize remediation.
+caller-declared risk families in a separate, complete JSON companion. Continued
+risks also carry their family key and predecessor UUID in the native file.
+Assessment and continuity assertions do not authenticate an assessor, evaluate
+evidence, or authorize remediation.
 
 ```sh
 forge assessment results append-epoch \
@@ -28,16 +29,21 @@ change the report's assertions or authorize their acceptance.
 
 ## Author the complete request
 
-The closed `forge.assessment-epoch-append/1` request requires all six fields:
+The closed `forge.assessment-epoch-append/1` request requires six fields and
+accepts one optional field:
 
 | Field | Required content |
 | --- | --- |
 | `schema_version` | `forge.assessment-epoch-append/1` |
 | `prior_source` | The complete existing POA&M source declaration: native Assessment Results pin, explicit result selector, and the four companion pins with `evidence_index: null` |
-| `next_epoch` | A complete six-field `forge.assessment-results/1` manifest, using the same document key, title, context, roles and parties |
+| `next_epoch` | A complete six-field `forge.assessment-results/1` manifest, using the same document key, title and context. It repeats every earlier role and party unchanged and may add new ones |
 | `prior_report` | Explicit `null` for the first append, or `{artifact, expected_sha256}` for the actual prior JSON companion |
 | `seed_families` | Every existing risk classified once for the first append; an empty array for later appends |
 | `new_risks` | Every next risk classified once as a new family or an explicit continuation |
+| `prior_observation_links` | Optional. Each row links one new finding to one observation from an earlier epoch. Omitting the field is the same as an empty array |
+
+The optional field was added without a version change: every request that was
+valid before stays valid.
 
 The exact request and companion fields are specified in the closed
 [append schema](../schemas/forge.assessment-epoch-append-1.schema.json) and
@@ -57,8 +63,24 @@ RFC 3339 instants govern these comparisons; touching windows are allowed.
 The existing typed authoring model constructs the new result. Its result key and
 all new conclusion `(kind, key)` identities and UUIDs must be distinct from the
 complete historical set. The caller supplies the existing document key; the command does not recover
-it from a native UUID or rename reused keys. Only the explicitly supplied document
-version and modification time can change in the preserved native envelope.
+it from a native UUID or rename reused keys. In the preserved native envelope, only
+the explicitly supplied document version and modification time can change, and
+only new roles and parties can be added.
+
+## Add roles and parties
+
+An appended epoch may add metadata roles and parties, for example a second
+assessor. List every earlier role and party in `next_epoch` exactly as before,
+then add the new ones. The command refuses the append if an earlier role or
+party is changed or left out. In the output, the earlier roles and parties keep
+their bytes and positions, and the new ones follow them. A new party's UUID must
+not match any earlier native UUID. New conclusions and continuity rows may name a
+new assessor and role.
+
+The report records each added role as a `role-added` change (its role ID) and
+each added party as a `party-added` change (its party UUID). Party names are not
+copied into the report. Back-matter receipts must stay unchanged: this profile
+does not add evidence receipts (see [Outside this profile](#outside-this-profile)).
 
 ## Declare every risk family
 
@@ -75,10 +97,66 @@ historical member of that family through its full source reference. Each family
 can have at most one successor in an append. Branches, merges, cycles, future or
 same-epoch predecessors, and reused native identities are refused.
 
+### Native continuity properties
+
+Native UUIDs are never reused across epochs. Each continued risk in the new
+epoch carries two Forge-namespaced properties
+(`https://policy-forge.github.io/ns/assessment-results`):
+
+| Property | Value |
+| --- | --- |
+| `continuity-family-key` | The exact caller family key |
+| `continuity-predecessor-uuid` | The UUID of the family's previous risk |
+
+A tool that reads only the native file can follow these properties back to the
+family's first member. A first member, whether seeded or newly created, carries
+neither property. The output stays valid against the OSCAL 1.2.3 schema, so a
+continued family key must be a valid OSCAL property value: no leading or trailing
+whitespace and no line breaks. A new family whose key is not valid this way is
+still accepted, but it cannot be continued later.
+
+The POA&M source loader checks these properties in every result. Both must
+appear together. The predecessor must be a risk in an earlier result, can have
+only one successor, and must be the latest member of the same family. The
+declared `content-sha256` of the risk does not change; its computed whole-object
+digest includes the properties. A later append also checks that each stored
+property pair matches its edge in the prior report. Risks appended before these
+properties existed may lack them.
+
 Every older family remains in the report, including families that receive no
 successor. An uncontinued family is not a declaration that its risk was resolved.
 Each edge has two reciprocal rows and a framed content digest binding its family,
 endpoints and declared provenance. This digest is not a signature or an approval.
+
+## Link new findings to earlier observations
+
+A new finding may reference an observation from an earlier epoch. Add one
+`prior_observation_links` row for each link:
+
+```json
+{
+  "finding_key": "finding-next",
+  "observation": {
+    "kind": "observation",
+    "key": "synthetic-observation",
+    "uuid": "<earlier observation UUID>",
+    "result_uuid": "<earlier result UUID>",
+    "expected_sha256": "<computed whole-object SHA-256>"
+  }
+}
+```
+
+The finding key must name one new finding. The observation reference must match
+an observation in the prior document exactly, so a link can only point backward.
+A link with kind `finding` or `risk` is refused, and so is a `next_epoch`
+relationship that names an earlier finding or risk. Each new finding still needs
+at least one relationship to an observation in its own epoch. The command adds the
+earlier observation UUID to the finding's `related-observations` and records a
+`prior-observation-linked` change with the finding's locator. The POA&M source
+loader accepts an observation reference to the same or an earlier result and
+refuses a forward one.
+
+## Consume the prior report
 
 For a later append, pin the actual prior JSON report and supply no new seeds. The
 command checks its all-epoch identities, counts, context, family membership and
@@ -86,8 +164,12 @@ reciprocal history against the captured current native artifact. Stored historic
 hashes do not replace the capture of current original generations. The report
 does not recapture the generation that preceded the current native file: its
 historical raw hash and optional old metadata leaves remain stored caller
-assertions. The current native file, all four companions, request and any
-prior report are captured and rechecked for this append.
+assertions. The `role-added` and `party-added` rows of a prior report are also
+stored assertions, because the generation before them is not captured; each must
+still name a current role or party exactly once. Backward links are rebuilt from
+the native file and must match the prior report exactly. The current native file,
+all four companions, request and any prior report are captured and rechecked for
+this append.
 
 ## Inspect the complete companion
 
@@ -158,12 +240,26 @@ to refuse multiple result epochs. The new companion supplies the separate
 all-epoch comparison; it does not change that baseline interface into a newest-result
 selector.
 
-This is a first same-context sealed profile and a partial PRD 063 S-4 implementation.
-Different Assessment Plan/context generations, changed parties or receipt sets,
-open or overlapping windows, reused native risk identities, branching families,
-cross-epoch native graph references, and recurrence visible to native-only tools
-remain outside this profile. Representative assessor workflows, independent
-interoperability and recorded owner acceptance remain separate completion gates.
+## Outside this profile
+
+This is a same-context sealed profile and a partial PRD 063 S-4 implementation.
+The 2026-10-25 [owner dispositions](plans/2026-10-25-owner-dispositions.md)
+(F10) approved additive actors, native continuity properties and backward
+observation references, which this profile now implements. These remain outside
+the profile and are refused:
+
+- A different Assessment Plan or context generation. Start a new Assessment
+  Results document, because OSCAL Assessment Results has a single `import-ap`.
+- Changed or removed earlier roles, parties or back-matter receipts.
+- Added evidence receipts. The record approves them, but the POA&M source
+  foundation this command reads does not admit an evidence index. How to
+  represent a changed evidence index is an open owner question.
+- Open or overlapping windows.
+- Reused native identities, and branching or merging families.
+- References to earlier findings or risks, and forward references.
+
+Representative assessor workflows, independent interoperability and recorded
+owner acceptance remain separate completion gates.
 
 Measured engineering checks and their coverage limits are recorded in the
 [verification receipt](plans/2026-10-04-f10-epochs-integration-verification.md) and
