@@ -774,7 +774,9 @@ The saved report is always JSON. Optional `--view-format json|text|html` selects
 complete stdout view after both files are published; omitted view leaves stdout
 empty. A valid append returns `1` for descriptive review actions, or `0` with
 `--fail-on never`; errors return `2` and a late error can leave complete files.
-This first profile requires unchanged context/actors and sealed ordered windows.
+This profile requires the same Assessment Plan and context and sealed ordered
+windows. An appended epoch may add roles and parties, and new findings may link
+to earlier observations; earlier objects never change.
 See [sealed assessment epochs](assessment-results-epochs.md) for complete risk
 classification, continuity, bounds, source rebinding and remaining S-4 gates.
 

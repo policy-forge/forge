@@ -272,7 +272,8 @@ plan without changing its existing items. The new items appear as `added` in
 
 `forge assessment results append-epoch` appends one sealed result with explicit
 caller-declared risk continuity. It preserves prior results, saves a complete JSON
-companion, and can display the same report as JSON, text or static HTML. See
+companion, and can display the same report as JSON, text or static HTML. Continued
+risks carry their family key and predecessor UUID as native properties. See
 [sealed assessment epochs](docs/assessment-results-epochs.md) for the same-context
 profile, explicit source rebinding and independent publication semantics.
 
