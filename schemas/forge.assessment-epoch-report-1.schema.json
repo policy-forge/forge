@@ -709,7 +709,10 @@
             "risk-continuity-recorded",
             "recurrence-content-changed",
             "recurrence-rationale-changed",
-            "recurrence-status-changed"
+            "recurrence-status-changed",
+            "prior-observation-linked",
+            "role-added",
+            "party-added"
           ]
         },
         "locator": {
