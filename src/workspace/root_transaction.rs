@@ -1935,6 +1935,12 @@ impl Root {
                 }
                 record.targets[index].published = None;
                 record.targets[index].backup = None;
+                if target.before.is_none() {
+                    // A created target's staged payload was renamed into place and the
+                    // unlink above removed that exact owned object; its auxiliary slot is
+                    // now verified empty, matching the reconcile_target recovery branch.
+                    record.targets[index].staged = None;
+                }
                 persist(state, record)?;
             }
             self.verify_original(record)?;
@@ -2745,5 +2751,82 @@ mod tests {
         assert_eq!(root.read("policy.md", 10).unwrap().identity, old.identity);
         assert!(!project.path().join(INDEX_PATH).exists());
         assert_eq!(std::fs::read_dir(project.path()).unwrap().count(), 1);
+    }
+
+    /// Observe actual durable progress and cancel only after every target published,
+    /// before the complete-result verification and durable commit decision.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    struct AfterAllPublished<'a> {
+        /// Actual state used by the engine, not a hardcoded checkpoint-count oracle.
+        state: &'a TransactionState,
+    }
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    impl WorkControl for AfterAllPublished<'_> {
+        /// Stop at the next cooperative fence once all targets record a publication.
+        fn checkpoint(&mut self, _stage: Stage, _progress: ProgressUpdate) -> WorkResult<()> {
+            if self
+                .state
+                .records()
+                .unwrap()
+                .iter()
+                .any(|record| record.targets.iter().all(|target| target.published.is_some()))
+            {
+                Err(WorkError::Interrupted(Interruption::CancelRequested))
+            } else {
+                Ok(())
+            }
+        }
+        /// The checkpoint alone establishes the source-bound cancellation observation.
+        fn interruption(&self) -> Option<Interruption> {
+            None
+        }
+    }
+
+    /// Pre-decision cancellation after publishing newly created targets removes the
+    /// owned created files and their consumed staging slots, then reports a verified
+    /// none outcome instead of leaving cleanup permanently unverifiable.
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[test]
+    fn cancellation_after_created_target_publication_verifies_none_and_cleanup() {
+        for existing in [true, false] {
+            let (project, _private, root, state) = fixture();
+            if existing {
+                std::fs::write(project.path().join("policy.md"), b"old").unwrap();
+            }
+            let original = existing.then(|| root.read("policy.md", 10).unwrap());
+            let plan = root
+                .plan_restore_targets(proposed("policy.md", b"new"), Vec::new(), &mut NoopControl)
+                .unwrap();
+            let accepted = root
+                .accept_restore(
+                    &plan,
+                    &state,
+                    "op_e5e5e5e5e5e5".into(),
+                    17,
+                    "a".repeat(64),
+                    "b".repeat(64),
+                    reply("op_e5e5e5e5e5e5"),
+                    Instant::now() + Duration::from_secs(30),
+                )
+                .unwrap();
+            let result = root
+                .run_restore(plan, &state, accepted, &mut AfterAllPublished { state: &state })
+                .unwrap();
+            assert_eq!(result.operation["state"], "cancelled");
+            assert_eq!(result.operation["write_outcome"], "none");
+            assert_eq!(result.operation["cleanup_state"], "verified");
+            assert!(!result.access_blocked);
+            assert!(state.require_access().is_ok());
+            assert!(!project.path().join(INDEX_PATH).exists());
+            if let Some(original) = original {
+                let restored = root.read("policy.md", 10).unwrap();
+                assert_eq!(restored.identity, original.identity);
+                assert_eq!(restored.sha256, original.sha256);
+                assert_eq!(std::fs::read_dir(project.path()).unwrap().count(), 1);
+            } else {
+                assert!(!project.path().join("policy.md").exists());
+                assert_eq!(std::fs::read_dir(project.path()).unwrap().count(), 0);
+            }
+        }
     }
 }
