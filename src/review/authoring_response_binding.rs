@@ -269,11 +269,21 @@ fn witnesses(
         return Err(ContractError::Binding);
     }
     for met in &result.met_seats {
+        let mut low = 0;
+        let mut high = document.responses.len();
         let mut found = None;
-        for row in &document.responses {
+        while low < high {
             super::decode_v2::checkpoint(ledger, control)?;
-            if same(&row.response_id, &met.response_id, ledger)? {
-                found = Some(row);
+            let mid = low + (high - low) / 2;
+            let row = &document.responses[mid];
+            strings(&[&row.response_id, &met.response_id], ledger)?;
+            match row.response_id.cmp(&met.response_id) {
+                std::cmp::Ordering::Less => low = mid + 1,
+                std::cmp::Ordering::Greater => high = mid,
+                std::cmp::Ordering::Equal => {
+                    found = Some(row);
+                    break;
+                }
             }
         }
         let row = found.ok_or(ContractError::Binding)?;

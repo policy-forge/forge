@@ -1144,13 +1144,13 @@ fn validate_result_structure(
             &["state", "reason"],
             "Forge AR finding target status",
         )?;
-        if let Some(reason) = target.pointer("/status/reason") {
-            if !matches!(
+        if let Some(reason) = target.pointer("/status/reason")
+            && !matches!(
                 required_string(Some(reason), "AR finding reason")?,
                 "pass" | "fail" | "other"
-            ) {
-                return Err(error("unsupported Forge AR finding reason"));
-            }
+            )
+        {
+            return Err(error("unsupported Forge AR finding reason"));
         }
     }
     for risk in optional_array(result.get("risks"), "AR risks", MAX_SOURCE_OBJECTS)? {

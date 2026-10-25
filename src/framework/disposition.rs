@@ -110,9 +110,9 @@ fn validate_and_normalize(file: &mut DispositionFile) -> Result<(), ForgeError> 
     let mut finding_ids = BTreeSet::new();
     for (index, disposition) in file.dispositions.iter_mut().enumerate() {
         let path = format!("$.dispositions[{index}]");
-        uuid::Uuid::parse_str(&disposition.finding_id)
+        let finding_id = uuid::Uuid::parse_str(&disposition.finding_id)
             .map_err(|_| error(format!("{path}.finding_id must be a UUID")))?;
-        if !finding_ids.insert(disposition.finding_id.as_str()) {
+        if !finding_ids.insert(finding_id) {
             return Err(error(format!("{path}.finding_id duplicates another disposition")));
         }
         validate_nonempty(&format!("{path}.decided_by"), &disposition.decided_by)?;
@@ -251,6 +251,15 @@ mod tests {
         let duplicate_record = duplicate["dispositions"][0].clone();
         duplicate["dispositions"].as_array_mut().expect("disposition array").push(duplicate_record);
         assert!(parse_error(&duplicate).contains("duplicates another disposition"));
+
+        for id in [
+            uuid::Uuid::parse_str(FIRST_ID).unwrap().simple().to_string(),
+            format!("urn:uuid:{FIRST_ID}"),
+            format!("{{{FIRST_ID}}}"),
+        ] {
+            duplicate["dispositions"][1]["finding_id"] = json!(id);
+            assert!(parse_error(&duplicate).contains("duplicates another disposition"));
+        }
 
         for field in ["decided_by", "decided_at", "rationale"] {
             let mut empty = valid_value();

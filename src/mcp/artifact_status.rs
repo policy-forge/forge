@@ -568,14 +568,13 @@ fn validate_policy(caller: &CallerPolicy) -> WorkResult<()> {
         }
     }
     for resource in &declaration.resources {
-        if let Some(key) = &resource.lifecycle_key {
-            if !declaration
+        if let Some(key) = &resource.lifecycle_key
+            && !declaration
                 .resources
                 .iter()
                 .any(|entry| entry.key == *key && entry.role == Role::LifecycleRecord)
-            {
-                return Err(policy_failure());
-            }
+        {
+            return Err(policy_failure());
         }
     }
     Ok(())

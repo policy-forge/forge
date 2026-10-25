@@ -349,11 +349,12 @@ impl<P: InputPort, W: Write> Control<'_, '_, P, W> {
     /// Observe fixed deadline then finite ready input and retain the first typed stop.
     fn observe(&mut self) -> Option<Interruption> {
         self.pump.machine.stop(self.pump.clock.now());
-        if !self.quiescent && self.io_failure.is_none() {
-            if let Err(error) = self.pump.service(Duration::ZERO) {
-                self.io_failure = Some(error);
-                self.pump.machine.shutdown();
-            }
+        if !self.quiescent
+            && self.io_failure.is_none()
+            && let Err(error) = self.pump.service(Duration::ZERO)
+        {
+            self.io_failure = Some(error);
+            self.pump.machine.shutdown();
         }
         self.pump.machine.stop(self.pump.clock.now())
     }

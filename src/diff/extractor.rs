@@ -83,19 +83,19 @@ fn collect_statement_prose(control: &Value) -> Vec<String> {
         return vec![];
     };
     let mut prose = Vec::new();
-    collect_prose_from_parts(parts, &mut prose);
+    collect_prose_from_parts(parts, &mut prose, false);
     prose
 }
 
-fn collect_prose_from_parts(parts: &[Value], out: &mut Vec<String>) {
+fn collect_prose_from_parts(parts: &[Value], out: &mut Vec<String>, in_statement: bool) {
     for part in parts {
-        if part.get("name").and_then(Value::as_str) == Some("statement") {
-            if let Some(prose) = part.get("prose").and_then(Value::as_str) {
-                out.push(prose.to_string());
-            }
+        let in_statement =
+            in_statement || part.get("name").and_then(Value::as_str) == Some("statement");
+        if in_statement && let Some(prose) = part.get("prose").and_then(Value::as_str) {
+            out.push(prose.to_string());
         }
         if let Some(nested_parts) = part.get("parts").and_then(Value::as_array) {
-            collect_prose_from_parts(nested_parts, out);
+            collect_prose_from_parts(nested_parts, out, in_statement);
         }
     }
 }
@@ -557,6 +557,22 @@ mod tests {
 
         let result = extract_controls(&json, &ArtifactType::Catalog);
         assert_eq!(result["AC-1"].parts_prose, ["Nested statement"]);
+    }
+
+    #[test]
+    fn extract_catalog_collects_item_prose_within_statements_only() {
+        let json = serde_json::json!({"catalog": {"controls": [{
+            "id": "AC-1", "parts": [
+                {"name": "guidance", "prose": "Not a requirement"},
+                {"name": "statement", "parts": [
+                    {"name": "item", "prose": "First requirement", "parts": [
+                        {"name": "item", "prose": "Nested requirement"}
+                    ]}
+                ]}
+            ]
+        }]}});
+        let result = extract_controls(&json, &ArtifactType::Catalog);
+        assert_eq!(result["AC-1"].parts_prose, ["First requirement", "Nested requirement"]);
     }
 
     #[test]

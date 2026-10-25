@@ -420,13 +420,13 @@ pub(super) fn run_domain<T>(
     let result = {
         let mut charge = |count| {
             let result = scope.charge_relationships(count);
-            if ledger_error.is_none() {
-                if let Err(error) = &result {
-                    ledger_error = Some(match error {
-                        WorkError::Failed(error) => WorkError::Failed(error.clone()),
-                        WorkError::Interrupted(reason) => WorkError::Interrupted(*reason),
-                    });
-                }
+            if ledger_error.is_none()
+                && let Err(error) = &result
+            {
+                ledger_error = Some(match error {
+                    WorkError::Failed(error) => WorkError::Failed(error.clone()),
+                    WorkError::Interrupted(reason) => WorkError::Interrupted(*reason),
+                });
             }
             result
         };

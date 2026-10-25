@@ -45,7 +45,7 @@ cargo mutants                # Run mutation testing (cargo-mutants must be insta
 
 ## Dependencies
 
-`Cargo.toml` declares Rust edition 2024 and `rust-version = "1.85"`; this is a
+`Cargo.toml` declares Rust edition 2024 and `rust-version = "1.88"`; this is a
 manifest minimum, not a measured current MSRV qualification. The version ranges below mirror
 `Cargo.toml`; `Cargo.lock` is authoritative for exact resolved versions.
 

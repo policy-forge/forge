@@ -471,6 +471,32 @@ fn withdrawal_of_withdrawal_preserves_dissent_without_reopening() {
     assert_eq!(d.items[0].dissent_ids, vec![review_id(1)]);
     assert!(d.items[0].met_seats.is_empty());
 }
+/// A reviewer holding two roles cannot retire one role's vote with a marker under the other.
+#[test]
+fn cross_role_withdrawal_refuses_even_for_the_same_reviewer() {
+    let (f, q, raw) = fixture(false, false);
+    let first = save_response(&f, "a.json", &response(&q, &raw, 1, "alice", Disposition::Approve));
+    let mut marker = response(&q, &raw, 2, "alice", Disposition::Superseded);
+    marker.reviewer_role = "owner".into();
+    marker.supersedes =
+        Some(SupersessionReference { response_id: review_id(1), raw_sha256: sha256_hex(&first) });
+    save_response(&f, "b.json", &marker);
+    let mut l = ContractLedger::default();
+    let mut caller = NoopControl;
+    let mut c = ReviewControl::accept(&mut caller);
+    let owner = hold(&f, &["a.json", "b.json"], &mut l, &mut c);
+    let bound = native_binding::prepare(&owner, &mut l, &mut c).unwrap();
+    assert_eq!(
+        refusal(merge_v3::prepare_policy(
+            bound.queue(),
+            bound.responses(),
+            "2026-09-08T02:10:00Z",
+            &mut l,
+            &mut c
+        )),
+        ContractError::InvalidChain
+    );
+}
 /// Two actual same-subject children of one exact prior constitute an invalid branch.
 #[test]
 fn exact_withdrawal_branch_is_refused_as_a_whole() {

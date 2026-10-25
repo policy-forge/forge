@@ -627,13 +627,13 @@ fn validate_heading_structure(text: &str, label: &str) -> Result<(), crate::Forg
         }
     }
     for (index, line) in lines.enumerate() {
-        if let Some(level) = heading_level(line) {
-            if level == 1 {
-                return Err(composition_error(format!(
-                    "component '{label}' line {} contains a reserved level-one heading",
-                    index + 2
-                )));
-            }
+        if let Some(level) = heading_level(line)
+            && level == 1
+        {
+            return Err(composition_error(format!(
+                "component '{label}' line {} contains a reserved level-one heading",
+                index + 2
+            )));
         }
         let trimmed = line.trim();
         if (trimmed.len() >= 3 && trimmed.bytes().all(|byte| byte == b'='))

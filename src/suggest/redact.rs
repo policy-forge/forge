@@ -53,7 +53,7 @@ static SECRET_PATTERNS: LazyLock<[(&str, Regex); 6]> = LazyLock::new(|| {
             "bearer token",
             Regex::new(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]{20,}").expect("valid pattern"),
         ),
-        ("provider key", Regex::new(r"\bsk-[A-Za-z0-9]{20,}\b").expect("valid pattern")),
+        ("provider key", Regex::new(r"\bsk-[A-Za-z0-9_-]{20,}\b").expect("valid pattern")),
         (
             "basic authorization",
             Regex::new(r"(?i)\bauthorization\s*:\s*basic\s+[A-Za-z0-9+/=]{16,}")
@@ -286,6 +286,8 @@ mod tests {
             "key AKIAIOSFODNN7EXAMPLE here",
             "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
             "token sk-abcdefghijklmnopqrstuvwxyz",
+            "sk-proj-abcdefghijklmnopqrst-uvwxyz_012345",
+            "sk-ant-api03-abcdefghijklmnopqrst-uvwxyz_012345",
             "password: hunter2-secret",
         ] {
             let error = refuse_secrets(payload).unwrap_err().to_string();

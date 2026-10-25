@@ -440,13 +440,12 @@ fn native_headers<'a>(
             return Err(invalid());
         }
         domain(inventory::validate_schema("captured native", &value, expected))?;
-        if let Some(companion) = input.resolved_catalog {
-            if input.resource_type != ResourceType::Profile
+        if let Some(companion) = input.resolved_catalog
+            && (input.resource_type != ResourceType::Profile
                 || companion.key.is_empty()
-                || companion.bytes.len() > MAX_RAW
-            {
-                return Err(invalid());
-            }
+                || companion.bytes.len() > MAX_RAW)
+        {
+            return Err(invalid());
         }
         let resource = bare_resource(input);
         let mut evidence = domain(inventory::extract_evidence(

@@ -253,9 +253,6 @@ fn answer_pins(
             continue;
         }
         for answer in project.answers.iter().filter(|answer| answer.question_key == question.key) {
-            if answer.value.is_none() {
-                continue;
-            }
             pins.push(AnswerPin {
                 answer_key: answer.key.clone(),
                 expected_sha256: crate::authoring::manifest::answer_sha256(answer)?,
@@ -473,6 +470,41 @@ mod tests {
             assumptions: Vec::new(),
             unresolved_questions: Vec::new(),
         }
+    }
+
+    #[test]
+    fn no_answer_records_are_pinned_as_required_dependencies() {
+        let pack = crate::authoring::manifest::parse_pack(include_bytes!(
+            "../../tests/fixtures/authoring/contracts/valid-pack.json"
+        ))
+        .unwrap();
+        let mut project = crate::authoring::manifest::parse_project(include_bytes!(
+            "../../tests/fixtures/authoring/contracts/valid-project.json"
+        ))
+        .unwrap();
+        let question = pack.questions.iter().find(|question| question.required).unwrap();
+        let topic =
+            pack.topics.iter().find(|topic| topic.question_keys.contains(&question.key)).unwrap();
+        project.answers.push(crate::authoring::manifest::Answer {
+            key: "unanswered".into(),
+            question_key: question.key.clone(),
+            question_sha256: crate::authoring::manifest::question_sha256(question).unwrap(),
+            authoring_pack_sha256: "a".repeat(64),
+            owner: question.owner.clone(),
+            source_label: "Synthetic no-answer".into(),
+            sensitivity: question.sensitivity,
+            review: project.baseline_review.clone(),
+            expires_at: None,
+            state: crate::authoring::manifest::AnswerState::NoAnswer,
+            value: None,
+        });
+        let pins = answer_pins(&pack, &project, &topic.key).unwrap();
+        assert!(pins.iter().any(|pin| {
+            pin.answer_key == "unanswered"
+                && pin.expected_sha256
+                    == crate::authoring::manifest::answer_sha256(project.answers.last().unwrap())
+                        .unwrap()
+        }));
     }
 
     #[test]

@@ -211,7 +211,7 @@ fn decode_file(
     bytes.try_reserve_exact(plan.size).map_err(|_| oversized())?;
     for value in plan.chunks {
         let chunk = value.as_str().ok_or_else(Error::invalid)?;
-        for pair in chunk.as_bytes().chunks_exact(2) {
+        for pair in chunk.as_bytes().as_chunks::<2>().0 {
             bytes.push((nibble(pair[0])? << 4) | nibble(pair[1])?);
         }
         control.checkpoint(Stage::CopyInputs, ProgressUpdate::Unchanged)?;

@@ -21,8 +21,9 @@ if [[ ! -f "${PRE_COMMIT_SCRIPT}" || ! -x "${PRE_COMMIT_SCRIPT}" ]]; then
     exit 1
 fi
 
-
-if ! cat > "${PRE_COMMIT_HOOK}" <<'EOF'
+TEMP_HOOK="$(mktemp "${HOOKS_DIR}/.pre-commit.XXXXXX")"
+trap 'rm -f -- "${TEMP_HOOK}"' EXIT
+if ! cat > "${TEMP_HOOK}" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -34,9 +35,25 @@ then
     exit 1
 fi
 
-if ! chmod +x "${PRE_COMMIT_HOOK}"; then
+if ! chmod +x "${TEMP_HOOK}"; then
     echo "[install-hooks] failed to make ${PRE_COMMIT_HOOK} executable" >&2
     exit 1
+fi
+
+if [[ -e "${PRE_COMMIT_HOOK}" || -L "${PRE_COMMIT_HOOK}" ]]; then
+    if [[ -L "${PRE_COMMIT_HOOK}" || ! -f "${PRE_COMMIT_HOOK}" ]] || ! cmp -s "${TEMP_HOOK}" "${PRE_COMMIT_HOOK}"; then
+        echo "[install-hooks] refusing to replace existing hook: ${PRE_COMMIT_HOOK}" >&2
+        exit 1
+    fi
+    # Git silently skips a non-executable hook; report it rather than modify the file.
+    if [[ ! -x "${PRE_COMMIT_HOOK}" ]]; then
+        echo "[install-hooks] existing hook is not executable: ${PRE_COMMIT_HOOK}" >&2
+        echo "[install-hooks] run: chmod +x '${PRE_COMMIT_HOOK}'" >&2
+        exit 1
+    fi
+else
+    # Linking is atomic and fails if a concurrent installer creates the destination.
+    ln "${TEMP_HOOK}" "${PRE_COMMIT_HOOK}"
 fi
 
 echo "[install-hooks] installed ${PRE_COMMIT_HOOK}"

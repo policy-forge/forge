@@ -2,7 +2,7 @@
 name = "forge"
 version = "1.1.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.88"
 license = "MIT"
 description = "Convert Markdown security policies into OSCAL artifacts."
 repository = "https://github.com/policy-forge/forge"

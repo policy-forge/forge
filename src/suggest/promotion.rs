@@ -181,6 +181,12 @@ impl PromotionProposal {
             return Err(shared::error(format!("promotion.entries exceeds {MAX_ENTRIES} entries")));
         }
         let expected_contract = self.destination.kind.contract();
+        // Fold ASCII case: on case-insensitive filesystems (macOS) case variants alias.
+        let mut paths =
+            std::collections::BTreeSet::from([self.destination.path.to_ascii_lowercase()]);
+        if !paths.insert(self.patch.artifact.to_ascii_lowercase()) {
+            return Err(shared::error("promotion patch aliases the destination"));
+        }
         let mut seen = std::collections::BTreeSet::new();
         for (index, entry) in self.entries.iter().enumerate() {
             let name = format!("promotion.entries[{index}]");
@@ -191,6 +197,11 @@ impl PromotionProposal {
                 )));
             }
             shared::relative_path(&format!("{name}.artifact"), &entry.artifact)?;
+            if !paths.insert(entry.artifact.to_ascii_lowercase()) {
+                return Err(shared::error(
+                    "promotion artifact paths must be distinct from the destination and each other",
+                ));
+            }
             shared::sha256(&format!("{name}.sha256"), &entry.sha256)?;
             if entry.bytes == 0 || entry.bytes > MAX_ENTRY_BYTES {
                 return Err(shared::error(format!(
@@ -300,6 +311,28 @@ mod tests {
         let mut escaping = fixture_promotion_json();
         escaping["entries"][0]["artifact"] = json!("../escape.json");
         assert!(parse(&escaping).is_err());
+    }
+
+    #[test]
+    fn proposed_artifacts_cannot_alias_each_other_or_the_destination() {
+        for path in [
+            "project.json",
+            "Project.JSON",
+            "promotion/proposed-project.json",
+            "Promotion/Proposed-Project.json",
+        ] {
+            let mut value = fixture_promotion_json();
+            value["entries"][0]["artifact"] = json!(path);
+            assert!(parse(&value).is_err());
+        }
+        let mut value = fixture_promotion_json();
+        value["patch"]["artifact"] = value["destination"]["path"].clone();
+        assert!(parse(&value).is_err());
+        let mut value = fixture_promotion_json();
+        let mut second = value["entries"][0].clone();
+        second["suggestion_id"] = json!("4f2b1a4c-5d6e-4f70-8a91-b2c3d4e5f607");
+        value["entries"].as_array_mut().unwrap().push(second);
+        assert!(parse(&value).is_err());
     }
 
     #[test]

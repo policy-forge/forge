@@ -403,13 +403,11 @@ pub(super) fn commit_response(
         .lock()
         .map_err(|_| internal())
         .and_then(|mut store| store.source_accepted(key, &acceptance));
-    if retained.is_err() {
-        if let Ok(mut store) = state.effects.lock() {
-            let _ = store.source_acceptance_uncertain(
-                &acceptance.operation_id,
-                &acceptance.reservation_nonce,
-            );
-        }
+    if retained.is_err()
+        && let Ok(mut store) = state.effects.lock()
+    {
+        let _ = store
+            .source_acceptance_uncertain(&acceptance.operation_id, &acceptance.reservation_nonce);
     }
     let super::super::effects::SourceAcceptance {
         operation_id,

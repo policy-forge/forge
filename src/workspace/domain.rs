@@ -574,6 +574,7 @@ pub(crate) fn initialize(
     mapping: bool,
 ) -> Result<Vec<u8>> {
     let destination = request["target_path"].as_str().ok_or_else(invalid)?;
+    validate_path(destination)?;
     let stage = stage(snapshot)?;
     let resource = |id: &str| -> Result<crate::mapping::manifest::ResourceManifest> {
         let item = snapshot.item(id)?;
@@ -781,6 +782,68 @@ mod tests {
         let snapshot =
             Snapshot::capture(&crate::workspace::root::Root::open(dir.path()).unwrap()).unwrap();
         (dir, snapshot)
+    }
+
+    /// Two valid synthetic Catalog registrations, so initialization reaches
+    /// destination handling rather than failing on resource admission.
+    fn catalog_fixture() -> (tempfile::TempDir, Snapshot) {
+        let dir = tempfile::tempdir().unwrap();
+        let catalog = |controls: &[&str], uuid: &str| {
+            serde_json::to_vec(&serde_json::json!({"catalog":{"uuid":uuid,"metadata":{"title":"Synthetic catalog","last-modified":"2026-09-10T00:00:00Z","version":"1","oscal-version":"1.2.3"},
+                "controls":controls.iter().map(|id| serde_json::json!({"id":id,"title":"Synthetic control"})).collect::<Vec<_>>()}}))
+                .unwrap()
+        };
+        std::fs::write(
+            dir.path().join("framework.json"),
+            catalog(&["framework-a"], "22222222-2222-4222-8222-222222222222"),
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("policy.json"),
+            catalog(&["policy-a"], "11111111-1111-4111-8111-111111111111"),
+        )
+        .unwrap();
+        let resources = serde_json::json!([
+            {"key":"framework","role":"oscal-catalog-artifact","path":"framework.json"},
+            {"key":"policy","role":"oscal-catalog-artifact","path":"policy.json"},
+        ]);
+        std::fs::write(dir.path().join(crate::workspace::index::INDEX_PATH), serde_json::to_vec(&serde_json::json!({"schema_version":"forge.workspace/1","label":"Synthetic catalogs","resources":resources})).unwrap()).unwrap();
+        let snapshot =
+            Snapshot::capture(&crate::workspace::root::Root::open(dir.path()).unwrap()).unwrap();
+        (dir, snapshot)
+    }
+
+    /// Complete applicability and mapping requests succeed for a confined
+    /// destination, so each refusal below is attributable to the path alone.
+    #[test]
+    fn initialization_rejects_escaping_destinations_before_staging() {
+        let (_directory, snapshot) = catalog_fixture();
+        let id = |key: &str| {
+            super::super::services::resource_id(
+                &snapshot
+                    .items
+                    .iter()
+                    .find(|item| item.registration.key == key)
+                    .unwrap()
+                    .registration,
+            )
+        };
+        let applicability = |path: &str| serde_json::json!({"target_path":path,"framework_resource_id":id("framework")});
+        let mapping = |path: &str| {
+            serde_json::json!({"source_resource_id":id("policy"),"target_resource_id":id("framework"),
+                "target_path":path,"scope":"control-only",
+                "maps":[{"key":"none","relationship":"no-relationship","sources":[{"type":"control","id_ref":"policy-a"}],"targets":[{"type":"control","id_ref":"framework-a"}],"reviewer_key":"reviewer","reviewed_at":"2026-09-10T00:00:00Z","rationale":"Explicit initial review."}],
+                "review":{"collection":{"key":"synthetic-map","title":"Synthetic mapping","version":"1","last_modified":"2026-09-10T00:00:00Z"},
+                    "reviewers":[{"key":"reviewer","type":"person","name":"Synthetic Reviewer"}],
+                    "provenance":{"method":"human","matching_rationale":"semantic","status":"draft","mapping_description":"Explicit synthetic review.","reviewer_keys":["reviewer"],"reviewed_at":"2026-09-10T00:00:00Z"}}})
+        };
+        initialize(&snapshot, &applicability("scope.json"), false).unwrap();
+        initialize(&snapshot, &mapping("mapping-manifest.json"), true).unwrap();
+        for path in ["../outside.json", "/outside.json", "C:\\outside.json", "a/../../outside.json"]
+        {
+            assert!(initialize(&snapshot, &applicability(path), false).is_err(), "{path}");
+            assert!(initialize(&snapshot, &mapping(path), true).is_err(), "{path}");
+        }
     }
 
     /// A later unrelated registration is still a staging boundary. Interrupting

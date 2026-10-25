@@ -909,6 +909,21 @@ fn built_epoch_fixture(
     (manifest, context, built)
 }
 
+#[test]
+fn public_builder_rejects_mutated_manifest_references_without_panicking() {
+    let fixture = fixture();
+    let (manifest, context, _) = built_epoch_fixture(&fixture);
+    let mut missing_party = manifest.clone();
+    missing_party.parties.clear();
+    assert!(forge::assessment_results::model::build(&missing_party, &context).is_err());
+    let mut missing_observation = manifest.clone();
+    missing_observation.result.observations.clear();
+    assert!(forge::assessment_results::model::build(&missing_observation, &context).is_err());
+    let mut missing_role = manifest;
+    missing_role.roles.clear();
+    assert!(forge::assessment_results::model::build(&missing_role, &context).is_err());
+}
+
 /// Combine independently built synthetic epochs without inventing UUIDs or hashes.
 ///
 /// Conclusion keys and relationship endpoints are renamed before assembly. The

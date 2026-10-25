@@ -51,7 +51,7 @@ pub fn execute(args: &PoamPortfolioArgs) -> Result<bool, ForgeError> {
     let html_bytes = args.html.as_ref().map(|_| html::render(prepared.report())).transpose()?;
     prepared.verify_inputs()?;
     match &args.report {
-        Some(path) => publish(&root, path, prepared.json())?,
+        Some(path) => publish(&root, path, prepared.json(), || prepared.verify_inputs())?,
         None => std::io::stdout()
             .lock()
             .write_all(prepared.json())
@@ -59,7 +59,7 @@ pub fn execute(args: &PoamPortfolioArgs) -> Result<bool, ForgeError> {
     }
     if let (Some(path), Some(bytes)) = (&args.html, &html_bytes) {
         prepared.verify_inputs()?;
-        publish(&root, path, bytes)?;
+        publish(&root, path, bytes, || prepared.verify_inputs())?;
     }
     Ok(prepared.review_required())
 }
@@ -82,10 +82,10 @@ fn validate_destinations(
             }
         }
     }
-    if let (Some(report), Some(html)) = (report, html) {
-        if paths_alias(&root.join(report), &root.join(html)) {
-            return Err(error("portfolio output filenames must be distinct"));
-        }
+    if let (Some(report), Some(html)) = (report, html)
+        && paths_alias(&root.join(report), &root.join(html))
+    {
+        return Err(error("portfolio output filenames must be distinct"));
     }
     Ok(())
 }
@@ -123,8 +123,14 @@ fn destination(root: &Path, path: &Path, extension: &str) -> Result<(), ForgeErr
 }
 
 /// Consume the existing confined no-replacement single-file publisher without changing native hrefs.
-fn publish(root: &Path, path: &Path, bytes: &[u8]) -> Result<(), ForgeError> {
-    crate::authoring::output::publish_new_file(root, path, bytes).map_err(|_| {
+/// Input fence failures surface unchanged; every other publication failure maps to fixed prose.
+fn publish(
+    root: &Path,
+    path: &Path,
+    bytes: &[u8],
+    before_rename: impl FnMut() -> Result<(), ForgeError>,
+) -> Result<(), ForgeError> {
+    crate::authoring::output::publish_new_file_fenced(root, path, bytes, before_rename, || {
         error("cannot publish new portfolio output; destination may exist or be unsafe")
     })
 }

@@ -128,7 +128,7 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
     let content = match format {
         InputFormat::Markdown => String::from_utf8(bytes)
             .map_err(|_| ForgeError::InvalidEncoding { path: path.to_path_buf() })?,
-        InputFormat::Pdf => extract_pdf_content(path)?,
+        InputFormat::Pdf => extract_pdf_content(path, &bytes)?,
         InputFormat::Docx => extract_docx_content(path, &bytes, max_size_bytes)?,
     };
 
@@ -162,8 +162,8 @@ fn map_io_error(path: &Path) -> impl Fn(std::io::Error) -> ForgeError + '_ {
     }
 }
 
-fn extract_pdf_content(path: &Path) -> Result<String, ForgeError> {
-    let extracted = pdf_extract::extract_text(path)
+fn extract_pdf_content(path: &Path, bytes: &[u8]) -> Result<String, ForgeError> {
+    let extracted = pdf_extract::extract_text_from_mem(bytes)
         .map_err(|e| ForgeError::Parse(format!("failed to extract PDF text: {e}")))?;
     if extracted.trim().is_empty() {
         return Err(ForgeError::OcrNotSupported { path: path.to_path_buf() });
@@ -525,6 +525,14 @@ mod tests {
     }
 
     // --- US2: Extension validation tests ---
+
+    #[test]
+    fn pdf_extraction_uses_captured_bytes_not_the_current_path() {
+        let dir = TempDir::new().unwrap();
+        let path = create_temp_bytes(&dir, "replaced.pdf", b"not a PDF");
+        let result = extract_pdf_content(&path, &minimal_blank_pdf());
+        assert!(matches!(result, Err(ForgeError::OcrNotSupported { .. })));
+    }
 
     #[test]
     fn pdf_with_no_extractable_text_returns_ocr_not_supported() {

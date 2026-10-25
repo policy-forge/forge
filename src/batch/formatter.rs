@@ -39,11 +39,12 @@ pub fn format_batch_summary(summary: &BatchSummary) -> String {
             Some(name) => name.to_string_lossy(),
             None => std::borrow::Cow::Owned(result.input_path.display().to_string()),
         };
+        let input_name = sanitize_terminal_line(&input_name);
         let duration_secs = result.duration.as_secs_f64();
 
         match &result.outcome {
             FileOutcome::Success { output_path } => {
-                let output_display = output_path.display();
+                let output_display = sanitize_terminal_line(&output_path.display().to_string());
                 let _ = writeln!(
                     buf,
                     "  \u{2713} {input_name} \u{2192} {output_display} ({duration_secs:.2}s)"
@@ -175,6 +176,28 @@ mod tests {
         assert!(!output.contains('\u{1b}'));
         assert!(output.contains("Parse error: bad  [2J"));
         assert_eq!(output.lines().filter(|line| line.contains("bad.md")).count(), 1);
+    }
+
+    #[test]
+    fn untrusted_paths_cannot_forge_summary_rows() {
+        let summary = BatchSummary::from_results(
+            vec![
+                FileResult::success(
+                    PathBuf::from("evil\n\u{1b}[2J.md"),
+                    PathBuf::from("out\r\n\u{1b}[H.json"),
+                    Duration::ZERO,
+                ),
+                FileResult::failure(
+                    PathBuf::from("bad\n\u{1b}[H.md"),
+                    crate::error::ForgeError::Parse("invalid".into()),
+                    Duration::ZERO,
+                ),
+            ],
+            Duration::ZERO,
+        );
+        let output = format_batch_summary(&summary);
+        assert!(!output.contains(['\u{1b}', '\r']));
+        assert_eq!(output.lines().count(), 4);
     }
 
     #[test]

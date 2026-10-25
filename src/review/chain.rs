@@ -183,7 +183,8 @@ fn same_subject(
         && left.subject_sha256 == right.subject_sha256
         && left.context_sha256 == right.context_sha256
         && left.policy_sha256 == right.policy_sha256
-        && left.reviewer_key == right.reviewer_key)
+        && left.reviewer_key == right.reviewer_key
+        && left.reviewer_role == right.reviewer_role)
 }
 
 /// Validate every edge, including future/late/history facts, before retirement.

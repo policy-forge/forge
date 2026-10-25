@@ -1,6 +1,6 @@
 {
   "bundle": {
-    "schema_version": "forge.workspace-index-bundle/2",
+    "schema_version": "forge.workspace-index-bundle/3",
     "content_profile": "index-and-hashes",
     "index": {
       "schema_version": "forge.workspace/1",

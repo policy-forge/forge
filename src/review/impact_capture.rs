@@ -416,10 +416,10 @@ fn validate_companion_keys(
         if (resource.resource_type == ResourceType::Profile) != companion.is_some() {
             return Err(ContractError::Binding);
         }
-        if let Some(companion) = companion {
-            if shared::compare(key, companion, ledger)? == std::cmp::Ordering::Equal {
-                return Err(ContractError::Binding);
-            }
+        if let Some(companion) = companion
+            && shared::compare(key, companion, ledger)? == std::cmp::Ordering::Equal
+        {
+            return Err(ContractError::Binding);
         }
     }
     Ok(())

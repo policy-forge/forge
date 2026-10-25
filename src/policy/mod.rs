@@ -663,14 +663,10 @@ fn commit_outputs(paths: &[PathBuf; 3], contents: [&[u8]; 3]) -> Result<(), Forg
             let parent = path.parent().ok_or_else(|| composition_error("output has no parent"))?;
             let backup = match tempfile::NamedTempFile::new_in(parent) {
                 Ok(backup) => backup,
-                Err(error) => {
-                    rollback_outputs(&[], &mut backups);
-                    return Err(ForgeError::Io(error));
-                }
+                Err(error) => return Err(abort_commit(&[], &mut backups, error)),
             };
             if let Err(error) = std::fs::rename(path, backup.path()) {
-                rollback_outputs(&[], &mut backups);
-                return Err(ForgeError::Io(error));
+                return Err(abort_commit(&[], &mut backups, error));
             }
             backups.push((path.clone(), Some(backup)));
         } else {
@@ -684,14 +680,10 @@ fn commit_outputs(paths: &[PathBuf; 3], contents: [&[u8]; 3]) -> Result<(), Forg
             Ok(file) => {
                 persisted.push(path.clone());
                 if let Err(error) = file.sync_all() {
-                    rollback_outputs(&persisted, &mut backups);
-                    return Err(ForgeError::Io(error));
+                    return Err(abort_commit(&persisted, &mut backups, error));
                 }
             }
-            Err(error) => {
-                rollback_outputs(&persisted, &mut backups);
-                return Err(ForgeError::Io(error.error));
-            }
+            Err(error) => return Err(abort_commit(&persisted, &mut backups, error.error)),
         }
     }
     #[cfg(unix)]
@@ -701,17 +693,56 @@ fn commit_outputs(paths: &[PathBuf; 3], contents: [&[u8]; 3]) -> Result<(), Forg
     Ok(())
 }
 
+/// Roll back a failed commit and report the triggering I/O error, appending any
+/// rollback failures so the root cause is never masked.
+fn abort_commit(
+    persisted: &[PathBuf],
+    backups: &mut [(PathBuf, Option<tempfile::NamedTempFile>)],
+    error: std::io::Error,
+) -> ForgeError {
+    match rollback_outputs(persisted, backups) {
+        Ok(()) => ForgeError::Io(error),
+        Err(rollback) => composition_error(format!("cannot commit outputs: {error}; {rollback}")),
+    }
+}
+
 fn rollback_outputs(
     persisted: &[PathBuf],
     backups: &mut [(PathBuf, Option<tempfile::NamedTempFile>)],
-) {
+) -> Result<(), String> {
+    let mut failures = Vec::new();
     for path in persisted {
-        let _ = std::fs::remove_file(path);
+        if let Err(cause) = std::fs::remove_file(path)
+            && cause.kind() != std::io::ErrorKind::NotFound
+        {
+            failures.push(format!("cannot remove {}: {cause}", path.display()));
+        }
     }
     for (path, backup) in backups.iter_mut() {
-        if let Some(backup) = backup.take() {
-            let _ = std::fs::rename(backup.path(), path);
+        if let Some(backup) = backup.take()
+            && let Err(cause) = std::fs::rename(backup.path(), &*path)
+        {
+            let backup_path = backup.into_temp_path();
+            let recovery_path = match backup_path.keep() {
+                Ok(path) => path,
+                Err(error) => {
+                    let path = error.path.to_path_buf();
+                    // Never delete the only recovery copy, even if persistence failed.
+                    std::mem::forget(error.path);
+                    path
+                }
+            };
+            failures.push(format!(
+                "cannot restore {}: {cause}; original retained at {}",
+                path.display(),
+                recovery_path.display()
+            ));
         }
+    }
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("output rollback failed: {}", failures.join("; ")))
     }
 }
 
@@ -747,6 +778,48 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(std::fs::read_to_string(first).unwrap(), "old-1");
         assert_eq!(std::fs::read_to_string(second).unwrap(), "old-2");
+    }
+
+    #[test]
+    fn failed_rollback_preserves_original_backup_and_restores_other_outputs() {
+        let directory = tempfile::tempdir().unwrap();
+        let blocked = directory.path().join("blocked");
+        std::fs::create_dir(&blocked).unwrap();
+        std::fs::write(blocked.join("keep"), b"concurrent data").unwrap();
+        let mut backup = tempfile::NamedTempFile::new_in(directory.path()).unwrap();
+        backup.write_all(b"original").unwrap();
+        let recovery_path = backup.path().to_path_buf();
+        let restored = directory.path().join("restored");
+        let mut other = tempfile::NamedTempFile::new_in(directory.path()).unwrap();
+        other.write_all(b"other original").unwrap();
+        let mut backups = vec![(blocked.clone(), Some(backup)), (restored.clone(), Some(other))];
+        let error = rollback_outputs(&[blocked], &mut backups).unwrap_err();
+        assert!(error.contains("output rollback failed"));
+        assert!(error.contains(&recovery_path.display().to_string()));
+        assert_eq!(std::fs::read(recovery_path).unwrap(), b"original");
+        assert_eq!(std::fs::read(restored).unwrap(), b"other original");
+    }
+
+    #[test]
+    fn failed_rollback_keeps_the_triggering_error() {
+        let directory = tempfile::tempdir().unwrap();
+        let blocked = directory.path().join("blocked");
+        std::fs::create_dir(&blocked).unwrap();
+        std::fs::write(blocked.join("keep"), b"concurrent data").unwrap();
+        let mut backup = tempfile::NamedTempFile::new_in(directory.path()).unwrap();
+        backup.write_all(b"original").unwrap();
+        let mut backups = vec![(blocked.clone(), Some(backup))];
+        let cause = std::io::Error::other("disk full sentinel");
+        let error = abort_commit(&[blocked], &mut backups, cause).to_string();
+        assert!(error.contains("disk full sentinel"), "{error}");
+        assert!(error.contains("output rollback failed"), "{error}");
+    }
+
+    #[test]
+    fn successful_rollback_returns_the_triggering_io_error() {
+        let mut backups: Vec<(PathBuf, Option<tempfile::NamedTempFile>)> = Vec::new();
+        let error = abort_commit(&[], &mut backups, std::io::Error::other("sentinel"));
+        assert!(matches!(error, ForgeError::Io(ref cause) if cause.to_string() == "sentinel"));
     }
 
     #[test]

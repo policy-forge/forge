@@ -159,7 +159,7 @@ impl<'a> Stream<'a> {
         }
         self.ledger.visits(32)?;
         let mut decoded = [0_u8; 32];
-        for (index, pair) in value.as_bytes().chunks_exact(2).enumerate() {
+        for (index, pair) in value.as_bytes().as_chunks::<2>().0.iter().enumerate() {
             /// Accept exact lowercase hexadecimal digits without coercion.
             fn nibble(byte: u8) -> Option<u8> {
                 match byte {

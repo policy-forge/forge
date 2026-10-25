@@ -160,6 +160,30 @@ fn compare_arrays(
     }
 }
 
+/// Exact numeric equality across integer and float representations.
+///
+/// Integers compare as integers, so distinct large values never collapse through
+/// `f64` rounding. An integer equals a float only when the float is integral and
+/// converts to exactly that integer (e.g. `1` == `1.0`, `2^53` == `2^53.0`).
+fn numbers_exactly_equal(left: &serde_json::Number, right: &serde_json::Number) -> bool {
+    fn integer(number: &serde_json::Number) -> Option<i128> {
+        number.as_i64().map(i128::from).or_else(|| number.as_u64().map(i128::from))
+    }
+    #[allow(clippy::cast_possible_truncation)] // Integral and bounded: the cast is exact.
+    fn integral_float(value: f64) -> Option<i128> {
+        let integral = value.is_finite() && value.trunc().total_cmp(&value).is_eq();
+        (integral && value.abs() < 2f64.powi(127)).then_some(value as i128)
+    }
+    match (integer(left), integer(right)) {
+        (Some(left), Some(right)) => left == right,
+        (Some(int), None) => right.as_f64().and_then(integral_float) == Some(int),
+        (None, Some(int)) => left.as_f64().and_then(integral_float) == Some(int),
+        (None, None) => left.as_f64().zip(right.as_f64()).is_some_and(|(left, right)| {
+            left.partial_cmp(&right).is_some_and(std::cmp::Ordering::is_eq)
+        }),
+    }
+}
+
 fn compare_primitives(
     expected: &Value,
     actual: &Value,
@@ -170,7 +194,7 @@ fn compare_primitives(
         return;
     }
     if let (Value::Number(expected_number), Value::Number(actual_number)) = (expected, actual)
-        && expected_number.as_f64() == actual_number.as_f64()
+        && numbers_exactly_equal(expected_number, actual_number)
     {
         return;
     }
@@ -488,6 +512,32 @@ mod tests {
         assert_eq!(surplus.description, "missing element");
         assert_eq!(surplus.expected.as_deref(), Some("\"surplus\""));
         assert!(surplus.actual.is_none());
+    }
+
+    #[test]
+    fn distinct_large_integers_are_not_equivalent() {
+        for (left, right) in [
+            (json!(9_007_199_254_740_993_u64), json!(9_007_199_254_740_992_u64)),
+            (json!(u64::MAX), json!(u64::MAX - 1)),
+            (json!(-9_007_199_254_740_993_i64), json!(-9_007_199_254_740_992_i64)),
+            (json!(9_007_199_254_740_993_u64), json!(9_007_199_254_740_992.0)),
+            (json!(1), json!(1.5)),
+        ] {
+            assert!(!assert_semantic_equivalence(&left, &right).is_equivalent);
+        }
+    }
+
+    #[test]
+    fn exact_integer_float_pairs_at_and_beyond_2_pow_53_are_equivalent() {
+        for (left, right) in [
+            (json!(9_007_199_254_740_992_u64), json!(9_007_199_254_740_992.0)),
+            (json!(-9_007_199_254_740_992_i64), json!(-9_007_199_254_740_992.0)),
+            (json!(18_014_398_509_481_984_u64), json!(18_014_398_509_481_984.0)),
+            (json!(0), json!(-0.0)),
+        ] {
+            assert!(assert_semantic_equivalence(&left, &right).is_equivalent, "{left} {right}");
+            assert!(assert_semantic_equivalence(&right, &left).is_equivalent, "{right} {left}");
+        }
     }
 
     #[test]
