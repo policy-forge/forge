@@ -69,6 +69,11 @@ fn render_counts(out: &mut Html, report: &PortfolioReport) -> Result<(), ForgeEr
         ("Blocked rows at as-of", counts.blocked),
         ("Rows before their first assertion", counts.before_first_assertion),
         ("Cancelled rows at as-of", counts.cancelled),
+        ("Completed-asserted rows at as-of (asserted, not verified)", counts.completed_asserted),
+        (
+            "Accepted-risk-asserted rows at as-of (declared acceptance)",
+            counts.accepted_risk_asserted,
+        ),
     ] {
         out.markup("<tr><th scope=\"row\">")?;
         out.text(label)?;
@@ -346,16 +351,19 @@ mod tests {
         assert!(output.ends_with("</body></html>\n"));
     }
 
-    /// A single missing count, undisposed terminal record or byte ceiling refuses all output.
+    /// A single missing count or byte ceiling refuses all output; asserted terminal rows render with asserted labels.
     #[test]
-    fn inconsistent_denominator_terminal_bypass_and_output_overflow_refuse() {
+    fn inconsistent_denominator_and_output_overflow_refuse_while_asserted_rows_render() {
         let mut report = portfolio::test_report();
         report.counts.records -= 1;
         assert!(render(&report).is_err());
         report = portfolio::test_report();
         report.plans[0].records[0].declared_state =
-            super::super::workflow::State::CompletedAsserted;
-        assert!(render(&report).is_err());
+            super::super::workflow::State::AcceptedRiskAsserted;
+        let asserted = String::from_utf8(render(&report).unwrap()).unwrap();
+        assert!(asserted.contains("accepted-risk-asserted"));
+        assert!(asserted.contains("Accepted-risk-asserted rows at as-of (declared acceptance)"));
+        assert!(!asserted.contains("authorized"));
         report = portfolio::test_report();
         assert!(render_bounded(&report, 128).is_err());
         let complete = render(&report).unwrap();
