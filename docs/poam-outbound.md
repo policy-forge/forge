@@ -104,7 +104,10 @@ payload digests. Schema validation cannot create a real captured input proof.
 Every operation has `remote_preconditions: null`, and the complete handoff has
 `remote_apply_authorized: false`. No remote object/version has been observed.
 `close-request` neither completes native work nor closes an Assessment Results
-finding. Completion/risk acceptance remain refused under the existing D064 gate.
+finding. A `completed-asserted` or `accepted-risk-asserted` item appears only as its
+`declared_state`; its operation stays the explicitly selected intent, and no state,
+including an asserted terminal state, ever produces a `close-request` or remote
+close.
 Declared owners are preserved IDs, not authenticated actors or approved remote
 assignments.
 

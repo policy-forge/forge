@@ -34,7 +34,7 @@ There is no `--format`, authoring-only preview mode or terminal override for thi
 
 The native file must match the entire supported native POA&M generated from its authoring declaration and the actual current five-file source bundle. Matching only a UUID or selected fields is insufficient. Unknown native fields or extensions are refused. Outer JSON whitespace and member order may differ, but the complete decoded value, including source href/hash values and namespaced declaration strings, must match. This is a supported companion-pair check, not a general OSCAL import or interoperability claim.
 
-Each plan must pass the existing nonterminal workflow and current source checks. Completed or risk-accepted history remains refused under the existing closure boundary. Cancelled work is retained in reports and does not close a source finding or risk. Duplicate stable plan identities, unsafe or aliased input files, incomplete pairs, stale sources and any invalid plan fail the whole command; a successful prefix is never returned.
+Each plan must pass the existing workflow and current source checks. Asserted terminal records (`completed-asserted`, `accepted-risk-asserted`) are admitted under the D064 reviewer profile, counted at as-of in `completed_asserted` and `accepted_risk_asserted`, and never overdue; they are assertions, not verified closure. Cancelled work is retained in reports and does not close a source finding or risk. Duplicate stable plan identities, unsafe or aliased input files, incomplete pairs, stale sources and any invalid plan fail the whole command; a successful prefix is never returned.
 
 ## Read the complete report
 
