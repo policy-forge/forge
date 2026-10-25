@@ -212,6 +212,13 @@ the complete serialized record against the queue and recheck held originals
 before output. Reformatting a queue changes its raw identity. Source drift or
 missing native closure evidence refuses current output.
 
+After source drift, initialize a new queue at a new destination. `init` output is
+byte-identical for identical inputs and explicit values. Merging old responses
+against a regenerated queue with the same `--queue-id` records them as `stale`.
+Merging them against a queue with a different ID records them as `foreign`. In
+both cases the old responses stay in the output, unchanged, and fill no quorum
+seat. Nothing transfers automatically: reviewers respond again to the new queue.
+
 Self-supersession requires both `--supersedes-id` and `--supersedes-sha256` for the
 exact prior original. It cannot erase a different asserted reviewer's dissent.
 For an empty abstention rationale, use a reason explicitly permitted by the
@@ -356,7 +363,11 @@ excerpts. Identifiers, schema labels and hashes can still reveal sensitive
 information; review the actual artifacts before sharing them.
 
 HTML is a static rendering of a captured recorded bundle. It does not perform a
-fresh source check or authenticate its recorded labels. The current CLI performs
+fresh source check or authenticate its recorded labels. It contains no script,
+form, image or remote asset. A meta Content-Security-Policy
+(`default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; img-src 'none'`)
+allows only its constant inline stylesheet. Browser and assistive-technology
+qualification remain open. The current CLI performs
 no remote upload, notification delivery or automatic domain edit. Non-null proposed edits
 are rejected. Supported proposed edits and remaining native adapters are
 pending. The interactive client and signed response design/envelope remain open
