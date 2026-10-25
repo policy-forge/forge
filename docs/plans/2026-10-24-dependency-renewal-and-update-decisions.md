@@ -1,6 +1,6 @@
 # Dependency exception renewal and update decision — approved October 24, 2026
 
-This packet covers three owner decisions made on October 24, 2026:
+This packet covers four owner decisions made on October 24, 2026:
 
 1. Renewal of the 34 existing owned exceptions whose review deadline
    (October 20, 2026) had passed.
@@ -8,6 +8,8 @@ This packet covers three owner decisions made on October 24, 2026:
    owned exceptions for their new runtime identities.
 3. Security updates for `ctutils` and `zip` that clear new RustSec
    advisories failing `cargo audit`.
+4. `tokio` 1.53.3 in place of 1.53.2, and a reviewed `deny.toml` ignore for
+   the unmaintained `unsafe-libyaml`.
 
 Neither decision signs off a source audit or releases the product.
 
@@ -53,7 +55,7 @@ November 23, 2026.
 | serde | 1.0.228 → 1.0.229 | safe-to-deploy | #238 | `4148590afebada386688f18773da617792bf2ef03ffc1e4cbd2b1d45b023e0ba` |
 | serde_core | 1.0.228 → 1.0.229 | safe-to-deploy | #238 | `67dca2c9c51e58a4791a4b1ed58308b39c64224d349a935ab5039aa360942a48` |
 | serde_derive | 1.0.228 → 1.0.229 | safe-to-run + safe-to-deploy (generated code) | #238 | `e7a5d71263a5a7d47b41f6b3f06ba276f10cc18b0931f1799f710578e2309348` |
-| tokio | 1.53.1 → 1.53.2 | safe-to-deploy | #237 | `e95f91fcc7a621e8b030f6aa23c71fe9838ae2fb4d8118b75602a328f5144044` |
+| tokio | 1.53.1 → 1.53.3 | safe-to-deploy | #237 | `ce3335fa71841cda333a58d7615b03901380ecf09d59b3296d21f8bbac0dde4e` |
 | toml | 1.1.5+spec-1.1.0 → 1.1.6+spec-1.1.0 | safe-to-deploy | #236 | `920602543f0911ab71da12c50d59701da54c196d1a2bf5cb4b75667f137a406a` |
 
 `insta` 1.48.0 → 1.49.0 (PR #234, checksum
@@ -101,6 +103,20 @@ build-time dependency outside the runtime closure, so it receives only a
 native cargo-vet exemption. The retired `ctutils` 0.4.2 exception is removed;
 the owned set is 44 entries.
 
+## Decision 4: tokio 1.53.3 and the unsafe-libyaml advisory
+
+After Decision 3, `cargo deny check` still failed on two advisories:
+
+- `tokio` 1.53.2 (the Dependabot proposal): RUSTSEC-2026-0386, unsound safe
+  `AsyncFd` constructors. Forge does not use `AsyncFd`. The owner approved
+  taking 1.53.3, the fixed patch release, in place of 1.53.2. The Decision 2
+  exception and cargo-vet exemption carry 1.53.3 (checksum above); 1.53.2 is
+  never locked.
+- `unsafe-libyaml` 0.2.11: RUSTSEC-2024-0449, unmaintained, pulled by
+  `serde_yaml_ng` 0.10. Replacing the YAML stack is separate work. The owner
+  approved a `deny.toml` ignore with review by 2026-12-31, the same treatment
+  as the existing `ttf-parser` (RUSTSEC-2026-0192) entry.
+
 ## Evidence and limits
 
 - `python3 scripts/dependency_graph.py check`: exit 0 after refresh.
@@ -128,5 +144,10 @@ asked the owner to approve either A (upgrade `ctutils` to 0.4.5 and `zip` to
 9.1.0, with exceptions for every new crate version this pulls in) or B
 (upgrade `ctutils` only and ignore the `zip` advisories). The owner answered
 **"Approved"** and then confirmed **"A"**.
+
+When `cargo deny` then reported the `tokio` and `unsafe-libyaml` advisories,
+the assistant asked: "Do you approve both, moving `tokio` to 1.53.3 and adding
+the `unsafe-libyaml` ignore with a 2026-12-31 review date?" The owner answered
+**"yes"**.
 The specific review and expiry dates above were chosen by the assistant within
 the existing 14-day review and 90-day policy limits; the owner can shorten them.

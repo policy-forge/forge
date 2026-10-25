@@ -574,7 +574,7 @@
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
-      "checksum": "e95f91fcc7a621e8b030f6aa23c71fe9838ae2fb4d8118b75602a328f5144044",
+      "checksum": "ce3335fa71841cda333a58d7615b03901380ecf09d59b3296d21f8bbac0dde4e",
       "created_on": "2026-10-24",
       "criteria": [
         "safe-to-deploy"
@@ -582,10 +582,10 @@
       "expires_on": "2026-11-23",
       "name": "tokio",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PRs #234\u2013238 (patch updates). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PR #237, taken at 1.53.3 for RUSTSEC-2026-0386. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "1.53.2"
+      "version": "1.53.3"
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
