@@ -499,6 +499,21 @@
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
+      "checksum": "4e7523beb55eece201a2356bee0bbca0d1ab466c14c07703b2e0ee6d42cb0c2c",
+      "created_on": "2026-10-25",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-23",
+      "name": "serde_spanned",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for a transitive update pulled by toml 1.1.8 (Dependabot PR #236, merged 2026-10-25). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-11-07",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "1.1.2"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
       "checksum": "9628de9b8791db39ceda2b119bbe13134770b56c138ec1d3af810d045c04f9bd",
       "created_on": "2026-10-06",
       "criteria": [
@@ -574,33 +589,63 @@
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
-      "checksum": "ce3335fa71841cda333a58d7615b03901380ecf09d59b3296d21f8bbac0dde4e",
-      "created_on": "2026-10-24",
+      "checksum": "b52fd3255258d26fac7264ab5a76b53c13367136dc011d3d6ad4f8ed070396a3",
+      "created_on": "2026-10-25",
       "criteria": [
         "safe-to-deploy"
       ],
       "expires_on": "2026-11-23",
       "name": "tokio",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PR #237, taken at 1.53.3 for RUSTSEC-2026-0386. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PR #237 (merged 2026-10-25). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "1.53.3"
+      "version": "1.54.1"
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
-      "checksum": "920602543f0911ab71da12c50d59701da54c196d1a2bf5cb4b75667f137a406a",
-      "created_on": "2026-10-24",
+      "checksum": "20489e00e4d8741d6be680764cc12e270655e375a20d1011e844a9c3379e678d",
+      "created_on": "2026-10-25",
       "criteria": [
         "safe-to-deploy"
       ],
       "expires_on": "2026-11-23",
       "name": "toml",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PRs #234\u2013238 (patch updates). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PR #236 (merged 2026-10-25). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "1.1.6+spec-1.1.0"
+      "version": "1.1.8+spec-1.1.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
+      "checksum": "2b86d767906c6c42421dcba507eb9d203e779497710a47782a224bb871653053",
+      "created_on": "2026-10-25",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-23",
+      "name": "toml_datetime",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for a transitive update pulled by toml 1.1.8 (Dependabot PR #236, merged 2026-10-25). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-11-07",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "1.1.2+spec-1.1.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
+      "checksum": "baa693a8032d7e1cada7d0041e96126df243179ff061456783ac7f12bda4744c",
+      "created_on": "2026-10-25",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-23",
+      "name": "toml_parser",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for a transitive update pulled by toml 1.1.8 (Dependabot PR #236, merged 2026-10-25). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-11-07",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "1.1.5+spec-1.1.0"
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
