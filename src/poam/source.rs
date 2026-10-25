@@ -511,6 +511,7 @@ fn inventory_results(
     let mut stable_keys = BTreeSet::new();
     let mut selected = None;
     let mut object_count = 0_usize;
+    validate_observation_edges(results)?;
     for result in results {
         let uuid = required_uuid(result.get("uuid"), "AR result UUID")?;
         let key = required_property(result, "stable-key", &["stable-key"])?;
@@ -542,6 +543,7 @@ fn inventory_results(
             return Err(error("explicit AR result stable key resolves to a different UUID"));
         }
     }
+    validate_native_continuity(results)?;
     let mut objects =
         selected.ok_or_else(|| error("explicit AR result UUID and stable key are absent"))?;
     objects.sort_by(|left, right| (&left.kind, &left.key).cmp(&(&right.kind, &right.key)));
@@ -567,9 +569,110 @@ const CONCLUSION_PROPERTIES: &[&str] = &[
     "rationale",
     "reviewer-declared-severity",
     "reviewer-declared-confidence",
+    CONTINUITY_FAMILY_PROPERTY,
+    CONTINUITY_PREDECESSOR_PROPERTY,
 ];
 
+/// Risk-only Forge property carrying the caller-asserted stable continuity family key.
+pub(crate) const CONTINUITY_FAMILY_PROPERTY: &str = "continuity-family-key";
+/// Risk-only Forge property naming the immediately preceding family member's risk UUID.
+pub(crate) const CONTINUITY_PREDECESSOR_PROPERTY: &str = "continuity-predecessor-uuid";
+
+/// Require native continuity properties to form strictly linear, backward-only risk families.
+///
+/// A continued risk carries both properties; a family's first member carries
+/// neither. The predecessor must be a risk in a strictly earlier result, can be
+/// claimed by only one successor, and must be the current head of the same family
+/// (or an unlabelled first member for the family's first continuation). This checks
+/// graph shape only; continuity remains a caller assertion without authority.
+///
+/// # Errors
+/// Refuses incomplete pairs, forward/same-result/absent predecessors, branches and merges.
+fn validate_native_continuity(results: &[Value]) -> Result<(), ForgeError> {
+    let mut earlier: BTreeMap<&str, Option<&str>> = BTreeMap::new();
+    let mut claimed = BTreeSet::new();
+    let mut heads: BTreeMap<&str, &str> = BTreeMap::new();
+    for result in results {
+        let risks = optional_array(result.get("risks"), "AR risks", MAX_SOURCE_OBJECTS)?;
+        let mut current = Vec::with_capacity(risks.len());
+        for risk in risks {
+            let uuid = required_uuid(risk.get("uuid"), "AR risk UUID")?;
+            let properties = property_values(risk, CONCLUSION_PROPERTIES)?;
+            let family = one_property(&properties, CONTINUITY_FAMILY_PROPERTY)?;
+            let predecessor = one_property(&properties, CONTINUITY_PREDECESSOR_PROPERTY)?;
+            match (family, predecessor) {
+                (None, None) => {}
+                (Some(family), Some(predecessor)) => {
+                    if Uuid::parse_str(predecessor)
+                        .map(|id| id.hyphenated().to_string())
+                        .ok()
+                        .as_deref()
+                        != Some(predecessor)
+                    {
+                        return Err(error(
+                            "AR continuity predecessor must use lowercase hyphenated UUID spelling",
+                        ));
+                    }
+                    let previous_family = earlier.get(predecessor).ok_or_else(|| {
+                        error("AR continuity predecessor is not a risk in an earlier result")
+                    })?;
+                    if !claimed.insert(predecessor) {
+                        return Err(error("AR continuity family branches from one predecessor"));
+                    }
+                    let linear = match heads.get(family) {
+                        Some(head) => *head == predecessor,
+                        None => previous_family.is_none(),
+                    };
+                    if !linear {
+                        return Err(error(
+                            "AR continuity predecessor is not the latest member of the same family",
+                        ));
+                    }
+                    heads.insert(family, uuid);
+                }
+                _ => {
+                    return Err(error(
+                        "AR continuity family key and predecessor UUID must appear together",
+                    ));
+                }
+            }
+            current.push((uuid, family));
+        }
+        earlier.extend(current);
+    }
+    Ok(())
+}
+
+/// Require finding observation edges to name the same or a strictly earlier result only.
+///
+/// Results are ordered epochs. A later finding may cite an earlier observation;
+/// a forward edge to a later result, an absent UUID or a duplicate edge refuses.
+///
+/// # Errors
+/// Refuses unsupported edge shapes, forward or absent observations and duplicates.
+fn validate_observation_edges(results: &[Value]) -> Result<(), ForgeError> {
+    let mut available = BTreeSet::new();
+    for result in results {
+        let observations =
+            optional_array(result.get("observations"), "AR observations", MAX_SOURCE_OBJECTS)?;
+        for observation in observations {
+            available.insert(required_uuid(observation.get("uuid"), "AR observation UUID")?);
+        }
+        for finding in optional_array(result.get("findings"), "AR findings", MAX_SOURCE_OBJECTS)? {
+            let related = optional_array(
+                finding.get("related-observations"),
+                "related observations",
+                MAX_REFERENCES,
+            )?;
+            validate_uuid_references(related, "observation-uuid", |uuid| available.contains(uuid))?;
+        }
+    }
+    Ok(())
+}
+
 /// Inventory every selected-result finding and risk without eligibility filtering.
+///
+/// Observation edges are checked across ordered results by `validate_observation_edges`.
 fn inventory_one_result(
     result: &Value,
     context: &LoadedContext,
@@ -580,10 +683,6 @@ fn inventory_one_result(
         optional_array(result.get("observations"), "AR observations", MAX_SOURCE_OBJECTS)?;
     let findings = optional_array(result.get("findings"), "AR findings", MAX_SOURCE_OBJECTS)?;
     let risks = optional_array(result.get("risks"), "AR risks", MAX_SOURCE_OBJECTS)?;
-    let observation_uuids: BTreeSet<_> = observations
-        .iter()
-        .map(|value| required_uuid(value.get("uuid"), "AR observation UUID"))
-        .collect::<Result<_, _>>()?;
     let risk_uuids: BTreeSet<_> = risks
         .iter()
         .map(|value| required_uuid(value.get("uuid"), "AR risk UUID"))
@@ -595,15 +694,9 @@ fn inventory_one_result(
     let mut risk_controls: BTreeMap<&str, BTreeSet<String>> = BTreeMap::new();
     for finding in findings {
         let control = finding_control(finding, context, &scope)?;
-        let related_observations = optional_array(
-            finding.get("related-observations"),
-            "related observations",
-            MAX_REFERENCES,
-        )?;
-        validate_uuid_references(related_observations, "observation-uuid", &observation_uuids)?;
         let related_risks =
             optional_array(finding.get("related-risks"), "related risks", MAX_REFERENCES)?;
-        validate_uuid_references(related_risks, "risk-uuid", &risk_uuids)?;
+        validate_uuid_references(related_risks, "risk-uuid", |uuid| risk_uuids.contains(uuid))?;
         for related in related_risks {
             let risk_uuid = required_uuid(related.get("risk-uuid"), "related risk UUID")?;
             risk_controls.entry(risk_uuid).or_default().insert(control.clone());
@@ -775,16 +868,19 @@ fn validate_observation(observation: &Value, context: &LoadedContext) -> Result<
 }
 
 /// Require every bounded UUID edge to identify an admitted source object.
+///
+/// Observation edges may name the same result or a strictly earlier result;
+/// risk edges stay within the same result.
 fn validate_uuid_references(
     references: &[Value],
     field: &str,
-    available: &BTreeSet<&str>,
+    available: impl Fn(&str) -> bool,
 ) -> Result<(), ForgeError> {
     let mut seen = BTreeSet::new();
     for reference in references {
         closed_object(reference, &[field], "AR conclusion reference")?;
         let uuid = required_uuid(reference.get(field), "AR related conclusion UUID")?;
-        if !available.contains(uuid) || !seen.insert(uuid) {
+        if !available(uuid) || !seen.insert(uuid) {
             return Err(error("AR conclusion reference is absent from its result or duplicated"));
         }
     }
@@ -1707,6 +1803,120 @@ mod tests {
         assert!(optional_digest(&properties, "content-sha256").is_err());
         let short = BTreeMap::from([("rationale-sha256", vec!["abcd"])]);
         assert!(optional_digest(&short, "rationale-sha256").is_err());
+    }
+
+    /// Build one synthetic ordered result with observation and finding edges.
+    fn edge_result(observation: &str, related: &[&str]) -> Value {
+        let related: Vec<_> =
+            related.iter().map(|uuid| json!({"observation-uuid": uuid})).collect();
+        json!({"observations": [{"uuid": observation}],
+            "findings": [{"uuid": FINDING, "related-observations": related}]})
+    }
+
+    /// Finding observation edges may point to the same or an earlier result, never forward.
+    #[test]
+    fn observation_edges_are_backward_only_across_results() {
+        const EARLY: &str = "44444444-4444-4444-8444-444444444444";
+        const LATE: &str = "55555555-5555-4555-8555-555555555555";
+        let backward = [edge_result(EARLY, &[EARLY]), edge_result(LATE, &[LATE, EARLY])];
+        validate_observation_edges(&backward).unwrap();
+        let forward = [edge_result(EARLY, &[EARLY, LATE]), edge_result(LATE, &[LATE])];
+        assert!(validate_observation_edges(&forward).is_err());
+        let duplicate = [edge_result(EARLY, &[EARLY]), edge_result(LATE, &[EARLY, EARLY])];
+        assert!(validate_observation_edges(&duplicate).is_err());
+        let absent = [edge_result(EARLY, &[RISK])];
+        assert!(validate_observation_edges(&absent).is_err());
+    }
+
+    /// Build one synthetic result whose risks carry optional continuity props.
+    fn continuity_result(risks: &[(&str, Option<&str>, Option<&str>)]) -> Value {
+        let risks: Vec<_> = risks
+            .iter()
+            .map(|(uuid, family, predecessor)| {
+                let mut props = vec![property("stable-key", uuid)];
+                if let Some(family) = family {
+                    props.push(property(CONTINUITY_FAMILY_PROPERTY, family));
+                }
+                if let Some(predecessor) = predecessor {
+                    props.push(property(CONTINUITY_PREDECESSOR_PROPERTY, predecessor));
+                }
+                json!({"uuid": uuid, "props": props})
+            })
+            .collect();
+        json!({"risks": risks})
+    }
+
+    /// Native continuity props must form linear, backward-only families.
+    #[test]
+    fn native_continuity_props_are_linear_and_backward_only() {
+        const A: &str = "a1111111-1111-4111-8111-111111111111";
+        const B: &str = "b2222222-2222-4222-8222-222222222222";
+        const C: &str = "c3333333-3333-4333-8333-333333333333";
+        const D: &str = "d4444444-4444-4444-8444-444444444444";
+        let chain = [
+            continuity_result(&[(A, None, None), (D, None, None)]),
+            continuity_result(&[(B, Some("family"), Some(A))]),
+            continuity_result(&[(C, Some("family"), Some(B))]),
+        ];
+        validate_native_continuity(&chain).unwrap();
+        for (label, results) in [
+            (
+                "same-result predecessor",
+                vec![continuity_result(&[(A, None, None), (B, Some("f"), Some(A))])],
+            ),
+            (
+                "forward predecessor",
+                vec![
+                    continuity_result(&[(B, Some("f"), Some(C))]),
+                    continuity_result(&[(C, None, None)]),
+                ],
+            ),
+            (
+                "incomplete pair",
+                vec![
+                    continuity_result(&[(A, None, None)]),
+                    continuity_result(&[(B, Some("f"), None)]),
+                ],
+            ),
+            (
+                "branch",
+                vec![
+                    continuity_result(&[(A, None, None)]),
+                    continuity_result(&[(B, Some("f"), Some(A)), (C, Some("g"), Some(A))]),
+                ],
+            ),
+            (
+                "merge",
+                vec![
+                    continuity_result(&[(A, None, None), (D, None, None)]),
+                    continuity_result(&[(B, Some("f"), Some(A))]),
+                    continuity_result(&[(C, Some("f"), Some(D))]),
+                ],
+            ),
+            (
+                "family switch",
+                vec![
+                    continuity_result(&[(A, None, None)]),
+                    continuity_result(&[(B, Some("f"), Some(A))]),
+                    continuity_result(&[(C, Some("g"), Some(B))]),
+                ],
+            ),
+            (
+                "noncanonical predecessor",
+                vec![
+                    continuity_result(&[(A, None, None)]),
+                    continuity_result(&[(
+                        B,
+                        Some("f"),
+                        Some("A1111111-1111-4111-8111-111111111111"),
+                    )]),
+                ],
+            ),
+        ] {
+            assert!(validate_native_continuity(&results).is_err(), "{label} admitted");
+        }
+        let finding_props = json!({"props": [property(CONTINUITY_FAMILY_PROPERTY, "family")]});
+        assert!(validate_conclusion_properties(&finding_props, false).is_err());
     }
 
     /// Verify that uuid spelling and global object duplicates fail closed.
