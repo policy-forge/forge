@@ -24,7 +24,7 @@ fn write(root: &Path, name: &str, value: &Value) {
     std::fs::write(root.join(name), serde_json::to_vec_pretty(value).unwrap()).unwrap();
 }
 
-/// Initialize genuine queues while retaining the production Windows publication refusal.
+/// Initialize genuine queues through the maintained publisher on every supported platform.
 fn init(root: &Path, id: &str, output: &str) {
     let options = InitOptions {
         project_root: root,
@@ -35,26 +35,14 @@ fn init(root: &Path, id: &str, output: &str) {
         output: Path::new(output),
     };
     let raw = native_queue_fixture_bytes(&options).unwrap();
-    let result = commands::init(&options, &mut NoopControl);
-    #[cfg(not(windows))]
-    {
-        result.unwrap();
-        assert_eq!(std::fs::read(root.join(output)).unwrap(), raw);
-    }
-    #[cfg(windows)]
-    {
-        assert!(matches!(result, Err(commands::CommandError::Publication)));
-        assert!(!root.join(output).exists());
-        // This is cfg-only fixture persistence after the real init core and all
-        // its input fences; it is not a supported production publication route.
-        std::fs::write(root.join(output), raw).unwrap();
-    }
+    commands::init(&options, &mut NoopControl).unwrap();
+    assert_eq!(std::fs::read(root.join(output)).unwrap(), raw);
 }
 
 /// Generate fixture bytes on every platform through the maintained complete initialization core.
 /// No native/approval facts or proof are supplied by this helper; every phase uses
 /// one genuine capture, accepted caller and ledger. All owners drop before return,
-/// so fixture persistence cannot be mistaken for guarded Windows publication.
+/// so fixture bytes stay independent of the guarded publisher under test.
 fn native_queue_fixture_bytes(options: &InitOptions<'_>) -> Result<Vec<u8>, ContractError> {
     let mut caller = NoopControl;
     let mut control = ReviewControl::accept(&mut caller);

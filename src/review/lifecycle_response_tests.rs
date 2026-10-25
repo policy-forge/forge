@@ -53,7 +53,7 @@ fn publication<T>(result: Result<T, CommandError>) {
 /// Check actual native publisher success or its genuine unsupported-platform refusal.
 /// An unsupported publication cannot be treated as an observed response output.
 fn published(fixture: &Fixture, result: Result<(), CommandError>) -> Option<Vec<u8>> {
-    if cfg!(any(target_os = "linux", target_os = "macos")) {
+    if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
         result.unwrap();
         Some(std::fs::read(fixture.root.join("result.json")).unwrap())
     } else {
@@ -253,7 +253,7 @@ fn genuine_response_guarded_queue_and_rationale_drift_refuse_and_clean_staging()
         let (fixture, _, _) = inputs(1, b"private physical rationale");
         let mut caller = StagedDrift { root: fixture.root.clone(), path, edited: false };
         let result = lifecycle_commands::respond(&options(&fixture), &mut caller);
-        if cfg!(any(target_os = "linux", target_os = "macos")) {
+        if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
             contract(result, ContractError::Binding);
             assert!(caller.edited);
             assert_eq!(std::fs::read(fixture.root.join(path)).unwrap(), b"changed actual captured ordinary input bytes");
@@ -297,7 +297,7 @@ fn genuine_response_successful_publication_final_stop_keeps_complete_output() {
         let (fixture, declaration, queue_raw) = inputs(1, b"private final-stop rationale");
         let mut caller = PublishedStop { path: fixture.root.join("result.json"), failed, stops: 0 };
         let result = lifecycle_commands::respond(&options(&fixture), &mut caller);
-        if cfg!(any(target_os = "linux", target_os = "macos")) {
+        if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
             let expected = if failed { ContractError::ControlFailed }
                 else { ContractError::Interrupted(Interruption::CancelRequested) };
             contract(result, expected);

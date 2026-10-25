@@ -1223,7 +1223,7 @@ fn existing_relocated_casefolded_or_input_output_names_are_not_replaced() {
 }
 
 /// Two genuine competing command invocations grant exactly one no-replace destination without mutating originals.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "macos", windows))]
 #[test]
 fn competing_export_attempts_have_one_complete_no_replace_winner() {
     let fixture = fixture();
@@ -1263,10 +1263,10 @@ fn refusal_diagnostics_do_not_copy_source_prose_or_private_root() {
     }
 }
 
-/// Windows file publication remains typed unavailable after a valid stdout canary; no fallback output is written.
+/// Windows keeps stdout mode, publishes one new complete file, and never replaces it.
 #[cfg(windows)]
 #[test]
-fn windows_keeps_supported_stdout_and_refuses_file_publication() {
+fn windows_keeps_stdout_and_publishes_one_new_file_without_replacement() {
     let fixture = fixture();
     let before = originals(&fixture);
     let stdout = export(&fixture, None);
@@ -1275,5 +1275,14 @@ fn windows_keeps_supported_stdout_and_refuses_file_publication() {
         serde_json::from_slice::<Value>(&stdout.stdout).unwrap(),
         fixture.request["workflow"]
     );
-    assert_refused(&fixture, &export(&fixture, Some("refused.json")), &before);
+    let published = export(&fixture, Some("published.json"));
+    assert_eq!(published.status.code(), Some(0), "{}", String::from_utf8_lossy(&published.stderr));
+    assert_eq!(published.stdout, [] as [u8; 0]);
+    let bytes = std::fs::read(fixture.root.join("published.json")).unwrap();
+    assert_eq!(serde_json::from_slice::<Value>(&bytes).unwrap(), fixture.request["workflow"]);
+    let repeated = export(&fixture, Some("published.json"));
+    assert_eq!(repeated.status.code(), Some(2));
+    assert_eq!(repeated.stdout, [] as [u8; 0]);
+    assert_eq!(std::fs::read(fixture.root.join("published.json")).unwrap(), bytes);
+    assert_originals(&fixture, &before);
 }

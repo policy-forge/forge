@@ -450,7 +450,7 @@ fn source_revalidation_detects_changed_bytes_and_same_byte_replacement() {
 }
 
 /// Verify that scaffold publication never overwrites existing or source files.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "macos", windows))]
 #[test]
 fn scaffold_publication_never_overwrites_existing_or_source_files() {
     let f = fixture();
@@ -1683,7 +1683,7 @@ fn authored_cli_has_no_terminal_closure_override() {
 }
 
 /// New native and report files are deterministic, schema-valid and based at the actual manifest directory.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "macos", windows))]
 #[test]
 fn authored_cli_build_publishes_explicit_new_files_without_source_mutation() {
     let fixture = fixture();
@@ -1990,7 +1990,7 @@ fn baseline_cli_unchanged_report_is_complete_deterministic_and_nonmutating() {
     assert_eq!(report["previous_manifest_sha256"], report["current_manifest_sha256"]);
     assert_eq!(report["previous_validation"], "bounded-structural-history-only");
     assert!(!String::from_utf8(first.stdout.clone()).unwrap().contains("SENSITIVE"));
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "macos", windows))]
     {
         let published = baseline_cli(&fixture, &["--report", "baseline-report.json"]);
         assert_eq!(published.status.code(), Some(0));
@@ -2007,7 +2007,7 @@ fn baseline_cli_unchanged_report_is_complete_deterministic_and_nonmutating() {
             first.stdout
         );
     }
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
     {
         let root = fixture.directory.path();
         let entries_before = std::fs::read_dir(root).unwrap().count();
@@ -3854,7 +3854,7 @@ fn outbound_contract_cli_preflights_all_eight_originals_and_qualifies_file_publi
         assert_eq!(refused.stdout, [] as [u8; 0]);
         assert_eq!(std::fs::read_dir(root).unwrap().count(), entries_before);
     }
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "macos", windows))]
     {
         let published = outbound_control_cli(
             &f,
@@ -3911,7 +3911,7 @@ fn outbound_contract_cli_preflights_all_eight_originals_and_qualifies_file_publi
         );
         assert_eq!(std::fs::read_dir(other_root.path()).unwrap().count(), 1);
     }
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
     {
         let refused = outbound_control_cli(
             &f,
@@ -4766,14 +4766,14 @@ fn s4_actual_cli_outputs_preflight_originals_and_preserve_portable_publication()
     assert_eq!(std::fs::read(owned).unwrap(), b"OWNED INSPECTION SENTINEL");
     // Same basename as the nested companion, a different actual full path.
     let result = s4_control_cli(&f, &f.root, Some("links.json"));
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "macos", windows))]
     {
         assert_eq!(result.status.code(), Some(1));
         assert_eq!(result.stdout, [] as [u8; 0]);
         assert_eq!(std::fs::read(f.root.join("links.json")).unwrap(), prepared.report());
         s4_control_invalid(&s4_control_cli(&f, &f.root, Some("links.json")), &f);
     }
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
     {
         s4_control_invalid(&result, &f);
         assert!(!f.root.join("links.json").exists());

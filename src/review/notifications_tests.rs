@@ -914,7 +914,7 @@ fn invoke_notification_cli(
 
 /// Check the complete maintained fixture projection against an actual published file.
 /// Existing independent row expectations are reused; no producer output is the oracle.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "macos", windows))]
 fn assert_cli_notification_artifact(path: &Path, queue: &QueueDocument, raw: &[u8]) -> Vec<u8> {
     let bytes = std::fs::read(path).unwrap();
     assert_eq!(bytes.last(), Some(&b'\n'));
@@ -952,7 +952,7 @@ fn assert_cli_notification_artifact(path: &Path, queue: &QueueDocument, raw: &[u
 }
 
 /// Actual clap dispatch publishes the complete minimized mixed-domain queue projection.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "macos", windows))]
 #[test]
 fn real_cli_notification_export_publishes_complete_counts_rows_and_original_pin() {
     let queue = queue_fixture();
@@ -966,7 +966,7 @@ fn real_cli_notification_export_publishes_complete_counts_rows_and_original_pin(
 }
 
 /// The same actual original produces byte-identical files through two real CLI publications.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "macos", windows))]
 #[test]
 fn real_cli_notification_export_is_byte_identical_at_distinct_new_destinations() {
     let queue = queue_fixture();
@@ -982,7 +982,7 @@ fn real_cli_notification_export_is_byte_identical_at_distinct_new_destinations()
 }
 
 /// A real existing destination and the actual input original cannot be overwritten through CLI dispatch.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "macos", windows))]
 #[test]
 fn real_cli_notification_export_refuses_overwrite_and_input_output_alias() {
     let raw = queue_raw(&queue_fixture());
@@ -1002,7 +1002,7 @@ fn real_cli_notification_export_refuses_overwrite_and_input_output_alias() {
 }
 
 /// Malformed originals and real parent/absolute escape attempts produce no notification destination.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "macos", windows))]
 #[test]
 fn real_cli_notification_export_refuses_malformed_and_actual_escape_inputs() {
     let raw = queue_raw(&queue_fixture());
@@ -1045,7 +1045,7 @@ fn real_cli_notification_export_refuses_malformed_and_actual_escape_inputs() {
 
 /// Inject real queue drift only when the maintained publisher has a complete staged file.
 /// Its exact staging-name coupling qualifies this as one implementation-specific final-fence control.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "macos", windows))]
 struct DriftAtNotificationPublication {
     /// Actual owned fixture root, containing only the original and publisher staging.
     root: PathBuf,
@@ -1053,7 +1053,7 @@ struct DriftAtNotificationPublication {
     staged: Option<Vec<u8>>,
 }
 
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "macos", windows))]
 impl WorkControl for DriftAtNotificationPublication {
     /// Observe a real publisher stage, then alter the held queue before its final proof check.
     fn checkpoint(&mut self, _stage: Stage, _progress: ProgressUpdate) -> Result<(), WorkError> {
@@ -1091,7 +1091,7 @@ impl WorkControl for DriftAtNotificationPublication {
 }
 
 /// Real command publication refuses queue drift after complete staging and before the guarded rename.
-#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[cfg(any(target_os = "linux", target_os = "macos", windows))]
 #[test]
 fn real_notification_command_final_owner_fence_refuses_queue_drift_after_staging() {
     use crate::review::commands::{CommandError, ExportNotificationsOptions, export_notifications};
@@ -1119,21 +1119,4 @@ fn real_notification_command_final_owner_fence_refuses_queue_drift_after_staging
             .to_str()
             .is_some_and(|name| name.starts_with(".forge-authoring-file-"))
     }));
-}
-
-/// Real Windows CLI dispatch refuses the unavailable no-replace publisher rather than claiming an export.
-/// Only a future actual Windows run can qualify this proposed platform control.
-#[cfg(windows)]
-#[test]
-fn real_windows_notification_cli_refuses_unsupported_publication_without_destination() {
-    let raw = queue_raw(&queue_fixture());
-    let fixture = file_fixture(&raw, None);
-    let result = invoke_notification_cli(
-        &fixture.root,
-        Path::new("queue.json"),
-        Path::new("windows-notices.json"),
-    );
-    assert!(matches!(result, Err(crate::ForgeError::Io(_))));
-    assert!(!fixture.root.join("windows-notices.json").exists());
-    assert_eq!(std::fs::read(fixture.root.join("queue.json")).unwrap(), raw);
 }
