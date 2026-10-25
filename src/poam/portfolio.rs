@@ -108,6 +108,10 @@ pub(super) struct Counts {
     pub before_first_assertion: usize,
     /// Rows asserted cancelled at as-of; no source conclusion is changed.
     pub cancelled: usize,
+    /// Rows asserted `completed-asserted` at as-of; asserted, not verified closure.
+    pub completed_asserted: usize,
+    /// Rows asserted `accepted-risk-asserted` at as-of; declared acceptance, authority unverified.
+    pub accepted_risk_asserted: usize,
 }
 
 /// One fully admitted plan, without assessment prose, names or absolute paths.
@@ -350,7 +354,8 @@ pub fn prepare_native_portfolio(
 /// Optional authoring-only inputs are a preview, not S1 supplied-artifact support.
 /// Exactly one current public `WorkflowManifest` and five-source workflow is admitted per
 /// plan. M13's structural prior-only comparison is not used. Completion/risk-acceptance
-/// history remains refused by `workflow::parse/prepare`; cancelled records remain counted.
+/// assertions are admitted only through the D064 reviewer profile in `workflow::parse`;
+/// terminal and cancelled records remain counted and are never overdue.
 /// Retained original source occurrences total at most 100 MiB. This is not a peak heap
 /// bound: existing JSON/source validation has additional bounded transient allocations.
 /// # Errors
@@ -994,6 +999,10 @@ fn count_plans(plans: &[PlanRow]) -> Result<Counts, ForgeError> {
             counts.blocked += usize::from(row.state_at_as_of == Some(State::Blocked));
             counts.before_first_assertion += usize::from(row.state_at_as_of.is_none());
             counts.cancelled += usize::from(row.state_at_as_of == Some(State::Cancelled));
+            counts.completed_asserted +=
+                usize::from(row.state_at_as_of == Some(State::CompletedAsserted));
+            counts.accepted_risk_asserted +=
+                usize::from(row.state_at_as_of == Some(State::AcceptedRiskAsserted));
         }
     }
     Ok(counts)
@@ -1008,7 +1017,7 @@ fn validation_scope(counts: &Counts) -> &'static str {
     }
 }
 
-/// Guard complete counts and the public nonterminal boundary before rendering.
+/// Guard complete counts, unique plans and the five-source receipt shape before rendering.
 pub(super) fn validate_report(report: &PortfolioReport) -> Result<(), ForgeError> {
     full_date(&report.as_of)?;
     if report.schema_version != SCHEMA_VERSION
@@ -1020,21 +1029,12 @@ pub(super) fn validate_report(report: &PortfolioReport) -> Result<(), ForgeError
     {
         return Err(error("portfolio report scope or complete denominators differ"));
     }
-    let undisposed =
-        |state| matches!(state, State::CompletedAsserted | State::AcceptedRiskAsserted);
     let mut plan_ids = BTreeSet::new();
     for plan in &report.plans {
         if !plan_ids.insert(&plan.uuid)
             || plan.sources.len() != 5
             || plan.records.is_empty()
             || plan.supplied_native_matched != plan.supplied_native_sha256.is_some()
-            || plan.records.iter().any(|row| {
-                undisposed(row.declared_state) || row.state_at_as_of.is_some_and(undisposed)
-            })
-            || plan
-                .timeline
-                .iter()
-                .any(|event| undisposed(event.to) || event.from.is_some_and(undisposed))
         {
             return Err(error("portfolio report violates current public workflow admission"));
         }
@@ -1301,9 +1301,9 @@ mod tests {
                     "history":[{"key":"initial","actor":{"role_id":"owner","party_key":"alice"},"at":"2026-01-01T00:00:00Z","from":null,"to":"planned","rationale":"Explicit plan","closure":null}]}]} ]})
     }
 
-    /// The public entry point refuses terminal history and duplicate plans before any missing-source read.
+    /// The public entry point admits D064 terminal history and refuses duplicate plans before any missing-source read.
     #[test]
-    fn public_portfolio_preserves_default_terminal_refusal_and_stable_plan_uniqueness() {
+    fn public_portfolio_admits_asserted_terminal_history_and_keeps_stable_plan_uniqueness() {
         let dir = tempfile::tempdir().unwrap();
         let mut authored = declaration();
         let original = serde_json::to_vec(&authored).unwrap();
@@ -1324,7 +1324,7 @@ mod tests {
             authored["items"][0]["history"].as_array_mut().unwrap().push(json!({"key":"terminal","actor":{"role_id":"owner","party_key":"alice"},
                 "at":"2026-01-10T00:00:00Z","from":"in-progress","to":state,"rationale":"Explicit assertion",
                 "closure":{"reviewer":{"role_id":"reviewer","party_key":"bob"},"reviewed_at":"2026-01-10T12:00:00Z",
-                    "rationale":"Declared review only","evidence":[{"key":"proof","href":"proof.json","expected_sha256":"c".repeat(64)}]}}));
+                    "rationale":"Declared review only","evidence":[{"key":"proof","href":"proof.json","expected_sha256":"c".repeat(64),"captured_at":"2026-01-08T00:00:00Z"}]}}));
             if state == "completed-asserted" {
                 let step = &mut authored["items"][0]["milestones"][0];
                 step["state"] = json!("completed-asserted");
@@ -1333,15 +1333,17 @@ mod tests {
                 step["history"].as_array_mut().unwrap().push(json!({"key":"terminal","actor":{"role_id":"owner","party_key":"alice"},
                     "at":"2026-01-09T00:00:00Z","from":"in-progress","to":"completed-asserted","rationale":"Explicit milestone assertion",
                     "closure":{"reviewer":{"role_id":"reviewer","party_key":"bob"},"reviewed_at":"2026-01-09T12:00:00Z",
-                        "rationale":"Declared review only","evidence":[{"key":"proof","href":"proof.json","expected_sha256":"c".repeat(64)}]}}));
+                        "rationale":"Declared review only","evidence":[{"key":"proof","href":"proof.json","expected_sha256":"c".repeat(64),"captured_at":"2026-01-08T00:00:00Z"}]}}));
             } else {
                 authored["items"][0]["source_refs"].as_array_mut().unwrap().push(json!({"kind":"risk","key":"risk",
                     "uuid":"33333333-3333-4333-8333-333333333333","result_uuid":"11111111-1111-4111-8111-111111111111","expected_sha256":"c".repeat(64)}));
             }
-            std::fs::write(&path, serde_json::to_vec(&authored).unwrap()).unwrap();
+            let bytes = serde_json::to_vec(&authored).unwrap();
+            workflow::parse(&bytes).unwrap();
+            std::fs::write(&path, bytes).unwrap();
             let cause =
                 prepare(std::slice::from_ref(&input), "2026-02-01", 0).unwrap_err().to_string();
-            assert!(cause.contains("pending recorded closure disposition"), "{cause}");
+            assert!(!cause.contains("closure disposition"), "{cause}");
         }
     }
 

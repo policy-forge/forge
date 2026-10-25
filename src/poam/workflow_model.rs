@@ -4,6 +4,10 @@
 //! does not create native local finding/risk references without their full native
 //! dependency closures. Namespaced properties carry authored workflow declarations;
 //! independent-tool interpretation and approval of this subset remain open.
+//!
+//! D064 terminal assertions and supersession links appear only as Forge-namespaced
+//! item properties. No native risk is emitted, so an assertion never sets a native
+//! risk status of `closed` or `deviation-approved`, and no date-time is fabricated.
 
 use std::io::Write as _;
 use std::sync::OnceLock;
@@ -12,7 +16,9 @@ use serde::Serialize;
 use uuid::Uuid;
 
 use super::manifest::{ArtifactManifest, RoleManifest};
-use super::workflow::{MAX_OUTPUT_BYTES, Milestone, Owner, WorkflowManifest};
+use super::workflow::{
+    Actor, EvidenceAssertion, MAX_OUTPUT_BYTES, Milestone, Owner, State, WorkItem, WorkflowManifest,
+};
 use crate::ForgeError;
 
 /// Stable namespace for explicit Forge workflow declaration properties; never fetched.
@@ -126,6 +132,29 @@ struct NativeMilestone<'a> {
     declaration: &'a Milestone,
 }
 
+/// Terminal reviewer assertion projected as one namespaced property, never native closure.
+#[derive(Serialize)]
+struct NativeAssertion<'a> {
+    /// Exact admitted terminal assertion state label.
+    status: &'static str,
+    /// Fixed qualification that the record is an assertion, not verification or approval.
+    qualification: &'static str,
+    /// Declared asserting actor key and role.
+    asserted_by: &'a Actor,
+    /// Author-supplied RFC3339 assertion time, copied without normalization.
+    asserted_at: &'a str,
+    /// Declared independent reviewer key and role.
+    reviewer: &'a Actor,
+    /// Same-plan native party UUID of the reviewer.
+    reviewer_party_uuid: String,
+    /// Author-supplied RFC3339 review time, copied without normalization.
+    reviewed_at: &'a str,
+    /// Author-supplied review rationale.
+    rationale: &'a str,
+    /// Complete reviewer-declared evidence references with hash and capture time.
+    evidence: &'a [EvidenceAssertion],
+}
+
 /// Explicit property in the fixed Forge workflow namespace.
 #[derive(Serialize)]
 struct Property {
@@ -192,39 +221,38 @@ pub(super) fn render(manifest: &WorkflowManifest) -> Result<Vec<u8>, ForgeError>
     let artifact = relative_uri(&manifest.source.assessment_results.artifact)?;
     let mut native_items = Vec::with_capacity(items.len());
     for item in items {
+        let mut props = vec![
+            property("stable-key", item.key.clone()),
+            property("source-references", declaration(&item.source_refs)?),
+            property("owners", declaration(&native_owners(&manifest.document.key, &item.owners))?),
+            property("target-date", item.target_date.clone()),
+            property("state", item.state.as_str().to_string()),
+            property("history", declaration(&item.history)?),
+            property(
+                "milestones",
+                declaration(
+                    &item
+                        .milestones
+                        .iter()
+                        .map(|step| NativeMilestone {
+                            uuid: super::identity::milestone(
+                                &manifest.document.key,
+                                &item.key,
+                                &step.key,
+                            )
+                            .to_string(),
+                            declaration: step,
+                        })
+                        .collect::<Vec<_>>(),
+                )?,
+            ),
+        ];
+        props.extend(terminal_properties(&manifest.document.key, item)?);
         native_items.push(NativeItem {
             uuid: super::identity::item(&manifest.document.key, &item.key).to_string(),
             title: item.title.clone(),
             description: item.description.clone(),
-            props: vec![
-                property("stable-key", item.key.clone()),
-                property("source-references", declaration(&item.source_refs)?),
-                property(
-                    "owners",
-                    declaration(&native_owners(&manifest.document.key, &item.owners))?,
-                ),
-                property("target-date", item.target_date.clone()),
-                property("state", item.state.as_str().to_string()),
-                property("history", declaration(&item.history)?),
-                property(
-                    "milestones",
-                    declaration(
-                        &item
-                            .milestones
-                            .iter()
-                            .map(|step| NativeMilestone {
-                                uuid: super::identity::milestone(
-                                    &manifest.document.key,
-                                    &item.key,
-                                    &step.key,
-                                )
-                                .to_string(),
-                                declaration: step,
-                            })
-                            .collect::<Vec<_>>(),
-                    )?,
-                ),
-            ],
+            props,
             links: item
                 .source_refs
                 .iter()
@@ -262,6 +290,39 @@ pub(super) fn render(manifest: &WorkflowManifest) -> Result<Vec<u8>, ForgeError>
     let bytes = json_line(&native)?;
     validate_native(&bytes)?;
     Ok(bytes)
+}
+
+/// Project an admitted terminal assertion and an explicit supersession link as namespaced props.
+///
+/// The final history event of a `completed-asserted` or `accepted-risk-asserted` item
+/// carries the validated reviewer assertion. Cancelled items have no reviewer record.
+fn terminal_properties(plan_key: &str, item: &WorkItem) -> Result<Vec<Property>, ForgeError> {
+    let mut props = Vec::new();
+    if matches!(item.state, State::CompletedAsserted | State::AcceptedRiskAsserted) {
+        let event = item.history.last().ok_or_else(|| error("terminal history is absent"))?;
+        let closure =
+            event.closure.as_ref().ok_or_else(|| error("terminal reviewer assertion is absent"))?;
+        props.push(property("assertion-status", item.state.as_str().to_string()));
+        props.push(property(
+            "terminal-assertion",
+            declaration(&NativeAssertion {
+                status: item.state.as_str(),
+                qualification: "Asserted outcome only; Forge does not verify closure, evidence or reviewer authority.",
+                asserted_by: &event.actor,
+                asserted_at: &event.at,
+                reviewer: &closure.reviewer,
+                reviewer_party_uuid: scoped_uuid(plan_key, "party", &closure.reviewer.party_key)
+                    .to_string(),
+                reviewed_at: &closure.reviewed_at,
+                rationale: &closure.rationale,
+                evidence: &closure.evidence,
+            })?,
+        ));
+    }
+    if let Some(prior) = &item.supersedes {
+        props.push(property("supersedes", super::identity::item(plan_key, prior).to_string()));
+    }
+    Ok(props)
 }
 
 /// Correlate each exact authored responsibility with its declared native party, without authority inference.

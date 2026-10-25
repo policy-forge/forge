@@ -1,7 +1,12 @@
-//! Proposed author-supplied POA&M item workflow over the unchanged F07 source profile.
+//! Author-supplied POA&M item workflow over the unchanged F07 source profile.
 //!
 //! These checks validate declarations, references and schedule arithmetic. They do
-//! not authenticate actors, verify remediation or approve the proposed closure policy.
+//! not authenticate actors or verify remediation. Terminal `completed-asserted` and
+//! `accepted-risk-asserted` states are admitted under the 2026-10-25 D064 owner
+//! disposition: each needs an explicit reviewer independent of the record's owners
+//! and hashed, time-stamped evidence references. An admitted assertion records that
+//! someone asserted the outcome; it never claims verified closure, and risk acceptance
+//! is declared, never approved by Forge. Reopening uses a new item that explicitly supersedes a terminal item.
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -66,6 +71,11 @@ pub struct WorkItem {
     pub history: Vec<Event>,
     /// Author-ordered milestone DAG; every dependency precedes its dependent record.
     pub milestones: Vec<Milestone>,
+    /// Optional immutable key of the terminal item in this plan that this new item reopens.
+    ///
+    /// The superseded item keeps its complete terminal history; the link never rewrites it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supersedes: Option<String>,
 }
 
 /// Declared responsibility; this does not authenticate or authorize the party.
@@ -100,9 +110,9 @@ pub enum State {
     InProgress,
     /// Work is asserted blocked, with attributed rationale.
     Blocked,
-    /// Completion is asserted, subject to proposed reviewer evidence validation.
+    /// Completion is asserted with independent reviewer evidence; it is not verified closure.
     CompletedAsserted,
-    /// Risk acceptance is asserted; actor authority remains unverified.
+    /// Risk acceptance is declared/asserted with independent review; no acceptance authority is verified.
     AcceptedRiskAsserted,
     /// Work is explicitly cancelled; no finding or risk is changed.
     Cancelled,
@@ -129,7 +139,7 @@ impl State {
     }
 }
 
-/// One immutable status assertion, with optional proposed terminal review record.
+/// One immutable status assertion, with the required terminal reviewer assertion where applicable.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Event {
@@ -149,11 +159,11 @@ pub struct Event {
     pub closure: Option<Closure>,
 }
 
-/// Proposed terminal review evidence profile; approval of its sufficiency remains open.
+/// D064 terminal reviewer assertion; Forge never judges evidence sufficiency or reviewer authority.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Closure {
-    /// Explicit different party reviewing the terminal assertion.
+    /// Explicit reviewer key and role, independent of the asserting actor and every record owner.
     pub reviewer: Actor,
     /// Explicit RFC3339 review time, no earlier than the status assertion.
     pub reviewed_at: String,
@@ -173,6 +183,11 @@ pub struct EvidenceAssertion {
     pub href: String,
     /// Lowercase asserted SHA256; bytes are not read by this first workflow lane.
     pub expected_sha256: String,
+    /// Explicit RFC3339 capture date-time with offset, no later than the review.
+    ///
+    /// Required for every terminal evidence reference; absence is refused, never defaulted.
+    #[serde(default)]
+    pub captured_at: Option<String>,
 }
 
 /// One accountable milestone with explicit DAG edges, target and assertion history.
@@ -299,7 +314,9 @@ impl PreparedWorkflow {
 
 /// Strict-parse complete authored declarations without reading any source artifacts.
 /// # Errors
-/// Rejects duplicate/unknown fields, unbounded input, invalid workflow rules or undisposed completion/risk-acceptance history.
+/// Rejects duplicate/unknown fields, unbounded input, invalid workflow rules, terminal
+/// assertions without an independent reviewer and hashed time-stamped evidence, or
+/// invalid supersession links.
 pub fn parse(bytes: &[u8]) -> Result<WorkflowManifest, ForgeError> {
     if bytes.len() as u64 > manifest::MAX_MANIFEST_BYTES {
         return Err(error("manifest exceeds the 4 MiB raw bound"));
@@ -313,15 +330,13 @@ pub fn parse(bytes: &[u8]) -> Result<WorkflowManifest, ForgeError> {
     let manifest: WorkflowManifest = serde_json::from_value(value)
         .map_err(|_| error("workflow fields or types do not match the closed contract"))?;
     validate_shape(&manifest)?;
-    refuse_undisposed_closure(&manifest)?;
     Ok(manifest)
 }
 
 /// Prepare a complete native artifact and deterministic report from actual F07 capture.
 ///
-/// No writes, network, inferred owners/dates, or source mutation occur. Terminal
-/// sufficiency and the editable source-of-truth remain proposed owner dispositions.
-/// Completion and risk-acceptance assertions are refused by public admission.
+/// No writes, network, inferred owners/dates, or source mutation occur. Completion and
+/// risk-acceptance assertions are admitted only with the D064 reviewer profile.
 /// # Errors
 /// Rejects invalid authored declarations, exact source drift, output bounds or native schema errors.
 pub fn prepare(
@@ -351,21 +366,6 @@ pub fn prepare(
         schedule,
         review_required: report.overdue > 0 || report.due_soon > 0 || report.blocked > 0,
     })
-}
-
-/// Keep completed/risk-accepted assertions outside shipping admission until the recorded closure disposition exists.
-fn refuse_undisposed_closure(manifest: &WorkflowManifest) -> Result<(), ForgeError> {
-    let reviewed =
-        |event: &Event| matches!(event.to, State::CompletedAsserted | State::AcceptedRiskAsserted);
-    if manifest.items.iter().any(|item| {
-        item.history.iter().any(reviewed)
-            || item.milestones.iter().any(|step| step.history.iter().any(reviewed))
-    }) {
-        return Err(error(
-            "completion and risk-acceptance assertions require the pending recorded closure disposition",
-        ));
-    }
-    Ok(())
 }
 
 /// Validate every authored record, reference, history and whole collection bound.
@@ -422,6 +422,45 @@ fn validate_shape_with_minimum(
         }
         validate_item(item, index, &manifest.source.result.uuid, modified, &roles, &parties)?;
     }
+    validate_supersession(manifest)
+}
+
+/// Admit reopening only as a new item explicitly linked to one terminal item of the same plan.
+///
+/// Each terminal item has at most one successor, and the successor's history begins
+/// strictly after the superseded item's final assertion, so links cannot form cycles.
+fn validate_supersession(manifest: &WorkflowManifest) -> Result<(), ForgeError> {
+    let items: BTreeMap<_, _> =
+        manifest.items.iter().map(|item| (item.key.as_str(), item)).collect();
+    let mut superseded = BTreeSet::new();
+    for (index, item) in manifest.items.iter().enumerate() {
+        let Some(prior_key) = &item.supersedes else { continue };
+        let path = format!("$.items[{index}].supersedes");
+        key(prior_key).map_err(|cause| locate(&path, &cause))?;
+        let prior = items
+            .get(prior_key.as_str())
+            .filter(|prior| prior.key != item.key)
+            .ok_or_else(|| {
+                locate(&path, &error("supersession must name a different item in the same plan"))
+            })?;
+        if !prior.state.terminal() {
+            return Err(locate(&path, &error("supersession must name a terminal item")));
+        }
+        if !superseded.insert(prior_key.as_str()) {
+            return Err(locate(
+                &path,
+                &error("a terminal item can be superseded by only one new item"),
+            ));
+        }
+        let ended = prior.history.last().map(|event| time(&event.at)).transpose()?;
+        let began = item.history.first().map(|event| time(&event.at)).transpose()?;
+        if began.zip(ended).is_none_or(|(began, ended)| began <= ended) {
+            return Err(locate(
+                &path,
+                &error("superseding history must begin after the superseded terminal assertion"),
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -452,6 +491,7 @@ fn validate_item(
     text(&item.title)?;
     text(&item.description)?;
     validate_owners(&item.owners, roles, parties)?;
+    let owners: BTreeSet<&str> = item.owners.iter().map(|owner| owner.party_key.as_str()).collect();
     let target = full_date(&item.target_date)?;
     collection(item.source_refs.len(), 1, manifest::MAX_REFERENCES)?;
     let mut selected = BTreeSet::new();
@@ -463,7 +503,7 @@ fn validate_item(
             return Err(error("source references duplicate or belong to another result"));
         }
     }
-    validate_history(&item.history, item.state, modified, roles, parties)
+    validate_history(&item.history, item.state, modified, roles, parties, &owners)
         .map_err(|cause| locate(&format!("$.items[{index}].history"), &cause))?;
     validate_milestones(item, index, target, modified, roles, parties)?;
     if item.state == State::AcceptedRiskAsserted
@@ -518,13 +558,15 @@ fn validate_milestones(
         if step.history.iter().any(|event| event.to == State::AcceptedRiskAsserted) {
             return Err(error("milestones cannot assert risk acceptance"));
         }
-        validate_history(&step.history, step.state, modified, roles, parties)
+        let owners: BTreeSet<&str> =
+            item.owners.iter().chain(&step.owners).map(|owner| owner.party_key.as_str()).collect();
+        validate_history(&step.history, step.state, modified, roles, parties, &owners)
             .map_err(|cause| locate(&format!("{path}.history"), &cause))?;
     }
     Ok(())
 }
 
-/// Proposed completion relation requires every milestone review to precede the item completion assertion.
+/// Item completion requires every milestone's reviewed completion assertion to precede it.
 fn validate_completion(item: &WorkItem) -> Result<(), ForgeError> {
     let completion =
         item.history.last().ok_or_else(|| error("item completion history is absent"))?;
@@ -606,12 +648,16 @@ fn validate_actor(
 }
 
 /// Validate an entire finite history, including explicit initial attribution and terminal review declarations.
+///
+/// `owners` holds every party key responsible for the record (and, for milestones,
+/// its parent item); a terminal reviewer must be none of them.
 fn validate_history(
     history: &[Event],
     state: State,
     modified: DateTime<FixedOffset>,
     roles: &BTreeSet<&str>,
     parties: &BTreeSet<&str>,
+    owners: &BTreeSet<&str>,
 ) -> Result<(), ForgeError> {
     collection(history.len(), 1, manifest::MAX_REFERENCES)?;
     let mut keys = BTreeSet::new();
@@ -635,35 +681,10 @@ fn validate_history(
         }
         let reviewed = matches!(event.to, State::CompletedAsserted | State::AcceptedRiskAsserted);
         if reviewed {
-            let closure = event
-                .closure
-                .as_ref()
-                .ok_or_else(|| error("terminal assertion requires explicit reviewer evidence"))?;
-            validate_actor(&closure.reviewer, roles, parties)?;
-            text(&closure.rationale)?;
-            let reviewed_at = time(&closure.reviewed_at)?;
-            if closure.reviewer.party_key == event.actor.party_key
-                || reviewed_at < at
-                || reviewed_at > modified
-            {
-                return Err(error(
-                    "review must name a different party and a coherent explicit time",
-                ));
-            }
-            collection(closure.evidence.len(), 1, 64)?;
-            let mut evidence = BTreeSet::new();
-            for reference in &closure.evidence {
-                key(&reference.key)?;
-                if !evidence.insert(&reference.key) {
-                    return Err(error("duplicate closure evidence key"));
-                }
-                evidence_href(&reference.href)?;
-                json_strict::validate_lowercase_sha256(
-                    "closure.evidence.expected_sha256",
-                    &reference.expected_sha256,
-                )
-                .map_err(|_| error("closure evidence hash must be lowercase SHA256"))?;
-            }
+            let closure = event.closure.as_ref().ok_or_else(|| {
+                error("terminal assertion requires an explicit independent reviewer assertion")
+            })?;
+            validate_closure(closure, &event.actor, at, modified, roles, parties, owners)?;
         } else if event.closure.is_some() {
             return Err(error(
                 "review evidence is only allowed on completion or risk-acceptance assertions",
@@ -678,7 +699,59 @@ fn validate_history(
     Ok(())
 }
 
-/// Proposed finite transition table; every terminal state requires a new explicitly linked identity to reopen.
+/// Validate one D064 reviewer assertion: independent reviewer, coherent times, hashed time-stamped evidence.
+fn validate_closure(
+    closure: &Closure,
+    actor: &Actor,
+    at: DateTime<FixedOffset>,
+    modified: DateTime<FixedOffset>,
+    roles: &BTreeSet<&str>,
+    parties: &BTreeSet<&str>,
+    owners: &BTreeSet<&str>,
+) -> Result<(), ForgeError> {
+    validate_actor(&closure.reviewer, roles, parties)?;
+    text(&closure.rationale)?;
+    if closure.reviewer.party_key == actor.party_key {
+        return Err(error("terminal assertion reviewer must differ from the asserting actor"));
+    }
+    if owners.contains(closure.reviewer.party_key.as_str()) {
+        return Err(error("terminal assertion reviewer must be independent of every owner"));
+    }
+    let reviewed_at = time(&closure.reviewed_at)?;
+    if reviewed_at < at || reviewed_at > modified {
+        return Err(error(
+            "review time must not precede the assertion or exceed document last_modified",
+        ));
+    }
+    if closure.evidence.is_empty() {
+        return Err(error("terminal assertion requires at least one evidence reference"));
+    }
+    collection(closure.evidence.len(), 1, 64)?;
+    let mut evidence = BTreeSet::new();
+    for reference in &closure.evidence {
+        key(&reference.key)?;
+        if !evidence.insert(&reference.key) {
+            return Err(error("duplicate closure evidence key"));
+        }
+        evidence_href(&reference.href)?;
+        json_strict::validate_lowercase_sha256(
+            "closure.evidence.expected_sha256",
+            &reference.expected_sha256,
+        )
+        .map_err(|_| error("closure evidence hash must be lowercase SHA256"))?;
+        let captured = reference
+            .captured_at
+            .as_deref()
+            .ok_or_else(|| error("closure evidence requires an explicit captured_at date-time"))
+            .and_then(time)?;
+        if captured > reviewed_at {
+            return Err(error("closure evidence capture time must not follow the review"));
+        }
+    }
+    Ok(())
+}
+
+/// Finite transition table; every terminal state requires a new explicitly linked identity to reopen.
 fn transition(from: Option<State>, to: State) -> bool {
     match from {
         None => to == State::Planned,
@@ -712,8 +785,6 @@ pub fn validate_successor(
 ) -> Result<(), ForgeError> {
     validate_shape(previous)?;
     validate_shape(current)?;
-    refuse_undisposed_closure(previous)?;
-    refuse_undisposed_closure(current)?;
     if previous.document.key != current.document.key {
         return Err(error("baseline plan key differs"));
     }
@@ -727,6 +798,9 @@ pub fn validate_successor(
             error("baseline item removal requires the future explicit supersession workflow")
         })?;
         prefix(&old.history, &item.history)?;
+        if old.supersedes != item.supersedes {
+            return Err(error("supersession links are immutable once declared"));
+        }
         if old.state.terminal() && *old != **item {
             return Err(error("terminal item revision requires a new explicitly linked identity"));
         }
@@ -965,7 +1039,8 @@ mod tests {
     /// Construct a reviewer assertion with metadata-only evidence; no content is read.
     fn closure() -> Value {
         json!({"reviewer":{"role_id":"reviewer","party_key":"bob"},"reviewed_at":"2026-01-10T12:00:00Z",
-            "rationale":"SENSITIVE REVIEW RATIONALE","evidence":[{"key":"proof","href":"evidence/proof.json","expected_sha256":"c".repeat(64)}]})
+            "rationale":"SENSITIVE REVIEW RATIONALE","evidence":[{"key":"proof","href":"evidence/proof.json","expected_sha256":"c".repeat(64),
+                "captured_at":"2026-01-09T08:00:00Z"}]})
     }
 
     /// Append one explicit assertion to a JSON work record without mutating production state.
@@ -1277,7 +1352,7 @@ mod tests {
             review,
         );
         assert!(proposal(&value).is_ok());
-        assert!(parsed(&value).unwrap_err().to_string().contains("recorded closure disposition"));
+        assert!(parsed(&value).is_ok());
         let mut copy = value.clone();
         copy["items"][0]["history"][2]["at"] = json!("2026-01-10T01:00:00Z");
         assert!(proposal(&copy).is_err());
@@ -1287,9 +1362,8 @@ mod tests {
         assert!(proposal(&copy).is_err());
     }
 
-    /// Public parsing and preparation cannot admit otherwise structurally valid proposed terminal review records.
-    #[test]
-    fn shipping_admission_refuses_undisposed_closure_without_a_public_bypass() {
+    /// Accepted-risk fixture: explicit risk source, owner alice asserts, independent bob reviews.
+    fn accepted() -> Value {
         let mut value = declaration();
         value["items"][0]["source_refs"][0]["kind"] = json!("risk");
         event(
@@ -1300,14 +1374,234 @@ mod tests {
             "accepted-risk-asserted",
             closure(),
         );
-        assert!(proposal(&value).is_ok());
+        value
+    }
+
+    /// Public parsing and preparation admit the D064 reviewer profile; refusal is no longer the closure gate.
+    #[test]
+    fn public_admission_accepts_independent_reviewer_with_hashed_time_stamped_evidence() {
+        let value = accepted();
+        let manifest = parsed(&value).unwrap();
+        assert_eq!(manifest.items[0].state, State::AcceptedRiskAsserted);
         let bytes = serde_json::to_vec(&value).unwrap();
-        assert!(parse(&bytes).unwrap_err().to_string().contains("recorded closure disposition"));
-        assert!(
-            prepare(Path::new("missing/manifest.json"), &bytes, "2026-01-20", 7, None)
-                .unwrap_err()
-                .to_string()
-                .contains("recorded closure disposition")
+        let cause = prepare(Path::new("missing/manifest.json"), &bytes, "2026-01-20", 7, None)
+            .unwrap_err()
+            .to_string();
+        assert!(!cause.contains("closure disposition"), "{cause}");
+    }
+
+    /// Owner self-assertion, actor self-review and parent-item owners as milestone reviewers are refused.
+    #[test]
+    fn terminal_reviewer_must_be_independent_of_actor_and_every_owner() {
+        let mut value = accepted();
+        value["parties"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"key":"carol","type":"person","name":"SENSITIVE CO-OWNER"}));
+        assert!(parsed(&value).is_ok());
+        let mut actor = value.clone();
+        actor["items"][0]["history"][1]["closure"]["reviewer"]["party_key"] = json!("alice");
+        let cause = parsed(&actor).unwrap_err().to_string();
+        assert!(cause.contains("must differ from the asserting actor"), "{cause}");
+        let mut owner = value.clone();
+        owner["items"][0]["owners"].as_array_mut().unwrap().push(
+            json!({"role_id":"owner","party_key":"bob","rationale":"Reviewer is also an owner"}),
+        );
+        let cause = parsed(&owner).unwrap_err().to_string();
+        assert!(cause.contains("independent of every owner"), "{cause}");
+        let mut milestone = declaration();
+        milestone["items"][0]["owners"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"role_id":"owner","party_key":"bob","rationale":"Item co-owner only"}));
+        let step = &mut milestone["items"][0]["milestones"][0];
+        event(step, "start", "2026-01-02T00:00:00Z", "planned", "in-progress", Value::Null);
+        event(step, "done", "2026-01-10T00:00:00Z", "in-progress", "completed-asserted", closure());
+        let cause = parsed(&milestone).unwrap_err().to_string();
+        assert!(cause.contains("independent of every owner"), "{cause}");
+        milestone["items"][0]["owners"].as_array_mut().unwrap().pop();
+        assert!(parsed(&milestone).is_ok());
+    }
+
+    /// Missing review, evidence, hash or capture time and incoherent times are invalid with clear reasons.
+    #[test]
+    fn terminal_evidence_requires_hash_and_explicit_capture_time() {
+        let value = accepted();
+        for (pointer, replacement, reason) in [
+            ("/items/0/history/1/closure", Value::Null, "independent reviewer assertion"),
+            ("/items/0/history/1/closure/evidence", json!([]), "at least one evidence reference"),
+            (
+                "/items/0/history/1/closure/evidence/0/expected_sha256",
+                json!(""),
+                "lowercase SHA256",
+            ),
+            (
+                "/items/0/history/1/closure/evidence/0/expected_sha256",
+                json!("C".repeat(64)),
+                "lowercase SHA256",
+            ),
+            ("/items/0/history/1/closure/evidence/0/captured_at", Value::Null, "captured_at"),
+            (
+                "/items/0/history/1/closure/evidence/0/captured_at",
+                json!("2026-01-09T08:00:00"),
+                "RFC3339",
+            ),
+            ("/items/0/history/1/closure/evidence/0/captured_at", json!("2026-01-09"), "RFC3339"),
+            (
+                "/items/0/history/1/closure/evidence/0/captured_at",
+                json!("2026-01-10T12:00:01Z"),
+                "must not follow the review",
+            ),
+            (
+                "/items/0/history/1/closure/reviewed_at",
+                json!("2026-01-09T00:00:00Z"),
+                "must not precede the assertion",
+            ),
+            ("/items/0/history/1/closure/rationale", json!(" "), "authored text"),
+        ] {
+            let mut copy = value.clone();
+            *copy.pointer_mut(pointer).unwrap() = replacement;
+            let cause = parsed(&copy).unwrap_err().to_string();
+            assert!(cause.contains(reason), "{pointer}: {cause}");
+        }
+        for field in ["expected_sha256", "captured_at"] {
+            let mut copy = value.clone();
+            copy["items"][0]["history"][1]["closure"]["evidence"][0]
+                .as_object_mut()
+                .unwrap()
+                .remove(field);
+            assert!(parsed(&copy).is_err(), "{field}");
+        }
+    }
+
+    /// Terminal asserted records never transition further and their history cannot be rewritten.
+    #[test]
+    fn terminal_assertions_never_transition_and_history_is_never_rewritten() {
+        let old = parsed(&accepted()).unwrap();
+        let mut further = accepted();
+        event(
+            &mut further["items"][0],
+            "again",
+            "2026-01-12T00:00:00Z",
+            "accepted-risk-asserted",
+            "in-progress",
+            Value::Null,
+        );
+        assert!(parsed(&further).unwrap_err().to_string().contains("invalid prior state"));
+        let mut rewritten = accepted();
+        rewritten["items"][0]["history"][1]["closure"]["rationale"] = json!("Rewritten review");
+        assert!(validate_successor(&old, &parsed(&rewritten).unwrap()).is_err());
+        let mut retitled = accepted();
+        retitled["items"][0]["title"] = json!("Retitled terminal work");
+        assert!(validate_successor(&old, &parsed(&retitled).unwrap()).is_err());
+        assert!(validate_successor(&old, &old).is_ok());
+    }
+
+    /// Append a new item that explicitly supersedes `work`, starting after its terminal assertion.
+    fn reopened(base: Value) -> Value {
+        let mut value = base;
+        let mut next = declaration()["items"][0].clone();
+        next["key"] = json!("work-reopened");
+        next["history"][0]["at"] = json!("2026-01-15T00:00:00Z");
+        next["milestones"][0]["history"][0]["at"] = json!("2026-01-15T00:00:00Z");
+        next["supersedes"] = json!("work");
+        value["items"].as_array_mut().unwrap().push(next);
+        value
+    }
+
+    /// Reopen links one new item to one terminal item; every invalid link is refused at its path.
+    #[test]
+    fn reopen_creates_a_new_item_explicitly_linked_to_one_terminal_item() {
+        let value = reopened(accepted());
+        let manifest = parsed(&value).unwrap();
+        assert_eq!(manifest.items[1].supersedes.as_deref(), Some("work"));
+        assert_eq!(manifest.items[0].history, parsed(&accepted()).unwrap().items[0].history);
+        let old = parsed(&accepted()).unwrap();
+        assert!(validate_successor(&old, &manifest).is_ok());
+        for (replacement, reason) in [
+            (json!("work-reopened"), "different item"),
+            (json!("missing"), "different item"),
+            (json!(""), "key must be"),
+        ] {
+            let mut copy = value.clone();
+            copy["items"][1]["supersedes"] = replacement;
+            let cause = parsed(&copy).unwrap_err().to_string();
+            assert!(cause.contains("$.items[1].supersedes") && cause.contains(reason), "{cause}");
+        }
+        let nonterminal = reopened(declaration());
+        assert!(parsed(&nonterminal).unwrap_err().to_string().contains("terminal item"));
+        let mut early = value.clone();
+        early["items"][1]["history"][0]["at"] = json!("2026-01-10T00:00:00Z");
+        assert!(parsed(&early).unwrap_err().to_string().contains("must begin after"));
+        let mut twice = value.clone();
+        let mut second = twice["items"][1].clone();
+        second["key"] = json!("work-reopened-again");
+        twice["items"].as_array_mut().unwrap().push(second);
+        assert!(parsed(&twice).unwrap_err().to_string().contains("only one new item"));
+        let mut retrofit = value;
+        retrofit["items"][1].as_object_mut().unwrap().remove("supersedes");
+        let before = parsed(&retrofit).unwrap();
+        retrofit["items"][1]["supersedes"] = json!("work");
+        let after = parsed(&retrofit).unwrap();
+        let cause = validate_successor(&before, &after).unwrap_err().to_string();
+        assert!(cause.contains("supersession links are immutable"), "{cause}");
+        assert!(validate_successor(&after, &before).is_err());
+    }
+
+    /// Terminal asserted rows are never overdue or due soon, but stay in every denominator.
+    #[test]
+    fn terminal_asserted_rows_are_not_overdue_and_remain_counted() {
+        let plan = parsed(&accepted()).unwrap();
+        let report = schedule(&plan, &inventory(), full_date("2026-03-01").unwrap(), 30).unwrap();
+        assert_eq!(report.rows[0].state, Some(State::AcceptedRiskAsserted));
+        assert!(!report.rows[0].overdue && !report.rows[0].due_soon);
+        assert_eq!((report.items, report.rows.len()), (1, 2));
+        assert_eq!(report.overdue, 1, "the planned milestone stays open and overdue");
+    }
+
+    /// Native output carries namespaced assertion and supersession props and never a native closed risk.
+    #[test]
+    fn native_terminal_projection_is_namespaced_schema_valid_and_never_closed() {
+        let manifest = parsed(&reopened(accepted())).unwrap();
+        let one = super::super::workflow_model::render(&manifest).unwrap();
+        assert_eq!(one, super::super::workflow_model::render(&manifest).unwrap());
+        super::super::workflow_model::validate_native(&one).unwrap();
+        let text = String::from_utf8(one.clone()).unwrap();
+        for forbidden in ["\"closed\"", "deviation-approved", "\"risks\"", "authorized"] {
+            assert!(!text.contains(forbidden), "{forbidden}");
+        }
+        let value: Value = serde_json::from_slice(&one).unwrap();
+        let root = &value["plan-of-action-and-milestones"];
+        assert!(root.get("risks").is_none());
+        let items = root["poam-items"].as_array().unwrap();
+        let prop = |item: &Value, name: &str| {
+            item["props"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|property| property["name"] == name)
+                .cloned()
+        };
+        let terminal = &items[0];
+        let status = prop(terminal, "assertion-status").unwrap();
+        assert_eq!(status["value"], "accepted-risk-asserted");
+        assert_eq!(status["ns"], "https://policy-forge.github.io/forge/ns/poam-workflow");
+        let assertion: Value = serde_json::from_str(
+            prop(terminal, "terminal-assertion").unwrap()["value"].as_str().unwrap(),
+        )
+        .unwrap();
+        assert_eq!(assertion["reviewer"]["party_key"], "bob");
+        assert_eq!(assertion["reviewer"]["role_id"], "reviewer");
+        assert_eq!(assertion["reviewed_at"], "2026-01-10T12:00:00Z");
+        assert_eq!(assertion["evidence"][0]["expected_sha256"], "c".repeat(64));
+        assert_eq!(assertion["evidence"][0]["captured_at"], "2026-01-09T08:00:00Z");
+        assert!(assertion["qualification"].as_str().unwrap().contains("does not verify closure"));
+        assert!(prop(terminal, "supersedes").is_none());
+        let successor = &items[1];
+        assert!(prop(successor, "assertion-status").is_none());
+        assert_eq!(
+            prop(successor, "supersedes").unwrap()["value"],
+            super::super::identity::item("plan", "work").to_string()
         );
     }
 
