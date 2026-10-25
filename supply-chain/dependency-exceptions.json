@@ -123,18 +123,18 @@
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
-      "checksum": "7d5515a3834141de9eafb9717ad39eea8247b5674e6066c404e8c4b365d2a29e",
-      "created_on": "2026-10-06",
+      "checksum": "38d28fb6aa7dd680b3ffd1a3e64e115c177bdba63c0ae7f9cd48129ff05c4fa0",
+      "created_on": "2026-10-24",
       "criteria": [
         "safe-to-deploy"
       ],
       "expires_on": "2026-11-23",
       "name": "ctutils",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for the October 24, 2026 security updates (ctutils RUSTSEC-2026-0385; zip RUSTSEC-2026-0367/0368/0369). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "0.4.2"
+      "version": "0.4.5"
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
@@ -258,6 +258,21 @@
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
+      "checksum": "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a",
+      "created_on": "2026-10-24",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-23",
+      "name": "libc",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for the October 24, 2026 security updates (ctutils RUSTSEC-2026-0385; zip RUSTSEC-2026-0367/0368/0369). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-11-07",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.2.191"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
       "checksum": "c2a86d3146ed3995b5913c414f6664344b9617457320782e64f0bb44afd49d74",
       "created_on": "2026-10-06",
       "criteria": [
@@ -270,6 +285,21 @@
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.3.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
+      "checksum": "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d",
+      "created_on": "2026-10-24",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-23",
+      "name": "nix",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for the October 24, 2026 security updates (ctutils RUSTSEC-2026-0385; zip RUSTSEC-2026-0367/0368/0369). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-11-07",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.31.3"
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
@@ -574,6 +604,21 @@
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
+      "checksum": "9ce898823d8cd0f028662d2f349694b1af0a5cc9be83f1d213a00d3147445e1e",
+      "created_on": "2026-10-24",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-23",
+      "name": "typed-path",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for the October 24, 2026 security updates (ctutils RUSTSEC-2026-0385; zip RUSTSEC-2026-0367/0368/0369). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-11-07",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.13.0"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
       "checksum": "2ef6dac1e96601b4fb3acccccff2139741fcb757cb9a36089bf5be91cfb285ce",
       "created_on": "2026-10-06",
       "criteria": [
@@ -586,6 +631,21 @@
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.26.1"
+    },
+    {
+      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
+      "checksum": "2886b00003a72c4ccee3f42cfc34908d33b2508a74d827dc2a4244706475c704",
+      "created_on": "2026-10-24",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-11-23",
+      "name": "zip",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for the October 24, 2026 security updates (ctutils RUSTSEC-2026-0385; zip RUSTSEC-2026-0367/0368/0369). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-11-07",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "9.1.0"
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",

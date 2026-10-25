@@ -145,7 +145,7 @@ version matters.
 | Parallel execution | `rayon 1` |
 | Project configuration | `toml 1.1` (parse and serde features) |
 | PDF ingestion | `pdf-extract 0.12` |
-| DOCX ingestion | `zip 8` (deflate only) |
+| DOCX ingestion | `zip 9` (deflate only) |
 | Snapshot testing | `insta 1` (json feature) |
 | Temp files | `tempfile 3` |
 

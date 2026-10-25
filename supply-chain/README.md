@@ -23,8 +23,9 @@
 Use Python 3.11+ and the standard library. No crate or Python package is added.
 The owner approved the incremental policy and initial 21 exact exceptions on
 October 6, 2026, then approved 13 exact exceptions for PRs #160–164. On
-October 24, 2026 the owner renewed those 34 entries and approved 6 more for
-Dependabot PRs #234–238. The current set has 40 owned entries, due for review by
+October 24, 2026 the owner renewed those 34 entries, approved 6 more for
+Dependabot PRs #234–238 and 5 for the `ctutils`/`zip` security updates (replacing
+`ctutils` 0.4.2). The current set has 44 owned entries, due for review by
 November 7 and expiring November 23, 2026. See the [initial decision](../docs/plans/2026-10-06-merge-dependency-decisions.md),
 [update decision](../docs/plans/2026-10-06-merge-dependency-update-decisions.md)
 and [renewal decision](../docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md)

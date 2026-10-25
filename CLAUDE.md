@@ -72,7 +72,7 @@ manifest minimum, not a measured current MSRV qualification. The version ranges 
 | rayon | 1 | Parallel batch processing |
 | tempfile | 3 | Atomic temporary output files |
 | pdf-extract | 0.12 | Local PDF text extraction |
-| zip | 8 | DOCX/OOXML archive reading (deflate only) |
+| zip | 9 | DOCX/OOXML archive reading (deflate only) |
 | toml | 1.1 | Project configuration parsing (parse and serde features) |
 | libc | 0.2 | Unix no-follow filesystem operations |
 
