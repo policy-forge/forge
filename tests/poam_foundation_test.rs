@@ -1336,7 +1336,7 @@ fn authored_cli_schedule_action_is_valid_exit_one_with_complete_counts() {
     assert_eq!(quiet.stderr, [] as [u8; 0]);
 }
 
-/// Append one attributed nonterminal assertion to an authored fixture record.
+/// Append one attributed assertion, terminal or nonterminal, to an authored fixture record.
 fn append_authored_event(record: &mut Value, key: &str, at: &str, from: &str, to: &str) {
     record["history"].as_array_mut().unwrap().push(json!({"key":key,
         "actor":{"role_id":"owner","party_key":"remediator"},"at":at,"from":from,"to":to,
@@ -1473,8 +1473,13 @@ fn authored_cli_cancelled_work_is_not_overdue_and_closes_no_source_finding() {
         assert!(plan.get(absent).is_none(), "{absent}");
     }
     let item = &plan["poam-items"][0];
-    let state = item["props"].as_array().unwrap().iter().find(|prop| prop["name"] == "state");
-    assert_eq!(state.unwrap()["value"], json!("cancelled"));
+    let props = item["props"].as_array().unwrap();
+    let property =
+        |name: &str| props.iter().find(|prop| prop["name"] == name).unwrap()["value"].clone();
+    assert_eq!(property("state"), json!("cancelled"));
+    let milestones: Value = serde_json::from_str(property("milestones").as_str().unwrap()).unwrap();
+    assert_eq!(milestones.as_array().unwrap().len(), 1);
+    assert_eq!(milestones[0]["state"], json!("cancelled"));
     assert_eq!(
         item["links"],
         json!([{"href":format!("assessment-results.json#{}", selected["uuid"].as_str().unwrap()),
