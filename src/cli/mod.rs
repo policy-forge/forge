@@ -148,7 +148,7 @@ pub enum Commands {
         input: PathBuf,
 
         /// Override auto-detected OSCAL model type (catalog, component-definition,
-        /// system-security-plan, mapping, or assessment-results)
+        /// system-security-plan, mapping, poam, or assessment-results)
         #[arg(long, value_enum, conflicts_with = "round_trip")]
         schema_type: Option<SchemaType>,
 
