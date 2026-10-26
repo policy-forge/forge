@@ -129,6 +129,19 @@ pub(crate) fn prepare(
         return Err(error("risk authoring encoding differs from its complete admission"));
     }
     verify_encoding(&bytes, original)?;
+    finish(bytes, capture)
+}
+
+/// Close one complete seven-original capture around verified output bytes.
+///
+/// Shared by the empty-scaffold and add-only existing-plan modes; the holder grants
+/// no publication authority beyond Root's later original recheck and publisher.
+/// # Errors
+/// Refuses a proof without exactly seven distinct originals or with changed originals.
+pub(super) fn finish(
+    bytes: Vec<u8>,
+    capture: CaptureSession,
+) -> Result<PreparedRiskAuthoring, ForgeError> {
     let root = capture.root().to_path_buf();
     let proof = capture.finish();
     if proof.captured_original_generations() != 7 {
@@ -143,7 +156,10 @@ pub(crate) fn prepare(
 ///
 /// Leaf metadata follows no symlink and grants no atomic absence/publication proof.
 /// Original/root rechecks and the final no-replace publisher remain authoritative.
-fn preflight_destination(capture: &CaptureSession, relative: &Path) -> Result<(), ForgeError> {
+pub(super) fn preflight_destination(
+    capture: &CaptureSession,
+    relative: &Path,
+) -> Result<(), ForgeError> {
     match std::fs::symlink_metadata(capture.root().join(relative)) {
         Err(fault) if fault.kind() == io::ErrorKind::NotFound => Ok(()),
         Ok(_) | Err(_) => Err(error("risk authoring destination exists or is unavailable")),
@@ -151,7 +167,7 @@ fn preflight_destination(capture: &CaptureSession, relative: &Path) -> Result<()
 }
 
 /// Qualify original caller spelling before absolute/parent/join operations can erase aliases.
-fn declaration_root(path: &Path) -> Result<(PathBuf, PathBuf), ForgeError> {
+pub(super) fn declaration_root(path: &Path) -> Result<(PathBuf, PathBuf), ForgeError> {
     if path.as_os_str().is_empty()
         || path.components().any(|part| matches!(part, Component::CurDir | Component::ParentDir))
         || !crate::linkage::has_normalized_path_spelling(path)
@@ -171,7 +187,7 @@ fn declaration_root(path: &Path) -> Result<(PathBuf, PathBuf), ForgeError> {
 }
 
 /// Preserve the existing slash-separated portable local JSON subset without rewriting spelling.
-fn validate_json_relative(path: &Path, filename_only: bool) -> Result<(), ForgeError> {
+pub(super) fn validate_json_relative(path: &Path, filename_only: bool) -> Result<(), ForgeError> {
     crate::linkage::fresh::validate_relative(path)
         .map_err(|_| error("risk authoring path must be a normalized descendant"))?;
     let value = path.to_str().ok_or_else(|| error("risk authoring path must be UTF8"))?;
@@ -205,7 +221,7 @@ fn unsafe_segment(segment: &str) -> bool {
 }
 
 /// Strict-parse the actual bounded original and consume the finite offline first-plan profile.
-fn parse_request(bytes: &[u8]) -> Result<Value, ForgeError> {
+pub(super) fn parse_request(bytes: &[u8]) -> Result<Value, ForgeError> {
     if bytes.len() > MAX_DECLARATION_BYTES {
         return Err(error("risk authoring request exceeds four MiB"));
     }
@@ -235,7 +251,7 @@ fn parse_request(bytes: &[u8]) -> Result<Value, ForgeError> {
 ///
 /// The temporary decoded form has the existing raw/depth/string limits; encoded
 /// admission is not a heap limit. This check grants no detached source authority.
-fn verify_encoding(bytes: &[u8], original: &Value) -> Result<(), ForgeError> {
+pub(super) fn verify_encoding(bytes: &[u8], original: &Value) -> Result<(), ForgeError> {
     if bytes.len() > MAX_DECLARATION_BYTES {
         return Err(error("risk authoring output exceeds four MiB"));
     }
@@ -339,15 +355,18 @@ impl Counts {
 }
 
 /// Complete nonretaining admission results, not native authority or a heap ceiling.
-struct Preflight {
+pub(super) struct Preflight {
     /// Conservative encoded/derived native bound pinned to the existing finite renderer.
-    native_upper: usize,
+    pub(super) native_upper: usize,
     /// Exact pretty authoring serialization plus LF byte count.
-    workflow_bytes: usize,
+    pub(super) workflow_bytes: usize,
 }
 
 /// Admit all repeated relationships and combined native/authoring projection before growth.
-fn preflight(request: &Value, capture: &mut CaptureSession) -> Result<Preflight, ForgeError> {
+pub(super) fn preflight(
+    request: &Value,
+    capture: &mut CaptureSession,
+) -> Result<Preflight, ForgeError> {
     let counts = Counts::read(request)?;
     if counts.milestones > workflow::MAX_MILESTONES || counts.events > workflow::MAX_HISTORY_EVENTS
     {
@@ -374,7 +393,7 @@ fn preflight(request: &Value, capture: &mut CaptureSession) -> Result<Preflight,
 }
 
 /// Compare every original source field, without canonical map cloning or hash-only summaries.
-fn same_source(left: &SourceManifest, right: &SourceManifest) -> bool {
+pub(super) fn same_source(left: &SourceManifest, right: &SourceManifest) -> bool {
     left.result.uuid == right.result.uuid
         && left.result.key == right.result.key
         && same_artifact(&left.assessment_results, &right.assessment_results)
@@ -397,7 +416,7 @@ fn same_artifact(left: &ArtifactManifest, right: &ArtifactManifest) -> bool {
 }
 
 /// Require exact current risk tuples and a complete unique union, preserving cross-item repeats.
-fn validate_union(
+pub(super) fn validate_union(
     request: &Value,
     admitted: &workflow::WorkflowManifest,
     sources: &source::CapturedSource,
@@ -531,7 +550,7 @@ impl io::Write for BoundedWriter {
 }
 
 /// Encode the original admitted values under the cap, adding LF only to final pretty output.
-fn encode(value: &impl Serialize, pretty: bool) -> Result<Vec<u8>, ForgeError> {
+pub(super) fn encode(value: &impl Serialize, pretty: bool) -> Result<Vec<u8>, ForgeError> {
     let mut writer = BoundedWriter { bytes: Vec::new() };
     if pretty {
         serde_json::to_writer_pretty(&mut writer, value)

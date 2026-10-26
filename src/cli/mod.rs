@@ -1198,8 +1198,8 @@ pub enum AssessmentResultsCommand {
     /// Export explicitly reviewed risks into a complete caller-authored POA&M workflow
     ExportPoam {
         /// Actual existing empty POA&M scaffold defining the fixed source root
-        #[arg(long)]
-        scaffold: PathBuf,
+        #[arg(long, required_unless_present = "existing_plan")]
+        scaffold: Option<PathBuf>,
         /// Closed reviewed-risk authoring JSON relative to the scaffold root
         #[arg(long)]
         authoring: PathBuf,
@@ -1209,6 +1209,9 @@ pub enum AssessmentResultsCommand {
         /// Optional new single JSON filename in the scaffold's parent directory
         #[arg(long)]
         output: Option<PathBuf>,
+        /// Opt-in add-only base: existing forge.poam/1 plan defining the source root (never rewritten)
+        #[arg(long, conflicts_with = "scaffold")]
+        existing_plan: Option<PathBuf>,
     },
     /// Scaffold a context-bound manifest without observations, findings, or risks
     Init {
@@ -2661,14 +2664,19 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
                         Ok(())
                     }
                 }
-                AssessmentResultsCommand::ExportPoam { scaffold, authoring, as_of, output } => {
-                    crate::poam::risk_authoring_cli::execute(
-                        scaffold,
-                        authoring,
-                        as_of,
-                        output.as_deref(),
-                    )
-                }
+                AssessmentResultsCommand::ExportPoam {
+                    scaffold,
+                    authoring,
+                    as_of,
+                    output,
+                    existing_plan,
+                } => crate::poam::risk_authoring_cli::execute(
+                    scaffold.as_deref(),
+                    authoring,
+                    as_of,
+                    output.as_deref(),
+                    existing_plan.as_deref(),
+                ),
                 AssessmentResultsCommand::Init {
                     assessment_plan,
                     ssp,

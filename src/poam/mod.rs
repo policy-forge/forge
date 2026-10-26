@@ -16,6 +16,8 @@ pub mod identity;
 pub mod manifest;
 /// Bounded, content-minimizing source-only inventories.
 pub mod report;
+/// Opt-in add-only reviewed-risk export into one existing workflow plan.
+pub(crate) mod risk_addition;
 /// Explicit first-plan reviewed-risk authoring over one complete original capture.
 pub(crate) mod risk_authoring;
 /// Complete stdout or confined new-file reviewed-risk authoring publication.
