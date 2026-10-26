@@ -1277,3 +1277,404 @@ fn windows_keeps_supported_stdout_and_refuses_file_publication() {
     );
     assert_refused(&fixture, &export(&fixture, Some("refused.json")), &before);
 }
+
+// ---------------------------------------------------------------------------
+// F10 add-only export into an existing plan (owner disposition 2026-10-25, S-3).
+// ---------------------------------------------------------------------------
+
+/// Existing plan filename used by the add-only controls.
+const PLAN: &str = "plan.json";
+/// Add-only caller request, relative to the existing plan's directory.
+const ADDITION: &str = "requests/addition.json";
+
+/// Copy one exact current risk tuple after the existing loader qualifies the five native originals.
+fn risk_reference(fixture: &Fixture, key: &str) -> Value {
+    let declared: manifest::SourceManifest =
+        serde_json::from_value(fixture.request["workflow"]["source"].clone()).unwrap();
+    let actual = source::load(&fixture.root.join("empty-plan.json"), &declared).unwrap();
+    let object = actual.inventory().objects.iter().find(|object| object.key == key).unwrap();
+    json!({"kind":object.kind,"key":object.key,"uuid":object.uuid,
+        "result_uuid":object.result_uuid,"expected_sha256":object.sha256})
+}
+
+/// Build an existing plan with appended history, an asserted terminal item and its superseding item.
+fn write_existing_plan(fixture: &Fixture) -> Value {
+    let mut plan = fixture.request["workflow"].clone();
+    plan["roles"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"id":"reviewer","title":"Caller reviewer role"}));
+    plan["parties"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"key":"caller-reviewer","type":"person","name":"Caller reviewer"}));
+    let actor = json!({"role_id":"owner","party_key":"caller-owner"});
+    plan["items"][0]["state"] = json!("in-progress");
+    plan["items"][0]["history"].as_array_mut().unwrap().push(json!({"key":"started","actor":actor,
+        "at":"2026-10-02T12:00:00Z","from":"planned","to":"in-progress","rationale":"Caller started work","closure":null}));
+    plan["items"][1]["state"] = json!("accepted-risk-asserted");
+    plan["items"][1]["history"].as_array_mut().unwrap().push(
+        json!({"key":"accepted","actor":actor,
+        "at":"2026-10-02T12:00:00Z","from":"planned","to":"accepted-risk-asserted",
+        "rationale":"Caller declared risk acceptance","closure":{
+            "reviewer":{"role_id":"reviewer","party_key":"caller-reviewer"},
+            "reviewed_at":"2026-10-02T13:00:00Z","rationale":"Independent declared review",
+            "evidence":[{"key":"acceptance","href":"evidence/acceptance.txt",
+                "expected_sha256":"a".repeat(64),"captured_at":"2026-10-02T11:00:00Z"}]}}),
+    );
+    let mut reopened = fixture.request["workflow"]["items"][1].clone();
+    reopened["key"] = json!("work-c");
+    reopened["milestones"][0]["key"] = json!("step-c");
+    reopened["history"][0]["at"] = json!("2026-10-03T12:00:00Z");
+    reopened["milestones"][0]["history"][0]["at"] = json!("2026-10-03T12:00:00Z");
+    reopened["supersedes"] = json!("work-b");
+    plan["items"].as_array_mut().unwrap().push(reopened);
+    write_json(&fixture.root.join(PLAN), &plan);
+    let checked =
+        run(&fixture.root, &["poam", "check", "--manifest", PLAN, "--workflow", "--as-of", AS_OF]);
+    assert!(
+        matches!(checked.status.code(), Some(0 | 1)),
+        "existing plan canary must be valid: {}",
+        String::from_utf8_lossy(&checked.stderr)
+    );
+    plan
+}
+
+/// Author one new planned item for the unselected risk with the plan's exact roles and parties.
+fn addition_request(fixture: &Fixture, plan: &Value) -> Value {
+    let reference = risk_reference(fixture, "risk-unselected");
+    let owner = json!({"role_id":"owner","party_key":"caller-owner","rationale":"Caller declared responsibility"});
+    let initial = json!({"key":"initial","actor":{"role_id":"owner","party_key":"caller-owner"},
+        "at":"2026-10-05T10:00:00Z","from":null,"to":"planned","rationale":"Caller reviewed new work","closure":null});
+    let mut workflow = plan.clone();
+    workflow["document"]["version"] = json!("1.1.0");
+    workflow["document"]["last_modified"] = json!("2026-10-05T12:00:00Z");
+    workflow["items"] = json!([{"key":"work-d","title":"Caller work D","description":"Caller description D",
+        "source_refs":[reference],"owners":[owner],"target_date":"2026-11-01","state":"planned","history":[initial],
+        "milestones":[{"key":"step-d","outcome":"Caller measurable outcome D","target_date":"2026-10-20",
+            "depends_on":[],"owners":[owner],"state":"planned","history":[initial]}]}]);
+    json!({"schema_version":"forge.poam-risk-authoring/1","workflow":workflow,
+        "reviewed_risks":[{"source_ref":reference,"caller_asserted_reviewed":true}]})
+}
+
+/// Prepare the existing plan and a valid addition request on disk.
+fn addition_fixture() -> (Fixture, Value, Value) {
+    let fixture = fixture();
+    let plan = write_existing_plan(&fixture);
+    let request = addition_request(&fixture, &plan);
+    write_json(&fixture.root.join(ADDITION), &request);
+    (fixture, plan, request)
+}
+
+/// Dispatch the opt-in add-only mode; omitted output means stdout.
+fn export_addition(fixture: &Fixture, output: Option<&str>) -> Output {
+    let mut args = vec![
+        "assessment",
+        "results",
+        "export-poam",
+        "--existing-plan",
+        PLAN,
+        "--authoring",
+        ADDITION,
+        "--as-of",
+        AS_OF,
+    ];
+    if let Some(name) = output {
+        args.extend(["--output", name]);
+    }
+    run(&fixture.root, &args)
+}
+
+/// Every original, including the existing plan and addition request, keeps its exact bytes.
+fn addition_originals(fixture: &Fixture) -> BTreeMap<String, Vec<u8>> {
+    let mut before = originals(fixture);
+    for name in [PLAN, ADDITION] {
+        before.insert(name.to_string(), std::fs::read(fixture.root.join(name)).unwrap());
+    }
+    before
+}
+
+/// Persist one invalid addition request and require whole-input refusal with no output.
+fn refuse_addition(fixture: &Fixture, request: &Value) -> String {
+    write_json(&fixture.root.join(ADDITION), request);
+    let before = addition_originals(fixture);
+    let output = export_addition(fixture, None);
+    assert_refused(fixture, &output, &before);
+    String::from_utf8(output.stderr).unwrap()
+}
+
+/// Native item UUIDs keyed by the Forge stable key property, after maintained build and validation.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn native_item_uuids(
+    fixture: &Fixture,
+    manifest_name: &str,
+    native_name: &str,
+) -> BTreeMap<String, String> {
+    let built = run(
+        &fixture.root,
+        &["poam", "build", "--manifest", manifest_name, "--as-of", AS_OF, "--output", native_name],
+    );
+    assert!(matches!(built.status.code(), Some(0 | 1)), "maintained build must accept the plan");
+    let native: Value =
+        serde_json::from_slice(&std::fs::read(fixture.root.join(native_name)).unwrap()).unwrap();
+    assert!(
+        forge::validate::validate_artifact(&native, forge::OscalModelType::Poam).unwrap().is_valid
+    );
+    let validated = run(&fixture.root, &["validate", native_name, "--format", "json"]);
+    assert_eq!(validated.status.code(), Some(0));
+    native["plan-of-action-and-milestones"]["poam-items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|item| {
+            let stable = item["props"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|property| property["ns"] == WORKFLOW_NS && property["name"] == "stable-key")
+                .unwrap();
+            (
+                stable["value"].as_str().unwrap().to_string(),
+                item["uuid"].as_str().unwrap().to_string(),
+            )
+        })
+        .collect()
+}
+
+/// Add-only export appends only new planned work and leaves every existing record untouched.
+#[test]
+fn add_only_export_appends_new_items_without_changing_existing_records() {
+    let (fixture, plan, request) = addition_fixture();
+    let before = addition_originals(&fixture);
+    let output = export_addition(&fixture, None);
+    assert_eq!(output.status.code(), Some(0), "{}", String::from_utf8_lossy(&output.stderr));
+    assert_eq!(output.stderr, [] as [u8; 0]);
+    assert_eq!(output.stdout.last(), Some(&b'\n'));
+    let merged: Value = serde_json::from_slice(&output.stdout).unwrap();
+    for field in ["schema_version", "source", "roles", "parties"] {
+        assert_eq!(merged[field], plan[field], "{field} changed");
+    }
+    assert_eq!(merged["document"], request["workflow"]["document"]);
+    let items = merged["items"].as_array().unwrap();
+    assert_eq!(items.len(), 4);
+    assert_eq!(&items[..3], plan["items"].as_array().unwrap().as_slice());
+    assert_eq!(items[3], request["workflow"]["items"][0]);
+    assert_eq!(items[3]["state"], "planned");
+    assert_eq!(items[3]["history"].as_array().unwrap().len(), 1);
+    assert!(merged.get("reviewed_risks").is_none());
+    assert_originals(&fixture, &before);
+}
+
+/// The M-13 baseline reports the new item and milestone as added and nothing else.
+#[test]
+fn add_only_export_is_reported_by_the_baseline_as_added_only() {
+    let (fixture, _plan, _request) = addition_fixture();
+    let output = export_addition(&fixture, None);
+    assert_eq!(output.status.code(), Some(0));
+    std::fs::write(fixture.root.join("added.json"), &output.stdout).unwrap();
+    let compared = run(
+        &fixture.root,
+        &["poam", "baseline", "--manifest", "added.json", "--baseline", PLAN, "--as-of", AS_OF],
+    );
+    assert_eq!(compared.status.code(), Some(1), "additions are review-visible changes");
+    assert_eq!(compared.stderr, [] as [u8; 0]);
+    let report: Value = serde_json::from_slice(&compared.stdout).unwrap();
+    assert_eq!(report["revision_rules_compatible"], true);
+    assert_eq!(report["source_declaration_changed"], false);
+    assert_eq!(report["refusal_observations"], json!([]));
+    assert_eq!(report["reopen_declarations"], json!([]));
+    assert_eq!(report["current_refs_not_current"], 0);
+    let counts = json!({"previous":3,"current":4,"common":3,"added":1,"removed":0,"changed":0});
+    assert_eq!(report["items"], counts);
+    assert_eq!(report["milestones"], counts);
+    for row in report["rows"].as_array().unwrap() {
+        assert_eq!(row["changes"], json!([]), "existing or new row reported a change");
+        if row["presence"] == "added" {
+            assert_eq!(row["item_key"], "work-d");
+        } else {
+            assert_eq!(row["presence"], "common");
+            assert_eq!(row["history_prefix_preserved"], true);
+        }
+    }
+}
+
+/// Exported add-only plans serve check/build/validate and keep existing native identities.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn add_only_export_is_consumed_by_check_build_validate_with_stable_identities() {
+    let (fixture, _plan, _request) = addition_fixture();
+    let before = addition_originals(&fixture);
+    let output = export_addition(&fixture, Some("added.json"));
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(output.stdout, [] as [u8; 0]);
+    let checked = run(
+        &fixture.root,
+        &[
+            "poam",
+            "check",
+            "--manifest",
+            "added.json",
+            "--workflow",
+            "--as-of",
+            AS_OF,
+            "--format",
+            "json",
+        ],
+    );
+    assert!(matches!(checked.status.code(), Some(0 | 1)));
+    let schedule: Value = serde_json::from_slice(&checked.stdout).unwrap();
+    assert_eq!(schedule["items"], 4);
+    assert_eq!(schedule["milestones"], 4);
+    let old = native_item_uuids(&fixture, PLAN, "native-old.json");
+    let new = native_item_uuids(&fixture, "added.json", "native-new.json");
+    assert_eq!(new.len(), 4);
+    for (key, uuid) in &old {
+        assert_eq!(new.get(key), Some(uuid), "existing identity changed: {key}");
+    }
+    assert!(!old.values().any(|uuid| uuid == &new["work-d"]), "new identity collides");
+    assert_originals(&fixture, &before);
+}
+
+/// Repeated add-only exports are byte deterministic and never replace an output or the plan.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn add_only_export_is_deterministic_and_never_rewrites_the_existing_plan() {
+    let (fixture, _plan, _request) = addition_fixture();
+    let before = addition_originals(&fixture);
+    let stdout = export_addition(&fixture, None);
+    for name in ["added-a.json", "added-b.json"] {
+        assert_eq!(export_addition(&fixture, Some(name)).status.code(), Some(0));
+        assert_eq!(std::fs::read(fixture.root.join(name)).unwrap(), stdout.stdout);
+    }
+    assert_eq!(export_addition(&fixture, None).stdout, stdout.stdout);
+    for name in ["added-a.json", PLAN, "PLAN.json"] {
+        let refused = export_addition(&fixture, Some(name));
+        assert_eq!(refused.status.code(), Some(2), "{name} was replaceable");
+    }
+    assert_eq!(std::fs::read(fixture.root.join("added-a.json")).unwrap(), stdout.stdout);
+    assert_originals(&fixture, &before);
+}
+
+/// Requests that would rewrite existing items, roles, parties, plan key or chronology are refused.
+#[test]
+fn add_only_export_refuses_any_change_to_existing_content() {
+    let (fixture, plan, request) = addition_fixture();
+    let mut collision = request.clone();
+    collision["workflow"]["items"][0]["key"] = json!("work-a");
+    assert!(refuse_addition(&fixture, &collision).contains("existing plan item key"));
+    let mut rewritten = request.clone();
+    let mut copy = plan["items"][0].clone();
+    copy["title"] = json!("Caller rewritten title");
+    rewritten["workflow"]["items"].as_array_mut().unwrap().push(copy);
+    refuse_addition(&fixture, &rewritten);
+    for field in ["roles", "parties"] {
+        let mut changed = request.clone();
+        changed["workflow"][field].as_array_mut().unwrap().pop();
+        assert!(refuse_addition(&fixture, &changed).contains("exact roles and parties"));
+    }
+    let mut renamed = request.clone();
+    renamed["workflow"]["parties"][0]["name"] = json!("Caller renamed owner");
+    assert!(refuse_addition(&fixture, &renamed).contains("exact roles and parties"));
+    let mut key = request.clone();
+    key["workflow"]["document"]["key"] = json!("another-plan");
+    refuse_addition(&fixture, &key);
+    let mut regressed = request.clone();
+    regressed["workflow"]["document"]["last_modified"] = json!("2026-10-03T00:00:00Z");
+    for record in ["/workflow/items/0", "/workflow/items/0/milestones/0"] {
+        regressed.pointer_mut(record).unwrap()["history"][0]["at"] = json!("2026-10-02T00:00:00Z");
+    }
+    refuse_addition(&fixture, &regressed);
+    let mut reopen = request.clone();
+    reopen["workflow"]["items"][0]["supersedes"] = json!("work-b");
+    refuse_addition(&fixture, &reopen);
+    let mut started = request;
+    started["workflow"]["items"][0]["state"] = json!("in-progress");
+    started["workflow"]["items"][0]["history"][0]["to"] = json!("in-progress");
+    refuse_addition(&fixture, &started);
+}
+
+/// A reviewed risk already referenced by any existing item is a whole-input refusal.
+#[test]
+fn add_only_export_refuses_risks_already_referenced_by_existing_items() {
+    let (fixture, _plan, request) = addition_fixture();
+    for key in ["risk-closed", "risk-open"] {
+        let reference = risk_reference(&fixture, key);
+        let mut repeated = request.clone();
+        repeated["workflow"]["items"][0]["source_refs"] = json!([reference]);
+        repeated["reviewed_risks"] =
+            json!([{"source_ref":reference,"caller_asserted_reviewed":true}]);
+        assert!(refuse_addition(&fixture, &repeated).contains("already referenced"));
+    }
+}
+
+/// Source tuples must match the existing plan, and a stale capture is never rebound.
+#[test]
+fn add_only_export_refuses_source_mismatch_and_stale_sources() {
+    let (fixture, _plan, request) = addition_fixture();
+    for pointer in [
+        "/workflow/source/assessment_results/expected_sha256",
+        "/workflow/source/context/catalog/expected_sha256",
+    ] {
+        let mut mismatch = request.clone();
+        *mismatch.pointer_mut(pointer).unwrap() = json!("b".repeat(64));
+        assert!(refuse_addition(&fixture, &mismatch).contains("never rebinds"));
+    }
+    write_json(&fixture.root.join(ADDITION), &request);
+    let path = fixture.root.join("assessment-results.json");
+    let mut bytes = std::fs::read(&path).unwrap();
+    bytes.push(b' ');
+    std::fs::write(path, bytes).unwrap();
+    let before = addition_originals(&fixture);
+    let output = export_addition(&fixture, None);
+    assert_refused(&fixture, &output, &before);
+    assert!(String::from_utf8(output.stderr).unwrap().contains("never rebinds"));
+}
+
+/// Mode selection is explicit: one base only, and an empty scaffold keeps its own mode.
+#[test]
+fn add_only_mode_requires_exactly_one_nonempty_existing_plan() {
+    let (fixture, _plan, _request) = addition_fixture();
+    let before = addition_originals(&fixture);
+    let both = run(
+        &fixture.root,
+        &[
+            "assessment",
+            "results",
+            "export-poam",
+            "--scaffold",
+            "empty-plan.json",
+            "--existing-plan",
+            PLAN,
+            "--authoring",
+            ADDITION,
+            "--as-of",
+            AS_OF,
+        ],
+    );
+    assert_refused(&fixture, &both, &before);
+    let empty = run(
+        &fixture.root,
+        &[
+            "assessment",
+            "results",
+            "export-poam",
+            "--existing-plan",
+            "empty-plan.json",
+            "--authoring",
+            ADDITION,
+            "--as-of",
+            AS_OF,
+        ],
+    );
+    assert_refused(&fixture, &empty, &before);
+    assert!(String::from_utf8(empty.stderr).unwrap().contains("use --scaffold"));
+}
+
+/// The empty-scaffold path keeps its exact pretty-plus-LF output bytes.
+#[test]
+fn empty_scaffold_export_bytes_are_unchanged_by_the_add_only_mode() {
+    let fixture = fixture();
+    let mut expected = serde_json::to_vec_pretty(&fixture.request["workflow"]).unwrap();
+    expected.push(b'\n');
+    assert_eq!(export(&fixture, None).stdout, expected);
+}

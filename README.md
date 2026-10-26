@@ -266,6 +266,9 @@ maintained POA&M check/build commands. The caller's review assertion establishes
 no reviewer authority or terminal approval. See
 [reviewed-risk authoring](docs/assessment-results-reviewed-risks.md) for the exact
 request, source checks and remaining acceptance gates.
+With `--existing-plan`, the same command adds new planned items to an existing
+plan without changing its existing items. The new items appear as `added` in
+`forge poam baseline`.
 
 `forge assessment results append-epoch` appends one sealed result with explicit
 caller-declared risk continuity. It preserves prior results, saves a complete JSON
