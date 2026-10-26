@@ -76,9 +76,11 @@ inventory of all post-v1.1.0 changes.
   (including `ForgeError`) and the migration/semver release review
   remain pending. No release compatibility is claimed.
 - PRD-068 `forge review export-html` output now carries a meta
-  Content-Security-Policy (`default-src 'none'; style-src 'unsafe-inline';
-  base-uri 'none'; form-action 'none'; img-src 'none'`), matching the POA&M
-  HTML report. Exported HTML bytes therefore change; the recorded content does not.
+  Content-Security-Policy (`default-src 'none'; style-src 'sha256-…';
+  base-uri 'none'; form-action 'none'; img-src 'none'`), the same default-deny
+  policy as the POA&M HTML report except that the review page pins its constant
+  stylesheet by hash instead of allowing `'unsafe-inline'`. Exported HTML bytes
+  therefore change; the recorded content does not.
 
 ## [1.1.0] — 2026-06-09
 

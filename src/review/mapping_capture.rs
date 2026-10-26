@@ -1951,6 +1951,16 @@ pub(crate) mod tests {
             let responses = [PathBuf::from("a.json"), PathBuf::from("b.json")];
             let originals: Vec<_> =
                 responses.iter().map(|path| std::fs::read(f.root.join(path)).unwrap()).collect();
+            let mut pre_drift = Vec::new();
+            status(&f.root, &responses, &mut pre_drift).unwrap();
+            let pre_drift = super::super::decode::decode_dispositions(
+                &pre_drift,
+                &mut ContractLedger::default(),
+                &mut NoopControl,
+            )
+            .unwrap();
+            assert_eq!(pre_drift.document().items[0].state, ItemState::QuorumMet);
+            assert_eq!(pre_drift.document().items[0].met_seats.len(), 2);
             let decode_queue = |name: &str| {
                 let raw = std::fs::read(f.root.join(name)).unwrap();
                 let queue = super::super::decode::decode_queue(

@@ -365,8 +365,10 @@ information; review the actual artifacts before sharing them.
 HTML is a static rendering of a captured recorded bundle. It does not perform a
 fresh source check or authenticate its recorded labels. It contains no script,
 form, image or remote asset. A meta Content-Security-Policy
-(`default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; img-src 'none'`)
-allows only its constant inline stylesheet. Browser and assistive-technology
+(`default-src 'none'; style-src 'sha256-…'; base-uri 'none'; form-action 'none'; img-src 'none'`)
+pins its one constant inline stylesheet by the SHA-256 hash of that element and
+permits nothing else; style attributes are blocked, not merely unused. Browser
+and assistive-technology
 qualification remain open. The current CLI performs
 no remote upload, notification delivery or automatic domain edit. Non-null proposed edits
 are rejected. Supported proposed edits and remaining native adapters are

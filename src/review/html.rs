@@ -16,11 +16,13 @@ const OUTPUT_LIMIT: usize = 33_554_432;
 
 /// Constant inert document shell, local navigation and responsive/print styling.
 /// The meta Content-Security-Policy denies every fetch, script, image, base and
-/// form target; only the constant inline `<style>` element is permitted.
+/// form target; only the constant inline `<style>` element is permitted, pinned
+/// by its exact SHA-256 hash so style attributes and any other stylesheet stay
+/// blocked. `html_tests` recomputes the hash from the rendered stylesheet.
 const OPEN: &str = r##"<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; img-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'sha256-SntfJHoxqah2z+QkfpY/g+fm2deYZl2D5O4Fexy06Pw='; base-uri 'none'; form-action 'none'; img-src 'none'">
 <title>Recorded review dispositions</title>
 <style>
 :root{color-scheme:light}*{box-sizing:border-box}body{margin:auto;max-width:90rem;padding:1rem;font:1rem/1.5 system-ui,sans-serif;color:#18202a;background:#fff}a{color:#003b80;text-underline-offset:.15em}a:focus-visible{outline:3px solid #003b80;outline-offset:3px}h1,h2{line-height:1.2}nav ul{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;padding-inline-start:1.5rem}section{margin-block:2rem}table{width:100%;border-collapse:collapse;table-layout:fixed;margin-block:1rem}caption{text-align:left;font-weight:bold;padding-block:.5rem}th,td{border:1px solid #66717f;padding:.5rem;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#eef2f6}ul{padding-inline-start:1.25rem;margin-block:.25rem}dt{font-weight:bold}dd{margin-inline-start:0;margin-block-end:.5rem;overflow-wrap:anywhere}.notice{border-inline-start:.3rem solid #003b80;padding:.75rem;background:#eef2f6}.skip{display:inline-block;padding:.25rem}main{min-width:0}small{font-size:.9em}@media(max-width:40rem){body{padding:.5rem}th,td{padding:.25rem;font-size:.9rem}nav ul{display:block}}@media print{body{max-width:none;padding:0;font-size:10pt}nav,.skip{display:none}thead{display:table-header-group}tr{break-inside:avoid}h2{break-after:avoid}a{color:inherit}.notice{background:transparent}}

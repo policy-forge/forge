@@ -409,15 +409,25 @@ fn same_recorded_original_renders_identical_complete_bytes() {
 }
 
 /// A meta Content-Security-Policy denies every remote or scripted load; only the
-/// constant inline stylesheet is allowed, and no inline style attribute exists.
+/// constant inline stylesheet is allowed, pinned by the hash of its actual bytes,
+/// and no inline style attribute exists.
 #[test]
 fn content_security_policy_denies_remote_loads_and_allows_only_inline_stylesheet() {
+    use base64::Engine as _;
+    use sha2::Digest as _;
     let html = rendered(&document_fixture());
-    let policy = "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; \
-        style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; img-src 'none'\">";
-    assert_eq!(html.matches("http-equiv=\"Content-Security-Policy\"").count(), 1);
+    let stylesheet = html.find("<style>").unwrap() + "<style>".len();
+    let stylesheet_end = html.find("</style>").unwrap();
+    let digest = base64::engine::general_purpose::STANDARD
+        .encode(sha2::Sha256::digest(&html.as_bytes()[stylesheet..stylesheet_end]));
+    let policy = format!(
+        "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; \
+         style-src 'sha256-{digest}'; base-uri 'none'; form-action 'none'; img-src 'none'\">"
+    );
+    assert_eq!(html.matches(&policy).count(), 1);
+    assert!(!html.contains("unsafe-inline"));
     let head_end = html.find("</head>").unwrap();
-    let position = html.find(policy).unwrap();
+    let position = html.find(&policy).unwrap();
     assert!(html.find("<meta charset=\"utf-8\">").unwrap() < position);
     assert!(position < html.find("<title>").unwrap());
     assert!(position < html.find("<style>").unwrap());
