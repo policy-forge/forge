@@ -83,6 +83,60 @@ to stdout. File publication supports Linux, macOS and Windows
 ([Windows file publication](authoring.md#windows-file-publication)); other platforms retain the existing fixed refusal. Stdout export is separately supported by the
 source confinement implementation.
 
+## Add new work to an existing plan
+
+Use `--existing-plan` instead of `--scaffold` to add new work for further
+reviewed risks to a plan you already maintain. This opt-in mode is add-only, as
+recorded in the F10 section of the
+[2026-10-25 owner dispositions](plans/2026-10-25-owner-dispositions.md). The two
+options are mutually exclusive, and the empty-scaffold mode is unchanged.
+
+```sh
+forge assessment results export-poam \
+  --existing-plan /absolute/bundle/plan-workflow.json \
+  --authoring requests/new-reviewed-risks.json \
+  --as-of 2026-10-05 --output plan-workflow-2.json
+
+forge poam baseline --manifest /absolute/bundle/plan-workflow-2.json \
+  --baseline plan-workflow.json --as-of 2026-10-05
+```
+
+The existing plan must be a valid, nonempty `forge.poam/1` workflow. An empty
+scaffold is refused here; use `--scaffold` for it. The request uses the same
+`forge.poam-risk-authoring/1` profile. Its `workflow` contains:
+
+- the existing plan's exact `source`, `roles` and `parties`;
+- the same `document.key`, with your new `title`, `version` and `last_modified`
+  (it must not move backward, and new history must not follow it);
+- only the new items. Each item and milestone is `planned`, with exactly one
+  initial history event, as in the first-plan profile.
+
+The output is the existing plan's values with your document metadata and the new
+items appended after the existing ones. Existing items, milestones, history,
+terminal assertions and `supersedes` links are retained exactly; Forge checks
+this before output. New items get new stable identities from the existing
+plan/item key scheme. Existing native UUIDs do not change.
+
+The export refuses the whole request when:
+
+- a new item key, or a derived item or milestone UUID, collides with an existing one;
+- the request's source, roles, parties or plan key differ from the existing plan;
+- a reviewed risk is already referenced by an existing item (matched by key or
+  UUID), including a terminal or superseded item;
+- the existing plan's sources are stale, or any existing selection no longer
+  matches the current Assessment Results. Rebinding an existing plan to a new
+  Assessment Results generation is not supported;
+- a new item is not planned, has more than one history event, or declares
+  `supersedes`. Reopening keeps its separate workflow.
+
+The existing plan file is never rewritten. `--output` must be a new filename;
+the existing plan and other inputs are refused as destinations. The M-13
+baseline comparison of the output against the existing plan reports the new
+items and milestones as `added`, with no changed or removed rows. It exits `1`
+because additions need review. Whether re-exporting a risk that an existing item
+already references should ever be allowed, and whether export may add new roles
+or parties, are open owner questions; both are refused today.
+
 ## Validation and outcomes
 
 The export checks the actual empty scaffold, complete source pins, all five native
