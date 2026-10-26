@@ -274,10 +274,14 @@ maintained POA&M check/build commands. The caller's review assertion establishes
 no reviewer authority or terminal approval. See
 [reviewed-risk authoring](docs/assessment-results-reviewed-risks.md) for the exact
 request, source checks and remaining acceptance gates.
+With `--existing-plan`, the same command adds new planned items to an existing
+plan without changing its existing items. The new items appear as `added` in
+`forge poam baseline`.
 
 `forge assessment results append-epoch` appends one sealed result with explicit
 caller-declared risk continuity. It preserves prior results, saves a complete JSON
-companion, and can display the same report as JSON, text or static HTML. See
+companion, and can display the same report as JSON, text or static HTML. Continued
+risks carry their family key and predecessor UUID as native properties. See
 [sealed assessment epochs](docs/assessment-results-epochs.md) for the same-context
 profile, explicit source rebinding and independent publication semantics.
 
@@ -295,9 +299,11 @@ forge poam check --manifest ./assessment-bundle/poam.json \
 The inventory includes every finding and risk in that result, including satisfied
 findings and closed risks. It does not validate remediation ownership, schedule,
 review or closure. Separate authored `poam check --workflow --as-of YYYY-MM-DD`
-and `poam build` commands validate nonterminal ownership/history/schedules and
-generate native JSON from exact source selections. Completion and risk acceptance
-remain refused pending the recorded closure decision. `poam baseline` reports
+and `poam build` commands validate ownership/history/schedules and generate
+native JSON from exact source selections. `completed-asserted` and
+`accepted-risk-asserted` are admitted only with an independent reviewer assertion
+and hashed, time-stamped evidence (D064); they are assertions, not verified
+closure. Reopening is a new item that `supersedes` the terminal item. `poam baseline` reports
 complete prior/current identity and field changes against the current source
 capture, including refused revisions, without creating a native artifact. See
 [baseline comparison](docs/poam-baseline-comparison.md) and the

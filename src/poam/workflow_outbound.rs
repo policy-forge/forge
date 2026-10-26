@@ -747,6 +747,32 @@ mod tests {
         assert_ne!(create[0].operation_key, close[0].operation_key);
     }
 
+    /// D064 terminal assertions keep the explicit intent; no close request or remote apply is inferred.
+    #[test]
+    fn asserted_terminal_state_never_becomes_remote_close() {
+        for state in [State::CompletedAsserted, State::AcceptedRiskAsserted] {
+            let mut declaration = declared();
+            declaration.items[0].state = state;
+            for intent in ["create", "update"] {
+                let rows = operations(
+                    &declaration,
+                    &selection(json!([{"item_key":"work","intent":intent}])),
+                )
+                .unwrap();
+                assert_ne!(rows[0].desired_operation, Intent::CloseRequest);
+                assert_eq!(rows[0].fields.declared_state, state);
+                assert_eq!(rows[0].fields.reason_codes, vec![format!("explicit-{intent}-request")]);
+                let mut output = local_output_fixture();
+                output["operations"] = json!(rows);
+                let bytes = serde_json::to_vec(&output).unwrap();
+                validate_change_set(&bytes).unwrap();
+                let text = String::from_utf8(bytes).unwrap();
+                assert!(text.contains(state.as_str()));
+                assert!(text.contains("\"remote_apply_authorized\":false"));
+            }
+        }
+    }
+
     /// Unknown keys never select by title/prose or receive a hidden empty export.
     #[test]
     fn unknown_selected_identity_is_refused_without_fallback() {

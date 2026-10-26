@@ -1001,7 +1001,7 @@ mod tests {
         history.push(json!({"key":"completed","actor":{"role_id":"owner","party_key":"alice"},
             "at":"2026-01-10T11:00:00Z","from":"in-progress","to":"completed-asserted","rationale":"PRIVATE COMPLETION",
             "closure":{"reviewer":{"role_id":"reviewer","party_key":"bob"},"reviewed_at":"2026-01-10T12:00:00Z",
-                "rationale":"PRIVATE REVIEW","evidence":[{"key":"proof","href":"evidence/proof.bin","expected_sha256":"c".repeat(64)}]}}));
+                "rationale":"PRIVATE REVIEW","evidence":[{"key":"proof","href":"evidence/proof.bin","expected_sha256":"c".repeat(64),"captured_at":"2026-01-09T00:00:00Z"}]}}));
         record["state"] = json!("completed-asserted");
     }
 
@@ -1063,7 +1063,7 @@ mod tests {
         assert!(parse_bindings(br#"{"schema_version":"x","schema_version":"x"}"#).is_err());
     }
 
-    /// Inspect every item/milestone closure and future row after a valid positive shape, while public terminal refusal remains.
+    /// Inspect every item/milestone closure and future row; the same D064 profile is admitted by the workflow.
     #[test]
     fn complete_future_closure_denominators_keep_item_and_milestone_rows() {
         let mut value = declaration();
@@ -1072,8 +1072,7 @@ mod tests {
         complete(&mut value["items"][0]);
         let bytes = serde_json::to_vec(&value).unwrap();
         let plan = workflow_baseline::parse_declaration(&bytes).unwrap();
-        let refused = super::super::workflow::parse(&bytes).unwrap_err();
-        assert!(refused.to_string().contains("pending recorded closure disposition"));
+        assert!(super::super::workflow::parse(&bytes).is_ok());
         let directory = tempfile::tempdir().unwrap();
         let mut capture = counter_session(&directory);
         let mut counts = declaration_counts(&plan, 0, &mut capture).unwrap();

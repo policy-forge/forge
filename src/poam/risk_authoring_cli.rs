@@ -5,27 +5,34 @@ use std::path::Path;
 
 use crate::ForgeError;
 
-use super::risk_authoring;
+use super::{risk_addition, risk_authoring};
 
 /// Prepare the complete workflow and recheck actual originals before output.
 ///
 /// The optional destination is a new single JSON filename on the original source
 /// base. Without it, write one fully prepared bounded JSON document plus LF.
+/// Exactly one base is required: an empty `scaffold`, or an `existing_plan` for the
+/// opt-in add-only mode, which never rewrites the existing plan file.
 /// Caller review assertions authenticate no actor or remediation authority.
 /// # Errors
 /// Returns fixed POA&M errors for invalid inputs, aliases, changed originals or
 /// output failures. An OS stdout error may leave a partial stream; a publisher
 /// durability error may leave a complete file. Either returns invalid exit 2.
 pub(crate) fn execute(
-    scaffold: &Path,
+    scaffold: Option<&Path>,
     authoring: &Path,
     as_of: &str,
     output: Option<&Path>,
+    existing_plan: Option<&Path>,
 ) -> Result<(), ForgeError> {
     if let Some(output) = output {
         validate_output(output)?;
     }
-    let prepared = risk_authoring::prepare(scaffold, authoring, as_of, output)?;
+    let prepared = match (scaffold, existing_plan) {
+        (Some(scaffold), None) => risk_authoring::prepare(scaffold, authoring, as_of, output)?,
+        (None, Some(plan)) => risk_addition::prepare(plan, authoring, as_of, output)?,
+        _ => return Err(error("export requires exactly one of a scaffold or an existing plan")),
+    };
     if let Some(output) = output {
         let destination = prepared.root().join(output);
         if prepared.input_paths().any(|original| paths_alias(&destination, &original)) {

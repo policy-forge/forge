@@ -1707,4 +1707,513 @@ mod publication {
             assert_eq!(output.stdout, [] as [u8; 0]);
         }
     }
+
+    /// Borrow one native conclusion by its Forge stable key inside one result.
+    fn conclusion<'a>(result: &'a Value, field: &str, key: &str) -> &'a Value {
+        result[field]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| native_property(row, "stable-key") == key)
+            .unwrap()
+    }
+
+    /// Read an optional Forge property value; absence stays visible as None.
+    fn optional_property<'a>(value: &'a Value, name: &str) -> Option<&'a str> {
+        value["props"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|property| property["name"] == name)
+            .map(|property| property["value"].as_str().unwrap())
+    }
+
+    /// Collect every change row with one exact closed code.
+    fn changes<'a>(report: &'a Value, code: &str) -> Vec<&'a Value> {
+        report["changes"].as_array().unwrap().iter().filter(|row| row["code"] == code).collect()
+    }
+
+    /// Require every native `uuid` field in the complete document to be distinct.
+    fn assert_unique_uuids(native: &Value) {
+        fn collect<'a>(value: &'a Value, ids: &mut Vec<&'a str>) {
+            match value {
+                Value::Object(map) => {
+                    for (key, child) in map {
+                        if key == "uuid" {
+                            ids.push(child.as_str().unwrap());
+                        } else {
+                            collect(child, ids);
+                        }
+                    }
+                }
+                Value::Array(rows) => rows.iter().for_each(|row| collect(row, ids)),
+                _ => {}
+            }
+        }
+        let mut ids = Vec::new();
+        collect(native, &mut ids);
+        let unique: std::collections::BTreeSet<_> = ids.iter().collect();
+        assert_eq!(unique.len(), ids.len(), "native UUIDs are never reused");
+    }
+
+    /// Assert continuity props on one continued native risk and their report edge.
+    fn assert_continued(pair: &Pair, key: &str, family: &str, predecessor: &Value) {
+        let result =
+            pair.native["assessment-results"]["results"].as_array().unwrap().last().unwrap();
+        let risk = conclusion(result, "risks", key);
+        assert_eq!(optional_property(risk, "continuity-family-key"), Some(family));
+        assert_eq!(
+            optional_property(risk, "continuity-predecessor-uuid"),
+            predecessor["uuid"].as_str()
+        );
+        assert_ne!(risk["uuid"], predecessor["uuid"]);
+        let edge = pair.report["continuity_edges"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|edge| edge["successor"]["uuid"] == risk["uuid"])
+            .unwrap();
+        assert_eq!(edge["family_key"], family);
+        assert_eq!(edge["predecessor"]["uuid"], predecessor["uuid"]);
+    }
+
+    /// Assert a first family member, initial or newly created, carries no continuity props.
+    fn assert_uncontinued(risk: &Value) {
+        assert_eq!(optional_property(risk, "continuity-family-key"), None);
+        assert_eq!(optional_property(risk, "continuity-predecessor-uuid"), None);
+    }
+
+    /// Author a fourth sealed epoch that continues two families from the third epoch.
+    fn fourth_request(fixture: &Fixture, third: &Pair) -> Value {
+        let rows = third.native["assessment-results"]["results"].as_array().unwrap();
+        let scaffold =
+            initialize(&fixture.root, "epoch-three.json", rows.last().unwrap(), "third-plan.json");
+        let references = risk_references(&fixture.root, "third-plan.json", &scaffold);
+        let first: Value =
+            serde_json::from_slice(&std::fs::read(fixture.root.join("ar-manifest.json")).unwrap())
+                .unwrap();
+        let subject = &first["result"]["observations"][0]["subjects"][0]["uuid"];
+        let mut next = next_declaration(&first, subject, true);
+        let assertion = provenance("2026-01-07T01:00:00Z");
+        next["document"]["version"] = json!("4.0.0");
+        next["document"]["last_modified"] = json!("2026-01-08T00:00:00Z");
+        let result = &mut next["result"];
+        result["key"] = json!("epoch-fourth");
+        result["start"] = json!("2026-01-07T00:00:00Z");
+        result["end"] = json!("2026-01-08T00:00:00Z");
+        result["observations"][0]["key"] = json!("observation-fourth");
+        result["observations"][0]["provenance"] = assertion.clone();
+        result["findings"][0]["key"] = json!("finding-fourth");
+        result["findings"][0]["provenance"] = assertion.clone();
+        result["risks"] = json!([
+            risk("risk-recurring-fourth", "open", &assertion),
+            risk("risk-third-again", "remediating", &assertion)
+        ]);
+        result["relationships"] = json!([
+            {"from":{"type":"observation","key":"observation-fourth"},"to":{"type":"finding","key":"finding-fourth"}},
+            {"from":{"type":"finding","key":"finding-fourth"},"to":{"type":"risk","key":"risk-recurring-fourth"}},
+            {"from":{"type":"finding","key":"finding-fourth"},"to":{"type":"risk","key":"risk-third-again"}}]);
+        json!({"schema_version":"forge.assessment-epoch-append/1","prior_source":scaffold["source"],
+            "next_epoch":next,
+            "prior_report":{"artifact":"epoch-three-report.json",
+                "expected_sha256":sha256_hex(&std::fs::read(fixture.root.join("epoch-three-report.json")).unwrap())},
+            "seed_families":[],"new_risks":[
+                {"next_key":"risk-recurring-fourth","family_key":RECURRING_FAMILY,
+                    "prior":reference(&references,"risk-recurring-again"),"caller_asserted_continuity":true,
+                    "provenance":assertion},
+                {"next_key":"risk-third-again","family_key":"family-third",
+                    "prior":reference(&references,"risk-third"),"caller_asserted_continuity":true,
+                    "provenance":assertion}]})
+    }
+
+    /// Run one valid append with the policy gate disabled and return its checked pair.
+    fn accepted(
+        fixture: &Fixture,
+        request: &Value,
+        name: &str,
+        output: &str,
+        report: &str,
+    ) -> Pair {
+        write_json(&fixture.root.join(name), request);
+        let result = append(&fixture.root, name, output, report, &["--fail-on", "never"]);
+        assert_eq!(result.status.code(), Some(0), "{}", String::from_utf8_lossy(&result.stderr));
+        assert_eq!(result.stderr, [] as [u8; 0]);
+        pair(&fixture.root, output, report)
+    }
+
+    /// Refuse one request and return its stderr for a stable message assertion.
+    fn refused_message(fixture: &Fixture, request: &Value) -> String {
+        refuse_request(fixture, request);
+        let output = append(
+            &fixture.root,
+            "append.json",
+            "refused-native.json",
+            "refused-report.json",
+            &["--fail-on", "never"],
+        );
+        String::from_utf8(output.stderr).unwrap()
+    }
+
+    /// Three appends carry the family key and predecessor UUID natively; first members carry neither.
+    #[test]
+    fn native_continuity_props_link_three_appends() {
+        let fixture = canary();
+        let original: Value = serde_json::from_slice(
+            &std::fs::read(fixture.root.join("assessment-results.json")).unwrap(),
+        )
+        .unwrap();
+        let first = &original["assessment-results"]["results"][0];
+        let second = second_pair(&fixture);
+        for risk in second.native["assessment-results"]["results"][0]["risks"].as_array().unwrap() {
+            assert_uncontinued(risk);
+        }
+        assert_continued(
+            &second,
+            "risk-recurring",
+            RECURRING_FAMILY,
+            conclusion(first, "risks", "risk-open"),
+        );
+        let epoch_two = &second.native["assessment-results"]["results"][1];
+        assert_uncontinued(conclusion(epoch_two, "risks", "risk-new"));
+        let third = accepted(
+            &fixture,
+            &third_request(&fixture, &second),
+            "append-third.json",
+            "epoch-three.json",
+            "epoch-three-report.json",
+        );
+        assert_continued(
+            &third,
+            "risk-recurring-again",
+            RECURRING_FAMILY,
+            conclusion(epoch_two, "risks", "risk-recurring"),
+        );
+        let epoch_three = third.native["assessment-results"]["results"][2].clone();
+        assert_uncontinued(conclusion(&epoch_three, "risks", "risk-third"));
+        let fourth = accepted(
+            &fixture,
+            &fourth_request(&fixture, &third),
+            "append-fourth.json",
+            "epoch-four.json",
+            "epoch-four-report.json",
+        );
+        assert_continued(
+            &fourth,
+            "risk-recurring-fourth",
+            RECURRING_FAMILY,
+            conclusion(&epoch_three, "risks", "risk-recurring-again"),
+        );
+        assert_continued(
+            &fourth,
+            "risk-third-again",
+            "family-third",
+            conclusion(&epoch_three, "risks", "risk-third"),
+        );
+        assert_eq!(fourth.report["counts"]["continuity_edges"], 4);
+        assert_rows(&fourth.native, &fourth.report);
+        assert_reciprocals(&fourth.report);
+        for value in [&second.native, &third.native, &fourth.native] {
+            assert_unique_uuids(value);
+        }
+        // Earlier epochs, including their continuity props, are byte-preserved.
+        assert_eq!(
+            &fourth.native["assessment-results"]["results"].as_array().unwrap()[..3],
+            third.native["assessment-results"]["results"].as_array().unwrap().as_slice()
+        );
+        // The existing source loader admits the decorated native generation.
+        initialize(
+            &fixture.root,
+            "epoch-four.json",
+            &fourth.native["assessment-results"]["results"][3],
+            "fourth-plan.json",
+        );
+    }
+
+    /// Reused native identities and non-OSCAL continued family keys refuse without output.
+    #[test]
+    fn continuity_refuses_uuid_reuse_and_unrepresentable_family_keys() {
+        let fixture = canary();
+        let mut padded = fixture.request.clone();
+        for row in padded["seed_families"].as_array_mut().unwrap() {
+            if row["family_key"] == RECURRING_FAMILY {
+                row["family_key"] = json!(" padded family");
+            }
+        }
+        padded["new_risks"][0]["family_key"] = json!(" padded family");
+        let message = refused_message(&fixture, &padded);
+        assert!(message.contains("valid OSCAL property value"), "{message}");
+        let mut reused = fixture.request.clone();
+        reused["next_epoch"]["result"]["risks"][1]["key"] = json!("risk-closed");
+        for relationship in reused["next_epoch"]["result"]["relationships"].as_array_mut().unwrap()
+        {
+            if relationship["to"]["key"] == "risk-new" {
+                relationship["to"]["key"] = json!("risk-closed");
+            }
+        }
+        reused["new_risks"][1]["next_key"] = json!("risk-closed");
+        refuse_request(&fixture, &reused);
+        write_json(&fixture.root.join("append.json"), &fixture.request);
+        let second = second_pair(&fixture);
+        let mut reused_later = third_request(&fixture, &second);
+        reused_later["next_epoch"]["result"]["risks"][0]["key"] = json!("risk-recurring");
+        for relationship in
+            reused_later["next_epoch"]["result"]["relationships"].as_array_mut().unwrap()
+        {
+            if relationship["to"]["key"] == "risk-recurring-again" {
+                relationship["to"]["key"] = json!("risk-recurring");
+            }
+        }
+        reused_later["new_risks"][0]["next_key"] = json!("risk-recurring");
+        refuse_request(&fixture, &reused_later);
+    }
+
+    /// An appended epoch may add roles and parties; earlier ones must stay unchanged and present.
+    #[test]
+    fn appended_epoch_adds_actors_without_changing_earlier_ones() {
+        let fixture = canary();
+        let original: Value = serde_json::from_slice(
+            &std::fs::read(fixture.root.join("assessment-results.json")).unwrap(),
+        )
+        .unwrap();
+        let mut request = fixture.request.clone();
+        let reviewer = json!({"assessor_key":"second-assessor","role_id":"reviewer",
+            "start":"2026-01-03T02:00:00Z","end":null,"method":"INTERVIEW",
+            "rationale":"SENSITIVE SECOND ASSERTION"});
+        request["next_epoch"]["roles"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"id":"reviewer","title":"Synthetic reviewer"}));
+        request["next_epoch"]["parties"].as_array_mut().unwrap().push(
+            json!({"key":"second-assessor","type":"organization","name":"SENSITIVE SECOND ACTOR"}),
+        );
+        request["next_epoch"]["result"]["risks"][1]["provenance"] = reviewer.clone();
+        request["new_risks"][1]["provenance"] = reviewer;
+        let second = accepted(
+            &fixture,
+            &request,
+            "append-actors.json",
+            "epoch-two.json",
+            "epoch-two-report.json",
+        );
+        let old_metadata = &original["assessment-results"]["metadata"];
+        let metadata = &second.native["assessment-results"]["metadata"];
+        for field in ["roles", "parties"] {
+            let before = old_metadata[field].as_array().unwrap();
+            let after = metadata[field].as_array().unwrap();
+            assert_eq!(after.len(), before.len() + 1);
+            assert_eq!(&after[..before.len()], before.as_slice(), "earlier {field} unchanged");
+        }
+        let added = metadata["parties"].as_array().unwrap().last().unwrap();
+        assert_eq!(native_property(added, "stable-key"), "second-assessor");
+        let roles = changes(&second.report, "role-added");
+        assert_eq!(roles.len(), 1);
+        assert_eq!(roles[0]["new"], "reviewer");
+        let parties = changes(&second.report, "party-added");
+        assert_eq!(parties.len(), 1);
+        assert_eq!(parties[0]["new"], added["uuid"]);
+        for row in roles.iter().chain(&parties) {
+            assert!(
+                row["locator"].is_null() && row["family_key"].is_null() && row["old"].is_null()
+            );
+        }
+        assert!(
+            !String::from_utf8_lossy(
+                &std::fs::read(fixture.root.join("epoch-two-report.json")).unwrap()
+            )
+            .contains("SENSITIVE SECOND ACTOR")
+        );
+        let mut restored = second.native.clone();
+        restored["assessment-results"]["results"].as_array_mut().unwrap().pop().unwrap();
+        for field in ["version", "last-modified"] {
+            restored["assessment-results"]["metadata"][field] = old_metadata[field].clone();
+        }
+        for field in ["roles", "parties"] {
+            restored["assessment-results"]["metadata"][field]
+                .as_array_mut()
+                .unwrap()
+                .pop()
+                .unwrap();
+        }
+        assert_eq!(restored, original, "only the new result and the two added actors differ");
+        assert_unique_uuids(&second.native);
+        // A later epoch omitting or changing an actor added earlier is refused.
+        let base = third_request(&fixture, &second);
+        let omitted = base.clone();
+        let message = refused_message(&fixture, &omitted);
+        assert!(message.contains("omits an earlier role or party"), "{message}");
+        let mut complete = base;
+        for (field, row) in [
+            ("roles", json!({"id":"reviewer","title":"Synthetic reviewer"})),
+            (
+                "parties",
+                json!({"key":"second-assessor","type":"organization","name":"SENSITIVE SECOND ACTOR"}),
+            ),
+        ] {
+            complete["next_epoch"][field].as_array_mut().unwrap().push(row);
+        }
+        let mut changed = complete.clone();
+        changed["next_epoch"]["parties"][1]["name"] = json!("RENAMED SECOND ACTOR");
+        let message = refused_message(&fixture, &changed);
+        assert!(message.contains("changes an earlier role or party"), "{message}");
+        let mut retitled = complete.clone();
+        retitled["next_epoch"]["roles"][1]["title"] = json!("Retitled reviewer");
+        refuse_request(&fixture, &retitled);
+        let third = accepted(
+            &fixture,
+            &complete,
+            "append-third.json",
+            "epoch-three.json",
+            "epoch-three-report.json",
+        );
+        assert_eq!(changes(&third.report, "role-added").len(), 0);
+        assert_eq!(changes(&third.report, "party-added").len(), 0);
+        assert_eq!(
+            third.native["assessment-results"]["metadata"]["parties"],
+            second.native["assessment-results"]["metadata"]["parties"]
+        );
+    }
+
+    /// Complete observation reference tuple copied from an actual native result.
+    fn observation_reference(result: &Value, key: &str) -> Value {
+        let observation = conclusion(result, "observations", key);
+        json!({"kind":"observation","key":key,"uuid":observation["uuid"],
+            "result_uuid":result["uuid"],"expected_sha256":canonical_digest(observation)})
+    }
+
+    /// New findings may reference earlier observations backward only; findings and risks stay refused.
+    #[test]
+    fn new_findings_link_backward_to_earlier_observations_only() {
+        let fixture = canary();
+        let original: Value = serde_json::from_slice(
+            &std::fs::read(fixture.root.join("assessment-results.json")).unwrap(),
+        )
+        .unwrap();
+        let first = &original["assessment-results"]["results"][0];
+        let earlier = observation_reference(first, "synthetic-observation");
+        let mut request = fixture.request.clone();
+        request["prior_observation_links"] =
+            json!([{"finding_key":"finding-next","observation":earlier}]);
+        for (pointer, value) in [
+            ("/prior_observation_links/0/observation/kind", json!("finding")),
+            ("/prior_observation_links/0/observation/kind", json!("risk")),
+            ("/prior_observation_links/0/observation/key", json!("finding-unsatisfied")),
+            ("/prior_observation_links/0/observation/expected_sha256", json!("0".repeat(64))),
+            ("/prior_observation_links/0/observation/key", json!("observation-next")),
+            ("/prior_observation_links/0/finding_key", json!("finding-unsatisfied")),
+        ] {
+            let mut invalid = request.clone();
+            *invalid.pointer_mut(pointer).unwrap() = value;
+            refuse_request(&fixture, &invalid);
+        }
+        let mut duplicate = request.clone();
+        duplicate["prior_observation_links"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"finding_key":"finding-next","observation":earlier}));
+        refuse_request(&fixture, &duplicate);
+        for relationship in [
+            json!({"from":{"type":"observation","key":"synthetic-observation"},"to":{"type":"finding","key":"finding-next"}}),
+            json!({"from":{"type":"finding","key":"finding-unsatisfied"},"to":{"type":"risk","key":"risk-new"}}),
+            json!({"from":{"type":"finding","key":"finding-next"},"to":{"type":"risk","key":"risk-open"}}),
+        ] {
+            let mut earlier_graph = fixture.request.clone();
+            earlier_graph["next_epoch"]["result"]["relationships"]
+                .as_array_mut()
+                .unwrap()
+                .push(relationship);
+            refuse_request(&fixture, &earlier_graph);
+        }
+        let second = accepted(
+            &fixture,
+            &request,
+            "append-link.json",
+            "epoch-two.json",
+            "epoch-two-report.json",
+        );
+        let epoch_two = &second.native["assessment-results"]["results"][1];
+        let finding = conclusion(epoch_two, "findings", "finding-next");
+        let related: Vec<_> = finding["related-observations"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| row["observation-uuid"].clone())
+            .collect();
+        assert_eq!(
+            related,
+            vec![
+                conclusion(epoch_two, "observations", "observation-next")["uuid"].clone(),
+                earlier["uuid"].clone()
+            ]
+        );
+        let linked = changes(&second.report, "prior-observation-linked");
+        assert_eq!(linked.len(), 1);
+        assert_eq!(linked[0]["new"], earlier["uuid"]);
+        assert_eq!(linked[0]["locator"]["kind"], "finding");
+        assert_eq!(linked[0]["locator"]["uuid"], finding["uuid"]);
+        assert_eq!(linked[0]["locator"]["result_uuid"], epoch_two["uuid"]);
+        assert_rows(&second.native, &second.report);
+        // The source loader accepts the backward reference and the next append reconstructs it.
+        initialize(&fixture.root, "epoch-two.json", epoch_two, "linked-plan.json");
+        let third = accepted(
+            &fixture,
+            &third_request(&fixture, &second),
+            "append-third.json",
+            "epoch-three.json",
+            "epoch-three-report.json",
+        );
+        assert_eq!(changes(&third.report, "prior-observation-linked").len(), 0);
+        let mut forged = second.report.clone();
+        forged["changes"]
+            .as_array_mut()
+            .unwrap()
+            .retain(|row| row["code"] != "prior-observation-linked");
+        forged["counts"]["review_actions"] = json!(forged["changes"].as_array().unwrap().len());
+        let bytes = write_json(&fixture.root.join("epoch-two-report.json"), &forged);
+        let mut tampered = third_request(&fixture, &second);
+        tampered["prior_report"]["expected_sha256"] = json!(sha256_hex(&bytes));
+        refuse_request(&fixture, &tampered);
+    }
+
+    /// The same additive request yields byte-identical native and report outputs.
+    #[test]
+    fn additive_append_is_deterministic() {
+        let fixture = canary();
+        let first = &serde_json::from_slice::<Value>(
+            &std::fs::read(fixture.root.join("assessment-results.json")).unwrap(),
+        )
+        .unwrap()["assessment-results"]["results"][0];
+        let mut request = fixture.request.clone();
+        request["prior_observation_links"] = json!([{"finding_key":"finding-next",
+            "observation":observation_reference(first, "synthetic-observation")}]);
+        request["next_epoch"]["parties"]
+            .as_array_mut()
+            .unwrap()
+            .push(json!({"key":"second-assessor","type":"organization","name":"Second actor"}));
+        let one = accepted(&fixture, &request, "append-a.json", "a.json", "a-report.json");
+        std::fs::remove_file(fixture.root.join("a.json")).unwrap();
+        std::fs::remove_file(fixture.root.join("a-report.json")).unwrap();
+        let two = accepted(&fixture, &request, "append-a.json", "a.json", "a-report.json");
+        assert_eq!(one.bytes, two.bytes);
+        assert_eq!(one.report, two.report);
+    }
+
+    /// Open, overlapping and different-context epochs stay refused; context errors point to a new document.
+    #[test]
+    fn different_context_and_overlapping_windows_stay_refused() {
+        let fixture = canary();
+        for kind in ["assessment_plan", "ssp", "catalog"] {
+            let mut request = fixture.request.clone();
+            request["next_epoch"]["context"][kind]["expected_sha256"] = json!("a".repeat(64));
+            let message = refused_message(&fixture, &request);
+            assert!(message.contains("start a new Assessment Results document"), "{message}");
+        }
+        for (pointer, value) in [
+            ("/next_epoch/result/start", json!("2026-01-01T12:00:00Z")),
+            ("/next_epoch/result/end", Value::Null),
+        ] {
+            let mut request = fixture.request.clone();
+            *request.pointer_mut(pointer).unwrap() = value;
+            refuse_request(&fixture, &request);
+        }
+    }
 }

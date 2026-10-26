@@ -44,6 +44,15 @@
       "items": {
         "$ref": "#/$defs/NewRisk"
       }
+    },
+    "prior_observation_links": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 10000,
+      "description": "Optional additive field. Each row links one new finding to one observation from an earlier epoch, backward only. Omission equals an empty array.",
+      "items": {
+        "$ref": "#/$defs/PriorObservationLink"
+      }
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -213,6 +222,50 @@
         },
         "context": {
           "$ref": "#/$defs/Context"
+        }
+      }
+    },
+    "ObservationSourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "key",
+        "uuid",
+        "result_uuid",
+        "expected_sha256"
+      ],
+      "properties": {
+        "kind": {
+          "const": "observation"
+        },
+        "key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "result_uuid": {
+          "$ref": "#/$defs/CanonicalUuid"
+        },
+        "expected_sha256": {
+          "$ref": "#/$defs/Sha256"
+        }
+      }
+    },
+    "PriorObservationLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finding_key",
+        "observation"
+      ],
+      "properties": {
+        "finding_key": {
+          "$ref": "#/$defs/SourceKey"
+        },
+        "observation": {
+          "$ref": "#/$defs/ObservationSourceReference"
         }
       }
     },

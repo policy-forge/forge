@@ -787,7 +787,9 @@ The saved report is always JSON. Optional `--view-format json|text|html` selects
 complete stdout view after both files are published; omitted view leaves stdout
 empty. A valid append returns `1` for descriptive review actions, or `0` with
 `--fail-on never`; errors return `2` and a late error can leave complete files.
-This first profile requires unchanged context/actors and sealed ordered windows.
+This profile requires the same Assessment Plan and context and sealed ordered
+windows. An appended epoch may add roles and parties, and new findings may link
+to earlier observations; earlier objects never change.
 See [sealed assessment epochs](assessment-results-epochs.md) for complete risk
 classification, continuity, bounds, source rebinding and remaining S-4 gates.
 
@@ -812,6 +814,14 @@ POA&M check/build retain their separate `0`/`1`/`2` meanings. See
 [reviewed-risk authoring](assessment-results-reviewed-risks.md) for source
 inventory selection, platform publication limits, consumption and remaining
 acceptance gates.
+
+To add new work to an existing plan, replace `--scaffold` with
+`--existing-plan /absolute/bundle/plan-workflow.json`. This opt-in mode is
+add-only. The request carries only new planned items, plus the plan's exact
+source, roles and parties. Existing items and their history are never changed,
+and the plan file is never rewritten. Reviewed risks already referenced by the
+plan, and source mismatch or staleness, are refused. See
+[add new work to an existing plan](assessment-results-reviewed-risks.md#add-new-work-to-an-existing-plan).
 
 ### 3.14 `poam` — Check Sources and Authored Remediation Work
 
@@ -848,7 +858,10 @@ forge poam build --manifest ./assessment-bundle/authored.json \
 Every item selects exact source finding/risk identities and supplies declared
 owners, dates, ordered milestones and attributed append-only history. The as-of
 date is required. Exit 0 means valid ungated state, 1 a valid schedule action,
-and 2 invalid input or publication. Completion/risk acceptance is refused. Both
+and 2 invalid input or publication. `completed-asserted` and
+`accepted-risk-asserted` need an independent reviewer and hashed evidence with an
+explicit `captured_at`; they are assertions, never verified closure, and are never
+overdue. Reopen work with a new item that sets `supersedes`. Both
 new output filenames use the manifest directory so relative native source links
 retain their base. Artifact/report publication is separate and may leave a new
 artifact if the later report fails. See [authored POA&M commands](poam-cli-workflow.md)
@@ -866,7 +879,7 @@ Exit 0 means a complete comparison needs no review; 1 means its complete report
 needs review; 2 means invalid input/output. Prior source tuples are checked against
 the actual current source capture, without reconstructing historical freshness.
 See [baseline comparison](poam-baseline-comparison.md) for complete denominators,
-explicit reopening declarations, privacy and admission limits.
+reopen/supersession relations with `accepted_for_build`, privacy and admission limits.
 
 Review explicitly paired native plans together:
 
