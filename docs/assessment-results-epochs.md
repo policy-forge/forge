@@ -110,10 +110,10 @@ epoch carries two Forge-namespaced properties
 
 A tool that reads only the native file can follow these properties back to the
 family's first member. A first member, whether seeded or newly created, carries
-neither property. The output stays valid against the OSCAL 1.2.3 schema, so a
-continued family key must be a valid OSCAL property value: no leading or trailing
-whitespace and no line breaks. A new family whose key is not valid this way is
-still accepted, but it cannot be continued later.
+neither property. The output stays valid against the OSCAL 1.2.3 schema, so
+every family key, including a new or seed key, must be a valid OSCAL property
+value: no leading or trailing whitespace and no line breaks. This ensures a
+new family can be continued later.
 
 The POA&M source loader checks these properties in every result. Both must
 appear together. The predecessor must be a risk in an earlier result, can have
