@@ -1907,9 +1907,9 @@ impl<'a> ContinuityPlan<'a> {
             if !touched.insert(key) {
                 return Err(error("epoch append branches or merges a family"));
             }
-            if !class["prior"].is_null() && !oscal_string(key) {
+            if !oscal_string(key) {
                 return Err(error(
-                    "epoch continued family key must be a valid OSCAL property value without leading or trailing whitespace or line breaks",
+                    "epoch family key must be a valid OSCAL property value without leading or trailing whitespace or line breaks",
                 ));
             }
             if class["prior"].is_null() {
@@ -2008,6 +2008,11 @@ impl<'a> ContinuityPlan<'a> {
                     true,
                 )?;
                 let key = family_key(&row["family_key"])?;
+                if !oscal_string(key) {
+                    return Err(error(
+                        "epoch family key must be a valid OSCAL property value without leading or trailing whitespace or line breaks",
+                    ));
+                }
                 if self
                     .families
                     .insert(
@@ -4420,7 +4425,7 @@ mod tests {
         assert!(parse_request(&serde_json::to_vec(&omitted).unwrap()).is_err());
     }
 
-    /// Exact family domain accepts whitespace and multibyte boundaries without weakening legacy trimmed source keys.
+    /// Exact family keys retain UTF-8 byte bounds, but a new key must be representable as an OSCAL property.
     #[test]
     fn exact_family_utf8_boundary_and_legacy_key_admission_are_distinct() {
         assert_eq!(family_key(&json!(" ")).unwrap(), " ");
@@ -4428,16 +4433,14 @@ mod tests {
         assert!(family_key(&json!("é".repeat(129))).is_err());
         assert!(family_key(&json!("")).is_err());
         assert!(text(&json!(" ")).is_err());
-        let mut fixture = fixture(0.5);
-        fixture.request["new_risks"][0]["family_key"] = json!(" ");
-        let prepared = prepare_fixture(&fixture, None).unwrap();
-        assert!(
-            prepared_json(&prepared)["families"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .any(|row| row["family_key"] == " ")
-        );
+        for field in ["new_risks", "seed_families"] {
+            let mut fixture = fixture(0.5);
+            fixture.request[field][0]["family_key"] = json!(" ");
+            let Err(failure) = prepare_fixture(&fixture, None) else {
+                panic!("{field} accepted an invalid family key");
+            };
+            assert!(failure.to_string().contains("valid OSCAL property value"), "{failure}");
+        }
     }
 
     /// Count and retained writers enforce inclusive complete fragment+LF ceilings without partial growth.
