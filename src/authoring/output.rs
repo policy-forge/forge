@@ -641,6 +641,7 @@ mod windows {
     const FILE_SHARE_READ: u32 = 0x0000_0001;
     const FILE_SHARE_WRITE: u32 = 0x0000_0002;
     const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0000_0400;
+    const FILE_READ_ATTRIBUTES: u32 = 0x0000_0080;
     const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
     const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
 
@@ -741,7 +742,7 @@ mod windows {
     /// Open one directory itself, never a reparse target, without delete sharing.
     fn open_directory(path: &Path) -> Result<File, ForgeError> {
         let directory = OpenOptions::new()
-            .read(true)
+            .access_mode(FILE_READ_ATTRIBUTES)
             .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
             .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS)
             .open(path)
@@ -1104,12 +1105,20 @@ mod tests {
         let root = root.path().canonicalize().unwrap();
         let outside = tempfile::tempdir().unwrap();
         std::fs::write(outside.path().join("target.json"), b"outside\n").unwrap();
-        std::os::windows::fs::symlink_dir(outside.path(), root.join("linked")).unwrap();
-        std::os::windows::fs::symlink_file(
-            outside.path().join("target.json"),
-            root.join("link.json"),
-        )
-        .unwrap();
+        let links = std::os::windows::fs::symlink_dir(outside.path(), root.join("linked"))
+            .and_then(|()| {
+                std::os::windows::fs::symlink_file(
+                    outside.path().join("target.json"),
+                    root.join("link.json"),
+                )
+            });
+        if let Err(cause) = links {
+            if cause.raw_os_error() == Some(1314) {
+                eprintln!("skipping reparse test: symlink privilege is not held");
+                return;
+            }
+            panic!("symlink setup failed: {cause}");
+        }
         let failure = publish_new_file(&root, Path::new("linked/out.json"), b"x\n").unwrap_err();
         assert!(failure.to_string().contains("reparse"), "{failure}");
         let failure = publish_new_file(&root, Path::new("link.json"), b"x\n").unwrap_err();

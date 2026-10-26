@@ -577,7 +577,7 @@ fn insert_id<'a>(
     Ok(())
 }
 
-#[cfg(test)]
+#[cfg(all(test, any(target_os = "linux", target_os = "macos", windows)))]
 #[path = "supersession_binding_tests.rs"]
 /// Genuine native queue and old-dependency binding controls.
 mod tests;
