@@ -55,7 +55,15 @@ fn collect_resource_uuids(json: &Value, model_type: OscalModelType) -> HashSet<S
 /// Finds `href` values starting with `#` that reference UUIDs
 /// not present in `back-matter.resources[].uuid`.
 /// Does NOT follow external URLs (SEC-5).
+///
+/// Assessment Results is exempt: OSCAL permits its links to target any element
+/// uuid in the same document, not only back-matter resources, so this rule would
+/// reject valid native documents. Validation for that model is schema-only, the
+/// same boundary [`check_missing_references`] already applies.
 fn check_orphaned_links(json: &Value, model_type: OscalModelType) -> Vec<ValidationError> {
+    if model_type == OscalModelType::AssessmentResults {
+        return Vec::new();
+    }
     let resource_uuids = collect_resource_uuids(json, model_type);
     let mut errors = Vec::new();
 

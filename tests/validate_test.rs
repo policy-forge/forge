@@ -499,3 +499,25 @@ fn validate_schema_type_assessment_results_conflicts_with_round_trip() {
     assert_eq!(code, 2, "clap must reject the combination: {stderr}");
     assert!(stderr.contains("cannot be used with"), "got: {stderr}");
 }
+
+/// Verify that an Assessment Results link targeting a uuid in the same document
+/// is not treated as an orphaned back-matter link.
+///
+/// OSCAL permits AR links to reference any element uuid in the document, not only
+/// `back-matter` resources. The generic PRD M-3 rule would reject this valid native
+/// document, so Assessment Results validation is schema-only.
+#[test]
+fn validate_assessment_results_accepts_same_document_fragment_links() {
+    let mut value: serde_json::Value = serde_json::from_str(MINIMAL_ASSESSMENT_RESULTS).unwrap();
+    let target = value["assessment-results"]["uuid"].as_str().unwrap().to_string();
+    value["assessment-results"]["results"][0]["links"] =
+        serde_json::json!([{ "href": format!("#{target}") }]);
+    let file = temp_json_file(&value.to_string());
+    let (stdout, stderr, code) = run_validate(&[file.path().to_str().unwrap(), "--format", "json"]);
+    assert_eq!(code, 0, "a same-document fragment link is not orphaned: {stderr}");
+    let report: serde_json::Value =
+        serde_json::from_str(&stdout).expect("validation stdout must be JSON");
+    assert_eq!(report["model_type"], "assessment-results");
+    assert_eq!(report["is_valid"], true);
+    assert_eq!(report["semantic_error_count"], 0);
+}
