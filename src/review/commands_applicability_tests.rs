@@ -933,7 +933,8 @@ const OTHER_QUEUE_ID: &str = "99999999-9999-4999-8999-999999999999";
 /// AC-3 setup: two actual current approvals fill quorum, then one real native
 /// control statement change regenerates every native/report/lifecycle original
 /// and a fresh queue is initialized at a new destination with `queue_id`.
-/// Returns the old response paths and the complete current status bytes.
+/// Returns the old response paths and the complete current status bytes; the
+/// original response files are asserted byte-identical before returning.
 fn merge_old_responses_after_actual_subject_drift(
     fixture: &Fixture,
     queue_id: &str,
@@ -942,13 +943,18 @@ fn merge_old_responses_after_actual_subject_drift(
         response(fixture, 0, Disposition::Approve),
         response(fixture, 1, Disposition::Approve),
     ];
+    let originals: Vec<_> =
+        responses.iter().map(|path| std::fs::read(fixture.root().join(path)).unwrap()).collect();
     assert_status(&status_bytes(fixture, &responses), ItemState::QuorumMet, 2, 2, 0);
     let old_raw = std::fs::read(fixture.root().join("queue.json")).unwrap();
     let old =
         decode::decode_queue(&old_raw, &mut ContractLedger::default(), &mut NoopControl).unwrap();
     fixture.refresh_framework_statement_for_supersession();
     let mut writer = Vec::new();
-    assert!(status(&options(fixture, &responses), &mut writer, &mut NoopControl).is_err());
+    assert!(matches!(
+        status(&options(fixture, &responses), &mut writer, &mut NoopControl),
+        Err(CommandError::Contract(ContractError::Binding))
+    ));
     assert_eq!(writer, Vec::<u8>::new());
     initialize_as(fixture, queue_id, Path::new("regenerated-queue.json")).unwrap();
     let new_raw = std::fs::read(fixture.root().join("regenerated-queue.json")).unwrap();
@@ -965,6 +971,9 @@ fn merge_old_responses_after_actual_subject_drift(
     status(&regenerated, &mut bytes, &mut NoopControl).unwrap();
     merge(&regenerated, Path::new("drift-dispositions.json"), &mut NoopControl).unwrap();
     assert_eq!(std::fs::read(fixture.root().join("drift-dispositions.json")).unwrap(), bytes);
+    for (path, original) in responses.iter().zip(&originals) {
+        assert_eq!(&std::fs::read(fixture.root().join(path)).unwrap(), original);
+    }
     (responses, bytes)
 }
 

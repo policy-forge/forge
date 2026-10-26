@@ -2030,6 +2030,10 @@ pub(crate) mod tests {
         let first = std::fs::read(f.root.join("queue-a.json")).unwrap();
         assert_eq!(first, std::fs::read(f.root.join("queue-b.json")).unwrap());
         assert!(first.ends_with(b"\n"));
+        let text = String::from_utf8(first).unwrap();
+        for destination in ["queue-a.json", "queue-b.json"] {
+            assert!(!text.contains(destination), "destination {destination} leaked into the queue");
+        }
     }
 
     /// Actual author and unknown reviewer assertions cannot produce a successful response file.
