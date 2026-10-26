@@ -73,6 +73,68 @@ The table above retains the startup-repair checkpoint; its receipt and the
 original source receipt are preserved. New-commit hosted outcomes remain a
 separate gate, including Windows compilation, audit and Linux OS denial.
 
+## Created-target rollback correction (October 25, 2026)
+
+A gap audit for this workflow found a defect in rollback before the commit
+decision. A target that did not exist before the restore can be a new resource
+or a first index. The transaction published that target by renaming its staged
+payload into place. A rollback then unlinked the published object but kept the
+target's staged facts. Auxiliary cleanup compared an empty staging slot with
+those facts. It reported `recovery-required`. Reading the recovery reconciliation shows
+that a later restart could not reconcile the state either; that conclusion
+comes from the code and was not run as a test. Participating workspace access to the project stayed
+blocked.
+
+After a verified owned unlink, rollback now clears the created target's staged
+facts. This is the same state the existing recovery reconciliation records. The
+fix affects both the inline and the staged source restore, because they share
+one transaction. Two Linux/macOS unit controls cover it:
+
+- `cancellation_after_created_target_publication_verifies_none_and_cleanup`
+  cancels in process after every target is published. It runs once with a
+  pre-existing resource and once without. It expects `cancelled`, `none` and
+  `verified`, the original bytes or absence, and no leftover auxiliary entries.
+- `restart_after_interrupted_publication_rolls_back_owned_targets` simulates a
+  process stop between journal generations. A test-only storage wrapper refuses
+  every write after the first durable published-target record. The control
+  covers two stop points: before the index publishes, and after the index is
+  renamed into place but before that fact is journaled. A read-only reopen
+  refuses settlement and leaves the bytes unchanged. A fresh writable recovery
+  rolls back every owned publication and reports `failed`, `none` and `verified`.
+
+These are source-level unit controls. They do not kill a real process, and
+they do not qualify Windows or cross-platform crash and rollback behavior.
+Measured coverage was not collected for this correction.
+
+### Recovering a development build blocked by this defect
+
+No released version is affected: source restore is not in `v1.1.0` or earlier.
+Per the [2026-10-25 owner dispositions](plans/2026-10-25-owner-dispositions.md),
+the correction adds no compatibility path for journal records written by an
+affected development build. Such a record keeps the project blocked with
+`recovery-required` after upgrading. Recover it by hand only when every check
+below holds; otherwise the outcome is genuinely unknown and the rule in the
+[source bundle guide](workspace-source-bundles.md) applies: do not remove
+private state.
+
+1. Stop every workspace process for the project.
+2. Find the project's journal: `root-<binding hash>/transactions.json` under
+   `$XDG_STATE_HOME/forge/source-restores` (default
+   `~/.local/state/forge/source-restores`) on Linux, or
+   `~/Library/Application Support/Forge/source-restores` on macOS. Search the
+   journals for the operation ID that the status route reported.
+3. Confirm that this journal holds that one record only, and that every target
+   of the record is in its pre-restore state: resources that existed before
+   hold their original bytes, and targets that did not exist, including a first
+   index, are absent.
+4. For each entry in the record's `targets`, the private staging directory
+   named by its `auxiliary_name` sits in that target's parent directory. Confirm
+   that each one is empty, then remove it. Remove any directory listed in the
+   record's `directories` only if it is empty.
+5. Move the whole `root-<binding hash>` directory out of the state directory
+   instead of deleting it, so the record stays available for review. The next
+   writable launch creates fresh private state.
+
 ## Preserved source checkpoint
 
 The [original source receipt](plans/2026-10-03-f19-source-bundle-verification.json)
