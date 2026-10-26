@@ -800,6 +800,14 @@ POA&M check/build retain their separate `0`/`1`/`2` meanings. See
 inventory selection, platform publication limits, consumption and remaining
 acceptance gates.
 
+To add new work to an existing plan, replace `--scaffold` with
+`--existing-plan /absolute/bundle/plan-workflow.json`. This opt-in mode is
+add-only. The request carries only new planned items, plus the plan's exact
+source, roles and parties. Existing items and their history are never changed,
+and the plan file is never rewritten. Reviewed risks already referenced by the
+plan, and source mismatch or staleness, are refused. See
+[add new work to an existing plan](assessment-results-reviewed-risks.md#add-new-work-to-an-existing-plan).
+
 ### 3.14 `poam` — Check Sources and Authored Remediation Work
 
 `forge poam init` emits an unselected `forge.poam/1` scaffold from one exact
