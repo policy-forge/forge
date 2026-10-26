@@ -200,12 +200,25 @@ forge validate catalog.json --format json
 forge validate artifact.json --schema-type catalog
 forge validate artifact.json --schema-type component-definition
 
+# Validate an OSCAL Assessment Results document (auto-detected from its root)
+forge validate assessment-results.json
+forge validate assessment-results.json --schema-type assessment-results
+
 # Write validation results to a file
 forge validate catalog.json --output validation-report.txt
 ```
 
 On valid: prints "Valid: catalog artifact passes all validation." and exits 0.
 On invalid: renders the error report to stderr and exits non-zero.
+
+Assessment Results documents are validated against the pinned v1.2.3
+`schemas/oscal_assessment-results_schema.json` with the same report, formats and
+exit codes as other models (schema errors exit 3). This checks native schema
+conformance only: it does not verify the Assessment Plan, SSP, Profile or
+evidence context that `forge assessment results build` checks, and it is not an
+assessment conclusion. `--round-trip`, `export` and `diff` do not support
+Assessment Results. This is an approved small scope expansion beyond PRD 054
+(F10 in the [2026-10-25 owner dispositions](plans/2026-10-25-owner-dispositions.md)).
 
 #### Round-trip validation
 

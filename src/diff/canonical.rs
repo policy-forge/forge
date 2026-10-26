@@ -193,6 +193,10 @@ fn detect_artifact_type(value: &Value, role: ArtifactRole) -> Result<ArtifactTyp
             "{} artifact uses unsupported POA&M model; expected Catalog or Component Definition",
             role.as_str()
         ))),
+        Ok(OscalModelType::AssessmentResults) => Err(ForgeError::DiffError(format!(
+            "{} artifact uses unsupported Assessment Results model; expected Catalog or Component Definition",
+            role.as_str()
+        ))),
         Err(error) => Err(ForgeError::DiffError(format!(
             "{} artifact is not a recognized Catalog or Component Definition: {error}",
             role.as_str()

@@ -24,6 +24,7 @@ fn schema_type_to_model_type(schema_type: &SchemaType) -> OscalModelType {
         SchemaType::SystemSecurityPlan => OscalModelType::SystemSecurityPlan,
         SchemaType::Mapping => OscalModelType::Mapping,
         SchemaType::Poam => OscalModelType::Poam,
+        SchemaType::AssessmentResults => OscalModelType::AssessmentResults,
     }
 }
 
@@ -267,7 +268,8 @@ fn build_round_trip_result(
         OscalModelType::Profile
         | OscalModelType::SystemSecurityPlan
         | OscalModelType::Mapping
-        | OscalModelType::Poam => ArtifactType::Unknown,
+        | OscalModelType::Poam
+        | OscalModelType::AssessmentResults => ArtifactType::Unknown,
     };
     let declared_oscal_version =
         validate::version::inspect_oscal_version(original_json, model_type).declared;

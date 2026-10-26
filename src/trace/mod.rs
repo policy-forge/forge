@@ -82,6 +82,12 @@ pub fn generate_trace_report(
                 detail: "POA&M artifacts are not supported for source traceability".to_string(),
             });
         }
+        OscalModelType::AssessmentResults => {
+            return Err(ForgeError::TraceUnsupportedArtifact {
+                detail: "Assessment Results artifacts are not supported for source traceability"
+                    .to_string(),
+            });
+        }
         OscalModelType::Mapping => {
             return Err(ForgeError::TraceUnsupportedArtifact {
                 detail: "Control Mapping artifacts are not supported for traceability".to_string(),

@@ -355,7 +355,7 @@ fn component_statement_without_uuid_is_rejected_without_publication() {
     );
 }
 
-/// Refuse recognized Profile, SSP and Mapping object roots in JSON and YAML.
+/// Refuse recognized Profile, SSP, Mapping and Assessment Results object roots in JSON and YAML.
 ///
 /// The exact model diagnostic proves refusal precedes schema/body validation;
 /// every case retains both destination guards and the original source bytes.
@@ -366,6 +366,7 @@ fn other_oscal_models_are_rejected_without_publication() {
         ("profile", "Profile"),
         ("system-security-plan", "System Security Plan"),
         ("mapping-collection", "Control Mapping"),
+        ("assessment-results", "Assessment Results"),
     ] {
         let mut artifact = serde_json::json!({});
         artifact[root] = serde_json::json!({

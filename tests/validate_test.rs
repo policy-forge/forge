@@ -399,3 +399,125 @@ fn wi22_expected_component_artifacts_pass_schema_validation() {
         assert!(result.is_valid, "WI-22 component fixture should be schema-valid: {path}");
     }
 }
+
+// --- Assessment Results (#70; owner disposition F10, 2026-10-25) ---
+
+/// Minimal native Assessment Results that matches the pinned v1.2.3 schema.
+///
+/// It asserts no assessment conclusion; it only exercises the schema boundary.
+const MINIMAL_ASSESSMENT_RESULTS: &str = r#"{
+    "assessment-results": {
+        "uuid": "6f1d2c3b-4a5e-4f60-8a71-9b2c3d4e5f60",
+        "metadata": {
+            "title": "Schema boundary Assessment Results",
+            "last-modified": "2026-10-25T00:00:00Z",
+            "version": "1.0",
+            "oscal-version": "1.2.3"
+        },
+        "import-ap": { "href": "assessment-plan.json" },
+        "results": [{
+            "uuid": "6f1d2c3b-4a5e-4f60-8a71-9b2c3d4e5f61",
+            "title": "Explicit fixture result",
+            "description": "Tests native structure without asserting an assessment conclusion.",
+            "start": "2026-10-25T00:00:00Z",
+            "reviewed-controls": { "control-selections": [{ "include-all": {} }] }
+        }]
+    }
+}"#;
+
+/// Verify that a valid Assessment Results document is auto-detected and passes.
+#[test]
+fn validate_auto_detects_valid_assessment_results_exits_0() {
+    let file = temp_json_file(MINIMAL_ASSESSMENT_RESULTS);
+    let (stdout, stderr, code) = run_validate(&[file.path().to_str().unwrap(), "--format", "json"]);
+    assert_eq!(code, 0, "valid Assessment Results must pass: {stderr}");
+    let report: serde_json::Value =
+        serde_json::from_str(&stdout).expect("validation stdout must be JSON");
+    assert_eq!(report["model_type"], "assessment-results");
+    assert_eq!(report["is_valid"], true);
+    assert_eq!(report["declared_oscal_version"], "1.2.3");
+    assert_eq!(report["schema_version_used"], "1.2.3");
+
+    let (stdout, stderr, code) = run_validate(&[file.path().to_str().unwrap()]);
+    assert_eq!(code, 0, "text report must also pass: {stderr}");
+    assert!(stdout.contains("Valid: assessment-results artifact"), "got: {stdout}");
+}
+
+/// Verify that an invalid Assessment Results document fails like other models (exit 3).
+#[test]
+fn validate_invalid_assessment_results_exits_3_with_errors() {
+    let mut value: serde_json::Value = serde_json::from_str(MINIMAL_ASSESSMENT_RESULTS).unwrap();
+    let root = value["assessment-results"].as_object_mut().unwrap();
+    root.remove("import-ap");
+    root.insert("results".to_string(), serde_json::json!([]));
+    let file = temp_json_file(&value.to_string());
+    let (_stdout, stderr, code) = run_validate(&[file.path().to_str().unwrap()]);
+    assert_eq!(code, 3, "Expected exit 3 for schema validation errors: {stderr}");
+    assert!(stderr.contains("Validation failed"), "got: {stderr}");
+    assert!(stderr.contains("Model: assessment-results"), "got: {stderr}");
+    assert!(stderr.contains("required field missing: import-ap"), "got: {stderr}");
+    assert!(
+        stderr.contains("2 validation error(s) in assessment-results artifact"),
+        "got: {stderr}"
+    );
+}
+
+/// Verify the explicit `--schema-type assessment-results` override in both directions.
+#[test]
+fn validate_schema_type_assessment_results_override() {
+    let valid = temp_json_file(MINIMAL_ASSESSMENT_RESULTS);
+    let (stdout, stderr, code) =
+        run_validate(&[valid.path().to_str().unwrap(), "--schema-type", "assessment-results"]);
+    assert_eq!(code, 0, "explicit override must accept valid AR: {stderr}");
+    assert!(stdout.contains("assessment-results"), "got: {stdout}");
+
+    let (_stdout, stderr, code) =
+        run_validate(&[valid.path().to_str().unwrap(), "--schema-type", "catalog"]);
+    assert_eq!(code, 3, "AR validated as catalog must fail: {stderr}");
+
+    let catalog = temp_json_file(
+        r#"{"catalog": {"uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "metadata": {
+            "title": "Test", "last-modified": "2026-01-01T00:00:00Z",
+            "version": "1.0", "oscal-version": "1.2.3"}}}"#,
+    );
+    let (_stdout, stderr, code) =
+        run_validate(&[catalog.path().to_str().unwrap(), "--schema-type", "assessment-results"]);
+    assert_eq!(code, 3, "catalog validated as Assessment Results must fail: {stderr}");
+    assert!(stderr.contains("assessment-results"), "got: {stderr}");
+}
+
+/// Verify that round-trip validation stays out of scope for Assessment Results overrides.
+#[test]
+fn validate_schema_type_assessment_results_conflicts_with_round_trip() {
+    let file = temp_json_file(MINIMAL_ASSESSMENT_RESULTS);
+    let (_stdout, stderr, code) = run_validate(&[
+        file.path().to_str().unwrap(),
+        "--schema-type",
+        "assessment-results",
+        "--round-trip",
+    ]);
+    assert_eq!(code, 2, "clap must reject the combination: {stderr}");
+    assert!(stderr.contains("cannot be used with"), "got: {stderr}");
+}
+
+/// Verify that an Assessment Results link targeting a uuid in the same document
+/// is not treated as an orphaned back-matter link.
+///
+/// OSCAL permits AR links to reference any element uuid in the document, not only
+/// `back-matter` resources. The generic PRD M-3 rule would reject this valid native
+/// document, so Assessment Results validation is schema-only.
+#[test]
+fn validate_assessment_results_accepts_same_document_fragment_links() {
+    let mut value: serde_json::Value = serde_json::from_str(MINIMAL_ASSESSMENT_RESULTS).unwrap();
+    let target = value["assessment-results"]["uuid"].as_str().unwrap().to_string();
+    value["assessment-results"]["results"][0]["links"] =
+        serde_json::json!([{ "href": format!("#{target}") }]);
+    let file = temp_json_file(&value.to_string());
+    let (stdout, stderr, code) = run_validate(&[file.path().to_str().unwrap(), "--format", "json"]);
+    assert_eq!(code, 0, "a same-document fragment link is not orphaned: {stderr}");
+    let report: serde_json::Value =
+        serde_json::from_str(&stdout).expect("validation stdout must be JSON");
+    assert_eq!(report["model_type"], "assessment-results");
+    assert_eq!(report["is_valid"], true);
+    assert_eq!(report["semantic_error_count"], 0);
+}
