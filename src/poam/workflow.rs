@@ -793,6 +793,18 @@ pub fn validate_successor(
     }
     let items: BTreeMap<_, _> =
         current.items.iter().map(|item| (item.key.as_str(), item)).collect();
+    let prior_items: BTreeMap<_, _> =
+        previous.items.iter().map(|item| (item.key.as_str(), item)).collect();
+    for item in &current.items {
+        if let Some(prior) = &item.supersedes
+            && !prior_items.contains_key(item.key.as_str())
+            && !prior_items.get(prior.as_str()).is_some_and(|old| old.state.terminal())
+        {
+            return Err(error(
+                "new supersession requires an item already terminal in the baseline",
+            ));
+        }
+    }
     for old in &previous.items {
         let item = items.get(old.key.as_str()).ok_or_else(|| {
             error("baseline item removal requires the future explicit supersession workflow")
@@ -1518,6 +1530,9 @@ mod tests {
         assert_eq!(manifest.items[0].history, parsed(&accepted()).unwrap().items[0].history);
         let old = parsed(&accepted()).unwrap();
         assert!(validate_successor(&old, &manifest).is_ok());
+        let planned = parsed(&declaration()).unwrap();
+        let cause = validate_successor(&planned, &manifest).unwrap_err().to_string();
+        assert!(cause.contains("already terminal in the baseline"), "{cause}");
         for (replacement, reason) in [
             (json!("work-reopened"), "different item"),
             (json!("missing"), "different item"),
