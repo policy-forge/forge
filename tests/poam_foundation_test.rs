@@ -1162,19 +1162,7 @@ fn authored_parser_does_not_turn_foundation_scaffold_into_selected_work() {
 
 /// Persist the exact authored fixture and return original declared input bytes for nonmutation assertions.
 fn install_authored_cli(fixture: &Fixture) -> Vec<(String, Vec<u8>)> {
-    let value = authored_workflow(fixture);
-    write_json(&fixture.directory.path().join("poam.json"), &value);
-    [
-        "poam.json",
-        "assessment-results.json",
-        "assessment-plan.json",
-        "ssp.json",
-        "profile.json",
-        "catalog.json",
-    ]
-    .into_iter()
-    .map(|name| (name.to_string(), std::fs::read(fixture.directory.path().join(name)).unwrap()))
-    .collect()
+    install_declaration(fixture, &authored_workflow(fixture))
 }
 
 /// Reconcile the complete original synthetic source/manifests after real command observations.
@@ -1346,6 +1334,157 @@ fn authored_cli_schedule_action_is_valid_exit_one_with_complete_counts() {
     assert_eq!(quiet.status.code(), Some(0));
     assert!(quiet.stdout.is_ascii());
     assert_eq!(quiet.stderr, [] as [u8; 0]);
+}
+
+/// Append one attributed assertion, terminal or nonterminal, to an authored fixture record.
+fn append_authored_event(record: &mut Value, key: &str, at: &str, from: &str, to: &str) {
+    record["history"].as_array_mut().unwrap().push(json!({"key":key,
+        "actor":{"role_id":"owner","party_key":"remediator"},"at":at,"from":from,"to":to,
+        "rationale":"SENSITIVE EVENT RATIONALE","closure":null}));
+    record["state"] = json!(to);
+}
+
+/// Persist one authored declaration and snapshot it with all five original sources.
+fn install_declaration(fixture: &Fixture, value: &Value) -> Vec<(String, Vec<u8>)> {
+    write_json(&fixture.directory.path().join("poam.json"), value);
+    [
+        "poam.json",
+        "assessment-results.json",
+        "assessment-plan.json",
+        "ssp.json",
+        "profile.json",
+        "catalog.json",
+    ]
+    .into_iter()
+    .map(|name| (name.to_string(), std::fs::read(fixture.directory.path().join(name)).unwrap()))
+    .collect()
+}
+
+/// Run the real workflow check at one explicit date and decode its complete JSON schedule.
+fn workflow_check(root: &Path, as_of: &str) -> (Option<i32>, Value) {
+    let output = run(
+        root,
+        &[
+            "poam",
+            "check",
+            "--workflow",
+            "--manifest",
+            "poam.json",
+            "--as-of",
+            as_of,
+            "--format",
+            "json",
+        ],
+    );
+    assert_eq!(output.stderr, [] as [u8; 0], "{}", String::from_utf8_lossy(&output.stderr));
+    (output.status.code(), serde_json::from_slice(&output.stdout).unwrap())
+}
+
+/// A blocked assertion alone is a valid exit-1 schedule action, and only from its explicit date.
+#[test]
+fn authored_cli_blocked_only_schedule_is_valid_exit_one_from_its_asserted_date() {
+    let fixture = fixture();
+    let root = fixture.directory.path();
+    let mut value = authored_workflow(&fixture);
+    append_authored_event(
+        &mut value["items"][0],
+        "block",
+        "2026-01-05T00:00:00Z",
+        "planned",
+        "blocked",
+    );
+    let inputs = install_declaration(&fixture, &value);
+    let (code, report) = workflow_check(root, "2026-01-10");
+    assert_eq!(code, Some(1));
+    assert_eq!(
+        (&report["overdue"], &report["due_soon"], &report["blocked"]),
+        (&json!(0), &json!(0), &json!(1))
+    );
+    assert_eq!((&report["items"], &report["milestones"]), (&json!(1), &json!(1)));
+    let rows = report["rows"].as_array().unwrap();
+    assert_eq!(rows.len(), 2);
+    assert_eq!(rows[0]["milestone_key"], Value::Null);
+    assert_eq!(rows[0]["state"], json!("blocked"));
+    assert_eq!(rows[1]["state"], json!("planned"));
+    let (code, before) = workflow_check(root, "2026-01-04");
+    assert_eq!(code, Some(0));
+    assert_eq!(before["blocked"], json!(0));
+    assert_eq!(before["rows"][0]["state"], json!("planned"));
+    assert_authored_cli_inputs(&fixture, &inputs);
+}
+
+/// Cancellation is a terminal plan assertion: never overdue, and no source finding is closed or changed.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn authored_cli_cancelled_work_is_not_overdue_and_closes_no_source_finding() {
+    let fixture = fixture();
+    let root = fixture.directory.path();
+    let mut value = authored_workflow(&fixture);
+    let selected = value["items"][0]["source_refs"][0].clone();
+    assert_eq!(selected["kind"], json!("finding"));
+    append_authored_event(
+        &mut value["items"][0],
+        "cancel",
+        "2026-01-05T00:00:00Z",
+        "planned",
+        "cancelled",
+    );
+    append_authored_event(
+        &mut value["items"][0]["milestones"][0],
+        "cancel",
+        "2026-01-05T00:00:00Z",
+        "planned",
+        "cancelled",
+    );
+    let inputs = install_declaration(&fixture, &value);
+    let (code, report) = workflow_check(root, "2026-03-01");
+    assert_eq!(code, Some(0));
+    assert_eq!(
+        (&report["overdue"], &report["due_soon"], &report["blocked"]),
+        (&json!(0), &json!(0), &json!(0))
+    );
+    let rows = report["rows"].as_array().unwrap();
+    assert_eq!(rows.len(), 2);
+    assert!(rows.iter().all(|row| row["state"] == json!("cancelled")));
+    let output = run(
+        root,
+        &[
+            "poam",
+            "build",
+            "--manifest",
+            "poam.json",
+            "--as-of",
+            "2026-03-01",
+            "--output",
+            "native.json",
+            "--report",
+            "schedule.json",
+        ],
+    );
+    assert_eq!(output.status.code(), Some(0), "{}", String::from_utf8_lossy(&output.stderr));
+    assert_authored_cli_inputs(&fixture, &inputs);
+    let native: Value =
+        serde_json::from_slice(&std::fs::read(root.join("native.json")).unwrap()).unwrap();
+    let schema: Value =
+        serde_json::from_str(include_str!("../schemas/oscal_poam_schema.json")).unwrap();
+    assert!(jsonschema::validator_for(&schema).unwrap().is_valid(&native));
+    let plan = &native["plan-of-action-and-milestones"];
+    for absent in ["findings", "risks", "observations"] {
+        assert!(plan.get(absent).is_none(), "{absent}");
+    }
+    let item = &plan["poam-items"][0];
+    let props = item["props"].as_array().unwrap();
+    let property =
+        |name: &str| props.iter().find(|prop| prop["name"] == name).unwrap()["value"].clone();
+    assert_eq!(property("state"), json!("cancelled"));
+    let milestones: Value = serde_json::from_str(property("milestones").as_str().unwrap()).unwrap();
+    assert_eq!(milestones.as_array().unwrap().len(), 1);
+    assert_eq!(milestones[0]["state"], json!("cancelled"));
+    assert_eq!(
+        item["links"],
+        json!([{"href":format!("assessment-results.json#{}", selected["uuid"].as_str().unwrap()),
+            "rel":"assessment-source"}])
+    );
 }
 
 /// Invalid full dates, stale source hashes and unconfined baselines fail exit2 before any report output.
