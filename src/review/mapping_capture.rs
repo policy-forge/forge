@@ -2091,7 +2091,7 @@ pub(crate) mod tests {
         );
         result.unwrap();
         let published = std::fs::read(f.root.join("queue.json")).unwrap();
-        assert!(!published.is_empty());
+        assert_ne!(published, [] as [u8; 0]);
         let repeated = invoke(
             &f.root,
             "init",
