@@ -35,7 +35,7 @@ parent must already exist and must be the selected target's exact directory.
 Keeping the same directory preserves the base of the original relative hrefs.
 The command creates no directories, overwrites no destination and emits no
 artifact to stdout. Local publication uses the existing no-replacement publisher
-on Linux and macOS; other platforms refuse publication. A durability failure
+on Linux, macOS and Windows ([Windows file publication](authoring.md#windows-file-publication)); other platforms refuse publication. A durability failure
 after publication can leave a complete destination, which must not be replaced
 on retry.
 

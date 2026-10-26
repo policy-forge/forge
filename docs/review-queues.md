@@ -42,8 +42,9 @@ Lifecycle `/2` unchanged.
 
 Use an explicit absolute project root. Every input and output file path is a
 normalized descendant relative to that root. Parent directories must exist.
-Outputs are new files; an existing destination is refused. The current publisher
-supports Linux and macOS and refuses publication on Windows.
+Outputs are new files; an existing destination is refused. The shared
+no-replace publisher supports Linux, macOS and Windows; see
+[Windows file publication](authoring.md#windows-file-publication) for how the Windows guarantees differ.
 
 The source locator is a private routing file, separate from the portable queue.
 Its closed format selects either Mapping or applicability; a mixed-domain queue
@@ -260,8 +261,9 @@ contain sensitive author-selected metadata; inspect the artifact before sharing
 it. The complete export is bounded to 100,000 rows and 10 MiB including its final
 newline, within the same shared invocation ledger. Exhaustion refuses the whole
 export. Existing output files are refused. Publication uses native
-no-replace rename on Linux and macOS; the qualification for this slice is local
-macOS. Windows publication refuses.
+no-replace rename on Linux and macOS and the std-only no-replace hard link on
+Windows ([Windows file publication](authoring.md#windows-file-publication)). The qualification for this slice is local macOS; Windows
+is exercised only by hosted CI tests.
 
 ## Link a queue revision after change impact
 
@@ -351,8 +353,8 @@ It admits two whole queues of at most 10 MiB each, three private auxiliaries of 
 most 1 MiB each, and the same complete 100-registration/50 MiB source pool. Links
 are bounded to 10,000 edges and 100,000 finding occurrences; the final compact
 JSON plus newline is at most 32 MiB. Near-limit inputs may exhaust the shared
-budget and refuse the whole result. Publication uses the existing Linux/macOS
-no-replace publisher; Windows publication refuses.
+budget and refuse the whole result. Publication uses the shared no-replace
+publisher on Linux, macOS and Windows ([Windows file publication](authoring.md#windows-file-publication)).
 
 ## Sharing and limits
 

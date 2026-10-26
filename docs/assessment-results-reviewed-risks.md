@@ -79,8 +79,8 @@ reserved device names. Existing files, relocated destinations, ambiguous path
 spellings, unsafe ancestry and input aliases are refused.
 
 Without `--output`, the export writes one complete JSON document plus a newline
-to stdout. File publication currently supports Linux and macOS; other platforms
-retain the existing fixed refusal. Stdout export is separately supported by the
+to stdout. File publication supports Linux, macOS and Windows
+([Windows file publication](authoring.md#windows-file-publication)); other platforms retain the existing fixed refusal. Stdout export is separately supported by the
 source confinement implementation.
 
 ## Validation and outcomes

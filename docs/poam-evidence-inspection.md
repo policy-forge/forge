@@ -46,8 +46,8 @@ qualified plan root.
 The optional `--report` accepts one new portable filename ending in lowercase
 `.json`, in that same plan directory. It cannot be a nested path, overwrite an
 existing file or collide with any present input, missing-evidence observation
-or declared evidence directory. New-file publication is supported on Linux and
-macOS. On Windows, use standard output; file publication fails closed.
+or declared evidence directory. New-file publication is supported on Linux,
+macOS and Windows; see [Windows file publication](authoring.md#windows-file-publication) for the Windows differences.
 
 ## Bind an assertion explicitly
 

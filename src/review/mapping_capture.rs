@@ -2067,10 +2067,11 @@ pub(crate) mod tests {
         }
     }
 
-    /// Windows reaches the genuine native closure but refuses unsupported file publication.
+    /// Windows reaches the genuine native closure and publishes one new complete queue.
+    /// A second init to the same destination is refused and keeps the first bytes.
     #[test]
     #[cfg(target_os = "windows")]
-    fn genuine_init_refuses_unsupported_windows_publication_without_output() {
+    fn genuine_init_publishes_on_windows_and_never_replaces_the_queue() {
         let f = command_fixture(false);
         let result = invoke(
             &f.root,
@@ -2088,8 +2089,30 @@ pub(crate) mod tests {
                 "queue.json",
             ],
         );
-        assert!(matches!(result, Err(crate::ForgeError::Io(_))));
-        assert!(!f.root.join("queue.json").exists());
+        result.unwrap();
+        let published = std::fs::read(f.root.join("queue.json")).unwrap();
+        assert_ne!(published, [] as [u8; 0]);
+        let repeated = invoke(
+            &f.root,
+            "init",
+            &[
+                "--sources",
+                "locator.json",
+                "--policy",
+                "request.json",
+                "--queue-id",
+                "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+                "--created-at",
+                "2026-08-22T17:05:00Z",
+                "--output",
+                "queue.json",
+            ],
+        );
+        assert!(repeated.is_err());
+        assert_eq!(std::fs::read(f.root.join("queue.json")).unwrap(), published);
+        assert!(std::fs::read_dir(&f.root).unwrap().all(|entry| {
+            !entry.unwrap().file_name().to_string_lossy().starts_with(".forge-authoring-file-")
+        }));
     }
 
     /// Use real caller capture, locator original, source leases and final proof owner.

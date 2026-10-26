@@ -98,7 +98,7 @@ fn genuine_merge_native_no_replace_and_platform_refusal_preserve_inputs() {
     let mut status_bytes = Vec::new();
     lifecycle_commands::status(&options(&fixture, &responses), &mut status_bytes, &mut NoopControl).unwrap();
     let published = lifecycle_commands::merge(&options(&fixture, &responses), Path::new("result.json"), &mut NoopControl);
-    if cfg!(any(target_os = "linux", target_os = "macos")) {
+    if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
         published.unwrap();
         let actual = std::fs::read(fixture.root.join("result.json")).unwrap();
         complete(&actual, 8);
@@ -280,7 +280,7 @@ fn genuine_merge_guarded_source_drift_refuses_publication_and_cleans_actual_stag
     let (fixture, responses) = inputs(1, false);
     let mut caller = StagedSourceDrift { root: fixture.root.clone(), staged_complete: false, edited: false };
     let result = lifecycle_commands::merge(&options(&fixture, &responses), Path::new("result.json"), &mut caller);
-    if cfg!(any(target_os = "linux", target_os = "macos")) {
+    if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
         contract(result, ContractError::Binding);
         assert!(caller.staged_complete && caller.edited);
         assert_eq!(std::fs::read(fixture.root.join("source.bin")).unwrap(), b"actual changed source after complete staging");

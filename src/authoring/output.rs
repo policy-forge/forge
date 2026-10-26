@@ -60,9 +60,9 @@ pub fn publish(
 
 /// Publication events exposed to tests. Not part of the public API.
 ///
-/// Only `unix::write_new_file_with_hook` constructs these, so they are inert on
-/// platforms that fail closed before staging.
-#[cfg_attr(not(any(target_os = "linux", target_os = "macos")), allow(dead_code))]
+/// Only the Unix and Windows `write_new_file_with_hook` publishers construct these,
+/// so they are inert on platforms that fail closed before staging.
+#[cfg_attr(not(any(target_os = "linux", target_os = "macos", windows)), allow(dead_code))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum FilePublishEvent {
     /// The private staging directory exists and the staged file is durably written.
@@ -78,8 +78,11 @@ enum FilePublishEvent {
 /// the rename source is resolved against that directory's held descriptor, so a
 /// concurrent writer that replaces the staging pathname cannot substitute the
 /// published object. The only operation exposing the destination is one no-replace
-/// rename, so an existing file or symlink is never replaced. Other platforms fail
-/// closed, matching directory generation publication.
+/// rename, so an existing file or symlink is never replaced.
+///
+/// Windows uses a std-only equivalent with weaker containment; see the
+/// `windows` module for every difference. Other platforms fail closed,
+/// matching directory generation publication.
 ///
 /// # Errors
 ///
@@ -146,7 +149,11 @@ fn publish_new_file_with_hook(
     {
         unix::write_new_file_with_hook(root, destination, bytes, hook)
     }
-    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    #[cfg(windows)]
+    {
+        windows::write_new_file_with_hook(root, destination, bytes, hook)
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
     {
         let _ = (root, bytes, hook);
         Err(error("atomic no-replace authoring file publication is unsupported on this platform"))
@@ -590,6 +597,180 @@ mod unix {
     }
 }
 
+/// Windows single-file publication using only the standard library.
+///
+/// Every root and parent component is opened without following reparse points.
+/// Each handle is held with `FILE_SHARE_DELETE` excluded, so while publication
+/// runs, no other opener can rename, delete or replace that directory. A reparse
+/// component is refused. The file is created with `create_new` inside a fresh
+/// private sibling staging directory, held with read-only sharing so it cannot be
+/// written, renamed or deleted by others, written completely, and flushed with
+/// `File::sync_all` (`FlushFileBuffers`). The destination is then exposed by one
+/// `std::fs::hard_link` (`CreateHardLinkW`), which fails when the name already
+/// exists. The name appears atomically and only with the complete flushed bytes,
+/// and an existing file, link or reparse point is never replaced. The staging name
+/// is removed afterwards.
+///
+/// Differences from the Unix publisher, stated for callers and reviewers:
+/// - Names are resolved by path, not relative to held descriptors. Containment
+///   rests on the held no-delete-share handles and the reparse refusal, not on
+///   descriptor-relative resolution.
+/// - No directory flush is issued (std has no portable Windows directory
+///   flush). Durability of the new directory entry after power loss rests on
+///   NTFS metadata journaling.
+/// - The staging directory and the published file inherit the parent ACL. There
+///   is no mode 0700 or 0600 equivalent, so the published file is as readable as
+///   its parent allows.
+/// - From the link until the staging name is removed, the file briefly has two
+///   names. If that removal fails, an error is returned with the complete
+///   destination already published, and a hard-link alias is left in the private
+///   staging directory.
+/// - Volumes without hard links (for example FAT or exFAT) fail closed without
+///   exposing a destination.
+#[cfg(windows)]
+mod windows {
+    use std::fs::{File, OpenOptions};
+    use std::io::Write as _;
+    use std::os::windows::fs::{MetadataExt as _, OpenOptionsExt as _};
+    use std::path::{Component, Path, PathBuf};
+
+    use crate::ForgeError;
+
+    use super::{FilePublishEvent, error};
+
+    const FILE_SHARE_READ: u32 = 0x0000_0001;
+    const FILE_SHARE_WRITE: u32 = 0x0000_0002;
+    const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x0000_0400;
+    const FILE_READ_ATTRIBUTES: u32 = 0x0000_0080;
+    const FILE_FLAG_OPEN_REPARSE_POINT: u32 = 0x0020_0000;
+    const FILE_FLAG_BACKUP_SEMANTICS: u32 = 0x0200_0000;
+
+    /// Create one new file through private staging and a no-replace hard link.
+    pub(super) fn write_new_file_with_hook(
+        root: &Path,
+        destination: &str,
+        bytes: &[u8],
+        mut hook: impl FnMut(FilePublishEvent) -> Result<(), ForgeError>,
+    ) -> Result<(), ForgeError> {
+        let components = destination.split('/').collect::<Vec<_>>();
+        let (name, parents) =
+            components.split_last().ok_or_else(|| error("output file name is missing"))?;
+        let (parent, held) = open_parent(root, parents)?;
+        let target = parent.join(name);
+        reject_existing(&target)?;
+        let staging_path = parent.join(format!(".forge-authoring-file-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir(&staging_path).map_err(io_error)?;
+        let staging = match open_directory(&staging_path) {
+            Ok(directory) => directory,
+            Err(cause) => {
+                let _ = std::fs::remove_dir(&staging_path);
+                return Err(cause);
+            }
+        };
+        let staged = staging_path.join("file");
+        let outcome = stage_and_link(&staged, &target, bytes, &mut hook);
+        // Best-effort cleanup. After a successful publication the staged name is gone.
+        // The staging handle must close first, because it excludes delete sharing.
+        let _ = std::fs::remove_file(&staged);
+        drop(staging);
+        let _ = std::fs::remove_dir(&staging_path);
+        drop(held);
+        outcome
+    }
+
+    /// Write, flush and link the staged file while its exclusive handle is held.
+    fn stage_and_link(
+        staged: &Path,
+        target: &Path,
+        bytes: &[u8],
+        hook: &mut impl FnMut(FilePublishEvent) -> Result<(), ForgeError>,
+    ) -> Result<(), ForgeError> {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            // Read-only sharing keeps the staged object from being written, renamed
+            // or deleted by another opener until the destination link exists.
+            .share_mode(FILE_SHARE_READ)
+            .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT)
+            .open(staged)
+            .map_err(io_error)?;
+        file.write_all(bytes).map_err(io_error)?;
+        file.sync_all().map_err(io_error)?;
+        hook(FilePublishEvent::Staged)?;
+        hook(FilePublishEvent::BeforeRename)?;
+        std::fs::hard_link(staged, target).map_err(|cause| {
+            error(format!("atomic no-replace file publication failed: {cause}"))
+        })?;
+        drop(file);
+        std::fs::remove_file(staged).map_err(|cause| {
+            error(format!(
+                "complete file was published, but its private staging link could not be removed: {cause}"
+            ))
+        })
+    }
+
+    /// Hold every root and parent component, refusing reparse points and non-directories.
+    fn open_parent(root: &Path, parents: &[&str]) -> Result<(PathBuf, Vec<File>), ForgeError> {
+        if !root.is_absolute() {
+            return Err(error("publication root must be an absolute resolved directory"));
+        }
+        let mut path = PathBuf::new();
+        let mut held = Vec::new();
+        for component in root.components() {
+            match component {
+                Component::Prefix(prefix) => path.push(prefix.as_os_str()),
+                Component::RootDir => {
+                    path.push(component.as_os_str());
+                    held.push(open_directory(&path)?);
+                }
+                Component::Normal(name) => {
+                    path.push(name);
+                    held.push(open_directory(&path)?);
+                }
+                Component::CurDir | Component::ParentDir => {
+                    return Err(error("publication root has an unsafe component"));
+                }
+            }
+        }
+        for name in parents {
+            path.push(name);
+            held.push(open_directory(&path)?);
+        }
+        Ok((path, held))
+    }
+
+    /// Open one directory itself, never a reparse target, without delete sharing.
+    fn open_directory(path: &Path) -> Result<File, ForgeError> {
+        let directory = OpenOptions::new()
+            .access_mode(FILE_READ_ATTRIBUTES)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+            .custom_flags(FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS)
+            .open(path)
+            .map_err(io_error)?;
+        let metadata = directory.metadata().map_err(io_error)?;
+        if metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+            return Err(error("publication path must not contain reparse points"));
+        }
+        if !metadata.is_dir() {
+            return Err(error("publication path component is not a directory"));
+        }
+        Ok(directory)
+    }
+
+    /// Refuse any existing entry, including a link or reparse point, without following it.
+    fn reject_existing(target: &Path) -> Result<(), ForgeError> {
+        match std::fs::symlink_metadata(target) {
+            Ok(_) => Err(error("output file already exists; refusing to replace it")),
+            Err(cause) if cause.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(cause) => Err(io_error(cause)),
+        }
+    }
+
+    fn io_error(cause: impl std::fmt::Display) -> ForgeError {
+        error(format!("authoring output filesystem operation failed: {cause}"))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -833,7 +1014,7 @@ mod tests {
         }
     }
 
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "macos", windows))]
     #[test]
     fn new_file_publication_refuses_an_existing_destination() {
         let root = tempfile::tempdir().unwrap();
@@ -881,6 +1062,81 @@ mod tests {
         assert_eq!(std::fs::read(root.join("pack.json")).unwrap(), b"original\n");
     }
 
+    /// Windows holds the parent, the staging directory and the staged file, so none can be swapped.
+    #[cfg(windows)]
+    #[test]
+    fn windows_held_staging_cannot_be_renamed_rewritten_or_removed_before_the_link() {
+        let root = tempfile::tempdir().unwrap();
+        let root = root.path().canonicalize().unwrap();
+        std::fs::create_dir(root.join("sub")).unwrap();
+        let mut exercised = false;
+        publish_new_file_with_hook(&root, Path::new("sub/pack.json"), b"original\n", |event| {
+            if event == FilePublishEvent::Staged {
+                let staging = std::fs::read_dir(root.join("sub"))
+                    .unwrap()
+                    .filter_map(Result::ok)
+                    .find(|entry| {
+                        entry.file_name().to_string_lossy().starts_with(".forge-authoring-file-")
+                    })
+                    .expect("the private staging directory is visible")
+                    .path();
+                let staged = staging.join("file");
+                assert!(std::fs::rename(root.join("sub"), root.join("moved")).is_err());
+                assert!(std::fs::rename(&staging, root.join("sub").join("swapped")).is_err());
+                assert!(std::fs::OpenOptions::new().write(true).open(&staged).is_err());
+                assert!(std::fs::rename(&staged, root.join("sub").join("taken")).is_err());
+                assert!(std::fs::remove_file(&staged).is_err());
+                exercised = true;
+            }
+            Ok(())
+        })
+        .unwrap();
+        assert!(exercised, "the held staging objects were not exercised");
+        assert_eq!(std::fs::read(root.join("sub").join("pack.json")).unwrap(), b"original\n");
+        assert_eq!(std::fs::read_dir(root.join("sub")).unwrap().count(), 1);
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
+    }
+
+    /// Windows refuses a reparse parent and never follows or replaces a destination link.
+    #[cfg(windows)]
+    #[test]
+    fn windows_refuses_reparse_parent_and_existing_destination_link() {
+        let root = tempfile::tempdir().unwrap();
+        let root = root.path().canonicalize().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        std::fs::write(outside.path().join("target.json"), b"outside\n").unwrap();
+        let links = std::os::windows::fs::symlink_dir(outside.path(), root.join("linked"))
+            .and_then(|()| {
+                std::os::windows::fs::symlink_file(
+                    outside.path().join("target.json"),
+                    root.join("link.json"),
+                )
+            });
+        if let Err(cause) = links {
+            if cause.raw_os_error() == Some(1314) {
+                eprintln!("skipping reparse test: symlink privilege is not held");
+                return;
+            }
+            panic!("symlink setup failed: {cause}");
+        }
+        let failure = publish_new_file(&root, Path::new("linked/out.json"), b"x\n").unwrap_err();
+        assert!(failure.to_string().contains("reparse"), "{failure}");
+        let failure = publish_new_file(&root, Path::new("link.json"), b"x\n").unwrap_err();
+        assert!(failure.to_string().contains("already exists"), "{failure}");
+        assert_eq!(std::fs::read(outside.path().join("target.json")).unwrap(), b"outside\n");
+        assert_eq!(std::fs::read_dir(outside.path()).unwrap().count(), 1);
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 2);
+    }
+
+    /// A relative root is refused before any Windows staging.
+    #[cfg(windows)]
+    #[test]
+    fn windows_relative_root_is_refused() {
+        let failure =
+            publish_new_file(Path::new("relative"), Path::new("out.json"), b"x\n").unwrap_err();
+        assert!(failure.to_string().contains("absolute"), "{failure}");
+    }
+
     #[cfg(not(any(target_os = "linux", target_os = "macos")))]
     #[test]
     fn unsupported_platform_fails_without_creating_output() {
@@ -891,7 +1147,7 @@ mod tests {
     }
 }
 
-#[cfg(all(test, any(target_os = "linux", target_os = "macos")))]
+#[cfg(all(test, any(target_os = "linux", target_os = "macos", windows)))]
 /// Genuine publication-point controls; the callback does not grant domain authority.
 mod guarded_file_tests {
     use super::*;

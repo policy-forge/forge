@@ -129,7 +129,7 @@ impl Fixture {
     }
 
     /// Require a complete new file and no stdout from a supported publisher before decoding it.
-    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    #[cfg(any(target_os = "linux", target_os = "macos", windows))]
     fn published(&self, target: &str, relative: &str) -> Value {
         let output = self.overlay(target, "2026-10-04", relative);
         assert_eq!(output.status.code(), Some(0), "{}", String::from_utf8_lossy(&output.stderr));
@@ -693,8 +693,33 @@ fn overlay_closed_cli_and_manifest_admission_refusals_follow_valid_canary() {
     fixture.refused("catalog-main", "2026-10-04", "native/duplicate-key.json");
 }
 
+/// Windows publishes one new overlay below a nested parent and never replaces it.
+#[cfg(windows)]
+#[test]
+fn overlay_windows_publishes_once_without_replacement_or_stdout() {
+    let fixture = Fixture::new();
+    let overlay = fixture.published("catalog-main", "native/windows.json");
+    let bytes = std::fs::read(fixture.root.join("native/windows.json")).unwrap();
+    let repeated = fixture.overlay("catalog-main", "2026-10-04", "native/windows.json");
+    assert_eq!(repeated.status.code(), Some(2));
+    assert_eq!(repeated.stdout, [] as [u8; 0]);
+    assert_eq!(std::fs::read(fixture.root.join("native/windows.json")).unwrap(), bytes);
+    assert_eq!(read_json(&fixture.root.join("native/windows.json")), overlay);
+    assert!(std::fs::read_dir(fixture.root.join("native")).unwrap().all(|entry| {
+        !entry.unwrap().file_name().to_string_lossy().starts_with(".forge-authoring-file-")
+    }));
+    assert_eq!(
+        std::fs::read(fixture.root.join("native/catalog.json")).expect("original preserved"),
+        include_bytes!("fixtures/export/lossless-catalog.json")
+    );
+    assert_eq!(
+        std::fs::read(fixture.root.join("native/component.json")).expect("original preserved"),
+        include_bytes!("fixtures/export/lossless-component.json")
+    );
+}
+
 /// Unsupported publishers fail closed for an otherwise explicit real native/source fixture, without stdout.
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
 #[test]
 fn overlay_unsupported_platform_does_not_publish_or_emit_stdout() {
     let fixture = Fixture::new();
@@ -702,12 +727,6 @@ fn overlay_unsupported_platform_does_not_publish_or_emit_stdout() {
     assert_eq!(output.status.code(), Some(2));
     assert_eq!(output.stdout, [] as [u8; 0]);
     assert!(!fixture.root.join("native/unsupported.json").exists());
-    #[cfg(target_os = "windows")]
-    assert!(
-        String::from_utf8_lossy(&output.stderr)
-            .contains("cannot publish a new complete evidence overlay"),
-        "Windows must reach publication refusal after real source admission"
-    );
     assert_eq!(
         std::fs::read(fixture.root.join("native/catalog.json")).expect("original preserved"),
         include_bytes!("fixtures/export/lossless-catalog.json")

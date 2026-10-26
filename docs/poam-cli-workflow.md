@@ -75,8 +75,8 @@ The two outputs are separate publications. If artifact publication succeeds and 
 later report recheck, publication or stdout write fails, the artifact may remain.
 The command reports an invalid exit 2 and promises neither rollback nor atomic
 visibility across the pair. Existing files and sources are never intentionally
-replaced. The current publisher supports Linux/macOS; other platforms fail closed
-for file publication until a separate qualified implementation exists. Stdout
+replaced. The publisher supports Linux, macOS and Windows
+([Windows file publication](authoring.md#windows-file-publication)); other platforms fail closed for file publication. Stdout
 workflow checks use existing confinement support and remain independently testable.
 
 ## Outcome and scope

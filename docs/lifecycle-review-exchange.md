@@ -169,7 +169,7 @@ whole-input fence. Sequential verification is not an atomic filesystem snapshot.
 Output namespace reservation before input reads is lexical; it does not prove
 destination absence. Missing or invalid input can refuse before the publisher
 checks an existing destination. File publication uses the maintained guarded
-no-replace route on Linux/macOS and refuses on Windows; this source behavior
+no-replace route on Linux, macOS and Windows ([Windows file publication](authoring.md#windows-file-publication)); this source behavior
 does not establish new Lifecycle platform qualification. A writer failure can
 leave a prefix, and a late stop or durability error can leave a complete new
 file. Inspect the destination after a reported failure before another attempt.

@@ -109,7 +109,7 @@ fn genuine_init_complete_opaque_and_generated_native_pins_preserve_originals() {
         policy(&fixture);
         let before = std::fs::read(fixture.root.join("record.json")).unwrap();
         let result = lifecycle_commands::init(&options(&fixture, Path::new("queue.json")), &mut NoopControl);
-        if cfg!(any(target_os = "linux", target_os = "macos")) {
+        if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
             result.unwrap();
             complete(&fixture, &std::fs::read(fixture.root.join("queue.json")).unwrap(), generated);
         } else {
@@ -127,7 +127,7 @@ fn genuine_init_exact_deterministic_bytes_ignore_only_new_destination() {
     policy(&fixture);
     let first = lifecycle_commands::init(&options(&fixture, Path::new("queue-a.json")), &mut NoopControl);
     let second = lifecycle_commands::init(&options(&fixture, Path::new("queue-b.json")), &mut NoopControl);
-    if cfg!(any(target_os = "linux", target_os = "macos")) {
+    if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
         first.unwrap(); second.unwrap();
         let raw = std::fs::read(fixture.root.join("queue-a.json")).unwrap();
         assert_eq!(raw, std::fs::read(fixture.root.join("queue-b.json")).unwrap());
@@ -230,7 +230,7 @@ fn genuine_init_guard_rechecks_native_and_auxiliary_originals_after_staging() {
         let mut caller = StagedCaller { root: fixture.root.clone(),
             action: Some(StagedAction::Drift(PathBuf::from(target))), observed: 0 };
         let result = lifecycle_commands::init(&options(&fixture, Path::new("queue.json")), &mut caller);
-        if cfg!(any(target_os = "linux", target_os = "macos")) {
+        if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
             contract(result, ContractError::Binding); assert_eq!(caller.observed, 1);
             assert_eq!(std::fs::read(fixture.root.join(target)).unwrap(), b"actual changed captured original");
         } else { assert!(matches!(result, Err(CommandError::Publication))); assert_eq!(caller.observed, 0); }
@@ -248,7 +248,7 @@ fn genuine_init_staged_original_caller_stop_refuses_complete_output() {
         policy(&fixture);
         let mut caller = StagedCaller { root: fixture.root.clone(), action: Some(StagedAction::Stop(failed)), observed: 0 };
         let result = lifecycle_commands::init(&options(&fixture, Path::new("queue.json")), &mut caller);
-        if cfg!(any(target_os = "linux", target_os = "macos")) {
+        if cfg!(any(target_os = "linux", target_os = "macos", windows)) {
             contract(result, stop(failed)); assert_eq!(caller.observed, 1);
         } else { assert!(matches!(result, Err(CommandError::Publication))); assert_eq!(caller.observed, 0); }
         assert!(!fixture.root.join("queue.json").exists());
@@ -346,7 +346,7 @@ fn genuine_clap_execute_init_respond_merge_status_complete_workflow() {
     let status = cli(&fixture, "status", &["--sources", "locator.json", "--queue", "queue.json",
         "--response", "response.json", "--response", "response.json", "--as-of", "2026-10-05T00:00:02Z"]);
     let initialized = crate::cli::execute(&init);
-    if !cfg!(any(target_os = "linux", target_os = "macos")) {
+    if !cfg!(any(target_os = "linux", target_os = "macos", windows)) {
         match initialized {
             Err(crate::error::ForgeError::Io(error)) => assert_eq!(error.to_string(), "review output publication failed"),
             _ => panic!("unsupported publisher must retain its exact ordinary CLI diagnostic"),

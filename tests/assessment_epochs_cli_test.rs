@@ -414,8 +414,47 @@ fn assert_originals(fixture: &Fixture, before: &BTreeMap<String, Vec<u8>>) {
     }
 }
 
+/// Windows publishes one complete new epoch pair, then refuses to replace either file.
+#[cfg(windows)]
+#[test]
+fn windows_publishes_a_new_epoch_pair_and_never_replaces_it() {
+    let fixture = fixture();
+    let before = originals(&fixture);
+    let saved_request: Value = serde_json::from_slice(&before["append.json"]).unwrap();
+    assert_eq!(saved_request, fixture.request);
+    let output = append(
+        &fixture.root,
+        "append.json",
+        "next.json",
+        "next-report.json",
+        &["--fail-on", "never"],
+    );
+    assert_eq!(output.status.code(), Some(0), "{}", String::from_utf8_lossy(&output.stderr));
+    assert_eq!(output.stdout, [] as [u8; 0]);
+    let native = std::fs::read(fixture.root.join("next.json")).unwrap();
+    let report = std::fs::read(fixture.root.join("next-report.json")).unwrap();
+    serde_json::from_slice::<Value>(&native).unwrap();
+    serde_json::from_slice::<Value>(&report).unwrap();
+    assert_originals(&fixture, &before);
+    let repeated = append(
+        &fixture.root,
+        "append.json",
+        "next.json",
+        "next-report.json",
+        &["--fail-on", "never"],
+    );
+    assert_eq!(repeated.status.code(), Some(2));
+    assert_eq!(repeated.stdout, [] as [u8; 0]);
+    assert_eq!(std::fs::read(fixture.root.join("next.json")).unwrap(), native);
+    assert_eq!(std::fs::read(fixture.root.join("next-report.json")).unwrap(), report);
+    assert!(std::fs::read_dir(&fixture.root).unwrap().all(|entry| {
+        !entry.unwrap().file_name().to_string_lossy().starts_with(".forge-authoring-file-")
+    }));
+    assert_originals(&fixture, &before);
+}
+
 /// On unsupported publishers, actual qualified inputs still yield failure without either destination or stdout.
-#[cfg(not(any(target_os = "linux", target_os = "macos")))]
+#[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
 #[test]
 fn unsupported_publication_never_emits_an_epoch_pair() {
     let fixture = fixture();
