@@ -161,8 +161,10 @@ new file. Either export failure returns exit 2. Inspect an existing destination
 before retrying with a fresh filename.
 
 The caller-review flag authenticates no reviewer and is consumed by the export,
-without being added to the output workflow. Terminal completion and risk
-acceptance retain their existing public refusal pending D064 disposition.
+without being added to the output workflow. Export seeds new `planned` work
+only, so it still refuses terminal completion and risk acceptance. Those
+assertions are made later in the manifest's append-only history, as the
+[2026-10-25 owner dispositions](plans/2026-10-25-owner-dispositions.md) record.
 Authored prose, party names, rationales and relative source paths may be
 sensitive; the workflow is not a redacted report. Source records are unchanged.
 
