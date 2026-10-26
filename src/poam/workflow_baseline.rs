@@ -857,7 +857,7 @@ fn reopen_rows(
             let linked =
                 new.get(next).is_some_and(|item| item.supersedes.as_deref() == Some(prior));
             let terminal = new.get(prior).is_some_and(|item| item.state.terminal())
-                && old.get(prior).is_none_or(|before| new.get(prior) == Some(before));
+                && old.get(prior).is_some_and(|before| new.get(prior) == Some(before));
             ReopenRow {
                 previous_uuid: identity::item(&previous.document.key, prior).to_string(),
                 current_uuid: identity::item(&current.document.key, next).to_string(),
@@ -1296,6 +1296,18 @@ mod tests {
         )
         .unwrap();
         assert_eq!(first, super::super::workflow_model::json_line(&again).unwrap());
+    }
+
+    /// A terminal predecessor introduced in the current revision is not unchanged from the baseline.
+    #[test]
+    fn same_revision_terminal_and_successor_do_not_earn_baseline_admission() {
+        let previous = declaration();
+        let (_, current) = terminal_with_successor(true);
+        let report = compared(&previous, &current);
+        assert_eq!(report.reopen_declarations.len(), 1);
+        assert!(!report.reopen_declarations[0].accepted_for_build);
+        assert!(!report.revision_rules_compatible);
+        assert!(report.refusal_observations.contains(&Refusal::ReopeningUnadmitted));
     }
 
     /// Rewriting the superseded terminal record or changing a declared link is never admitted.
