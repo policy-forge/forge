@@ -1629,13 +1629,11 @@ fn authored_cli_does_not_silently_reinterpret_foundation_source_only_scope() {
     assert_eq!(workflow.status.code(), Some(0));
 }
 
-/// Adequate proposed risk-review fields remain refused by the public shipping boundary and never change native source assertions.
-#[test]
-fn authored_cli_has_no_terminal_closure_override() {
-    let fixture = fixture();
-    let mut value = authored_workflow(&fixture);
+/// Declare an accepted-risk assertion on the actual native risk with an independent reviewer.
+fn authored_accepted_risk(fixture: &Fixture) -> Value {
+    let mut value = authored_workflow(fixture);
     let root = fixture.directory.path();
-    let foundation: manifest::PoamManifest = serde_json::from_value(scaffold(&fixture)).unwrap();
+    let foundation: manifest::PoamManifest = serde_json::from_value(scaffold(fixture)).unwrap();
     let prepared = source::load(&root.join("poam.json"), &foundation.source).unwrap();
     let risk = prepared
         .inventory()
@@ -1651,15 +1649,18 @@ fn authored_cli_has_no_terminal_closure_override() {
     value["parties"]
         .as_array_mut()
         .unwrap()
-        .push(json!({"key":"reviewer", "type":"person", "name":"Synthetic reviewer"}));
+        .push(json!({"key":"reviewer", "type":"person", "name":"SENSITIVE REVIEWER NAME"}));
     value["items"][0]["state"] = json!("accepted-risk-asserted");
     value["items"][0]["history"].as_array_mut().unwrap().push(json!({"key":"accept", "actor":{"role_id":"owner", "party_key":"remediator"},
-        "at":"2026-01-06T00:00:00Z", "from":"planned", "to":"accepted-risk-asserted", "rationale":"Proposed explicit risk assertion",
+        "at":"2026-01-06T00:00:00Z", "from":"planned", "to":"accepted-risk-asserted", "rationale":"SENSITIVE DECLARED ACCEPTANCE",
         "closure":{"reviewer":{"role_id":"reviewer", "party_key":"reviewer"}, "reviewed_at":"2026-01-07T00:00:00Z",
-        "rationale":"Proposed review only", "evidence":[{"key":"assertion", "href":"evidence.json", "expected_sha256":"a".repeat(64)}]}}));
-    write_json(&root.join("poam.json"), &value);
-    let inputs = ["poam.json", "assessment-results.json"]
-        .map(|name| (name.to_string(), std::fs::read(root.join(name)).unwrap()));
+        "rationale":"SENSITIVE REVIEW RATIONALE", "evidence":[{"key":"assertion", "href":"evidence.json", "expected_sha256":"a".repeat(64),
+            "captured_at":"2026-01-05T09:30:00-08:00"}]}}));
+    value
+}
+
+/// Run one authored workflow check and return its exit code, stdout and stderr text.
+fn workflow_check_raw(root: &Path, as_of: &str) -> (Option<i32>, Vec<u8>, String) {
     let output = run(
         root,
         &[
@@ -1669,16 +1670,128 @@ fn authored_cli_has_no_terminal_closure_override() {
             "--manifest",
             "poam.json",
             "--as-of",
-            "2026-02-06",
+            as_of,
             "--format",
             "json",
         ],
     );
-    assert_eq!(output.status.code(), Some(2));
-    assert_eq!(output.stdout, [] as [u8; 0]);
-    assert!(
-        String::from_utf8_lossy(&output.stderr).contains("pending recorded closure disposition")
+    (output.status.code(), output.stdout, String::from_utf8_lossy(&output.stderr).into_owned())
+}
+
+/// D064 admission: the independent reviewer profile is accepted; terminal work is never overdue.
+#[test]
+fn authored_cli_admits_independent_terminal_assertion_and_keeps_schedule_exits() {
+    let fixture = fixture();
+    let root = fixture.directory.path();
+    let value = authored_accepted_risk(&fixture);
+    let inputs = install_declaration(&fixture, &value);
+    let (code, report) = workflow_check(root, "2026-01-10");
+    assert_eq!(code, Some(0));
+    assert_eq!(report["rows"][0]["state"], json!("accepted-risk-asserted"));
+    assert_eq!((&report["overdue"], &report["items"]), (&json!(0), &json!(1)));
+    let (code, late) = workflow_check(root, "2026-03-01");
+    assert_eq!(code, Some(1), "the still-planned milestone is overdue");
+    assert_eq!(late["rows"][0]["overdue"], json!(false));
+    assert_eq!(late["rows"][1]["overdue"], json!(true));
+    assert_eq!(late["overdue"], json!(1));
+    assert_authored_cli_inputs(&fixture, &inputs);
+}
+
+/// Anything less than the D064 profile is invalid input: exit 2, no stdout, a clear reason, no mutation.
+#[test]
+fn authored_cli_refuses_incomplete_terminal_assertions_with_exit_two() {
+    let fixture = fixture();
+    let root = fixture.directory.path();
+    let valid = authored_accepted_risk(&fixture);
+    let closure = "/items/0/history/1/closure";
+    let cases: [(&str, Value, &str); 6] = [
+        ("/reviewer/party_key", json!("remediator"), "must differ from the asserting actor"),
+        (
+            "/evidence/0/expected_sha256",
+            json!("not-a-hash"),
+            "closure evidence hash must be lowercase SHA256",
+        ),
+        ("/evidence/0/captured_at", Value::Null, "explicit captured_at date-time"),
+        ("/evidence/0/captured_at", json!("2026-01-05"), "timestamp must be RFC3339"),
+        ("/evidence", json!([]), "at least one evidence reference"),
+        ("", Value::Null, "explicit independent reviewer assertion"),
+    ];
+    for (pointer, replacement, reason) in cases {
+        let mut value = valid.clone();
+        *value.pointer_mut(&format!("{closure}{pointer}")).unwrap() = replacement;
+        let inputs = install_declaration(&fixture, &value);
+        let (code, stdout, stderr) = workflow_check_raw(root, "2026-01-10");
+        assert_eq!(code, Some(2), "{pointer}: {stderr}");
+        assert_eq!(stdout, [] as [u8; 0]);
+        assert!(stderr.contains(reason), "{pointer}: {stderr}");
+        assert_authored_cli_inputs(&fixture, &inputs);
+    }
+    let mut owner = valid;
+    owner["items"][0]["owners"].as_array_mut().unwrap().push(
+        json!({"role_id":"owner","party_key":"reviewer","rationale":"Reviewer is also an owner"}),
     );
+    install_declaration(&fixture, &owner);
+    let (code, _, stderr) = workflow_check_raw(root, "2026-01-10");
+    assert_eq!(code, Some(2));
+    assert!(stderr.contains("independent of every owner"), "{stderr}");
+}
+
+/// Built native output projects assertion and supersession props, stays schema-valid, deterministic and never closed.
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+#[test]
+fn authored_cli_build_projects_assertions_and_reopen_without_native_closure() {
+    let fixture = fixture();
+    let root = fixture.directory.path();
+    let mut value = authored_accepted_risk(&fixture);
+    let mut reopened = authored_workflow(&fixture)["items"][0].clone();
+    reopened["key"] = json!("work-reopened");
+    reopened["supersedes"] = json!("work");
+    reopened["history"][0]["at"] = json!("2026-01-08T00:00:00Z");
+    reopened["milestones"][0]["history"][0]["at"] = json!("2026-01-08T00:00:00Z");
+    value["items"].as_array_mut().unwrap().push(reopened);
+    let inputs = install_declaration(&fixture, &value);
+    let build = |name: &str| {
+        run(
+            root,
+            &[
+                "poam",
+                "build",
+                "--manifest",
+                "poam.json",
+                "--as-of",
+                "2026-01-10",
+                "--output",
+                name,
+            ],
+        )
+    };
+    let output = build("native.json");
+    assert_eq!(output.status.code(), Some(0), "{}", String::from_utf8_lossy(&output.stderr));
+    let bytes = std::fs::read(root.join("native.json")).unwrap();
+    assert_eq!(build("native-again.json").status.code(), Some(0));
+    assert_eq!(std::fs::read(root.join("native-again.json")).unwrap(), bytes);
+    let native: Value = serde_json::from_slice(&bytes).unwrap();
+    let schema: Value =
+        serde_json::from_str(include_str!("../schemas/oscal_poam_schema.json")).unwrap();
+    assert!(jsonschema::validator_for(&schema).unwrap().is_valid(&native));
+    let text = String::from_utf8(bytes).unwrap();
+    for forbidden in ["\"closed\"", "deviation-approved", "authorized"] {
+        assert!(!text.contains(forbidden), "{forbidden}");
+    }
+    let plan = &native["plan-of-action-and-milestones"];
+    assert!(plan.get("risks").is_none());
+    let items = plan["poam-items"].as_array().unwrap();
+    let props = |index: usize| items[index]["props"].as_array().unwrap().clone();
+    let value_of = |index: usize, name: &str| {
+        props(index).into_iter().find(|prop| prop["name"] == name).map(|prop| prop["value"].clone())
+    };
+    assert_eq!(value_of(0, "assertion-status"), Some(json!("accepted-risk-asserted")));
+    let assertion: Value =
+        serde_json::from_str(value_of(0, "terminal-assertion").unwrap().as_str().unwrap()).unwrap();
+    assert_eq!(assertion["evidence"][0]["captured_at"], "2026-01-05T09:30:00-08:00");
+    assert_eq!(assertion["reviewed_at"], "2026-01-07T00:00:00Z");
+    assert_eq!(value_of(1, "supersedes"), Some(json!(items[0]["uuid"])));
+    assert!(value_of(1, "assertion-status").is_none());
     assert_authored_cli_inputs(&fixture, &inputs);
 }
 
@@ -2479,7 +2592,7 @@ fn portfolio_native_complete_counts_temporal_trace_and_escaped_html() {
             "source_files":10,"source_bytes":2 * one_plan_source_bytes,"source_objects":2 * inventory_count,
             "items":2,"milestones":2,"records":4,"history_events":8,"source_selections":2,
             "owner_declarations":4,"dependency_edges":0,"overdue":0,"due_soon":0,"blocked":1,
-            "before_first_assertion":1,"cancelled":2,
+            "before_first_assertion":1,"cancelled":2,"completed_asserted":0,"accepted_risk_asserted":0,
         })
     );
     let plans = report["plans"].as_array().unwrap();
@@ -2809,9 +2922,26 @@ fn portfolio_native_requires_every_plan_and_rejects_stable_or_file_aliases() {
     assert!(!root.join("portfolio-report.html").exists());
 }
 
-/// Past and future closure assertions hit the public pending guard, after valid positive source/native pairs.
+/// Regenerate the native pair for an admitted terminal plan and check its as-of asserted counts.
+fn portfolio_native_assert_asserted_counts(fixture: &Fixture, plan: &Value, state: &str, at: &str) {
+    use forge::poam::portfolio;
+    let admitted =
+        portfolio_native_pair(fixture, plan, "closure-authoring.json", "closure-native.json");
+    let prepared =
+        portfolio::prepare_native_portfolio(std::slice::from_ref(&admitted), "2026-01-07", 7)
+            .unwrap();
+    prepared.verify_inputs().unwrap();
+    let json: Value = serde_json::from_slice(prepared.json()).unwrap();
+    let past = usize::from(at == "2026-01-06T00:00:00Z");
+    let expected = if state == "completed-asserted" { (past, 0) } else { (0, past) };
+    assert_eq!(json["counts"]["completed_asserted"], json!(expected.0), "{state} {at}");
+    assert_eq!(json["counts"]["accepted_risk_asserted"], json!(expected.1), "{state} {at}");
+    assert!(!String::from_utf8_lossy(prepared.json()).contains("authorized"));
+}
+
+/// Past and future D064 assertions are admitted in supplied native portfolios and counted at as-of.
 #[test]
-fn portfolio_native_terminal_refusal_is_not_a_missing_milestone_or_risk_shape_error() {
+fn portfolio_native_admits_asserted_terminal_records_and_counts_them_at_as_of() {
     use forge::poam::portfolio;
     let fixture = fixture();
     let root = fixture.directory.path();
@@ -2874,21 +3004,17 @@ fn portfolio_native_terminal_refusal_is_not_a_missing_milestone_or_risk_shape_er
                 portfolio_native_event("terminal", at, Some("in-progress"), state, "remediator");
             terminal["closure"] = json!({"reviewer":{"role_id":"reviewer","party_key":"reviewer-party"},
                 "reviewed_at":at,"rationale":"Declared review only",
-                "evidence":[{"key":"proof","href":"proof.json","expected_sha256":"c".repeat(64)}]});
+                "evidence":[{"key":"proof","href":"proof.json","expected_sha256":"c".repeat(64),"captured_at":"2026-01-05T00:00:00Z"}]});
             record["history"].as_array_mut().unwrap().push(terminal);
             let raw = write_json(&input.manifest, &refused);
-            // parse validates the full current shape before this refusal; its reason is a canary.
-            let shape_reason = forge::poam::workflow::parse(&raw).unwrap_err().to_string();
+            forge::poam::workflow::parse(&raw).unwrap();
+            // The previously generated native pair no longer matches the new declaration.
             assert!(
-                shape_reason.contains("pending recorded closure disposition"),
-                "{shape_reason}"
-            );
-            let reason =
                 portfolio::prepare_native_portfolio(std::slice::from_ref(&input), "2026-01-07", 7)
-                    .unwrap_err()
-                    .to_string();
-            assert!(reason.contains("pending recorded closure disposition"), "{reason}");
-            assert_eq!(std::fs::read(root.join("closure-native.json")).unwrap(), original_native);
+                    .is_err()
+            );
+            portfolio_native_assert_asserted_counts(&fixture, &refused, state, at);
+            std::fs::write(root.join("closure-native.json"), &original_native).unwrap();
             portfolio_native_unchanged(&source_originals);
             std::fs::write(&input.manifest, &original_author).unwrap();
             portfolio::prepare_native_portfolio(std::slice::from_ref(&input), "2026-01-07", 7)
@@ -4212,7 +4338,8 @@ fn s4_control_close(plan: &mut Value, href: &str, hash: &str) {
         record["history"].as_array_mut().unwrap().push(json!({"key":"complete","actor":{"role_id":"owner","party_key":"remediator"},
             "at":"2026-01-20T11:00:00Z","from":"in-progress","to":"completed-asserted","rationale":"SENSITIVE COMPLETION RATIONALE",
             "closure":{"reviewer":{"role_id":"reviewer","party_key":"independent-reviewer"},"reviewed_at":"2026-01-20T12:00:00Z",
-                "rationale":"SENSITIVE CLOSURE REVIEW","evidence":[{"key":"proof","href":href,"expected_sha256":hash}]}}));
+                "rationale":"SENSITIVE CLOSURE REVIEW","evidence":[{"key":"proof","href":href,"expected_sha256":hash,
+                    "captured_at":"2026-01-19T00:00:00Z"}]}}));
         record["state"] = json!("completed-asserted");
     };
     close(&mut plan["items"][0]);
@@ -4465,15 +4592,14 @@ fn s4_actual_matched_terminal_rows_keep_complete_counts_and_no_native_authority(
         assert!(!debug.contains(private));
     }
     assert!(!debug.contains("finding-unsatisfied"));
-    let refused = forge::poam::workflow::prepare(
+    let admitted = forge::poam::workflow::prepare(
         &f.plan_path,
         &serde_json::to_vec(&f.plan).unwrap(),
         "2026-01-15",
         0,
         None,
-    )
-    .unwrap_err();
-    assert!(refused.to_string().contains("pending recorded closure disposition"));
+    );
+    assert!(admitted.is_ok(), "{admitted:?}");
     let cli = s4_control_cli(&f, &f.root, None);
     assert_eq!(cli.status.code(), Some(1));
     assert_eq!(cli.stdout, one.report());

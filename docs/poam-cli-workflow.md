@@ -5,11 +5,17 @@
 > for exact commits and qualification scopes. Earlier draft states and failed
 > receipts below retain their dated meanings; human and release gates remain separate.
 
-The integrated commands check explicitly authored nonterminal work and generate
-a native schema-validated POA&M. The original foundation init and source-only
-checks retain their scope. Full F08, D064 closure disposition, independent consumer
-qualification and human acceptance remain open; these commands authenticate no
-actor and infer no remediation effectiveness.
+The integrated commands check explicitly authored work and generate a native
+schema-validated POA&M. Under the D064 [owner disposition](plans/2026-10-25-owner-dispositions.md)
+they admit `completed-asserted` and `accepted-risk-asserted` only with an
+independent reviewer assertion and hashed, time-stamped evidence, and reopening
+only as a new linked item; see the [item workflow guide](poam-item-workflow.md).
+The original foundation init and source-only checks retain their scope. Full F08,
+independent consumer qualification and human acceptance remain open; these
+commands authenticate no actor and infer no remediation effectiveness or verified
+closure. Terminal records are never overdue: exit 0 is still valid ungated state,
+1 a valid overdue/due-soon/blocked action and 2 invalid input, including any
+incomplete terminal assertion.
 
 ## Explicit modes and dates
 
@@ -96,6 +102,6 @@ for every workflow-only option in source-only mode. The same open implementation
 also provides [baseline comparison](poam-baseline-comparison.md), [portfolio JSON/static HTML](poam-portfolio.md),
 [local outbound handoffs](poam-outbound.md) and [local evidence inspection](poam-evidence-inspection.md).
 These commands report bounded comparisons, handoffs and local observations; they do
-not accept terminal/reopening revisions, establish evidence sufficiency or authorize
-remote connectors. D064 closure disposition, independent-tool interpretation,
-representative plans and owner/human/platform acceptance remain open.
+not rewrite terminal history, establish evidence sufficiency or open remote
+connectors. Independent-tool interpretation, representative plans and
+owner/human/platform acceptance remain open.

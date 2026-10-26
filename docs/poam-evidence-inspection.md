@@ -135,8 +135,9 @@ missing paths and directory proofs remain checked but are not present files.
 
 Every terminal declaration requires review, even when every local join and date
 matches. The report always keeps `terminal_admitted: false` and
-`artifact_validated: false`. Inspecting a terminal history does not bypass the
-existing native workflow refusal or resolve decision D064.
+`artifact_validated: false`: inspection itself admits nothing. Terminal admission
+happens only in the workflow check/build under the D064 reviewer profile, which
+requires each evidence reference's hash and explicit `captured_at`.
 
 | Exit | Meaning |
 | --- | --- |
