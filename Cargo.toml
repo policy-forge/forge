@@ -25,7 +25,7 @@ uuid = { version = "1", features = ["serde", "v4", "v5"] }
 # Embedded local schemas do not require HTTP or filesystem resolvers, so keep
 # resolver defaults disabled to preserve FORGE's offline-only validation path.
 jsonschema = { version = "0.57", default-features = false }
-quick-xml = { version = "0.41", features = ["serialize"] }
+quick-xml = { version = "0.42", features = ["serialize"] }
 rayon = "1"
 tempfile = "3"
 pdf-extract = "0.12"
