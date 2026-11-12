@@ -101,7 +101,7 @@ hook close, merging/publication/contact need separate authorization.
 | #19 | 1414 | F10 epochs & risk handoff | Doing | P3 | Q1–Q7 owner answers; evidence reconciliation, likely no new code |
 | #21 | 1416 | F12 portable queues | In Review | P3 | M-3 adapters, M-10 patches, M-13/M-15, S-1/S-2/S-4, D068, human gates |
 | #23 | 1418 | F19 workspace Shoulds | Doing | P7 | Prerequisite delivered (#1419); remaining Should gates + #64/#65 children |
-| #42 | 1437 | Source bundle restore | In Review | P4 | Staged capacity follow-through; Windows crash/rollback qualification |
+| #42 | 1437 | Source bundle restore | In Review | P4 | Capacity qualification delivered PR #278; Windows crash/rollback gate open (P7) |
 | #44 | 1439 | F08 POA&M workflow | In Review | P7 | Human workflow/security/privacy gates (code merged via #259) |
 | #55 | 1450 | F11 MCP core + agent eval | To-Do | P3 | Threat-model approval, two-client conformance, qualification |
 | #56 | 1451 | F11 prereq discovery/threat model | Doing | P3 | D067 approval record; then unblocks #55 |
@@ -269,6 +269,14 @@ pre-approved.
 - Windows transaction/crash/rollback and no-replace publication
   qualification needs the Windows runner (P7 hardware); agent prepares
   fixtures and scripts now.
+- DELIVERED 2026-11-12: draft PR #278 (head `e10386b`), #42 In Review.
+  Evidence-not-code finding confirmed; 8 native capacity checks + 5/5
+  robustness runs (10 MiB cap, 20 MiB shared-pool boundary, unresolved
+  reservations, SIGKILL→restart durability). Restart race root-caused:
+  SIGKILL during journal replace left transactions.next → permanent
+  fail-closed; fixed by settling cleanup_state=verified before
+  termination (flock theory disproved by 20-trial probe). Windows
+  harness prepared, fails closed off-Windows; Windows gate stays OPEN.
 - Exit: agent portion In Review; platform qualification tracked in P7.
 
 ### P5 — Suggestion track (F06 → F16 → F17 → F18) — longest chain
