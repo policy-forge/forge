@@ -27,6 +27,19 @@ Full suite green; `cargo audit` 0 vulnerabilities; vet/graph gates pass.
   Note: #266 and #268 both touch `supply-chain/` — merge #266 first,
   then rebase #268 (coordinator handles).
 
+## D1b. Renew the 47 stale exceptions — time-critical (expiry 2026-11-23)
+
+Verified 2026-11-12: **all 47 inventory exceptions are past their
+2026-11-07 review-by date** and all expire 2026-11-23 (11 days). The
+gate already reports them `stale-exception`. Without renewal the
+supply-chain gate hard-fails on expiry and blocks the release path.
+
+- [ ] Renew all 47 for another term (owner brianluby, new review-by
+  2026-11-26, expiry 2026-12-26 — matching the October pattern), or
+  name exceptions to retire instead. Coordinator applies the renewal
+  mechanically on approval; identities unchanged. The four new
+  exceptions in D1 ride the same term.
+
 ## D2. Dismiss 25 retained-evidence Dependabot alerts — unblocks clean security dashboard
 
 All 25 alerts are zip 8.6.0 in the immutable October review receipts
@@ -56,24 +69,37 @@ evidence chain.
 - [ ] Close #265 without merge (recommended). The alerts it targets are
   resolved by D2 dismissal, not receipt edits.
 
-## D4. Decision packets (landing shortly on `docs/decision-packets-2026-11-12`)
+## D4. Decision packets — DELIVERED, draft PR #270 (head `08115d7`)
 
-The packet file covers, with recommendations and citations:
+`docs/plans/2026-11-12-owner-decision-packets.md` (659 lines, full
+citations, pre-commit gate green: 4498 tests). Answer each item in the
+packet; summary:
 
-1. **D067** — F11 MCP discovery/threat model approval (unblocks #55
-   conformance work). Recommendation: approve the implemented
-   confined-roots model.
-2. **D069** — F12/F13 scope split for remaining adapters + interactive
-   client. Recommendation: portable-file adapters → F12, client → F13.
-3. **F10 Q1–Q7** — mostly answered by D064/add-only dispositions;
-   Q7 is a scope *confirmation* (PRD 054 never excluded AR validation;
-   PR #253 merged it — no override occurred).
-4. **F12 M-10** proposed-edit patch contract (target-hash binding).
-5. **F12 M-13/M-15** — opt-in sensitive export; keep Windows publication
-   refusal until qualification.
-6. **F16 confinement design** — per-platform mechanism choice (largest
-   unknown; names options with tradeoffs).
-7. **S-2 signed envelopes** — recommend Won't for 2.0.0 unless design
+1. **D067** — ratify the implemented confined-roots MCP discovery +
+   read-only threat model; name the two-client conformance pair
+   (proposed: MCP Inspector `modern` + Claude Code v2 runtime, MCP
+   2026-07-28). **Caveat:** the originally approved proposal bytes
+   (sha256 `60c8dff1…`) were lost from `/tmp`; a durable reconstruction
+   is being re-pinned into `docs/` (branch `docs/f11-proposal-repin`) —
+   ratification must bind the NEW document, not the lost bytes.
+2. **D068 scope split (F12/F13)** — already bound by the 2026-10-25
+   disposition; verify by evidence, no re-decision. (The plan's former
+   "D069" label collided with the dependency-policy decision ID and
+   was relabelled.)
+3. **F10 Q1–Q7** — Q1–Q6 answered by recorded dispositions; Q7 is a
+   scope *confirmation* (PRD 054 never excluded AR validation; PR #253
+   merged it — no override occurred).
+4. **F12 M-10** — proposed-edit envelope with `target_subject_sha256`
+   binding + AC-5 wrong-hash rejection; new closed family version.
+5. **F12 M-13/M-15** — opt-in sensitive export (default retained);
+   Windows no-replace file publisher already merged (#254); directory
+   publication + qualification remain open.
+6. **F16 confinement design** — Landlock/seccomp (Linux), sandbox-exec
+   (macOS), Job Objects/AppContainer (Windows, dependency-gated);
+   descendant cleanup strategy; no new crate without PRD 069 approval.
+7. **D068 quorum** — `quorum_v3` verified against the disposition
+   minimum: no mismatch; close by evidence.
+8. **S-2 signed envelopes** — recommend Won't for 2.0.0 unless design
    supplied.
 
 ## D5. F15 Phase 2 dependency approval — unblocks live GitHub adapter

@@ -72,7 +72,9 @@ idles behind human gates:
   (new tickets); F11 conformance harness after D067; coverage tooling;
   decision packets; documentation reconciliation.
 - **B — Owner decisions blocking code:** D067 (MCP discovery/threat
-  model), D069 (F12/F13 scope split), F10 Q1–Q7, F12 M-10/M-13/M-15,
+  model), D068 scope split (F12/F13; formerly mislabeled D069, which
+  the 2026-10-02 packet uses for dependency policy), F10 Q1–Q7,
+  F12 M-10/M-13/M-15,
   A11Y-C-1 fallback, F16 confinement design, GitLab/Jira scope (§4).
 - **C — Human/physical gates:** real reviewers, pilots, AT/WCAG sessions,
   macOS/Windows hardware runs, independent-tool interop, security/privacy
@@ -103,7 +105,7 @@ hook close, merging/publication/contact need separate authorization.
 | #44 | 1439 | F08 POA&M workflow | In Review | P7 | Human workflow/security/privacy gates (code merged via #259) |
 | #55 | 1450 | F11 MCP core + agent eval | To-Do | P3 | Threat-model approval, two-client conformance, qualification |
 | #56 | 1451 | F11 prereq discovery/threat model | Doing | P3 | D067 approval record; then unblocks #55 |
-| #59 | 1454 | F13 collaborative review | Doing | P3 | Shares D068/D069 with F12; quorum, workspace client |
+| #59 | 1454 | F13 collaborative review | Doing | P3 | Shares D068 with F12; quorum, workspace client |
 | #63 | 1459 | Containerize CLI + workspace | To-Do | P1 | Entire ticket: images, non-root, persistence, smoke evidence |
 | #64 | 1460 | Field info markers/docs/examples | To-Do | P2 | Entire ticket: contextual help across workspace surfaces |
 | #65 | 1472 | Due/overdue review alerting | To-Do | P2 | Entire ticket: lifecycle-driven alerts, no new authority |
@@ -136,10 +138,12 @@ pre-approved.
    read-only threat model, MCP 2026-07-28 conformance plan, two-client
    choice. Recommendation: approve the implemented discovery model as-is;
    it already enforces disjoint confined roots and raw-file pins.
-2. **D069 — F12/F13 scope split**: which of M-3 remaining adapters
+2. **D068 scope split — F12/F13** (relabelled: "D069" collides with the
+   dependency-policy decision ID in the 2026-10-02 packet): the split
+   is already bound by the recorded 2026-10-25 D068 disposition —
+   verify by evidence, do not re-decide. Remaining M-3 adapters
    (057 impact, 063, 064, 066, clause-level 061) and S-1 interactive
-   workspace client land in F12 vs F13. Recommendation: portable-file
-   adapters → F12; interactive client → F13.
+   workspace client ordering per that disposition.
 3. **D068 — quorum/separation minimum + snapshot vs reference** for
    F12/F13. Already recorded 2026-10-25; verify the merged `quorum_v3`
    implementation matches the disposition and close the ticket checkbox
@@ -227,7 +231,8 @@ pre-approved.
   approved threat model; build the two-independent-client conformance
   harness against MCP 2026-07-28 (`server/discover`, namespaced
   metadata, complete result typing); F20 `/2` checkpoint gates.
-- F12/F13 (#21, #59): after D069/M-10, remaining M-3 adapters, S-4
+- F12/F13 (#21, #59): per the recorded D068 split + M-10 approval,
+  remaining M-3 adapters, S-4
   supersession for Lifecycle `/2` and Authoring `/3`, M-13/M-15 per
   decisions; S-1 interactive client reuses workspace APIs; F21 `/3`
   quorum qualification.
@@ -306,7 +311,7 @@ graph LR
   P1[P1 containerization #63] --> P7
   P2[P2 markers #64 + alerting #65] --> P7
   D067[D067 approval] --> P3a[P3 F11 MCP]
-  PACKETS[D069/M-10/Q1-Q7 packets] --> P3b[P3 F10/F12/F13 closure]
+  PACKETS[D068-split/M-10/Q1-Q7 packets] --> P3b[P3 F10/F12/F13 closure]
   P4[P4 restore + Windows prep] --> WIN[Windows qualification]
   F06E[F06 evaluations] --> P16[F16 confinement]
   D16[confinement design approval] --> P16
