@@ -1,0 +1,13 @@
+{
+  "pr": 261,
+  "url": "https://github.com/policy-forge/forge/pull/261",
+  "head_oid": "e15c5a7861069aa19c2d5487933647052908363e",
+  "base_oid": "b4226bb35d796222c30f93235ac22118dd26a344",
+  "state_at_review": "OPEN",
+  "ci_run_id": 41067129491,
+  "ci_run_url": "https://github.com/policy-forge/forge/actions/runs/41067129491",
+  "version_scope": "hyper 1.11.1 -> 1.12.0 (root lock; futures-channel 0.3.34 removed)",
+  "accepted_audit": false,
+  "human_signoff": null,
+  "scope": "Bounded agent-assisted differential source review; no merge permission, no audit approval."
+}

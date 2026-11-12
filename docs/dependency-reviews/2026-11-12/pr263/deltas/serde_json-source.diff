@@ -1,0 +1,777 @@
+diff -r serde_json-1.0.151/.github/workflows/ci.yml serde_json-1.0.154/.github/workflows/ci.yml
+--- serde_json-1.0.151/.github/workflows/ci.yml	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/.github/workflows/ci.yml	2006-07-23 18:21:28.000000000 -0700
+@@ -69,12 +69,16 @@
+       - run: cargo check --manifest-path tests/crate/Cargo.toml --no-default-features --features alloc,raw_value
+       - run: cargo check --manifest-path tests/crate/Cargo.toml --features serde_json/preserve_order
+         if: matrix.rust != '1.71.0'
+-      - run: cargo check --manifest-path tests/crate/Cargo.toml --no-default-features --features alloc,serde_json/preserve_order
++      - run: cargo check --manifest-path tests/crate/Cargo.toml --no-default-features --features serde_json/preserve_order
+         if: matrix.rust != '1.71.0'
+       - name: Build without std
+         run: cargo check --manifest-path tests/crate/Cargo.toml --target
+           ${{matrix.target}} --no-default-features --features alloc
+         if: matrix.target
++      - name: Build without std with preserve_order
++        run: cargo check --manifest-path tests/crate/Cargo.toml --target
++          ${{matrix.target}} --no-default-features --features alloc,serde_json/preserve_order
++        if: matrix.target
+ 
+   minimal:
+     name: Minimal versions
+diff -r serde_json-1.0.151/Cargo.lock serde_json-1.0.154/Cargo.lock
+--- serde_json-1.0.151/Cargo.lock	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/Cargo.lock	2006-07-23 18:21:28.000000000 -0700
+@@ -4,9 +4,9 @@
+ 
+ [[package]]
+ name = "ar_archive_writer"
+-version = "0.5.2"
++version = "0.5.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4087686b4b0a3427190bae57a1d9a478dbb2d40c5dc1bd6e2b6d797913bdd348"
++checksum = "73cd58deff2140a0a8eae87e417bd01db68a33e148aa93d1e8cd837e55e312b6"
+ dependencies = [
+  "object",
+ ]
+@@ -24,9 +24,9 @@
+ 
+ [[package]]
+ name = "cc"
+-version = "1.3.0"
++version = "1.8.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "c89588d05638b5b4594a3348a2d6c20277e43a7f5c5202b05cc56888475a47b8"
++checksum = "6651c9ed80effdc7db0ff72512157f901af5e3549e341e24b1dd4887d836d838"
+ dependencies = [
+  "find-msvc-tools",
+  "shlex",
+@@ -34,9 +34,9 @@
+ 
+ [[package]]
+ name = "cfg-if"
+-version = "1.0.4"
++version = "1.0.5"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
++checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
+ 
+ [[package]]
+ name = "dissimilar"
+@@ -52,15 +52,21 @@
+ 
+ [[package]]
+ name = "find-msvc-tools"
+-version = "0.1.9"
++version = "0.1.14"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
++checksum = "aedcfb3409746eddb02b9e19ebda1c3394f759a152e48ee875a0844d1b955484"
+ 
+ [[package]]
++name = "foldhash"
++version = "0.2.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
++
++[[package]]
+ name = "glob"
+-version = "0.3.3"
++version = "0.3.4"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "0cc23270f6e1808e30a928bdc84dea0b9b4136a8bc82338574f23baf47bbd280"
++checksum = "e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b"
+ 
+ [[package]]
+ name = "hashbrown"
+@@ -70,9 +76,9 @@
+ 
+ [[package]]
+ name = "indexmap"
+-version = "2.14.0"
++version = "2.14.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d466e9454f08e4a911e14806c24e16fba1b4c121d1ea474396f396069cf949d9"
++checksum = "cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855"
+ dependencies = [
+  "equivalent",
+  "hashbrown",
+@@ -80,9 +86,9 @@
+ 
+ [[package]]
+ name = "indoc"
+-version = "2.0.7"
++version = "2.0.8"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "79cf5c93f93228cf8efb3ba362535fb11199ac548a09ce117c9b1adc3030d706"
++checksum = "a37b2691796cffeb8a8cd305ac66e65841559f147f4e63231d0eafa4db5384d1"
+ dependencies = [
+  "rustversion",
+ ]
+@@ -95,9 +101,9 @@
+ 
+ [[package]]
+ name = "libc"
+-version = "0.2.186"
++version = "0.2.190"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
++checksum = "ce5d3ddc6d3fa000eb1536d85e147bfe31aacaba692ed6a876f95cb7c855be78"
+ 
+ [[package]]
+ name = "memchr"
+@@ -107,9 +113,9 @@
+ 
+ [[package]]
+ name = "object"
+-version = "0.37.3"
++version = "0.39.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ff76201f031d8863c38aa7f905eca4f53abbfa15f609db4277d44cd8938f33fe"
++checksum = "2e5a6c098c7a3b6547378093f5cc30bc54fd361ce711e05293a5cc589562739b"
+ dependencies = [
+  "memchr",
+ ]
+@@ -125,9 +131,9 @@
+ 
+ [[package]]
+ name = "psm"
+-version = "0.1.31"
++version = "0.1.32"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "645dbe486e346d9b5de3ef16ede18c26e6c70ad97418f4874b8b1889d6e761ea"
++checksum = "4dcd034599e63b970727f70d79e02d62390a4a84f7c6b827c27c46d5ac3fa622"
+ dependencies = [
+  "ar_archive_writer",
+  "cc",
+@@ -144,22 +150,22 @@
+ 
+ [[package]]
+ name = "ref-cast"
+-version = "1.0.26"
++version = "1.0.27"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "216e8f773d7923bcba9ceb86a86c93cabb3903a11872fc3f138c49630e50b96d"
++checksum = "7e440fb4e4b4147295338efb76001ab9e4efc0e5839df2c47fc5ac2381d365c3"
+ dependencies = [
+  "ref-cast-impl",
+ ]
+ 
+ [[package]]
+ name = "ref-cast-impl"
+-version = "1.0.26"
++version = "1.0.27"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "2c9283685feec7d69af75fb0e858d5e7378f33fe4fc699383b2916ab9273e03c"
++checksum = "92ecd8964f8453721699a1ed72037b0db49ce2f5a5138486ee89bed6f67cdf3a"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+- "syn 3.0.2",
++ "syn 3.0.7",
+ ]
+ 
+ [[package]]
+@@ -205,14 +211,14 @@
+ dependencies = [
+  "proc-macro2",
+  "quote",
+- "syn 3.0.2",
++ "syn 3.0.7",
+ ]
+ 
+ [[package]]
+ name = "serde_json"
+-version = "1.0.150"
++version = "1.0.153"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e8014e44b4736ed0538adeecded0fce2a272f22dc9578a7eb6b2d9993c74cfb9"
++checksum = "aa62079d232416ecf7b2f938d389e28bbcd3677bcdb67b42e2f29c2433552176"
+ dependencies = [
+  "itoa",
+  "memchr",
+@@ -223,9 +229,10 @@
+ 
+ [[package]]
+ name = "serde_json"
+-version = "1.0.151"
++version = "1.0.154"
+ dependencies = [
+  "automod",
++ "foldhash",
+  "indexmap",
+  "indoc",
+  "itoa",
+@@ -243,9 +250,9 @@
+ 
+ [[package]]
+ name = "serde_spanned"
+-version = "1.1.1"
++version = "1.1.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "6662b5879511e06e8999a8a235d848113e942c9124f211511b16466ee2995f26"
++checksum = "4e7523beb55eece201a2356bee0bbca0d1ab466c14c07703b2e0ee6d42cb0c2c"
+ dependencies = [
+  "serde_core",
+ ]
+@@ -269,9 +276,9 @@
+ 
+ [[package]]
+ name = "stacker"
+-version = "0.1.24"
++version = "0.1.25"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "640c8cdd92b6b12f5bcb1803ca3bbf5ab96e5e6b6b96b9ab77dabe9e880b3190"
++checksum = "707f49d46706bacf8a2b00d51dace3f9de527c13eec3778f570c411f89e69967"
+ dependencies = [
+  "cc",
+  "cfg-if",
+@@ -293,9 +300,9 @@
+ 
+ [[package]]
+ name = "syn"
+-version = "3.0.2"
++version = "3.0.7"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a207d6d6a2b7fc470b80443726053f18a2481b7e1eee970597051596567987a3"
++checksum = "d62a2e0561533f2ca2561d0cf27fd9fedb640a1bf2616ff5d5c80d99017faadc"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -303,10 +310,10 @@
+ ]
+ 
+ [[package]]
+-name = "target-triple"
+-version = "1.0.1"
++name = "target-tuple"
++version = "1.0.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "c3a6bfce3d99adfa72d24750a61f782f3036a81e7f86d8841ee1326deaebd171"
++checksum = "876fef147edbcbddc8ac5cbbba92c7b86519e314e86638596c09673b2ed01e7f"
+ 
+ [[package]]
+ name = "termcolor"
+@@ -319,9 +326,9 @@
+ 
+ [[package]]
+ name = "toml"
+-version = "1.1.3+spec-1.1.0"
++version = "1.1.8+spec-1.1.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "53c96ecdfa941c8fc4fcaed14f99ada8ebed502eef533015095a07e3301d4c3c"
++checksum = "20489e00e4d8741d6be680764cc12e270655e375a20d1011e844a9c3379e678d"
+ dependencies = [
+  "indexmap",
+  "serde_core",
+@@ -334,49 +341,49 @@
+ 
+ [[package]]
+ name = "toml_datetime"
+-version = "1.1.1+spec-1.1.0"
++version = "1.1.2+spec-1.1.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "3165f65f62e28e0115a00b2ebdd37eb6f3b641855f9d636d3cd4103767159ad7"
++checksum = "2b86d767906c6c42421dcba507eb9d203e779497710a47782a224bb871653053"
+ dependencies = [
+  "serde_core",
+ ]
+ 
+ [[package]]
+ name = "toml_parser"
+-version = "1.1.2+spec-1.1.0"
++version = "1.1.5+spec-1.1.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a2abe9b86193656635d2411dc43050282ca48aa31c2451210f4202550afb7526"
++checksum = "baa693a8032d7e1cada7d0041e96126df243179ff061456783ac7f12bda4744c"
+ dependencies = [
+  "winnow",
+ ]
+ 
+ [[package]]
+ name = "toml_writer"
+-version = "1.1.2+spec-1.1.0"
++version = "1.1.3+spec-1.1.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "7d56353a2a665ad0f41a421187180aab746c8c325620617ad883a99a1cbe66d2"
++checksum = "06bdbd8cfc056b8d2e2e85f29b56a3bdbecb527cef81eb39e3e7b98af4652770"
+ 
+ [[package]]
+ name = "trybuild"
+-version = "1.0.118"
++version = "1.0.122"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "06649c6f63d86604ba0c8950d5a1829fc9a17afd70fc6629f481d75b6a624c78"
++checksum = "62db9c92d704393fbf2132041720cc80b689f2d3f28521015c2ac866223c11b8"
+ dependencies = [
+  "dissimilar",
+  "glob",
+  "serde",
+  "serde_derive",
+- "serde_json 1.0.150",
+- "target-triple",
++ "serde_json 1.0.153",
++ "target-tuple",
+  "termcolor",
+  "toml",
+ ]
+ 
+ [[package]]
+ name = "unicode-ident"
+-version = "1.0.24"
++version = "1.0.26"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
++checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
+ 
+ [[package]]
+ name = "winapi-util"
+diff -r serde_json-1.0.151/Cargo.toml serde_json-1.0.154/Cargo.toml
+--- serde_json-1.0.151/Cargo.toml	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/Cargo.toml	2006-07-23 18:21:28.000000000 -0700
+@@ -13,11 +13,7 @@
+ edition = "2021"
+ rust-version = "1.71"
+ name = "serde_json"
+-version = "1.0.151"
+-authors = [
+-    "Erick Tryzelaar <erick.tryzelaar@gmail.com>",
+-    "David Tolnay <dtolnay@gmail.com>",
+-]
++version = "1.0.154"
+ build = "build.rs"
+ autolib = false
+ autobins = false
+@@ -69,7 +65,8 @@
+ float_roundtrip = []
+ preserve_order = [
+     "indexmap",
+-    "std",
++    "alloc",
++    "dep:foldhash",
+ ]
+ raw_value = []
+ std = [
+@@ -110,9 +107,15 @@
+ name = "test"
+ path = "tests/test.rs"
+ 
++[dependencies.foldhash]
++version = "0.2"
++optional = true
++default-features = false
++
+ [dependencies.indexmap]
+ version = "2.2.3"
+ optional = true
++default-features = false
+ 
+ [dependencies.itoa]
+ version = "1.0"
+diff -r serde_json-1.0.151/Cargo.toml.orig serde_json-1.0.154/Cargo.toml.orig
+--- serde_json-1.0.151/Cargo.toml.orig	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/Cargo.toml.orig	2006-07-23 18:21:28.000000000 -0700
+@@ -1,7 +1,6 @@
+ [package]
+ name = "serde_json"
+-version = "1.0.151"
+-authors = ["Erick Tryzelaar <erick.tryzelaar@gmail.com>", "David Tolnay <dtolnay@gmail.com>"]
++version = "1.0.154"
+ categories = ["encoding", "parser-implementations", "no-std"]
+ description = "A JSON serialization file format"
+ documentation = "https://docs.rs/serde_json"
+@@ -12,7 +11,8 @@
+ rust-version = "1.71"
+ 
+ [dependencies]
+-indexmap = { version = "2.2.3", optional = true }
++foldhash = { version = "0.2", optional = true, default-features = false }
++indexmap = { version = "2.2.3", optional = true, default-features = false }
+ itoa = "1.0"
+ memchr = { version = "2", default-features = false }
+ serde_core = { version = "1.0.220", default-features = false }
+@@ -62,7 +62,7 @@
+ # Make serde_json::Map use a representation which maintains insertion order.
+ # This allows data to be read into a Value and written back to a JSON string
+ # while preserving the order of map keys in the input.
+-preserve_order = ["indexmap", "std"]
++preserve_order = ["indexmap", "alloc", "dep:foldhash"]
+ 
+ # Use sufficient precision when parsing fixed precision floats from JSON to
+ # ensure that they maintain accuracy when round-tripped through JSON. This comes
+diff -r serde_json-1.0.151/src/de.rs serde_json-1.0.154/src/de.rs
+--- serde_json-1.0.151/src/de.rs	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/src/de.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -945,7 +945,7 @@
+             if let Ok(unsigned) = buf.parse() {
+                 return Ok(ParserNumber::U64(unsigned));
+             }
+-        } else {
++        } else if buf != "-0" {
+             if let Ok(signed) = buf.parse() {
+                 return Ok(ParserNumber::I64(signed));
+             }
+diff -r serde_json-1.0.151/src/lexical/math.rs serde_json-1.0.154/src/lexical/math.rs
+--- serde_json-1.0.151/src/lexical/math.rs	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/src/lexical/math.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -249,7 +249,7 @@
+     pub fn mul(x: Limb, y: Limb, carry: Limb) -> (Limb, Limb) {
+         // Cannot overflow, as long as wide is 2x as wide. This is because
+         // the following is always true:
+-        // `Wide::max_value() - (Narrow::max_value() * Narrow::max_value()) >= Narrow::max_value()`
++        // `Wide::MAX - (Narrow::MAX * Narrow::MAX) >= Narrow::MAX`
+         let z: Wide = as_wide(x) * as_wide(y) + as_wide(carry);
+         let bits = mem::size_of::<Limb>() * 8;
+         (as_limb(z), as_limb(z >> bits))
+@@ -454,8 +454,7 @@
+         // Avoid overflowing, calculate via total number of bits
+         // minus leading zero bits.
+         let nlz = leading_zeros(x);
+-        bits.checked_mul(x.len())
+-            .map_or_else(usize::max_value, |v| v - nlz)
++        bits.checked_mul(x.len()).map_or(usize::MAX, |v| v - nlz)
+     }
+ 
+     // SHL
+@@ -594,8 +593,8 @@
+         let mut carry = false;
+         for (xi, yi) in x[xstart..].iter_mut().zip(y.iter()) {
+             // Only one op of the two can overflow, since we added at max
+-            // Limb::max_value() + Limb::max_value(). Add the previous carry,
+-            // and store the current carry for the next.
++            // Limb::MAX + Limb::MAX. Add the previous carry, and store the
++            // current carry for the next.
+             let mut tmp = scalar::iadd(xi, *yi);
+             if carry {
+                 tmp |= scalar::iadd(xi, 1);
+@@ -635,8 +634,8 @@
+         let mut carry = false;
+         for (xi, yi) in x.iter_mut().zip(y.iter()) {
+             // Only one op of the two can overflow, since we added at max
+-            // Limb::max_value() + Limb::max_value(). Add the previous carry,
+-            // and store the current carry for the next.
++            // Limb::MAX + Limb::MAX. Add the previous carry, and store the
++            // current carry for the next.
+             let mut tmp = scalar::isub(xi, *yi);
+             if carry {
+                 tmp |= scalar::isub(xi, 1);
+@@ -812,8 +811,8 @@
+     }
+ 
+     /// Calculate the bit-length of the big-integer.
+-    /// Returns usize::max_value() if the value overflows,
+-    /// IE, if `self.data().len() > usize::max_value() / 8`.
++    /// Returns usize::MAX if the value overflows,
++    /// IE, if `self.data().len() > usize::MAX / 8`.
+     #[inline]
+     fn bit_length(&self) -> usize {
+         small::bit_length(self.data())
+diff -r serde_json-1.0.151/src/lib.rs serde_json-1.0.154/src/lib.rs
+--- serde_json-1.0.151/src/lib.rs	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/src/lib.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -299,7 +299,7 @@
+ //! [macro]: crate::json
+ //! [`serde-json-core`]: https://github.com/rust-embedded-community/serde-json-core
+ 
+-#![doc(html_root_url = "https://docs.rs/serde_json/1.0.151")]
++#![doc(html_root_url = "https://docs.rs/serde_json/1.0.154")]
+ // Ignored clippy lints
+ #![allow(
+     clippy::collapsible_else_if,
+diff -r serde_json-1.0.151/src/map.rs serde_json-1.0.154/src/map.rs
+--- serde_json-1.0.151/src/map.rs	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/src/map.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -3,6 +3,11 @@
+ //! By default the map is backed by a [`BTreeMap`]. Enable the `preserve_order`
+ //! feature of serde_json to use [`IndexMap`] instead.
+ //!
++//! In builds without the `std` feature, `preserve_order` hashes keys with
++//! [`foldhash::fast::RandomState`]. Foldhash provides minimal HashDoS
++//! resistance, but does not protect against interactive attackers. Builds with
++//! `std` use the standard library's [`std::hash::RandomState`].
++//!
+ //! [`BTreeMap`]: std::collections::BTreeMap
+ //! [`IndexMap`]: indexmap::IndexMap
+ 
+@@ -33,14 +38,19 @@
+ #[cfg(not(feature = "preserve_order"))]
+ type MapImpl<K, V> = BTreeMap<K, V>;
+ #[cfg(feature = "preserve_order")]
+-type MapImpl<K, V> = IndexMap<K, V>;
++type MapImpl<K, V> = IndexMap<K, V, BuildHasherImpl>;
+ 
++#[cfg(all(feature = "preserve_order", feature = "std"))]
++type BuildHasherImpl = std::collections::hash_map::RandomState;
++#[cfg(all(feature = "preserve_order", not(feature = "std")))]
++type BuildHasherImpl = foldhash::fast::RandomState;
++
+ impl Map<String, Value> {
+     /// Makes a new empty Map.
+     #[inline]
+     pub fn new() -> Self {
+         Map {
+-            map: MapImpl::new(),
++            map: MapImpl::default(),
+         }
+     }
+ 
+@@ -55,7 +65,7 @@
+                 BTreeMap::new()
+             },
+             #[cfg(feature = "preserve_order")]
+-            map: IndexMap::with_capacity(capacity),
++            map: IndexMap::with_capacity_and_hasher(capacity, BuildHasherImpl::default()),
+         }
+     }
+ 
+@@ -386,9 +396,7 @@
+ impl Default for Map<String, Value> {
+     #[inline]
+     fn default() -> Self {
+-        Map {
+-            map: MapImpl::new(),
+-        }
++        Map::new()
+     }
+ }
+ 
+diff -r serde_json-1.0.151/src/number.rs serde_json-1.0.154/src/number.rs
+--- serde_json-1.0.151/src/number.rs	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/src/number.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -314,7 +314,7 @@
+         match self.n {
+             N::PosInt(n) => Some(n as f32),
+             N::NegInt(n) => Some(n as f32),
+-            N::Float(n) => Some(n as f32),
++            N::Float(n) => Some(n as f32).filter(|float| float.is_finite()),
+         }
+         #[cfg(feature = "arbitrary_precision")]
+         self.n.parse::<f32>().ok().filter(|float| float.is_finite())
+diff -r serde_json-1.0.151/src/read.rs serde_json-1.0.154/src/read.rs
+--- serde_json-1.0.151/src/read.rs	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/src/read.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -155,6 +155,8 @@
+     ch: Option<u8>,
+     #[cfg(feature = "raw_value")]
+     raw_buffer: Option<Vec<u8>>,
++    #[cfg(feature = "raw_value")]
++    raw_buffering_start_position: Position,
+ }
+ 
+ /// JSON input source that reads from a slice of bytes.
+@@ -203,6 +205,8 @@
+             ch: None,
+             #[cfg(feature = "raw_value")]
+             raw_buffer: None,
++            #[cfg(feature = "raw_value")]
++            raw_buffering_start_position: Position { line: 1, column: 0 },
+         }
+     }
+ }
+@@ -378,6 +382,11 @@
+ 
+     #[cfg(feature = "raw_value")]
+     fn begin_raw_buffering(&mut self) {
++        let position = self.position();
++        self.raw_buffering_start_position = Position {
++            line: position.line,
++            column: position.column - usize::from(self.ch.is_some()),
++        };
+         self.raw_buffer = Some(Vec::new());
+     }
+ 
+@@ -389,7 +398,25 @@
+         let raw = self.raw_buffer.take().unwrap();
+         let raw = match String::from_utf8(raw) {
+             Ok(raw) => raw,
+-            Err(_) => return error(self, ErrorCode::InvalidUnicodeCodePoint),
++            Err(err) => {
++                let prefix = &err.as_bytes()[..=err.utf8_error().valid_up_to()];
++                let line;
++                let column;
++                if let Some(last_newline) = memchr::memrchr(b'\n', prefix) {
++                    line = self.raw_buffering_start_position.line
++                        + memchr::memchr_iter(b'\n', &prefix[..last_newline]).count()
++                        + 1;
++                    column = prefix.len() - last_newline - 1;
++                } else {
++                    line = self.raw_buffering_start_position.line;
++                    column = self.raw_buffering_start_position.column + prefix.len();
++                }
++                return Err(Error::syntax(
++                    ErrorCode::InvalidUnicodeCodePoint,
++                    line,
++                    column,
++                ));
++            }
+         };
+         visitor.visit_map(OwnedRawDeserializer {
+             raw_value: Some(raw),
+@@ -647,7 +674,15 @@
+         let raw = &self.slice[self.raw_buffering_start_index..self.index];
+         let raw = match str::from_utf8(raw) {
+             Ok(raw) => raw,
+-            Err(_) => return error(self, ErrorCode::InvalidUnicodeCodePoint),
++            Err(err) => {
++                let at = self.raw_buffering_start_index + err.valid_up_to() + 1;
++                let position = self.position_of_index(at);
++                return Err(Error::syntax(
++                    ErrorCode::InvalidUnicodeCodePoint,
++                    position.line,
++                    position.column,
++                ));
++            }
+         };
+         visitor.visit_map(BorrowedRawDeserializer {
+             raw_value: Some(raw),
+@@ -866,7 +901,23 @@
+ }
+ 
+ fn as_str<'de, 's, R: Read<'de>>(read: &R, slice: &'s [u8]) -> Result<&'s str> {
+-    str::from_utf8(slice).or_else(|_| error(read, ErrorCode::InvalidUnicodeCodePoint))
++    match str::from_utf8(slice) {
++        Ok(s) => Ok(s),
++        Err(err) => {
++            // Point at the first invalid UTF-8 byte. `read` is positioned at
++            // the closing quote of the string whose content is `slice`. If the
++            // JSON string contained escape sequences, the column position is
++            // approximate.
++            let position = read.position();
++            Err(Error::syntax(
++                ErrorCode::InvalidUnicodeCodePoint,
++                position.line,
++                position
++                    .column
++                    .saturating_sub(slice.len() - err.valid_up_to()),
++            ))
++        }
++    }
+ }
+ 
+ /// Parses a JSON escape sequence and appends it into the scratch space. Assumes
+diff -r serde_json-1.0.151/tests/lexical/float.rs serde_json-1.0.154/tests/lexical/float.rs
+--- serde_json-1.0.151/tests/lexical/float.rs	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/tests/lexical/float.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -2,7 +2,6 @@
+ 
+ use crate::lexical::float::ExtendedFloat;
+ use crate::lexical::rounding::round_nearest_tie_even;
+-use std::{f32, f64};
+ 
+ // NORMALIZE
+ 
+diff -r serde_json-1.0.151/tests/lexical/parse.rs serde_json-1.0.154/tests/lexical/parse.rs
+--- serde_json-1.0.151/tests/lexical/parse.rs	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/tests/lexical/parse.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -2,7 +2,6 @@
+ 
+ use crate::lexical::num::Float;
+ use crate::lexical::{parse_concise_float, parse_truncated_float};
+-use core::f64;
+ use core::fmt::Debug;
+ 
+ fn check_concise_float<F>(mantissa: u64, exponent: i32, expected: F)
+Only in serde_json-1.0.154/tests/regression: issue1083.rs
+diff -r serde_json-1.0.151/tests/test.rs serde_json-1.0.154/tests/test.rs
+--- serde_json-1.0.151/tests/test.rs	2006-07-23 18:21:28.000000000 -0700
++++ serde_json-1.0.154/tests/test.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -2,6 +2,7 @@
+     clippy::assertions_on_result_states,
+     clippy::byte_char_slices,
+     clippy::cast_precision_loss,
++    clippy::clone_on_copy,
+     clippy::derive_partial_eq_without_eq,
+     clippy::excessive_precision,
+     clippy::float_cmp,
+@@ -45,7 +46,6 @@
+ use std::marker::PhantomData;
+ use std::mem;
+ use std::str::FromStr;
+-use std::{f32, f64};
+ 
+ macro_rules! treemap {
+     () => {
+@@ -851,6 +851,27 @@
+ }
+ 
+ #[test]
++fn test_negative_zero_value() {
++    // `-0` read into a Value keeps its sign.
++    for text in ["-0", "-0.0", "-0e2"] {
++        let value: Value = from_str(text).unwrap();
++        assert!(
++            value.as_f64().unwrap().is_sign_negative(),
++            "{text}: {value}"
++        );
++        assert!(
++            from_value::<f64>(value.clone()).unwrap().is_sign_negative(),
++            "{text}: {value}"
++        );
++        let written = to_string(&value).unwrap();
++        assert!(written.starts_with('-'), "{text} written as {written}");
++    }
++    let value: Value = from_str("[-0, 0]").unwrap();
++    assert!(value[0].as_f64().unwrap().is_sign_negative());
++    assert!(value[1].as_f64().unwrap().is_sign_positive());
++}
++
++#[test]
+ fn test_parse_f64() {
+     test_parse_ok(vec![
+         ("0.0", 0.0f64),
+@@ -1086,11 +1107,11 @@
+     test_parse_slice_err::<String>(&[
+         (
+             &[b'"', 159, 146, 150, b'"'],
+-            "invalid unicode code point at line 1 column 5",
++            "invalid unicode code point at line 1 column 2",
+         ),
+         (
+             &[b'"', b'\\', b'n', 159, 146, 150, b'"'],
+-            "invalid unicode code point at line 1 column 7",
++            "invalid unicode code point at line 1 column 4",
+         ),
+         (
+             &[b'"', b'\\', b'u', 48, 48, 51],
+@@ -2169,12 +2190,25 @@
+         u8::MIN u8::MAX u16::MIN u16::MAX u32::MIN u32::MAX u64::MIN u64::MAX
+         f32::MIN f32::MAX f32::MIN_EXP f32::MAX_EXP f32::MIN_POSITIVE
+         f64::MIN f64::MAX f64::MIN_EXP f64::MAX_EXP f64::MIN_POSITIVE
+-        f32::consts::E f32::consts::PI f32::consts::LN_2 f32::consts::LOG2_E
+-        f64::consts::E f64::consts::PI f64::consts::LN_2 f64::consts::LOG2_E
++        std::f32::consts::E std::f32::consts::PI std::f32::consts::LN_2 std::f32::consts::LOG2_E
++        std::f64::consts::E std::f64::consts::PI std::f64::consts::LN_2 std::f64::consts::LOG2_E
+     );
+ }
+ 
+ #[test]
++fn test_partialeq_f32_out_of_range() {
++    // A number outside the range of f32 is not equal to an infinite f32.
++    for (text, inf) in [("1e300", f32::INFINITY), ("-1e39", f32::NEG_INFINITY)] {
++        let value: Value = from_str(text).unwrap();
++        assert_ne!(value, inf);
++        assert_ne!(inf, value);
++        assert_ne!(value, f64::from(inf));
++    }
++    let max: Value = from_str("3.4028235e38").unwrap();
++    assert_eq!(max, f32::MAX);
++}
++
++#[test]
+ fn test_partialeq_string() {
+     let v = to_value("42").unwrap();
+     assert_eq!(v, "42");
+@@ -2514,11 +2548,11 @@
+ 
+     assert_eq!(
+         value_err.to_string(),
+-        "invalid unicode code point at line 1 column 4",
++        "invalid unicode code point at line 1 column 2",
+     );
+     assert_eq!(
+         raw_value_err.to_string(),
+-        "invalid unicode code point at line 1 column 4",
++        "invalid unicode code point at line 1 column 2",
+     );
+ }
+ 
