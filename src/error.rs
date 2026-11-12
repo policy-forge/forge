@@ -221,6 +221,10 @@ pub enum ForgeError {
     #[error("Evidence linkage action required")]
     LinkageActionRequired,
 
+    /// A connector-neutral integration change set, plan, or state is invalid.
+    #[error("Integration error: {0}")]
+    Integration(String),
+
     /// A lifecycle record, transition, portfolio, or artifact binding is invalid.
     #[error("Policy lifecycle error: {0}")]
     Lifecycle(String),
@@ -547,6 +551,7 @@ pub fn exit_code(err: &ForgeError) -> u8 {
         | ForgeError::SspBuildWithSource { .. }
         | ForgeError::MappingBuild(_)
         | ForgeError::Linkage(_)
+        | ForgeError::Integration(_)
         | ForgeError::Lifecycle(_)
         | ForgeError::ApplicabilityAnalysis(_)
         | ForgeError::FrameworkImpact(_)
