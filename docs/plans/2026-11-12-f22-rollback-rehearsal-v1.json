@@ -1,0 +1,42 @@
+{
+  "artifacts": {
+    "final_sha256sums": {
+      "bytes": 588,
+      "path": "/tmp/forge-f22-rollback-rehearsal-v1/artifacts/SHA256SUMS",
+      "sha256": "db36a79e53ac4f90c6366c18abca46696e149d3a2fc0d65abda0169abd7929fe"
+    },
+    "initial_sha256sums": {
+      "bytes": 588,
+      "path": "/tmp/forge-f22-rollback-rehearsal-v1/initial-checksums/SHA256SUMS",
+      "sha256": "b04da0b05db7a9942d2174b3190e04c582caf5ba6b2026fdd6e03720263b3d12"
+    },
+    "negative_control_log": {
+      "bytes": 339,
+      "path": "/tmp/f22-rehearsal-negative.log",
+      "sha256": "954a97f6b252b1b93486027886a15a2f0f618739dd766ca76ce1ce85b83f6df3"
+    },
+    "sbom_stand_in": {
+      "bytes": 215555,
+      "path": "/tmp/forge-f22-rollback-rehearsal-v1/artifacts/forge-v2.0.0-rc.REHEARSAL-sbom.cdx.json",
+      "sha256": "599556eff39da342951e59f27b993336fa7ba7359ffe1dd2eca307533662f7aa"
+    }
+  },
+  "basis": "b4226bb35d796222c30f93235ac22118dd26a344",
+  "date": "2026-11-12",
+  "format": "forge.f22-rollback-rehearsal/1",
+  "limits": [
+    "Local macOS arm64 dry-run only; no hosted GitHub release API, SLSA provenance, or cross-platform binary was exercised.",
+    "The real rollback (yanking/replacing published assets, provenance re-attestation, release-notes edit) remains a human gate; see docs/release/runbook.md section 8.",
+    "Synthetic archives prove the checksum/replacement mechanics, not binary correctness."
+  ],
+  "mechanism_under_test": ".github/workflows/release.yml release job 'Generate SHA-256 checksums file' step (sha256sum over *.tar.gz *.zip *.cdx.json, sorted) and asset-replacement semantics of softprops/action-gh-release (same-name upload replaces; SHA256SUMS must be regenerated in the same act).",
+  "outcome": "pass",
+  "scope": "Offline dry-run of release.yml release-job checksum generation and asset replacement/rollback mechanics in /tmp; synthetic REHEARSAL stand-in archives, never real release binaries; no GitHub release, tag, or asset was created or touched.",
+  "steps": [
+    "Created /tmp/forge-f22-rollback-rehearsal-v1 with staging/, artifacts/, quarantine/, restored/.",
+    "Placed four synthetic platform archives plus the committed draft SBOM as the .cdx.json stand-in.",
+    "Ran the exact release-job checksum snippet; sha256sum -c SHA256SUMS verified all five assets.",
+    "Simulated defect discovery: quarantined the linux archive, restored a prior-good stand-in, regenerated SHA256SUMS with the same snippet; verification passed and only the replaced asset's digest changed.",
+    "Negative control: appended bytes to one archive; sha256sum -c reported FAILED for exactly that asset (tamper detected)."
+  ]
+}
