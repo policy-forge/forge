@@ -106,9 +106,9 @@ hook close, merging/publication/contact need separate authorization.
 | #55 | 1450 | F11 MCP core + agent eval | To-Do | P3 | Threat-model approval, two-client conformance, qualification |
 | #56 | 1451 | F11 prereq discovery/threat model | Doing | P3 | D067 approval record; then unblocks #55 |
 | #59 | 1454 | F13 collaborative review | Doing | P3 | Shares D068 with F12; quorum, workspace client |
-| #63 | 1459 | Containerize CLI + workspace | To-Do | P1 | Entire ticket: images, non-root, persistence, smoke evidence |
+| #63 | 1459 | Containerize CLI + workspace | In Review | P1 | Delivered PR #274; deployment evidence feeds F04 |
 | #64 | 1460 | Field info markers/docs/examples | To-Do | P2 | Entire ticket: contextual help across workspace surfaces |
-| #65 | 1472 | Due/overdue review alerting | To-Do | P2 | Entire ticket: lifecycle-driven alerts, no new authority |
+| #65 | 1472 | Due/overdue review alerting | In Review | P2 | Delivered PR #272; WCAG/AT checks fold into P7 |
 | #66 | 1473 | Record 2026-10-25 owner dispositions | In Review | P3 | Close-ready: PR #252 merged (20f46ac) |
 | #67 | 1474 | F08 asserted terminal states (D064) | In Review | P7 | Close-ready: PR #255 merged; human gates on #44 |
 | #68 | 1475 | F10 additive epochs (S-4) | In Review | P3 | Close-ready: PR #256 merged; Q1–Q7 on #19 |
@@ -116,10 +116,10 @@ hook close, merging/publication/contact need separate authorization.
 | #70 | 1477 | Accept AR in forge validate | In Review | P3 | Close-ready: PR #253 merged; Q7 scope confirmation (no PRD 054 override occurred) |
 | #71 | 1478 | Windows no-replace publication | In Review | P4 | Windows qualification; feeds M-15 decision |
 | #72 | 1482 | F16 confined local execution | To-Do | P5 | Confinement design approval, then implementation |
-| #73 | 1483 | F15 change sets + GitHub adapter | To-Do | P6 | Entire PRD 065 MVP |
+| #73 | 1483 | F15 change sets + GitHub adapter | Doing | P6 | Phase 1 in progress; Phase 2 blocked on D5 dependency approval |
 | #74 | 1484 | F17 both suggestion task contracts | To-Do | P5 | After F06/F16 |
 | #75 | 1485 | F18 suggestion review fast-follows | To-Do | P5 | 066 S-2–S-4 after F17 |
-| #76 | 1486 | F22 release gates | To-Do | P8 | Release artifacts + owner authorization |
+| #76 | 1486 | F22 release gates | To-Do | P8 | Scaffolding delivered PR #269; owner approvals D7 + publication remain |
 
 F15–F18 and F22 child tickets created under #2 on 2026-11-12
 (#72–#76 above).
