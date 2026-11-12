@@ -840,17 +840,25 @@ The receipt pins five development-run artifacts that were never committed:
 `report_sha256` `f66f7e0133e8c2500973f8963d9445bcff95a0b6e6ea928ddec90569d4cfacc9`.
 They cannot be verified from main and were not regenerated. They are
 provenance pins for the original development run, not inputs to this
-protocol; if the owner requires them for re-qualification, obtain them from
-the original run records. Open verification item, not a session blocker.
+protocol's session steps. **Flagged as a blocker for any re-qualification
+that requires these receipt artifacts**: they are missing from the repository
+and must be obtained from the original run records (or re-measured under a new
+qualified head by Engineering) before the corresponding receipt claims can be
+re-asserted. This does not block protocol preparation or human form work.
 
 ### A.5 Verification conclusion
 
 All F06 preflight-receipt corpus/implementation pins verify MATCH under the
-receipt's own scope; no pinned corpus artifact is missing; nothing was
-regenerated. **No blocker to protocol preparation.** The genuine blocker to
-evaluation remains the absence of authentic lawful corpora, gold labels,
-approved thresholds and recruited participants — all human-only (§10). The
-pinned example inventory is `synthetic-development` and earns no acceptance
+receipt's own scope; no pinned corpus artifact that exists in the repository
+is missing or mismatched; nothing was regenerated. **No blocker to protocol
+preparation.** Two verification flags are recorded: (1) the five
+development-run artifacts in A.4 are absent from the repository — a blocker
+for re-qualification that consumes them; (2) whole-file `src/cli/mod.rs`
+divergence in A.2 requires an Engineering re-pin if whole-file equality is
+demanded. The genuine blocker to evaluation itself remains the absence of
+authentic lawful corpora, gold labels, approved thresholds and recruited
+participants — all human-only (§10).
+The pinned example inventory is `synthetic-development` and earns no acceptance
 credit. Repository-wide coverage evidence is tracked separately
 (`docs/plans/2026-11-12-coverage-baseline.json`, not yet committed at this
 baseline); this protocol makes no whole-repository coverage claim and cites
