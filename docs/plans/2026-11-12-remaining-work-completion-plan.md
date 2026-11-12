@@ -111,7 +111,7 @@ hook close, merging/publication/contact need separate authorization.
 | #67 | 1474 | F08 asserted terminal states (D064) | In Review | P7 | Close-ready: PR #255 merged; human gates on #44 |
 | #68 | 1475 | F10 additive epochs (S-4) | In Review | P3 | Close-ready: PR #256 merged; Q1–Q7 on #19 |
 | #69 | 1476 | F10 add-only risk export (S-3) | In Review | P3 | Close-ready: PR #257 merged; Q1–Q7 on #19 |
-| #70 | 1477 | Accept AR in forge validate | In Review | P3 | Close-ready: PR #253 merged; Q7 ratification of PRD 054 override pending |
+| #70 | 1477 | Accept AR in forge validate | In Review | P3 | Close-ready: PR #253 merged; Q7 scope confirmation (no PRD 054 override occurred) |
 | #71 | 1478 | Windows no-replace publication | In Review | P4 | Windows qualification; feeds M-15 decision |
 | #72 | 1482 | F16 confined local execution | To-Do | P5 | Confinement design approval, then implementation |
 | #73 | 1483 | F15 change sets + GitHub adapter | To-Do | P6 | Entire PRD 065 MVP |
@@ -149,10 +149,12 @@ pre-approved.
    reopen semantics, AR-in-`forge validate` (Q7, ticket #70). D064 +
    the 2026-10-25 add-only decision already answer most; recommendation:
    keep export "new planned work + add-only into existing plans", later
-   transitions authored in `forge.poam/1`. **Q7 correction:** the owner
-   already merged AR-in-`forge validate` (PR #253, 2026-10-26) despite
-   the PRD 054 exclusion — the packet asks for explicit ratification and
-   a dated PRD 054 amendment, not re-litigation.
+   transitions authored in `forge.poam/1`. **Q7 correction (verified):**
+   PRD 054 excludes AR *generation* and AP/SSP-in-validate, not AR
+   *validation* — PR #253 (merged 2026-10-26) added validation only, so
+   the audit's "scope expansion" flag was an over-reading. Packet asks
+   the owner to confirm AR validation is in scope (no override occurred)
+   and optionally add a clarifying PRD 054 note.
 5. **F12 M-10 patch contract** (PRD 068 M-10): proposed-edit envelope,
    target-hash binding, AC-5 wrong-hash rejection.
 6. **F12 M-13 sensitive/excerpt export mode** and **M-15 Windows
