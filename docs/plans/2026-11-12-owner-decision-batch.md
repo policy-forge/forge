@@ -118,10 +118,14 @@ today; hyper is server-only) + GitHub auth/TLS design.
 ## D6. F06 evaluation G0 dispositions — unblocks participant sessions
 
 PR #271 delivered the session-ready protocol, but sessions cannot start
-until the owner records the G0 readiness dispositions the design packet
-left pending: adjudication rubric, per-task quality/safety thresholds,
-session timing, and mapping-derivation rules (all marked
-OWNER-APPROVAL-REQUIRED in the protocol; no numbers were invented).
+until the G0 readiness gates are satisfied (protocol §G0, 10 gates):
+lawful-input rights attestation (G0-1), rubric/reviewer roles (G0-2),
+gold labels (G0-3), split/freeze record (G0-4), candidate identity
+freeze (G0-5), per-task thresholds on calibration evidence (G0-6),
+execution profile (G0-7), pipeline readiness receipt (G0-8),
+mapping-preparation semantics (G0-9), facilitator independence (G0-10).
+Owner-approval-required items are marked in the protocol; no numbers
+were invented.
 
 - [ ] Record the G0 dispositions (protocol §G0 lists each), then
   recruit/consent/schedule participants. Human-only from there.
