@@ -138,6 +138,8 @@ jobs:
           python-version: '3.11'
       - name: Offline inventory and proof fixtures
         run: python -B scripts/test_dependency_inventory.py
+      - name: Offline draft SBOM fixtures
+        run: python -B scripts/test_generate_sbom.py
 
   dependency-inventory:
     name: Dependency inventory gate
