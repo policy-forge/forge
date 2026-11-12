@@ -214,6 +214,13 @@ pre-approved.
   fetch at runtime beyond the explicitly launched workspace).
 - Smoke evidence: build, `forge --version`, conversion of an example
   policy, workspace launch/health inside the container.
+- DELIVERED 2026-11-12: draft PR #274 (head `6114a88`), #63 In Review.
+  Digest-pinned multi-stage image (185 MB, uid 10001), host networking
+  (bridge incompatible with loopback-peer/Host guards — design review
+  in docs/container.md), /dev/tty-only passphrase. arm64 native + amd64
+  QEMU evidence; real-Chrome unlock; conversion independently re-run
+  in-container by coordinator. Limits: amd64 emulated, virtiofs needs
+  named volume for state.
 - Exit: #63 In Review; deployment evidence feeds F04 (#6).
 
 ### P2 — Workspace UX backlog (#64, #65) — after P1, independent of decisions
