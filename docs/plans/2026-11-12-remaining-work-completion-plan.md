@@ -107,7 +107,7 @@ hook close, merging/publication/contact need separate authorization.
 | #56 | 1451 | F11 prereq discovery/threat model | Doing | P3 | D067 approval record; then unblocks #55 |
 | #59 | 1454 | F13 collaborative review | Doing | P3 | Shares D068 with F12; quorum, workspace client |
 | #63 | 1459 | Containerize CLI + workspace | In Review | P1 | Delivered PR #274; deployment evidence feeds F04 |
-| #64 | 1460 | Field info markers/docs/examples | To-Do | P2 | Entire ticket: contextual help across workspace surfaces |
+| #64 | 1460 | Field info markers/docs/examples | In Review | P2 | Delivered PR #277; WCAG/AT checks fold into P7 |
 | #65 | 1472 | Due/overdue review alerting | In Review | P2 | Delivered PR #272; WCAG/AT checks fold into P7 |
 | #66 | 1473 | Record 2026-10-25 owner dispositions | In Review | P3 | Close-ready: PR #252 merged (20f46ac) |
 | #67 | 1474 | F08 asserted terminal states (D064) | In Review | P7 | Close-ready: PR #255 merged; human gates on #44 |
@@ -230,10 +230,13 @@ pre-approved.
 - #65: due/overdue review alerting driven by existing lifecycle dates;
   surface in workspace, never mutate governed artifacts or infer
   approval.
-- Status 2026-11-12: #65 delivered as draft PR #272 (head `068f8d6`,
-  `src/lifecycle/alerts.rs` pure projection + CLI + workspace badge;
-  boundary tests independently re-run green; real-Chrome evidence in
-  PR). #64 in progress.
+- Status 2026-11-12: BOTH DELIVERED. #65 → draft PR #272 (head
+  `068f8d6`, pure projection + CLI + workspace badge; boundary tests
+  re-run green). #64 → draft PR #277 (head `1883d1c`, 81-entry fieldHelp
+  table, ARIA disclosure markers on all surfaces; Node 278/278,
+  installed-Chrome v1/API2 marker checks pass, before/after screenshots;
+  pre-existing writable-v1 driver timing race documented, proven on
+  pristine main). Both In Review.
 - Exit: both In Review; WCAG/AT checks fold into P7.
 
 ### P3 — Decision-gated completions (F10/F11/F12/F13)
