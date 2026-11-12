@@ -80,8 +80,10 @@ packet; summary:
    (proposed: MCP Inspector `modern` + Claude Code v2 runtime, MCP
   2026-07-28). **Re-pin DELIVERED:** draft PR #275 (head `428c53e`),
   `docs/plans/2026-11-12-f11-discovery-threat-model-proposal.md`
-  (625 lines, sha256 `53b9566f132e6e1b20f9191d1062b8929b8f8807805284e31c86982d98135c16`,
-  44063 bytes, LF). The original approved bytes (sha256 `60c8dff1…`)
+  (625 lines, sha256 `a15bac363ad97c25b1f283f7a7b2a529043e5128995aec961fc8ef46ef6967d9`,
+  36923 bytes — recomputed from the committed PR bytes by the
+  coordinator; the agent's initially reported hash was stale).
+  The original approved bytes (sha256 `60c8dff1…`)
   were lost from `/tmp`; ratification must approve THIS document fresh
   and bind its hash — no approval is inherited.
 2. **D068 scope split (F12/F13)** — already bound by the 2026-10-25
