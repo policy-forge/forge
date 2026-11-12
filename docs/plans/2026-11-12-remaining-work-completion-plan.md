@@ -107,11 +107,11 @@ hook close, merging/publication/contact need separate authorization.
 | #63 | 1459 | Containerize CLI + workspace | To-Do | P1 | Entire ticket: images, non-root, persistence, smoke evidence |
 | #64 | 1460 | Field info markers/docs/examples | To-Do | P2 | Entire ticket: contextual help across workspace surfaces |
 | #65 | 1472 | Due/overdue review alerting | To-Do | P2 | Entire ticket: lifecycle-driven alerts, no new authority |
-| #66 | 1473 | Record 2026-10-25 owner dispositions | In Review | P3 | Merge/close the dispositions record (already on main) |
-| #67 | 1474 | F08 asserted terminal states (D064) | In Review | P7 | Merged via #259; human gates remain |
-| #68 | 1475 | F10 additive epochs (S-4) | In Review | P3 | Merged via #259; Q1–Q7 reconciliation |
-| #69 | 1476 | F10 add-only risk export (S-3) | In Review | P3 | Merged via #259; Q1–Q7 reconciliation |
-| #70 | 1477 | Accept AR in forge validate | In Review | P3 | Q7 decision: PRD 054 exclusion vs owner override |
+| #66 | 1473 | Record 2026-10-25 owner dispositions | In Review | P3 | Close-ready: PR #252 merged (20f46ac) |
+| #67 | 1474 | F08 asserted terminal states (D064) | In Review | P7 | Close-ready: PR #255 merged; human gates on #44 |
+| #68 | 1475 | F10 additive epochs (S-4) | In Review | P3 | Close-ready: PR #256 merged; Q1–Q7 on #19 |
+| #69 | 1476 | F10 add-only risk export (S-3) | In Review | P3 | Close-ready: PR #257 merged; Q1–Q7 on #19 |
+| #70 | 1477 | Accept AR in forge validate | In Review | P3 | Close-ready: PR #253 merged; Q7 ratification of PRD 054 override pending |
 | #71 | 1478 | Windows no-replace publication | In Review | P4 | Windows qualification; feeds M-15 decision |
 | #72 | 1482 | F16 confined local execution | To-Do | P5 | Confinement design approval, then implementation |
 | #73 | 1483 | F15 change sets + GitHub adapter | To-Do | P6 | Entire PRD 065 MVP |
@@ -149,8 +149,10 @@ pre-approved.
    reopen semantics, AR-in-`forge validate` (Q7, ticket #70). D064 +
    the 2026-10-25 add-only decision already answer most; recommendation:
    keep export "new planned work + add-only into existing plans", later
-   transitions authored in `forge.poam/1`; Q7 stays out of scope
-   (PRD 054 exclusion stands) unless the owner overrides.
+   transitions authored in `forge.poam/1`. **Q7 correction:** the owner
+   already merged AR-in-`forge validate` (PR #253, 2026-10-26) despite
+   the PRD 054 exclusion — the packet asks for explicit ratification and
+   a dated PRD 054 amendment, not re-litigation.
 5. **F12 M-10 patch contract** (PRD 068 M-10): proposed-edit envelope,
    target-hash binding, AC-5 wrong-hash rejection.
 6. **F12 M-13 sensitive/excerpt export mode** and **M-15 Windows
