@@ -1,0 +1,252 @@
+{
+  "schema_version": "forge.container-verification/1",
+  "scope": "ticket-63-container-packaging-smoke",
+  "date": "2026-11-12",
+  "truth_state": "development-verification-not-release-acceptance",
+  "base_commit": "b4226bb35d796222c30f93235ac22118dd26a344",
+  "environment": {
+    "host_os": "macOS (darwin arm64)",
+    "docker_engine": "29.5.2 via colima (macOS Virtualization.Framework, virtiofs)",
+    "docker_vm": "6 CPUs, 8 GiB (resized from 2 CPUs / 2 GiB after an OOM during the first build attempt)",
+    "docker_compose": "5.7.1",
+    "chrome": "/Applications/Google Chrome.app (installed, driven headless via playwright 1.62.1)",
+    "node_for_browser_driver": "v22.22.3"
+  },
+  "images": {
+    "arm64": {
+      "tag": "forge:local",
+      "image_id": "sha256:3745d572a231485992ee911132646d4f695c4c322f34acc3568f32f33514591c",
+      "architecture": "arm64",
+      "build_command": "docker build --build-arg FORGE_REVISION=b4226bb35d796222c30f93235ac22118dd26a344 -t forge:local .",
+      "base_images": {
+        "build": "rust:1.93.0-slim-bookworm@sha256:776861219cd851131c1cec3bbd7cbeb16b99a794048097eb69ad9682a8ed0d57",
+        "runtime": "debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc"
+      },
+      "size_mb": 185,
+      "runtime_user": "uid=10001(forge) gid=10001(forge)",
+      "revision_label": "b4226bb35d796222c30f93235ac22118dd26a344"
+    },
+    "amd64": {
+      "tag": "forge:local-amd64",
+      "image_id": "sha256:6ddc1e032f84181649e0a932d0d27dddda26965012766c74497109522cf82463",
+      "architecture": "amd64",
+      "build_command": "docker build --platform linux/amd64 --build-arg FORGE_REVISION=b4226bb35d796222c30f93235ac22118dd26a344 -t forge:local-amd64 .",
+      "build_exit": 0,
+      "emulation": "QEMU on arm64 host (colima binfmt)",
+      "smoke": {
+        "version": {
+          "output": "forge 1.1.0",
+          "exit": 0
+        },
+        "identity": "uid=10001(forge) gid=10001(forge)",
+        "convert": {
+          "exit": 0,
+          "catalog_uuid": "d719ecc4-355d-44e5-a463-6702856e96f6",
+          "note": "UUID differs from arm64 run: run metadata is v4-random per conversion, as documented"
+        }
+      }
+    }
+  },
+  "source_bindings": {
+    "cargo_lock_sha256": "656288612f31a500266664e0bfa115e61d3e0c86a8459cac60b1124a7e5ed00c",
+    "dockerfile_sha256": "8e9ae36e9ccb53825174e7920a3ba5f80be7901ddcc4ce4351cc5eb6d288e573",
+    "docker_compose_sha256": "63097660ae265182aa36db9dc9687fe6b7f277a184998694975d4ea481de3b3e",
+    "dockerignore_sha256": "718706c7bd54fa235678027ef77f9b9b5fb577101651031eab25178a8a1178cb",
+    "container_docs_sha256": "cafd628f592bc7c80a793aaac395af7a62ad1ba636f8cae86284e500a41babcb",
+    "locked_build": "cargo build --release --locked --bin forge"
+  },
+  "cli_smoke": {
+    "version": {
+      "command": "docker run --rm forge:local --version",
+      "output": "forge 1.1.0",
+      "exit": 0
+    },
+    "non_root_identity": {
+      "command": "docker run --rm --entrypoint id forge:local",
+      "output": "uid=10001(forge) gid=10001(forge) groups=10001(forge)"
+    },
+    "convert": {
+      "command": "docker run --rm -v $PWD/example_data:/in:ro forge:local convert /in/POL-01_Acceptable_Use_Policy.md --strategy catalog --format json > catalog.json",
+      "exit": 0,
+      "artifact": {
+        "oscal_version": "1.2.3",
+        "groups": 1,
+        "controls": 7,
+        "catalog_uuid": "7fbb2779-7a57-42de-b453-95277cd357b5"
+      }
+    },
+    "validate": {
+      "command": "docker run --rm -v $PWD/.smoke/out:/in:ro forge:local validate /in/catalog.json",
+      "exit": 0,
+      "output": "Valid: catalog artifact passes all validation. Declared OSCAL version: 1.2.3; Schema version used: 1.2.3"
+    }
+  },
+  "workspace_smoke": {
+    "launch_command": "docker run --rm --name forge-smoke-1 --network host -v /Users/bluby/repos/forge-container/.smoke/project:/project -v forge-smoke-state:/home/forge/.local/state -e HOME=/home/forge -it forge:local workspace --project /project --no-open",
+    "workspace_url": "http://127.0.0.1:40917",
+    "passphrase_prompts_answered": 2,
+    "root_route": {
+      "status": 200,
+      "html_title_present": true
+    },
+    "script_asset_status": {
+      "path_hashed": true,
+      "status": 200
+    },
+    "wrong_host_denied": {
+      "status": 401
+    },
+    "forwarded_header_denied": {
+      "status": 401
+    },
+    "unlock_wrong_passphrase": {
+      "status": 401,
+      "code": "unlock-failed"
+    },
+    "unlock_correct_passphrase": {
+      "status": 200,
+      "capability_minted": true,
+      "session_mode": "browser"
+    },
+    "project_summary": {
+      "status": 200,
+      "index_present": false
+    },
+    "register_preview": {
+      "status": 200
+    },
+    "register_commit": {
+      "status": 202,
+      "state": "succeeded"
+    },
+    "upload_preview": {
+      "status": 200,
+      "receipt_present": true
+    },
+    "upload_commit": {
+      "status": 202,
+      "state": "succeeded"
+    },
+    "confirmed_write_on_host": {
+      "exists": true,
+      "bytes_match": true
+    },
+    "unsafe_path_denied": {
+      "status": 400,
+      "code": "invalid-request"
+    },
+    "symlink_denied": {
+      "status": 403,
+      "code": "resource-containment"
+    },
+    "graceful_shutdown_exit": 0,
+    "index_persisted": true,
+    "state_volume_contents": [
+      "/state",
+      "/state/forge",
+      "/state/forge/source-restores",
+      "/state/forge/source-restores/root-4ce640a67bae7b362215144296a3c63a6323bae6bd0a6e98e4bb7bf402669e87"
+    ],
+    "restart_url": "http://127.0.0.1:40117",
+    "old_capability_rejected_after_restart": {
+      "status": 401
+    },
+    "restart_unlock": {
+      "status": 200,
+      "new_capability_differs": true
+    },
+    "restart_summary": {
+      "status": 200,
+      "registered_total": 1,
+      "index_present": true
+    },
+    "read_only_refusal": {
+      "status": 403,
+      "code": "read-only-session"
+    },
+    "machine_descriptor": {
+      "mode": "machine",
+      "read_only": false,
+      "capability_shape_ok": true
+    },
+    "machine_api_works": {
+      "status": 200
+    },
+    "machine_cannot_unlock_browser": {
+      "status": 401,
+      "code": "unauthorized"
+    },
+    "no_tty_refusal": {
+      "exit_code": 1,
+      "controlling_terminal_message": true
+    },
+    "machine_v2_descriptor": {
+      "api_major": 2,
+      "api_version": "2.4.0"
+    },
+    "machine_v2_summary": {
+      "status": 200,
+      "index_present": true
+    }
+  },
+  "browser_verification": {
+    "unlocked": true,
+    "connection": "Local session",
+    "wrong_passphrase_status": "Workspace locked \u2014 passphrase required.",
+    "overview_has_resource_counts": true,
+    "overview_mentions_policy": false,
+    "request_count": 7,
+    "non_loopback_requests": [],
+    "page_errors": [],
+    "unlock_requests": 2
+  },
+  "network_isolation": {
+    "transport": "network_mode: host; listener binds 127.0.0.1 only; no ports published",
+    "loopback_probe": {
+      "command": "curl http://127.0.0.1:8098/ (host-net python http.server bound 127.0.0.1)",
+      "status": 200
+    },
+    "lan_probe": {
+      "command": "curl http://192.168.1.174:8098/ (host en0 address, same listener)",
+      "result": "connection failed (000) \u2014 LAN cannot reach the loopback listener"
+    },
+    "colima_forwarding": "guest-loopback listeners are forwarded to host loopback only (verified)"
+  },
+  "transport_design": {
+    "decision": "host networking, no port publishing, interactive TTY launch",
+    "rationale": "src/workspace/http.rs accepts only loopback peers, pins exact Host: 127.0.0.1:<internal-port>, rejects Forwarded/Via/X-Forwarded-* and enforces exact Origin. Bridge networking with -p fails the peer check (gateway source address) and the Host guard (port mismatch). Host networking preserves every guard unmodified.",
+    "passphrase": "controlling-terminal only (rpassword /dev/tty); no env/arg/file/image-layer path exists or was added; no-TTY launch refuses with the documented message (verified)",
+    "forge_source_changes": "none"
+  },
+  "failed_evidence_retained": [
+    "First arm64 build attempt OOMed (cannot allocate memory) on the 2 GiB colima VM; resolved by Main resizing the VM to 6 CPUs / 8 GiB, not by changing the Dockerfile.",
+    "An intermediate build lost COPY schemas due to an editing mistake; rebuilt successfully after restoring it.",
+    "Bind-mounted private state root is ownership-squashed by colima virtiofs (uid 0 inside), failing workspace qualification; named volumes inherit image ownership (uid 10001, 0700) and pass. Compose uses a named volume for state.",
+    "Orphaned containers from killed docker clients hold the journal flock and block the next launch (single-owner design); smoke driver now removes containers explicitly."
+  ],
+  "limitations": [
+    "Smoke evidence was produced on linux/arm64 natively; linux/amd64 was built and smoke-tested under QEMU emulation on this host (version, non-root identity, conversion).",
+    "Browser verification used installed Chrome headless via playwright; it is development evidence, not the maintained hosted-Chrome campaign or release acceptance.",
+    "No SBOM tool was available in this environment; image identity is bound via revision label, digest-pinned bases and Cargo.lock hash instead."
+  ],
+  "compose_smoke": {
+    "config_validation": "FORGE_REVISION=b4226bb docker compose config --quiet \u2192 exit 0",
+    "no_tty_refusal": {
+      "command": "docker compose run --rm -T workspace < /dev/null",
+      "stderr": "Error: Invalid argument: A controlling terminal is required; automation must use --machine-session."
+    },
+    "pty_launch": {
+      "command": "docker compose run --rm workspace (under PTY, passphrase answered on /dev/tty)",
+      "printed_url": "http://127.0.0.1:35425",
+      "root_route_status": 200,
+      "project_mount": "./forge-project (chowned 10001:10001 once via documented setup command)",
+      "state_volume": "named workspace-state volume (inherits uid 10001 / 0700 from image)"
+    }
+  },
+  "repository_gates": {
+    "cargo_fmt_check": "pass",
+    "cargo_clippy_all_targets_D_warnings": "pass (exit 0)",
+    "cargo_test_full_suite": "pass (exit 0); 4498 passed, 0 failed, 3 ignored across all unit, integration and doc binaries",
+    "note": "No Rust source changes in this slice; gates confirm the packaging additions leave the tree green."
+  }
+}

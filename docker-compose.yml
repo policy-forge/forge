@@ -1,0 +1,39 @@
+# Local, loopback-only FORGE workspace. Interactive launch only — the
+# per-launch passphrase is set on the controlling terminal, never via env,
+# arguments or files. See docs/container.md for the transport design review.
+#
+#   mkdir -p forge-project
+#   docker compose run --rm workspace            # writable project
+#   docker compose run --rm workspace-read-only  # read-only project
+#
+# The terminal prints http://127.0.0.1:<port> — open that URL in your browser.
+services:
+  workspace:
+    image: forge:local
+    build:
+      context: .
+      args:
+        FORGE_REVISION: ${FORGE_REVISION:-unspecified}
+    # Host networking keeps the listener on 127.0.0.1 with the exact
+    # Host/Origin and loopback-peer guards intact; nothing is published to
+    # the LAN. There is deliberately no `ports:` mapping (docs/container.md).
+    network_mode: host
+    stdin_open: true
+    tty: true
+    command: ["workspace", "--project", "/project", "--no-open"]
+    volumes:
+      - ./forge-project:/project
+      - workspace-state:/home/forge/.local/state
+
+  workspace-read-only:
+    image: forge:local
+    network_mode: host
+    stdin_open: true
+    tty: true
+    command: ["workspace", "--project", "/project", "--read-only", "--no-open"]
+    volumes:
+      - ./forge-project:/project:ro
+      - workspace-state:/home/forge/.local/state
+
+volumes:
+  workspace-state:

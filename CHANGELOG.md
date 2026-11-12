@@ -12,6 +12,10 @@ inventory of all post-v1.1.0 changes.
 
 ### Added
 
+- Local container packaging (#63): multi-stage Dockerfile with digest-pinned
+  bases and a non-root runtime, Docker Compose loopback workspace setup, and
+  container usage documentation (`docs/container.md`). No conversion or
+  workspace behavior changes.
 - PRD-061 S-1: `forge author scaffold --manifest <FILE>` writes an empty
   `forge.authoring-pack/1` template bound to the project's exact framework
   inventory and baseline. It creates no assignments and leaves the required
