@@ -199,10 +199,13 @@ pre-approved.
   their phases start. Attributable human audit sign-off stays a human
   gate; agent-assisted review never substitutes.
 - Status 2026-11-12: security branch delivered as draft PR #266
-  (head `05fc7ca`, full suite green, audit/vet/graph pass; PROPOSED
-  exceptions await owner approval). Per-PR reviews of #261–#265 in
-  progress on `docs/dependency-reviews-2026-11-12`. F15–F18/F22 tickets
-  created (#72–#76).
+  (head `05fc7ca`); review packet PR #267 (head `76c9671`, 73 evidence
+  hashes independently re-verified); quick-xml migration PR #268
+  (head `e5feba4`, tab-escape delta independently reproduced).
+  Findings: #265 must close without merge (edits immutable receipts);
+  #264 superseded by #268; all 47 exceptions past review-by, expiry
+  2026-11-23 — renewal escalated (decision batch D1b). F15–F18/F22
+  tickets created (#72–#76).
 
 ### P1 — Containerization (#63) — independent, start now
 - Multi-stage Dockerfile (build + slim runtime), non-root user,
@@ -220,10 +223,20 @@ pre-approved.
 - #65: due/overdue review alerting driven by existing lifecycle dates;
   surface in workspace, never mutate governed artifacts or infer
   approval.
+- Status 2026-11-12: #65 delivered as draft PR #272 (head `068f8d6`,
+  `src/lifecycle/alerts.rs` pure projection + CLI + workspace badge;
+  boundary tests independently re-run green; real-Chrome evidence in
+  PR). #64 in progress.
 - Exit: both In Review; WCAG/AT checks fold into P7.
 
 ### P3 — Decision-gated completions (F10/F11/F12/F13)
-- Prepare decision packets 1–6 and 10 in one owner batch.
+- Decision packets DELIVERED: draft PR #270 (head `08115d7`,
+  `docs/plans/2026-11-12-owner-decision-packets.md`); owner batch at
+  `docs/plans/2026-11-12-owner-decision-batch.md`. D067 caveat: the
+  originally approved proposal bytes were lost from /tmp — durable
+  re-pin in progress (`docs/f11-proposal-repin`); ratification must
+  bind the new document. "D069" relabelled D068 scope split (ID
+  collision with dependency policy).
 - F10 (#19, #68, #69, #70): Q1–Q7 reconciliation; expected outcome is
   evidence closure, not new code; #66 dispositions record merged via
   #259 — verify and move to close-ready.
@@ -249,8 +262,11 @@ pre-approved.
 
 ### P5 — Suggestion track (F06 → F16 → F17 → F18) — longest chain
 - F16/F17/F18 child tickets created 2026-11-12 (#72, #74, #75).
-- F06 (#8): authentic participant evaluations against the pinned corpus
-  (#1406 artifacts); agent prepares protocol + recording sheets.
+- F06 (#8): protocol DELIVERED — draft PR #271 (head `1677243`,
+  session script S0–S7, 9 forms, recording sheets, threshold procedure,
+  corpus hashes verified). Human-only remainder: recruitment, consent,
+  sessions, adjudication, threshold approval, task selection; G0 owner
+  dispositions must be recorded before sessions can start.
 - F16: confinement design packet (decision 8) → approval → implement
   filesystem/network confinement, verified bytes, limits/timeouts,
   descendant cleanup per platform; keep recorded-response operation.
@@ -291,14 +307,18 @@ humans execute and sign:
   real clients, AC-1..AC-6 team exercises, independent-tool interop
   (F09 #17), reviewer-authority checks.
 - F08 (#44, #67): workflow/security/privacy gates on merged POA&M code.
-- Install `cargo-llvm-cov`, run measured coverage, record receipts
-  (never claimed before — tool absent).
+- Measured coverage DONE 2026-11-12: 92.18% lines on main `7dc20f2`
+  (`docs/plans/2026-11-12-coverage-baseline.json` + gzipped evidence).
 - Goal-wide final documentation review; reconcile every ticket's
   evidence links to exact merged heads.
 
-### P8 — F22 release gates (new ticket)
-- SBOM generation, support matrix + support policy, release runbook,
-  rollback rehearsal, release CI workflow, provenance attestation.
+### P8 — F22 release gates (#76)
+- Scaffolding DELIVERED: draft PR #269 (head `ab9268a`) — offline
+  CycloneDX 1.6 SBOM generator (299 components, schema-validated 0
+  errors, 14 tests), support matrix, PROPOSED support policy, runbook
+  with owner-authorization stop, offline rollback rehearsal.
+- Remaining: owner support-policy approval, publication authorization,
+  real rollback rehearsal on release artifacts, MSRV CI verification.
 - Reconcile dependency/schema/release provenance end to end.
 - **Owner publication authorization is the only exit.** No agent action
   publishes 2.0.0.
