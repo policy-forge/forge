@@ -239,11 +239,12 @@ pre-approved.
 ### P3 — Decision-gated completions (F10/F11/F12/F13)
 - Decision packets DELIVERED: draft PR #270 (head `08115d7`,
   `docs/plans/2026-11-12-owner-decision-packets.md`); owner batch at
-  `docs/plans/2026-11-12-owner-decision-batch.md`. D067 caveat: the
-  originally approved proposal bytes were lost from /tmp — durable
-  re-pin in progress (`docs/f11-proposal-repin`); ratification must
-  bind the new document. "D069" relabelled D068 scope split (ID
-  collision with dependency policy).
+  `docs/plans/2026-11-12-owner-decision-batch.md`. D067 re-pin
+  DELIVERED: draft PR #275 (head `428c53e`), durable reconstruction
+  (sha256 `a15bac36…`, 36923 bytes, coordinator-recomputed); the
+  original approved bytes were lost from /tmp — ratification must
+  approve the new document fresh. "D069" relabelled D068 scope split
+  (ID collision with dependency policy).
 - F10 (#19, #68, #69, #70): Q1–Q7 reconciliation; expected outcome is
   evidence closure, not new code; #66 dispositions record merged via
   #259 — verify and move to close-ready.
