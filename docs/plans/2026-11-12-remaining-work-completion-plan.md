@@ -95,7 +95,7 @@ hook close, merging/publication/contact need separate authorization.
 | #6 | 1394 | F04 platform verification | Doing | P7 | macOS/Windows physical runs; container deployment evidence (#63); reconciliation |
 | #7 | 1395 | F05 security & a11y | Doing | P7 | WCAG/AT sessions, real users, A11Y-C-1 disposition, security review |
 | #8 | 1396 | F06 suggestion evaluation | Doing | P5/P7 | Authentic participant evaluations with pinned corpus |
-| #17 | 1412 | F09 lossless overlay | Doing | P7 | Independent-tool exercises; final doc review (code complete) |
+| #17 | 1412 | F09 lossless overlay | In Review | P7 | Code complete (both children done); overlay contract records + independent interop + privacy/owner/pilot gates remain |
 | #19 | 1414 | F10 epochs & risk handoff | Doing | P3 | Q1–Q7 owner answers; evidence reconciliation, likely no new code |
 | #21 | 1416 | F12 portable queues | In Review | P3 | M-3 adapters, M-10 patches, M-13/M-15, S-1/S-2/S-4, D068, human gates |
 | #23 | 1418 | F19 workspace Shoulds | Doing | P7 | Prerequisite delivered (#1419); remaining Should gates + #64/#65 children |
