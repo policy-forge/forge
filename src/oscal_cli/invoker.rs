@@ -291,9 +291,7 @@ fn xml_root_name(reader: BufReader<File>) -> Result<String, String> {
             Ok(
                 quick_xml::events::Event::Start(element) | quick_xml::events::Event::Empty(element),
             ) => {
-                return std::str::from_utf8(element.local_name().as_ref())
-                    .map(str::to_owned)
-                    .map_err(|error| format!("invalid XML root name: {error}"));
+                return Ok(element.local_name().as_ref().to_owned());
             }
             Ok(quick_xml::events::Event::Eof) => {
                 return Err("invalid XML: document contains no root element".to_string());
