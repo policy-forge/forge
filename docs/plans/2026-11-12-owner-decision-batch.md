@@ -4,7 +4,7 @@ Status: **Awaiting owner decisions.** Prepared by the coordinator from
 verified evidence; nothing here is approved. Answer inline or in the
 linked tickets; each decision unblocks named work.
 
-## D1. Approve three supply-chain exceptions (PR #266) — unblocks F03 merge path
+## D1. Approve four supply-chain exceptions (PRs #266 + #268) — unblocks F03 merge path
 
 PR #266 (`fix/p0-supply-chain-security`, head `05fc7ca`) upgrades
 zip 9.1.0→9.1.2, pulldown-cmark 0.13.4→0.13.6, rustix 1.1.4→1.1.6.
@@ -16,6 +16,16 @@ Full suite green; `cargo audit` 0 vulnerabilities; vet/graph gates pass.
   Evidence: `docs/plans/2026-11-12-supply-chain-security-decisions.md`
   (on the PR branch). On approval the PROPOSED markers are struck and
   the decision recorded; on rejection the branch is reverted whole.
+
+- [ ] Approve the fourth PROPOSED exception: **quick-xml 0.42.0**
+  (PR #268, head `e5feba4`, same owner/review/expiry terms). Migration
+  verified: full suite green, no snapshot changes, XML output
+  byte-identical for realistic inputs; the only reachable delta (tab in
+  a heading → `&#9;` in `source-section` attrs) independently reproduced
+  and confirmed to round-trip identically. Reader now rejects non-UTF-8
+  at the parser (Forge already validates at ingest — refusal preserved).
+  Note: #266 and #268 both touch `supply-chain/` — merge #266 first,
+  then rebase #268 (coordinator handles).
 
 ## D2. Dismiss 25 retained-evidence Dependabot alerts — unblocks clean security dashboard
 
@@ -35,6 +45,16 @@ Migration slice `feat/quick-xml-0.42-migration` is in progress
 
 - [ ] Confirm: close #264 in favor of the migration PR when delivered
   (recommended), or hold 0.41 until a later release.
+
+## D3b. Close PR #265 without merge — protects evidence integrity
+
+Verified: #265's entire diff is zip 8.6.0→9.0.0 inside the immutable
+October evidence receipts (`docs/dependency-reviews/2026-10-02/pr16{2,3,4}/`);
+the root lock is untouched. Merging corrupts the SHA-256-indexed F03
+evidence chain.
+
+- [ ] Close #265 without merge (recommended). The alerts it targets are
+  resolved by D2 dismissal, not receipt edits.
 
 ## D4. Decision packets (landing shortly on `docs/decision-packets-2026-11-12`)
 
