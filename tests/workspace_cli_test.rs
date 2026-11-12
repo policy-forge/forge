@@ -3396,6 +3396,33 @@ mod s3_registration_and_bundles {
         assert_eq!(bundle_project_files(&server), before);
     }
 
+    /// The dated owner queue surfaces the due-soon/overdue classification that drives review alerts.
+    #[test]
+    fn s3_lifecycle_queue_surfaces_due_and_overdue_review_alerts() {
+        let server = Server::start_api2(false, true);
+        write_s3_native_http_fixture(server.project.path());
+        let before = bundle_project_files(&server);
+        // Review date 2026-10-12, due_soon_days 7: due-soon window opens 2026-10-05.
+        let (status, due_soon) =
+            s3_json(&server, "GET", "/api/v2/lifecycle/queue?as_of=2026-10-12", None, &json!({}));
+        assert_eq!(status, 200, "{due_soon}");
+        let item = &due_soon["page"]["items"][0];
+        assert_eq!(item["derived_status"], "due-soon");
+        assert!(item["blockers"].as_array().unwrap().iter().any(|b| b == "due-soon"));
+        assert_eq!(item["next_review_date"], "2026-10-12");
+        let (status, overdue) =
+            s3_json(&server, "GET", "/api/v2/lifecycle/queue?as_of=2026-10-13", None, &json!({}));
+        assert_eq!(status, 200, "{overdue}");
+        assert_eq!(overdue["page"]["items"][0]["derived_status"], "overdue");
+        let (status, future) =
+            s3_json(&server, "GET", "/api/v2/lifecycle/queue?as_of=2026-09-01", None, &json!({}));
+        assert_eq!(status, 200, "{future}");
+        assert_eq!(future["page"]["items"][0]["derived_status"], "approved");
+        assert_eq!(future["page"]["items"][0]["blockers"], json!([]));
+        // Alerts are informational reads; governed bytes are unchanged.
+        assert_eq!(bundle_project_files(&server), before);
+    }
+
     /// Real cursors cannot cross page size, endpoint, filters or changed capture inputs.
     #[test]
     fn s3_native_http_cursors_and_missing_closure_fail_completely() {

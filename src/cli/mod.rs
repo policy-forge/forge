@@ -1601,6 +1601,24 @@ pub enum LifecycleCommand {
         #[arg(long)]
         output: Option<PathBuf>,
     },
+    /// Emit informational due/overdue review alerts for an explicit date
+    Alerts {
+        /// Lifecycle record; repeat to alert across a portfolio
+        #[arg(long = "record", required = true)]
+        records: Vec<PathBuf>,
+        /// Explicit alert date (YYYY-MM-DD)
+        #[arg(long)]
+        as_of: chrono::NaiveDate,
+        /// Alert output format
+        #[arg(long, value_enum, default_value = "json")]
+        format: LifecycleOutputFormat,
+        /// Gate that determines whether action-required status exits 1
+        #[arg(long, value_enum, default_value = "publication")]
+        gate: LifecycleGate,
+        /// Write the alerts atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
     /// Emit deterministic unsigned approval evidence for external signing
     Attest {
         /// Approved, non-drifted lifecycle record
@@ -2863,6 +2881,19 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             }
             LifecycleCommand::Queue { records, as_of, format, gate, output } => {
                 if crate::lifecycle::execute_queue(
+                    records,
+                    *as_of,
+                    format,
+                    gate,
+                    output.as_deref(),
+                )? {
+                    Err(ForgeError::LifecycleActionRequired)
+                } else {
+                    Ok(())
+                }
+            }
+            LifecycleCommand::Alerts { records, as_of, format, gate, output } => {
+                if crate::lifecycle::execute_alerts(
                     records,
                     *as_of,
                     format,
