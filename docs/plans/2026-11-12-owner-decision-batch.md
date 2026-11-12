@@ -111,6 +111,25 @@ today; hyper is server-only) + GitHub auth/TLS design.
 - [ ] Defer to post-2.0.0 (recommended, keeps scope finite), or name an
   approved crate + design owner now.
 
+## D6. F06 evaluation G0 dispositions — unblocks participant sessions
+
+PR #271 delivered the session-ready protocol, but sessions cannot start
+until the owner records the G0 readiness dispositions the design packet
+left pending: adjudication rubric, per-task quality/safety thresholds,
+session timing, and mapping-derivation rules (all marked
+OWNER-APPROVAL-REQUIRED in the protocol; no numbers were invented).
+
+- [ ] Record the G0 dispositions (protocol §G0 lists each), then
+  recruit/consent/schedule participants. Human-only from there.
+
+## D7. F22 support policy approval — unblocks release readiness
+
+PR #269 delivered `docs/release/support-policy.md` as PROPOSED (support
+window, PRD 069-grounded security policy, deprecation rules).
+
+- [ ] Approve or amend the support policy. Also pending: MSRV 1.88 is
+  declared but CI-unverified (add an MSRV job or accept the risk).
+
 ## Already recorded (no action needed)
 
 - D064/D068/F10 add-only: owner-approved 2026-10-25, implemented, merged.
