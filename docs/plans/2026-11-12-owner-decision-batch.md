@@ -78,10 +78,12 @@ packet; summary:
 1. **D067** — ratify the implemented confined-roots MCP discovery +
    read-only threat model; name the two-client conformance pair
    (proposed: MCP Inspector `modern` + Claude Code v2 runtime, MCP
-   2026-07-28). **Caveat:** the originally approved proposal bytes
-   (sha256 `60c8dff1…`) were lost from `/tmp`; a durable reconstruction
-   is being re-pinned into `docs/` (branch `docs/f11-proposal-repin`) —
-   ratification must bind the NEW document, not the lost bytes.
+  2026-07-28). **Re-pin DELIVERED:** draft PR #275 (head `428c53e`),
+  `docs/plans/2026-11-12-f11-discovery-threat-model-proposal.md`
+  (625 lines, sha256 `53b9566f132e6e1b20f9191d1062b8929b8f8807805284e31c86982d98135c16`,
+  44063 bytes, LF). The original approved bytes (sha256 `60c8dff1…`)
+  were lost from `/tmp`; ratification must approve THIS document fresh
+  and bind its hash — no approval is inherited.
 2. **D068 scope split (F12/F13)** — already bound by the 2026-10-25
    disposition; verify by evidence, no re-decision. (The plan's former
    "D069" label collided with the dependency-policy decision ID and
