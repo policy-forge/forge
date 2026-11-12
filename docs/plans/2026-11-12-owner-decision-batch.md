@@ -53,11 +53,11 @@ Dependabot API + `cargo audit`).
 ## D3. quick-xml 0.42 migration path — unblocks #264 disposition
 
 #264 (0.41→0.42) breaks compile: 23 errors, byte-slice→&str API change.
-Migration slice `feat/quick-xml-0.42-migration` is in progress
-(byte-exact output contract enforced).
+The migration is DELIVERED as draft PR #268 (head `e5feba4`, verified —
+see D1).
 
-- [ ] Confirm: close #264 in favor of the migration PR when delivered
-  (recommended), or hold 0.41 until a later release.
+- [ ] Confirm: close #264 in favor of #268 (recommended), or hold 0.41
+  until a later release.
 
 ## D3b. Close PR #265 without merge — protects evidence integrity
 
