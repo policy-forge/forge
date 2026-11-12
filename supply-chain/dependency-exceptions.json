@@ -10,7 +10,7 @@
       "expires_on": "2026-11-23",
       "name": "anstyle",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160–164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.0.14"
@@ -25,7 +25,7 @@
       "expires_on": "2026-11-23",
       "name": "argon2",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160–164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.6.0"
@@ -40,7 +40,7 @@
       "expires_on": "2026-11-23",
       "name": "blake2",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160–164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.11.0"
@@ -70,7 +70,7 @@
       "expires_on": "2026-11-23",
       "name": "clap",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160–164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "4.6.7"
@@ -85,7 +85,7 @@
       "expires_on": "2026-11-23",
       "name": "clap_builder",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160–164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "4.6.7"
@@ -101,7 +101,7 @@
       "expires_on": "2026-11-23",
       "name": "clap_derive",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160–164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "4.6.7"
@@ -116,7 +116,7 @@
       "expires_on": "2026-11-23",
       "name": "cmov",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160–164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.5.4"
@@ -176,7 +176,7 @@
       "expires_on": "2026-11-23",
       "name": "getrandom",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160–164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.4.3"
@@ -206,7 +206,7 @@
       "expires_on": "2026-11-23",
       "name": "hyper-util",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PRs #234\u2013238 (patch updates). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PRs #234–238 (patch updates). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.1.21"
@@ -326,7 +326,7 @@
       "expires_on": "2026-11-23",
       "name": "password-hash",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160–164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.6.1"
@@ -341,7 +341,7 @@
       "expires_on": "2026-11-23",
       "name": "pdf-extract",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160–164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.12.1"
@@ -356,10 +356,25 @@
       "expires_on": "2026-11-23",
       "name": "phc",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160–164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.6.1"
+    },
+    {
+      "owner": "brianluby",
+      "created_on": "2026-11-12",
+      "review_by": "2026-11-26",
+      "expires_on": "2026-12-26",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "approval_reference": "docs/plans/2026-11-12-supply-chain-security-decisions.md",
+      "name": "pulldown-cmark",
+      "version": "0.13.6",
+      "checksum": "3db2be46835f013dd3f4fa7f5f7402c537787b54ebb6fe2b94bbdd7e2669bb7b",
+      "rationale": "PROPOSED, pending owner approval. Exact-identity temporary exception for the pulldown-cmark 0.13.4 -> 0.13.6 security update closing RUSTSEC-2026-0414 and RUSTSEC-2026-0433 (ENABLE_WIKILINKS event growth; Forge never enables that option). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance."
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
@@ -371,7 +386,7 @@
       "expires_on": "2026-11-23",
       "name": "rayon",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160\u2013164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for PRs #160–164. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-update-decisions.md.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.12.0"
@@ -437,6 +452,21 @@
       "version": "0.8.11"
     },
     {
+      "owner": "brianluby",
+      "created_on": "2026-11-12",
+      "review_by": "2026-11-26",
+      "expires_on": "2026-12-26",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "approval_reference": "docs/plans/2026-11-12-supply-chain-security-decisions.md",
+      "name": "rustix",
+      "version": "1.1.6",
+      "checksum": "e5e76742e5294153d4dde1207dbec5bdd81eef6fabdc0d2118babadabfd858aa",
+      "rationale": "PROPOSED, pending owner approval. Exact-identity temporary exception for the rustix 1.1.4 -> 1.1.6 update closing RUSTSEC-2026-0486 (xattr zero-length buffer unsoundness, INFO). Runtime reach is via tempfile only. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance."
+    },
+    {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
       "checksum": "4148590afebada386688f18773da617792bf2ef03ffc1e4cbd2b1d45b023e0ba",
       "created_on": "2026-10-24",
@@ -446,7 +476,7 @@
       "expires_on": "2026-11-23",
       "name": "serde",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PRs #234\u2013238 (patch updates). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PRs #234–238 (patch updates). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.0.229"
@@ -461,7 +491,7 @@
       "expires_on": "2026-11-23",
       "name": "serde_core",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PRs #234\u2013238 (patch updates). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PRs #234–238 (patch updates). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.0.229"
@@ -477,7 +507,7 @@
       "expires_on": "2026-11-23",
       "name": "serde_derive",
       "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PRs #234\u2013238 (patch updates). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "rationale": "Owner-approved exact-identity temporary integration exception for Dependabot PRs #234–238 (patch updates). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
       "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.0.229"
@@ -678,19 +708,19 @@
       "version": "1.26.1"
     },
     {
-      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
-      "checksum": "2886b00003a72c4ccee3f42cfc34908d33b2508a74d827dc2a4244706475c704",
-      "created_on": "2026-10-24",
+      "owner": "brianluby",
+      "created_on": "2026-11-12",
+      "review_by": "2026-11-26",
+      "expires_on": "2026-12-26",
       "criteria": [
         "safe-to-deploy"
       ],
-      "expires_on": "2026-11-23",
-      "name": "zip",
-      "owner": "brianluby",
-      "rationale": "Owner-approved exact-identity temporary integration exception for the October 24, 2026 security updates (ctutils RUSTSEC-2026-0385; zip RUSTSEC-2026-0367/0368/0369). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
-      "review_by": "2026-11-07",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "9.1.0"
+      "approval_reference": "docs/plans/2026-11-12-supply-chain-security-decisions.md",
+      "name": "zip",
+      "version": "9.1.2",
+      "checksum": "ec2e3161de27091f18a831d9494e9c53378a34833af5c1dda35ad85849da18d6",
+      "rationale": "PROPOSED, pending owner approval. Exact-identity temporary exception for the zip 9.1.0 -> 9.1.2 security update closing GHSA-m665-v7pm-7grj (critical zip cloaking), GHSA-hjqx-j4rw-g7xv, GHSA-q7v9-x93c-xqv3, GHSA-9hj8-73fh-9963, GHSA-8hxf-qr8p-62x4. Replaces the retired 9.1.0 exception. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance."
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",

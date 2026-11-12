@@ -825,6 +825,11 @@ criteria = "safe-to-run"
 version = "0.13.4"
 criteria = "safe-to-deploy"
 
+[[exemptions.pulldown-cmark]]
+version = "0.13.6"
+criteria = "safe-to-deploy"
+notes = "PROPOSED pending owner approval; security update for RUSTSEC-2026-0414/0433, see docs/plans/2026-11-12-supply-chain-security-decisions.md."
+
 [[exemptions.pulldown-cmark-escape]]
 version = "0.11.0"
 criteria = "safe-to-deploy"
@@ -953,6 +958,11 @@ criteria = "safe-to-deploy"
 [[exemptions.rustix]]
 version = "1.1.4"
 criteria = "safe-to-deploy"
+
+[[exemptions.rustix]]
+version = "1.1.6"
+criteria = "safe-to-deploy"
+notes = "PROPOSED pending owner approval; update for RUSTSEC-2026-0486, see docs/plans/2026-11-12-supply-chain-security-decisions.md."
 
 [[exemptions.rustversion]]
 version = "1.0.22"
@@ -1533,9 +1543,9 @@ version = "8.6.0"
 criteria = "safe-to-deploy"
 
 [[exemptions.zip]]
-version = "9.1.0"
+version = "9.1.2"
 criteria = "safe-to-deploy"
-notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md."
+notes = "PROPOSED pending owner approval; security update replacing 9.1.0, see docs/plans/2026-11-12-supply-chain-security-decisions.md."
 
 [[exemptions.zmij]]
 version = "1.0.21"
