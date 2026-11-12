@@ -113,9 +113,14 @@ hook close, merging/publication/contact need separate authorization.
 | #69 | 1476 | F10 add-only risk export (S-3) | In Review | P3 | Merged via #259; Q1–Q7 reconciliation |
 | #70 | 1477 | Accept AR in forge validate | In Review | P3 | Q7 decision: PRD 054 exclusion vs owner override |
 | #71 | 1478 | Windows no-replace publication | In Review | P4 | Windows qualification; feeds M-15 decision |
+| #72 | 1482 | F16 confined local execution | To-Do | P5 | Confinement design approval, then implementation |
+| #73 | 1483 | F15 change sets + GitHub adapter | To-Do | P6 | Entire PRD 065 MVP |
+| #74 | 1484 | F17 both suggestion task contracts | To-Do | P5 | After F06/F16 |
+| #75 | 1485 | F18 suggestion review fast-follows | To-Do | P5 | 066 S-2–S-4 after F17 |
+| #76 | 1486 | F22 release gates | To-Do | P8 | Release artifacts + owner authorization |
 
-No tickets exist yet for F15 (PRD 065), F16–F18 (PRD 066 completion),
-or F22 (release gates); create them under #2 when their phases start.
+F15–F18 and F22 child tickets created under #2 on 2026-11-12
+(#72–#76 above).
 F20 (multi-source MCP) and F21 (cross-family quorum) are conditional
 Shoulds whose `/2` and `/3` development checkpoints already exist in
 `src/mcp/` and `src/review/`; qualification folds into P3.
@@ -176,13 +181,20 @@ pre-approved.
   #261–#265 individually at immutable heads:
   exact old/new transitions, advisory scan, CI receipts, per-PR notes in
   `docs/dependency-reviews/2026-11-12/` following the 2026-10-02 packet
-  conventions. jsonschema 0.57→0.60 and quick-xml 0.41→0.42 are minor
-  bumps — verify embedded-schema validation and round-trip behavior.
+  conventions. jsonschema 0.57→0.60 passes behavioral checks;
+  **quick-xml 0.41→0.42 is a breaking API change** (byte slices → &str,
+  23 compile errors) — #264 must not merge as a bump; migration slice
+  `feat/quick-xml-0.42-migration` supersedes it.
 - Reconcile `supply-chain/` (370 exemptions): burn down what new audits
   cover; owner approval per update, as in the 2026-10-24 record.
 - Post plan location on #2; create F15–F18/F22 child tickets only when
   their phases start. Attributable human audit sign-off stays a human
   gate; agent-assisted review never substitutes.
+- Status 2026-11-12: security branch delivered as draft PR #266
+  (head `05fc7ca`, full suite green, audit/vet/graph pass; PROPOSED
+  exceptions await owner approval). Per-PR reviews of #261–#265 in
+  progress on `docs/dependency-reviews-2026-11-12`. F15–F18/F22 tickets
+  created (#72–#76).
 
 ### P1 — Containerization (#63) — independent, start now
 - Multi-stage Dockerfile (build + slim runtime), non-root user,
@@ -227,7 +239,7 @@ pre-approved.
 - Exit: agent portion In Review; platform qualification tracked in P7.
 
 ### P5 — Suggestion track (F06 → F16 → F17 → F18) — longest chain
-- Create F16/F17/F18 child tickets under #2 when starting.
+- F16/F17/F18 child tickets created 2026-11-12 (#72, #74, #75).
 - F06 (#8): authentic participant evaluations against the pinned corpus
   (#1406 artifacts); agent prepares protocol + recording sheets.
 - F16: confinement design packet (decision 8) → approval → implement
@@ -241,7 +253,7 @@ pre-approved.
   transfer.
 - Exit: each ticket In Review as delivered; evaluation gates in P7.
 
-### P6 — F15 external workflows (new ticket) — schema first
+### P6 — F15 external workflows (#73) — schema first
 - Connector-neutral change-set schema (deterministic, stable IDs,
   provenance, no secrets in manifests); contract fixture so other
   adapters can implement equivalent safety semantics (PRD 065).
@@ -252,6 +264,10 @@ pre-approved.
   offline invariant untouched.
 - New dependencies need approval first — reuse approved crates
   (`hyper` is approved for the workspace transport) before adding.
+- Execution split (2026-11-12): Phase 1 (change-set export + fake-server
+  contract suite, no new deps) in progress on `feat/f15-change-sets-github`;
+  Phase 2 (live GitHub HTTPS transport) blocked on owner approval of an
+  HTTP-client dependency + auth/TLS design (PRD 065 Phasing).
 - GitLab/Jira only after decision 9 confirms inclusion.
 
 ### P7 — Qualification & evidence harvest (human-heavy, agent-prepared)
