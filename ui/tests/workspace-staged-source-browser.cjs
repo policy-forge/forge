@@ -333,7 +333,7 @@ const receipt = { format: 'forge.s6-staged-source-native-browser/1', status: 'fa
     assert.equal(await page.locator('meta[name="forge-api-major"]').getAttribute('content'), '2');
     const negotiated = await page.locator('meta[name="forge-api-contract-version"]').getAttribute('content');
     assert.equal(negotiated, '2.4.0');receipt.api_version=negotiated;
-    const unlock = page.getByLabel('Workspace passphrase');
+    const unlock = page.getByLabel('Workspace passphrase',{exact:true});
     await focused(unlock, 'startup-passphrase');
     await unlock.fill(passphrase);
     await unlock.press('Enter');

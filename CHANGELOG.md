@@ -12,6 +12,15 @@ inventory of all post-v1.1.0 changes.
 
 ### Added
 
+- Local workspace field help: every editable field (unlock, filters,
+  registrations, uploads, conversions, decision/mapping forms, exports, bundle
+  panels and restore acknowledgments, including dynamically shown inputs) now
+  renders a keyboard/touch-operable ⓘ info marker beside its label with
+  plain-language documentation, a concrete example and a guide reference, plus
+  a concise always-visible inline hint for required constraints. Copy is one
+  shared `fieldHelp` table in `ui/workspace.js`; a field without an entry fails
+  to render. See [Field help markers](docs/local-workspace.md#field-help-markers)
+  for the coverage inventory. No API, dependency or validation change.
 - PRD-061 S-1: `forge author scaffold --manifest <FILE>` writes an empty
   `forge.authoring-pack/1` template bound to the project's exact framework
   inventory and baseline. It creates no assignments and leaves the required
