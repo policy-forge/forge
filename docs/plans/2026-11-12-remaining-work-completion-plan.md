@@ -116,7 +116,7 @@ hook close, merging/publication/contact need separate authorization.
 | #70 | 1477 | Accept AR in forge validate | In Review | P3 | Close-ready: PR #253 merged; Q7 scope confirmation (no PRD 054 override occurred) |
 | #71 | 1478 | Windows no-replace publication | In Review | P4 | Windows qualification; feeds M-15 decision |
 | #72 | 1482 | F16 confined local execution | To-Do | P5 | Confinement design approval, then implementation |
-| #73 | 1483 | F15 change sets + GitHub adapter | Doing | P6 | Phase 1 in progress; Phase 2 blocked on D5 dependency approval |
+| #73 | 1483 | F15 change sets + GitHub adapter | In Review | P6 | Phase 1 delivered PR #276; Phase 2 blocked on D5 dependency approval |
 | #74 | 1484 | F17 both suggestion task contracts | To-Do | P5 | After F06/F16 |
 | #75 | 1485 | F18 suggestion review fast-follows | To-Do | P5 | 066 S-2–S-4 after F17 |
 | #76 | 1486 | F22 release gates | To-Do | P8 | Scaffolding delivered PR #269; owner approvals D7 + publication remain |
@@ -297,10 +297,14 @@ pre-approved.
   offline invariant untouched.
 - New dependencies need approval first — reuse approved crates
   (`hyper` is approved for the workspace transport) before adding.
-- Execution split (2026-11-12): Phase 1 (change-set export + fake-server
-  contract suite, no new deps) in progress on `feat/f15-change-sets-github`;
-  Phase 2 (live GitHub HTTPS transport) blocked on owner approval of an
-  HTTP-client dependency + auth/TLS design (PRD 065 Phasing).
+- Execution split (2026-11-12): **Phase 1 DELIVERED** — draft PR #276
+  (head `1485f17`), #73 In Review. Change-set export + plan/apply/
+  reconcile state machine + 11 contract fixtures + 2 CLI flows against
+  the in-process fake; no new deps, zero outbound. Fixed 3 bugs in the
+  prior work (PEM secret-guard case mismatch, clippy pedantic, CLI
+  --config collision). Phase 2 (live GitHub HTTPS transport) blocked
+  on owner approval of an HTTP-client dependency + auth/TLS design
+  (PRD 065 Phasing; decision D5).
 - GitLab/Jira only after decision 9 confirms inclusion.
 
 ### P7 — Qualification & evidence harvest (human-heavy, agent-prepared)
