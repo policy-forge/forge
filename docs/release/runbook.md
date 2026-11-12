@@ -18,9 +18,11 @@ only publication mechanism. It triggers on **any `v*` tag push** and runs:
 1. `test` — `cargo test`, strict Clippy, release build on
    `ubuntu-latest` / `macos-latest` / `windows-latest`.
 2. `build` — four targets (`x86_64-unknown-linux-gnu`, `x86_64-apple-darwin`,
-   `aarch64-apple-darwin`, `x86_64-pc-windows-msvc`); packages binary +
-   README/LICENSE/CHANGELOG + `docs/api` + the four workspace schemas into
-   `forge-<tag>-<target>.tar.gz` / `.zip`.
+   `aarch64-apple-darwin`, `x86_64-pc-windows-msvc`); packages the binary +
+   `docs/api` + the four workspace schemas into
+   `forge-<tag>-<target>.tar.gz` / `.zip`. README/LICENSE/CHANGELOG are
+   **not** included; PRD 049 expects documentation to accompany the release
+   (WI-48 dependency) — owner decision whether to amend the workflow.
 3. `sbom` — installs `cargo-cyclonedx` and generates
    `forge-<tag>-sbom.cdx.json` from the tagged tree.
 4. `hash` — SHA-256 of every artifact, base64 for provenance subjects.
