@@ -208,6 +208,23 @@ class GenerateSbomTests(unittest.TestCase):
         with self.assertRaises(common.InputError):
             self._build_with_edge({"kind": "normal", "to": ident("alpha", "1.0.0")})
 
+    def test_malformed_graph_target_blocks_refused(self):
+        # Wrong-typed graphs/targets must fail as InputError, not a raw
+        # AttributeError/TypeError from the target-population comparison.
+        good = self.fixture.graph["graphs"][0]
+        for graphs, targets in (
+            ([["not", "an", "object"]], [TARGET]),   # non-dict graph entry
+            ([good, good], [1, TARGET]),             # mixed-type targets
+            ([good, good], [None, TARGET]),
+        ):
+            with self.subTest(graphs=repr(graphs)[:40], targets=targets):
+                self.fixture.graph["graphs"] = graphs
+                self.fixture.graph["targets"] = targets
+                self.fixture.write("supply-chain/dependency-graph.json",
+                                   json.dumps(self.fixture.graph))
+                with self.assertRaises(common.InputError):
+                    self.fixture.build()
+
     def test_missing_root_refused(self):
         self.fixture.graph["graphs"][0]["roots"] = []
         self.fixture.write("supply-chain/dependency-graph.json", json.dumps(self.fixture.graph))

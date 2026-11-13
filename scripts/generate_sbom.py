@@ -109,6 +109,8 @@ def build_sbom(root: Path, as_of: str) -> dict:
         _fail("dependency graph packages/graphs are missing or unbounded")
     targets = graph.get("targets")
     if (not isinstance(targets, list) or len(targets) != len(graphs)
+            or not all(isinstance(t, str) for t in targets)
+            or not all(isinstance(g, dict) for g in graphs)
             or sorted(targets) != sorted(str(g.get("target")) for g in graphs)):
         _fail("graph targets do not match the per-target graphs")
 
