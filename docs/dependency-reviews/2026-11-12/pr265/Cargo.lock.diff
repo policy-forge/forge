@@ -1,0 +1,96 @@
+diff --git a/docs/dependency-reviews/2026-10-02/pr162/Cargo.lock b/docs/dependency-reviews/2026-10-02/pr162/Cargo.lock
+index 6184d91c..ac3fff8e 100644
+--- a/docs/dependency-reviews/2026-10-02/pr162/Cargo.lock
++++ b/docs/dependency-reviews/2026-10-02/pr162/Cargo.lock
+@@ -2945,9 +2945,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "zip"
+-version = "8.6.0"
++version = "9.0.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
++checksum = "711e8c9646791c49b7eb799a19c4ae70a9b8372ddc6a1fa4778defd1e2aa5d5e"
+ dependencies = [
+  "crc32fast",
+  "flate2",
+diff --git a/docs/dependency-reviews/2026-10-02/pr162/Cargo.toml b/docs/dependency-reviews/2026-10-02/pr162/Cargo.toml
+index 91d63c54..26d0c5b9 100644
+--- a/docs/dependency-reviews/2026-10-02/pr162/Cargo.toml
++++ b/docs/dependency-reviews/2026-10-02/pr162/Cargo.toml
+@@ -29,7 +29,7 @@ quick-xml = { version = "0.41", features = ["serialize"] }
+ rayon = "1"
+ tempfile = "3"
+ pdf-extract = "0.12"
+-zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
++zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
+ toml = { version = "1.1", default-features = false, features = ["parse", "serde"] }
+ # Local workspace transport and ephemeral session authentication (no outbound client).
+ argon2 = { version = "0.6", features = ["zeroize"] }
+diff --git a/docs/dependency-reviews/2026-10-02/pr163/Cargo.lock b/docs/dependency-reviews/2026-10-02/pr163/Cargo.lock
+index 941a3fc3..44a76d29 100644
+--- a/docs/dependency-reviews/2026-10-02/pr163/Cargo.lock
++++ b/docs/dependency-reviews/2026-10-02/pr163/Cargo.lock
+@@ -2926,9 +2926,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "zip"
+-version = "8.6.0"
++version = "9.0.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
++checksum = "711e8c9646791c49b7eb799a19c4ae70a9b8372ddc6a1fa4778defd1e2aa5d5e"
+ dependencies = [
+  "crc32fast",
+  "flate2",
+diff --git a/docs/dependency-reviews/2026-10-02/pr163/Cargo.toml b/docs/dependency-reviews/2026-10-02/pr163/Cargo.toml
+index 97c1f5ca..71c495c8 100644
+--- a/docs/dependency-reviews/2026-10-02/pr163/Cargo.toml
++++ b/docs/dependency-reviews/2026-10-02/pr163/Cargo.toml
+@@ -29,7 +29,7 @@ quick-xml = { version = "0.41", features = ["serialize"] }
+ rayon = "1"
+ tempfile = "3"
+ pdf-extract = "0.12"
+-zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
++zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
+ toml = { version = "1.1", default-features = false, features = ["parse", "serde"] }
+ # Local workspace transport and ephemeral session authentication (no outbound client).
+ argon2 = { version = "0.5", features = ["zeroize"] }
+diff --git a/docs/dependency-reviews/2026-10-02/pr164/Cargo.lock b/docs/dependency-reviews/2026-10-02/pr164/Cargo.lock
+index d7a2f399..e99758e0 100644
+--- a/docs/dependency-reviews/2026-10-02/pr164/Cargo.lock
++++ b/docs/dependency-reviews/2026-10-02/pr164/Cargo.lock
+@@ -2106,7 +2106,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
+ dependencies = [
+  "fastrand",
+- "getrandom 0.3.4",
++ "getrandom 0.4.3",
+  "once_cell",
+  "rustix",
+  "windows-sys",
+@@ -2748,9 +2748,9 @@ dependencies = [
+ 
+ [[package]]
+ name = "zip"
+-version = "8.6.0"
++version = "9.0.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
++checksum = "711e8c9646791c49b7eb799a19c4ae70a9b8372ddc6a1fa4778defd1e2aa5d5e"
+ dependencies = [
+  "crc32fast",
+  "flate2",
+diff --git a/docs/dependency-reviews/2026-10-02/pr164/Cargo.toml b/docs/dependency-reviews/2026-10-02/pr164/Cargo.toml
+index 97c1f5ca..71c495c8 100644
+--- a/docs/dependency-reviews/2026-10-02/pr164/Cargo.toml
++++ b/docs/dependency-reviews/2026-10-02/pr164/Cargo.toml
+@@ -29,7 +29,7 @@ quick-xml = { version = "0.41", features = ["serialize"] }
+ rayon = "1"
+ tempfile = "3"
+ pdf-extract = "0.12"
+-zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
++zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
+ toml = { version = "1.1", default-features = false, features = ["parse", "serde"] }
+ # Local workspace transport and ephemeral session authentication (no outbound client).
+ argon2 = { version = "0.5", features = ["zeroize"] }

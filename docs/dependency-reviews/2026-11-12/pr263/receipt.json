@@ -1,0 +1,13 @@
+{
+  "pr": 263,
+  "url": "https://github.com/policy-forge/forge/pull/263",
+  "head_oid": "df3c748424452f2e948e97c5830cd0605169b6de",
+  "base_oid": "b4226bb35d796222c30f93235ac22118dd26a344",
+  "state_at_review": "OPEN",
+  "ci_run_id": 41067162528,
+  "ci_run_url": "https://github.com/policy-forge/forge/actions/runs/41067162528",
+  "version_scope": "serde_json 1.0.151 -> 1.0.154 (root lock)",
+  "accepted_audit": false,
+  "human_signoff": null,
+  "scope": "Bounded agent-assisted differential source review; no merge permission, no audit approval."
+}
