@@ -1,0 +1,56 @@
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7351700Z ##[group]Run cargo audit
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7352019Z ^[[36;1mcargo audit^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7372280Z shell: /usr/bin/bash -e {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7372566Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7372781Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7373059Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7373347Z   CARGO_INCREMENTAL: 0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7373594Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7598214Z ^[[0m^[[0m^[[1m^[[32m    Fetching^[[0m advisory database from `https://github.com/RustSec/advisory-db.git`
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.4046987Z ^[[0m^[[0m^[[1m^[[32m      Loaded^[[0m 1395 security advisories (from /home/runner/.cargo/advisory-db)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.4048355Z ^[[0m^[[0m^[[1m^[[32m    Updating^[[0m crates.io index
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.4210229Z ^[[0m^[[0m^[[1m^[[32m    Scanning^[[0m Cargo.lock for vulnerabilities (300 crate dependencies)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6248703Z ^[[0m^[[0m^[[1m^[[31merror:^[[0m 1 vulnerability found!
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6249555Z ^[[0m^[[0m^[[1m^[[33mwarning:^[[0m 2 allowed warnings found
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6250152Z ^[[0m^[[0m^[[1m^[[31mCrate:    ^[[0m pulldown-cmark
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6250705Z ^[[0m^[[0m^[[1m^[[31mVersion:  ^[[0m 0.13.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6251621Z ^[[0m^[[0m^[[1m^[[31mTitle:    ^[[0m Exponential event growth with `ENABLE_WIKILINKS`
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6252698Z ^[[0m^[[0m^[[1m^[[31mDate:     ^[[0m 2026-10-18
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6253504Z ^[[0m^[[0m^[[1m^[[31mID:       ^[[0m RUSTSEC-2026-0414
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6254626Z ^[[0m^[[0m^[[1m^[[31mURL:      ^[[0m https://rustsec.org/advisories/RUSTSEC-2026-0414
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6255667Z ^[[0m^[[0m^[[1m^[[31mSeverity: ^[[0m 7.5 (high)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6256492Z ^[[0m^[[0m^[[1m^[[31mSolution: ^[[0m Upgrade to >=0.13.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6257012Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6257341Z ^[[0m^[[0m^[[1m^[[33mCrate:    ^[[0m ttf-parser
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6258302Z ^[[0m^[[0m^[[1m^[[33mVersion:  ^[[0m 0.25.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6259047Z ^[[0m^[[0m^[[1m^[[33mWarning:  ^[[0m unmaintained
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6259961Z ^[[0m^[[0m^[[1m^[[33mTitle:    ^[[0m `ttf-parser` is unmaintained
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6260836Z ^[[0m^[[0m^[[1m^[[33mDate:     ^[[0m 2026-06-28
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6261620Z ^[[0m^[[0m^[[1m^[[33mID:       ^[[0m RUSTSEC-2026-0192
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6262695Z ^[[0m^[[0m^[[1m^[[33mURL:      ^[[0m https://rustsec.org/advisories/RUSTSEC-2026-0192
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6263399Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6263739Z ^[[0m^[[0m^[[1m^[[33mCrate:    ^[[0m unsafe-libyaml
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6264285Z ^[[0m^[[0m^[[1m^[[33mVersion:  ^[[0m 0.2.11
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6264762Z ^[[0m^[[0m^[[1m^[[33mWarning:  ^[[0m unmaintained
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6265347Z ^[[0m^[[0m^[[1m^[[33mTitle:    ^[[0m unsafe-libyaml is unmaintained
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6265908Z ^[[0m^[[0m^[[1m^[[33mDate:     ^[[0m 2024-03-25
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6266412Z ^[[0m^[[0m^[[1m^[[33mID:       ^[[0m RUSTSEC-2024-0449
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6267095Z ^[[0m^[[0m^[[1m^[[33mURL:      ^[[0m https://rustsec.org/advisories/RUSTSEC-2024-0449
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6267744Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6361990Z ##[error]Process completed with exit code 1.
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6518744Z Post job cleanup.
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7429910Z [command]/usr/bin/git version
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7478970Z git version 2.56.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7522297Z Temporarily overriding HOME='/home/runner/work/_temp/03a19620-3377-42b6-8003-fd4156b9b6a2' before making global git config changes
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7523393Z Adding repository directory to the temporary git global config as a safe directory
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7528158Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/forge/forge
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7566177Z Removing SSH command configuration
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7573790Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7616513Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7895769Z Removing HTTP extra header
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7902260Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7962762Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.8249354Z Removing includeIf entries pointing to credentials config files
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.8259578Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.8314446Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.8796034Z Cleaning up orphan processes

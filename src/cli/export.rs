@@ -168,10 +168,10 @@ fn detect_xml_root_element(content: &str) -> Result<String, ForgeError> {
         match reader.read_event() {
             Ok(Event::Start(ref element) | Event::Empty(ref element)) => {
                 let element_name = element.name();
-                let qualified_name = String::from_utf8_lossy(element_name.as_ref());
+                let qualified_name = element_name.as_ref();
                 let (prefix, local_name) = qualified_name
                     .rsplit_once(':')
-                    .map_or((None, qualified_name.as_ref()), |(prefix, local_name)| {
+                    .map_or((None, qualified_name), |(prefix, local_name)| {
                         (Some(prefix), local_name)
                     });
                 let namespace_attribute =
@@ -180,14 +180,13 @@ fn detect_xml_root_element(content: &str) -> Result<String, ForgeError> {
                     let attribute = attribute.map_err(|error| ForgeError::ExportInvalidOscal {
                         detail: format!("Invalid XML root attribute: {error}"),
                     })?;
-                    if attribute.key.as_ref() == namespace_attribute.as_bytes()
-                        && attribute.value.as_ref()
-                            != crate::export::xml_serializer::OSCAL_NS.as_bytes()
+                    if attribute.key.as_ref() == namespace_attribute
+                        && attribute.value.as_ref() != crate::export::xml_serializer::OSCAL_NS
                     {
                         return Err(ForgeError::ExportInvalidOscal {
                             detail: format!(
                                 "XML root '<{qualified_name}>' declares unsupported namespace '{}'; expected '{}'",
-                                String::from_utf8_lossy(attribute.value.as_ref()),
+                                attribute.value,
                                 crate::export::xml_serializer::OSCAL_NS
                             ),
                         });
