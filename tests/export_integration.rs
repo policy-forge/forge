@@ -51,11 +51,11 @@ fn assert_catalog_xml(content: &str) {
         match reader.read_event_into(&mut buffer).expect("exported catalog XML must parse") {
             quick_xml::events::Event::Start(event) => {
                 let name = event.name();
-                opened_catalog |= name.as_ref() == b"catalog";
-                saw_control |= name.as_ref() == b"control";
+                opened_catalog |= name.as_ref() == "catalog";
+                saw_control |= name.as_ref() == "control";
             }
             quick_xml::events::Event::End(event) => {
-                closed_catalog |= event.name().as_ref() == b"catalog";
+                closed_catalog |= event.name().as_ref() == "catalog";
             }
             quick_xml::events::Event::Eof => break,
             _ => {}

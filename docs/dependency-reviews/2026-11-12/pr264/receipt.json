@@ -1,0 +1,13 @@
+{
+  "pr": 264,
+  "url": "https://github.com/policy-forge/forge/pull/264",
+  "head_oid": "7158f37870de2936c8d9e903e51da96bdda61cf8",
+  "base_oid": "b4226bb35d796222c30f93235ac22118dd26a344",
+  "state_at_review": "OPEN",
+  "ci_run_id": 41067183887,
+  "ci_run_url": "https://github.com/policy-forge/forge/actions/runs/41067183887",
+  "version_scope": "quick-xml 0.41.0 -> 0.42.0 (root lock + Cargo.toml)",
+  "accepted_audit": false,
+  "human_signoff": null,
+  "scope": "Bounded agent-assisted differential source review; no merge permission, no audit approval."
+}
