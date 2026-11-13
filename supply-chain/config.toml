@@ -490,7 +490,7 @@ version = "0.4.15"
 criteria = "safe-to-deploy"
 
 [[exemptions.hyper]]
-version = "1.11.1"
+version = "1.12.0"
 criteria = "safe-to-deploy"
 
 [[exemptions.hyper-util]]
@@ -592,19 +592,19 @@ version = "0.45.1"
 criteria = "safe-to-deploy"
 
 [[exemptions.jsonschema]]
-version = "0.57.0"
+version = "0.60.2"
 criteria = "safe-to-deploy"
-notes = "Temporary owner-approved exception: docs/plans/2026-10-06-merge-dependency-decisions.md; owner brianluby; review 2026-10-20; expires 2026-11-05. No accepted source audit is asserted."
+notes = "PROPOSED pending owner approval; Dependabot upgrade PR #262, replaces 0.57.0. No accepted source audit is asserted."
 
 [[exemptions.jsonschema-regex]]
-version = "0.57.0"
+version = "0.60.2"
 criteria = "safe-to-deploy"
-notes = "Temporary owner-approved exception: docs/plans/2026-10-06-merge-dependency-decisions.md; owner brianluby; review 2026-10-20; expires 2026-11-05. No accepted source audit is asserted."
+notes = "PROPOSED pending owner approval; Dependabot upgrade PR #262, replaces 0.57.0. No accepted source audit is asserted."
 
 [[exemptions.jsonschema-value]]
-version = "0.57.0"
+version = "0.60.2"
 criteria = "safe-to-deploy"
-notes = "Temporary owner-approved exception: docs/plans/2026-10-06-merge-dependency-decisions.md; owner brianluby; review 2026-10-20; expires 2026-11-05. No accepted source audit is asserted."
+notes = "PROPOSED pending owner approval; Dependabot upgrade PR #262, replaces 0.57.0. No accepted source audit is asserted."
 
 [[exemptions.lazy_static]]
 version = "1.5.0"
@@ -917,9 +917,9 @@ version = "0.45.1"
 criteria = "safe-to-deploy"
 
 [[exemptions.referencing]]
-version = "0.57.0"
+version = "0.60.2"
 criteria = "safe-to-deploy"
-notes = "Temporary owner-approved exception: docs/plans/2026-10-06-merge-dependency-decisions.md; owner brianluby; review 2026-10-20; expires 2026-11-05. No accepted source audit is asserted."
+notes = "PROPOSED pending owner approval; Dependabot upgrade PR #262, replaces 0.57.0. No accepted source audit is asserted."
 
 [[exemptions.regex]]
 version = "1.12.3"
@@ -1021,9 +1021,9 @@ version = "1.0.149"
 criteria = "safe-to-deploy"
 
 [[exemptions.serde_json]]
-version = "1.0.151"
+version = "1.0.154"
 criteria = "safe-to-deploy"
-notes = "Temporary owner-approved exception: docs/plans/2026-10-06-merge-dependency-decisions.md; owner brianluby; review 2026-10-20; expires 2026-11-05. No accepted source audit is asserted."
+notes = "PROPOSED pending owner approval; Dependabot upgrade PR #263, replaces 1.0.151. No accepted source audit is asserted."
 
 [[exemptions.serde_spanned]]
 version = "1.1.1"
