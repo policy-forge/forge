@@ -8,7 +8,8 @@ use std::io::{Cursor, Read};
 use std::path::{Path, PathBuf};
 
 use quick_xml::Reader;
-use quick_xml::events::Event as XmlEvent;
+use quick_xml::escape::resolve_xml_entity;
+use quick_xml::events::{BytesRef, Event as XmlEvent};
 use serde::Serialize;
 use zip::ZipArchive;
 
@@ -204,8 +205,12 @@ fn extract_docx_content(
 }
 
 fn extract_docx_document_xml(xml: &str) -> Result<String, ForgeError> {
+    // Text trimming is deliberately left off: entity references arrive as separate
+    // `GeneralRef` events, so trimming each text segment would delete the spaces
+    // around them (and inside `xml:space="preserve"` runs). Whitespace-only text
+    // between elements is skipped below, and each paragraph/cell is trimmed once
+    // it has been assembled.
     let mut reader = Reader::from_str(xml);
-    reader.config_mut().trim_text(true);
 
     let mut output = Vec::new();
     let mut paragraph = String::new();
@@ -214,6 +219,7 @@ fn extract_docx_document_xml(xml: &str) -> Result<String, ForgeError> {
     let mut in_table = false;
     let mut in_row = false;
     let mut in_cell = false;
+    let mut in_text_run = false;
     let mut cell = String::new();
     let mut row = Vec::new();
     let mut is_list_item = false;
@@ -236,6 +242,7 @@ fn extract_docx_document_xml(xml: &str) -> Result<String, ForgeError> {
                     in_cell = true;
                     cell.clear();
                 }
+                "w:t" => in_text_run = true,
                 "w:numPr" if in_paragraph => is_list_item = true,
                 "w:pStyle" if in_paragraph => {
                     for attr in element.attributes().flatten() {
@@ -258,11 +265,15 @@ fn extract_docx_document_xml(xml: &str) -> Result<String, ForgeError> {
                 _ => {}
             },
             Ok(XmlEvent::Text(text)) => {
-                if in_cell {
-                    cell.push_str(&text);
-                } else if in_paragraph {
-                    paragraph.push_str(&text);
+                // Whitespace-only text is only content inside a `w:t` run (for example
+                // `<w:t xml:space="preserve"> </w:t>`); elsewhere it is XML formatting.
+                if in_text_run || !text.trim().is_empty() {
+                    append_docx_text(&text, in_cell, in_paragraph, &mut cell, &mut paragraph);
                 }
+            }
+            Ok(XmlEvent::GeneralRef(reference)) => {
+                let resolved = resolve_docx_reference(&reference)?;
+                append_docx_text(&resolved, in_cell, in_paragraph, &mut cell, &mut paragraph);
             }
             Ok(XmlEvent::End(element)) => match element.name().as_ref() {
                 "w:p" => {
@@ -285,6 +296,7 @@ fn extract_docx_document_xml(xml: &str) -> Result<String, ForgeError> {
                     in_row = false;
                 }
                 "w:tbl" => in_table = false,
+                "w:t" => in_text_run = false,
                 _ => {}
             },
             Ok(XmlEvent::Eof) => break,
@@ -294,6 +306,44 @@ fn extract_docx_document_xml(xml: &str) -> Result<String, ForgeError> {
     }
 
     Ok(output.join("\n"))
+}
+
+/// Append extracted text to the open table cell, or else the open paragraph.
+fn append_docx_text(
+    text: &str,
+    in_cell: bool,
+    in_paragraph: bool,
+    cell: &mut String,
+    paragraph: &mut String,
+) {
+    if in_cell {
+        cell.push_str(text);
+    } else if in_paragraph {
+        paragraph.push_str(text);
+    }
+}
+
+/// Resolve an XML entity or character reference (`&amp;`, `&#169;`, `&#xA9;`).
+///
+/// Only the five predefined XML entities are known. Anything else, including a
+/// DTD-defined entity or an invalid character reference, is rejected rather than
+/// silently dropped, which would corrupt policy text.
+fn resolve_docx_reference(reference: &BytesRef<'_>) -> Result<String, ForgeError> {
+    if reference.is_char_ref() {
+        return match reference.resolve_char_ref() {
+            Ok(Some(ch)) => Ok(ch.to_string()),
+            Ok(None) | Err(_) => Err(ForgeError::Parse(format!(
+                "DOCX document.xml contains an invalid character reference &{};",
+                &**reference
+            ))),
+        };
+    }
+    resolve_xml_entity(reference).map(str::to_owned).ok_or_else(|| {
+        ForgeError::Parse(format!(
+            "DOCX document.xml contains an unsupported XML entity &{};",
+            &**reference
+        ))
+    })
 }
 
 fn format_docx_paragraph(text: &str, style: Option<&str>, is_list_item: bool) -> String {
@@ -558,6 +608,116 @@ mod tests {
         assert!(content.contains("# Access Control"));
         assert!(content.contains("- Users must authenticate with MFA."));
         assert!(content.contains("| Role | Requirement |"));
+    }
+
+    fn docx_xml(body: &str) -> String {
+        format!(
+            r#"<?xml version="1.0" encoding="UTF-8"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>{body}</w:body></w:document>"#
+        )
+    }
+
+    #[test]
+    fn docx_paragraph_preserves_predefined_entities_and_surrounding_spaces() {
+        let xml =
+            docx_xml("<w:p><w:r><w:t>Q&amp;A &lt;ok&gt; &quot;x&quot; it&apos;s</w:t></w:r></w:p>");
+        assert_eq!(extract_docx_document_xml(&xml).unwrap(), r#"Q&A <ok> "x" it's"#);
+    }
+
+    #[test]
+    fn docx_paragraph_preserves_policy_text_with_entities() {
+        let xml = docx_xml(concat!(
+            "<w:p><w:r><w:t>R&amp;D and AT&amp;T must patch in &lt;10 days.</w:t></w:r></w:p>",
+            "<w:p><w:r><w:t>Copyright &#169; &#xA9; Acme</w:t></w:r></w:p>",
+        ));
+        assert_eq!(
+            extract_docx_document_xml(&xml).unwrap(),
+            "R&D and AT&T must patch in <10 days.\nCopyright © © Acme"
+        );
+    }
+
+    #[test]
+    fn docx_table_cell_preserves_entities() {
+        let xml = docx_xml(concat!(
+            "<w:tbl><w:tr>",
+            "<w:tc><w:p><w:r><w:t>R&amp;D</w:t></w:r></w:p></w:tc>",
+            "<w:tc><w:p><w:r><w:t>Patch in &lt;10 days &#169;</w:t></w:r></w:p></w:tc>",
+            "</w:tr></w:tbl>",
+        ));
+        assert_eq!(extract_docx_document_xml(&xml).unwrap(), "| R&D | Patch in <10 days © |");
+    }
+
+    #[test]
+    fn docx_entity_split_across_runs_is_joined() {
+        let xml = docx_xml(
+            "<w:p><w:r><w:t>AT</w:t></w:r><w:r><w:t>&amp;</w:t></w:r><w:r><w:t>T</w:t></w:r></w:p>",
+        );
+        assert_eq!(extract_docx_document_xml(&xml).unwrap(), "AT&T");
+    }
+
+    #[test]
+    fn docx_preserve_space_runs_keep_interior_spaces() {
+        let xml = docx_xml(concat!(
+            "<w:p>",
+            "<w:r><w:t>Users must </w:t></w:r>",
+            r#"<w:r><w:t xml:space="preserve">authenticate </w:t></w:r>"#,
+            r#"<w:r><w:t xml:space="preserve"> </w:t></w:r>"#,
+            "<w:r><w:t>with MFA</w:t></w:r>",
+            "</w:p>",
+        ));
+        assert_eq!(extract_docx_document_xml(&xml).unwrap(), "Users must authenticate  with MFA");
+    }
+
+    #[test]
+    fn docx_paragraph_is_trimmed_after_assembly() {
+        let xml = docx_xml(
+            r#"<w:p><w:r><w:t xml:space="preserve">  padded &amp; trimmed  </w:t></w:r></w:p>"#,
+        );
+        assert_eq!(extract_docx_document_xml(&xml).unwrap(), "padded & trimmed");
+    }
+
+    #[test]
+    fn docx_formatting_whitespace_between_elements_is_ignored() {
+        let xml = docx_xml(
+            "<w:tbl>\n  <w:tr>\n    <w:tc>\n      <w:p>\n        <w:r>\n          <w:t>One</w:t>\n        </w:r>\n      </w:p>\n      <w:p>\n        <w:r><w:t>Two</w:t></w:r>\n      </w:p>\n    </w:tc>\n    <w:tc>\n      <w:p><w:r><w:t>Three</w:t></w:r></w:p>\n    </w:tc>\n  </w:tr>\n</w:tbl>",
+        );
+        assert_eq!(extract_docx_document_xml(&xml).unwrap(), "| OneTwo | Three |");
+    }
+
+    #[test]
+    fn docx_unknown_named_entity_is_a_parse_error() {
+        let xml = docx_xml("<w:p><w:r><w:t>Acme&nbsp;Corp</w:t></w:r></w:p>");
+        let err = extract_docx_document_xml(&xml).unwrap_err();
+        assert!(matches!(err, ForgeError::Parse(ref m) if m.contains("&nbsp;")), "got: {err:?}");
+    }
+
+    #[test]
+    fn docx_invalid_character_reference_is_a_parse_error() {
+        for reference in ["&#0;", "&#xD800;", "&#xZZ;", "&#1114112;"] {
+            let xml = docx_xml(&format!("<w:p><w:r><w:t>a{reference}b</w:t></w:r></w:p>"));
+            let err = extract_docx_document_xml(&xml).unwrap_err();
+            assert!(
+                matches!(err, ForgeError::Parse(ref m) if m.contains(reference)),
+                "{reference}: {err:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn docx_ingest_preserves_entities_end_to_end() {
+        let dir = TempDir::new().unwrap();
+        let path = create_docx(
+            &dir,
+            &docx_xml(
+                "<w:p><w:r><w:t>R&amp;D systems must patch in &lt;10 days &#169;</w:t></w:r></w:p>",
+            ),
+        );
+        let doc = ingest_file(&path, 10 * 1_048_576).unwrap();
+        assert!(
+            doc.reconstruct_content().contains("R&D systems must patch in <10 days ©"),
+            "got: {}",
+            doc.reconstruct_content()
+        );
     }
 
     #[test]

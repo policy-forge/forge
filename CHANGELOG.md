@@ -112,6 +112,17 @@ inventory of all post-v1.1.0 changes.
   exact-identity `cargo-vet` exemption and dependency exception record the bump
   pending owner approval (PRD 069).
 
+### Fixed
+
+- DOCX ingest no longer drops XML entity and character references from
+  `word/document.xml` text. `R&amp;D`, `&lt;10 days` and `&#169;` previously
+  came through as `RD`, `10 days` and nothing, with the neighbouring spaces
+  also removed. The five predefined entities and numeric character references
+  are now resolved; an unknown named entity or an invalid character reference
+  is a `ForgeError::Parse` instead of a silent drop. Text is no longer trimmed
+  per segment, so `xml:space="preserve"` runs keep their interior spaces; each
+  paragraph and table cell is trimmed once after assembly.
+
 ## [1.1.0] — 2026-06-09
 
 FORGE v1.1.0 adds native PDF and DOCX ingestion, removing the requirement to pre-convert policy documents to Markdown with external tools.
