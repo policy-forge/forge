@@ -1,0 +1,497 @@
+diff -r jsonschema-regex-0.57.0/Cargo.lock jsonschema-regex-0.60.2/Cargo.lock
+--- jsonschema-regex-0.57.0/Cargo.lock	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-regex-0.60.2/Cargo.lock	2006-07-23 18:21:28.000000000 -0700
+@@ -19,7 +19,7 @@
+ 
+ [[package]]
+ name = "jsonschema-regex"
+-version = "0.57.0"
++version = "0.60.2"
+ dependencies = [
+  "regex",
+  "regex-syntax",
+@@ -81,9 +81,9 @@
+ 
+ [[package]]
+ name = "syn"
+-version = "2.0.119"
++version = "3.0.9"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "872831b642d1a07999a962a351ed35b955ea2cfc8f3862091e2a240a84f17297"
++checksum = "d78c8dee4c7bf0e14673097256fed6142ce9d3b85a408189d07482442145823b"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -92,18 +92,18 @@
+ 
+ [[package]]
+ name = "test-case"
+-version = "3.3.1"
++version = "3.4.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "eb2550dd13afcd286853192af8601920d959b14c401fcece38071d53bf0768a8"
++checksum = "124953e7f67cb0b2fcfb87e899e4ae5a64fb68e2e160767933cc67b646fb0042"
+ dependencies = [
+  "test-case-macros",
+ ]
+ 
+ [[package]]
+ name = "test-case-core"
+-version = "3.3.1"
++version = "3.4.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "adcb7fd841cd518e279be3d5a3eb0636409487998a4aff22f3de87b81e88384f"
++checksum = "bd097615b407247e102046ba34426bb594923ab3554cf0f3cdfed050f1a5a3e8"
+ dependencies = [
+  "cfg-if",
+  "proc-macro2",
+@@ -113,9 +113,9 @@
+ 
+ [[package]]
+ name = "test-case-macros"
+-version = "3.3.1"
++version = "3.4.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "5c89e72a01ed4c579669add59014b9a524d609c0c88c6a585ce37485879f6ffb"
++checksum = "f4ce35ece947bccac166e1ded639133827a953f69a48ba134d17f91108333082"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -125,6 +125,6 @@
+ 
+ [[package]]
+ name = "unicode-ident"
+-version = "1.0.26"
++version = "1.0.27"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
++checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
+diff -r jsonschema-regex-0.57.0/Cargo.toml jsonschema-regex-0.60.2/Cargo.toml
+--- jsonschema-regex-0.57.0/Cargo.toml	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-regex-0.60.2/Cargo.toml	2006-07-23 18:21:28.000000000 -0700
+@@ -13,7 +13,7 @@
+ edition = "2021"
+ rust-version = "1.85.0"
+ name = "jsonschema-regex"
+-version = "0.57.0"
++version = "0.60.2"
+ authors = ["Dmitry Dygalo <dmitry@dygalo.dev>"]
+ build = false
+ autolib = false
+diff -r jsonschema-regex-0.57.0/Cargo.toml.orig jsonschema-regex-0.60.2/Cargo.toml.orig
+--- jsonschema-regex-0.57.0/Cargo.toml.orig	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-regex-0.60.2/Cargo.toml.orig	2006-07-23 18:21:28.000000000 -0700
+@@ -1,6 +1,6 @@
+ [package]
+ name = "jsonschema-regex"
+-version = "0.57.0"
++version = "0.60.2"
+ description = "ECMA 262 regex translation for the jsonschema crate"
+ rust-version.workspace = true
+ edition.workspace = true
+diff -r jsonschema-regex-0.57.0/src/lib.rs jsonschema-regex-0.60.2/src/lib.rs
+--- jsonschema-regex-0.57.0/src/lib.rs	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-regex-0.60.2/src/lib.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -1,6 +1,6 @@
+ mod syntax;
+ 
+-use std::borrow::Cow;
++use std::{borrow::Cow, fmt::Write};
+ 
+ use regex_syntax::{
+     ast::{
+@@ -21,7 +21,7 @@
+ /// Errors are returned on unsupported or invalid regular expressions.
+ #[allow(clippy::result_unit_err)]
+ pub fn to_rust_regex(pattern: &str) -> Result<Cow<'_, str>, ()> {
+-    let mut pattern = Cow::Borrowed(pattern);
++    let mut pattern = escape_class_set_syntax(pattern);
+     let mut ast = loop {
+         match Parser::new().parse(&pattern) {
+             Ok(ast) => break ast,
+@@ -84,6 +84,126 @@
+     }
+ }
+ 
++#[derive(Clone, Copy, PartialEq)]
++enum ClassState {
++    AtItemStart,
++    AfterRangeStart,
++    ExpectRangeEnd,
++}
++
++impl ClassState {
++    fn consume_atom(&mut self) {
++        *self = match self {
++            Self::ExpectRangeEnd => Self::AtItemStart,
++            Self::AtItemStart | Self::AfterRangeStart => Self::AfterRangeStart,
++        };
++    }
++}
++
++fn escape_class_set_syntax(pattern: &str) -> Cow<'_, str> {
++    let mut escapes = Vec::new();
++    let mut in_class = false;
++    let mut escaped = false;
++    let mut class_state = ClassState::AtItemStart;
++    let mut previous_atom_is_class_escape = false;
++    let mut class_initial = false;
++    let mut chars = pattern.char_indices().peekable();
++    while let Some((offset, c)) = chars.next() {
++        if escaped {
++            escaped = false;
++            if in_class {
++                class_state.consume_atom();
++                previous_atom_is_class_escape = matches!(c, 'd' | 'D' | 's' | 'S' | 'w' | 'W');
++                class_initial = false;
++            }
++            continue;
++        }
++        if c == '\\' {
++            escaped = true;
++            continue;
++        }
++        if c == '[' {
++            if in_class {
++                escapes.push(offset);
++                class_state.consume_atom();
++                previous_atom_is_class_escape = false;
++                class_initial = false;
++            } else {
++                in_class = true;
++                class_state = ClassState::AtItemStart;
++                previous_atom_is_class_escape = false;
++                class_initial = true;
++            }
++            continue;
++        }
++        if c == ']' && in_class {
++            in_class = false;
++            class_state = ClassState::AtItemStart;
++            previous_atom_is_class_escape = false;
++            continue;
++        }
++        if !in_class {
++            continue;
++        }
++        if c == '^' && class_initial {
++            class_initial = false;
++            continue;
++        }
++        if c == '-'
++            && previous_atom_is_class_escape
++            && chars.peek().is_some_and(|(_, next)| *next == '-')
++        {
++            // Without the Unicode flag, a class escape cannot participate in a range. Annex B
++            // treats both hyphens in forms such as `[\w--z]` as literals.
++            escapes.push(offset);
++            let (next_offset, _) = chars.next().expect("the next character was peeked");
++            escapes.push(next_offset);
++            class_state.consume_atom();
++            previous_atom_is_class_escape = false;
++            class_initial = false;
++            continue;
++        }
++        if c == '-'
++            && class_state == ClassState::AfterRangeStart
++            && chars.peek().is_some_and(|(_, next)| *next != ']')
++        {
++            // This hyphen is an ECMAScript range delimiter. Keep it unescaped so ranges such as
++            // the `--b` part of `[a-z--b]` preserve their meaning.
++            class_state = ClassState::ExpectRangeEnd;
++            previous_atom_is_class_escape = false;
++            continue;
++        }
++        if matches!(c, '&' | '~') && chars.peek().is_some_and(|(_, next)| *next == c) {
++            escapes.push(offset);
++            let (next_offset, _) = chars.next().expect("the next character was peeked");
++            escapes.push(next_offset);
++            class_state.consume_atom();
++        } else if c == '-'
++            && (pattern.as_bytes().get(offset.wrapping_sub(1)) == Some(&b'-')
++                || chars.peek().is_some_and(|(_, next)| *next == '-'))
++        {
++            // Only escape literal hyphens. At least one hyphen in every valid adjacent pair is a
++            // class atom, and escaping that atom is sufficient to avoid Rust's `--` operator.
++            escapes.push(offset);
++        }
++        class_state.consume_atom();
++        previous_atom_is_class_escape = false;
++        class_initial = false;
++    }
++    if escapes.is_empty() {
++        return Cow::Borrowed(pattern);
++    }
++    let mut translated = String::with_capacity(pattern.len() + escapes.len());
++    let mut escapes = escapes.into_iter().peekable();
++    for (offset, c) in pattern.char_indices() {
++        if escapes.next_if_eq(&offset).is_some() {
++            translated.push('\\');
++        }
++        translated.push(c);
++    }
++    Cow::Owned(translated)
++}
++
+ struct Ecma262Translator<'a> {
+     pattern: Cow<'a, str>,
+     offset: usize,
+@@ -133,12 +253,17 @@
+                 self.replace_impl(&cls.span, replacement);
+             }
+             ClassPerlKind::Space => {
+-                let replacement = &if cls.negated {
+-                    "[^ \t\n\r\u{000b}\u{000c}\u{00a0}\u{feff}\u{2003}\u{2029}]"
+-                } else {
+-                    "[ \t\n\r\u{000b}\u{000c}\u{00a0}\u{feff}\u{2003}\u{2029}]"
+-                };
+-                self.replace_impl(&cls.span, replacement);
++                let mut replacement = String::from(if cls.negated { "[^" } else { "[" });
++                for (start, end) in ECMA_WHITESPACE_RANGES {
++                    // Writing to a `String` cannot fail.
++                    let _ = write!(
++                        replacement,
++                        "\\x{{{:x}}}-\\x{{{:x}}}",
++                        start as u32, end as u32
++                    );
++                }
++                replacement.push(']');
++                self.replace_impl(&cls.span, &replacement);
+             }
+         }
+     }
+@@ -196,22 +321,28 @@
+     NoWhitespace,
+ }
+ 
++/// Inclusive ranges of ECMA-262 `\s`: `WhiteSpace` (TAB, VT, FF, every `Zs`, BOM) and `LineTerminator`.
++const ECMA_WHITESPACE_RANGES: [(char, char); 10] = [
++    ('\t', '\r'),
++    (' ', ' '),
++    ('\u{00a0}', '\u{00a0}'),
++    ('\u{1680}', '\u{1680}'),
++    ('\u{2000}', '\u{200a}'),
++    ('\u{2028}', '\u{2029}'),
++    ('\u{202f}', '\u{202f}'),
++    ('\u{205f}', '\u{205f}'),
++    ('\u{3000}', '\u{3000}'),
++    ('\u{feff}', '\u{feff}'),
++];
++
+ /// Returns `true` for ECMA-262 whitespace characters (`\s` in ECMA regex): the union of ASCII
+ /// whitespace, `\u{00a0}`, and the Unicode space-separator category recognized by the spec.
+ #[inline]
+ #[must_use]
+ pub fn is_ecma_whitespace(c: char) -> bool {
+-    matches!(
+-        c,
+-        '\t' | '\n' | '\x0b' | '\x0c' | '\r' | ' ' | '\u{00a0}' | '\u{1680}' | '\u{2000}'
+-            ..='\u{200a}'
+-                | '\u{2028}'
+-                | '\u{2029}'
+-                | '\u{202f}'
+-                | '\u{205f}'
+-                | '\u{3000}'
+-                | '\u{feff}'
+-    )
++    ECMA_WHITESPACE_RANGES
++        .iter()
++        .any(|&(start, end)| start <= c && c <= end)
+ }
+ 
+ /// Whether `input` holds any character `\s` matches.
+@@ -435,11 +566,69 @@
+     #[test_case(r"\cA\cB\cC", "\x01\x02\x03"; "multiple control characters")]
+     #[test_case(r"foo\cIbar\cXbaz", "foo\x09bar\x18baz"; "control characters mixed with text")]
+     #[test_case(r"\ca\cb\cc", "\x01\x02\x03"; "lowercase control characters")]
++    #[test_case(r"^[a-z&&^b]+$", r"^[a-z\&\&^b]+$"; "class intersection syntax is literal")]
++    #[test_case(r"^[a-z--b]$", r"^[a-z\--b]$"; "class difference syntax preserves ranges")]
++    #[test_case(r"^[\w--z]$", r"^[[A-Za-z0-9_]\-\-z]$"; "word class escape before doubled hyphen")]
++    #[test_case(r"^[\d--z]$", r"^[[0-9]\-\-z]$"; "digit class escape before doubled hyphen")]
++    #[test_case(r"^[a~~b]$", r"^[a\~\~b]$"; "class symmetric difference syntax is literal")]
++    #[test_case(r"^[[a]]$", r"^[\[a]]$"; "nested class opener is literal")]
++    #[test_case(r"[a-z]", r"[a-z]"; "ordinary class is unchanged")]
++    #[test_case(r"[\[\]]", r"[\[\]]"; "escaped brackets are unchanged")]
++    #[test_case(r"[^&]", r"[^&]"; "single ampersand is unchanged")]
++    #[test_case(r"a&&b", r"a&&b"; "operator syntax outside a class is unchanged")]
+     fn test_ecma262_to_rust_regex(input: &str, expected: &str) {
+         let result = to_rust_regex(input).unwrap();
+         assert_eq!(result, expected);
+     }
+ 
++    const ECMA_WHITESPACE: [char; 25] = [
++        '\t', '\n', '\u{b}', '\u{c}', '\r', ' ', '\u{a0}', '\u{1680}', '\u{2000}', '\u{2003}',
++        '\u{200a}', '\u{2028}', '\u{2029}', '\u{202f}', '\u{205f}', '\u{3000}', '\u{feff}',
++        '\u{2001}', '\u{2002}', '\u{2004}', '\u{2005}', '\u{2006}', '\u{2007}', '\u{2008}',
++        '\u{2009}',
++    ];
++    const NOT_ECMA_WHITESPACE: [char; 7] = [
++        '\u{85}', '\u{1c}', '\u{200b}', '\u{180e}', 'a', '0', '\u{2010}',
++    ];
++
++    #[test_case(r"\s", true; "space class")]
++    #[test_case(r"\S", false; "non-space class")]
++    #[test_case(r"[\s]", true; "space class in set")]
++    #[test_case(r"[^\s]", false; "negated set of space class")]
++    #[test_case(r"[a\s]", true; "space class with literal in set")]
++    #[test_case(r"[\S]", false; "non-space class in set")]
++    fn space_class_matches_ecma_whitespace(pattern: &str, matches_whitespace: bool) {
++        let regex =
++            regex::Regex::new(&format!("^(?:{})$", to_rust_regex(pattern).unwrap())).unwrap();
++        for c in ECMA_WHITESPACE {
++            assert_eq!(
++                regex.is_match(&c.to_string()),
++                matches_whitespace,
++                "{pattern} on U+{:04X}",
++                c as u32
++            );
++        }
++        for c in NOT_ECMA_WHITESPACE {
++            let expected = if matches_whitespace {
++                c == 'a' && pattern.starts_with("[a")
++            } else {
++                true
++            };
++            assert_eq!(
++                regex.is_match(&c.to_string()),
++                expected,
++                "{pattern} on U+{:04X}",
++                c as u32
++            );
++        }
++    }
++
++    #[test]
++    fn whitespace_test_set_agrees_with_predicate() {
++        assert!(ECMA_WHITESPACE.into_iter().all(is_ecma_whitespace));
++        assert!(!NOT_ECMA_WHITESPACE.into_iter().any(is_ecma_whitespace));
++    }
++
+     #[test_case(r"\c"; "incomplete control character")]
+     #[test_case(r"\c?"; "invalid control character")]
+     #[test_case(r"\mA"; "another invalid control character")]
+@@ -449,11 +638,23 @@
+     #[test_case(r"a{3,2}"; "invalid quantifier range")]
+     #[test_case(r"\"; "trailing backslash")]
+     #[test_case(r"[a-\w]"; "invalid character range")]
++    #[test_case(r"[z--]"; "invalid range ending in a hyphen")]
+     fn test_invalid_regex(input: &str) {
+         let result = to_rust_regex(input);
+         assert!(result.is_err(), "Expected error for input: {input}");
+     }
+ 
++    #[test]
++    fn doubled_hyphen_preserves_ecmascript_range_semantics() {
++        let translated = to_rust_regex(r"^[a-z--b]$").expect("valid ECMAScript regex");
++        let regex = regex::Regex::new(&translated).expect("translation compiles");
++
++        assert!(regex.is_match("0"));
++        assert!(regex.is_match("A"));
++        assert!(regex.is_match("z"));
++        assert!(!regex.is_match("{"));
++    }
++
+     #[test_case("^foo", Some("foo"))]
+     #[test_case("^x-", Some("x-"))]
+     #[test_case("^eo_band", Some("eo_band"))]
+diff -r jsonschema-regex-0.57.0/src/syntax.rs jsonschema-regex-0.60.2/src/syntax.rs
+--- jsonschema-regex-0.57.0/src/syntax.rs	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-regex-0.60.2/src/syntax.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -1,12 +1,15 @@
+-//! ECMA-262 regular expression syntax check (Unicode mode).
++//! ECMA-262 regular expression syntax check.
+ //!
+ //! The grammar is the `Pattern[+UnicodeMode, +NamedCaptureGroups]` production of ECMA-262,
+-//! including the pattern modifiers of ES2025. Unicode property names and values are checked for
+-//! shape only, not against the Unicode tables.
++//! including the pattern modifiers of ES2025, widened with the identity escapes that patterns
++//! without the `u` flag allow: a backslash before any character that is not alphanumeric. Drafts 4
++//! to 2019-09 cite the ES5.1 dialect, which has no `u` flag. Unicode property names and values are
++//! checked for shape only, not against the Unicode tables.
+ 
+ use std::{borrow::Cow, cmp::Ordering};
+ 
+-/// Whether `pattern` is a syntactically valid ECMA-262 regular expression under the `u` flag.
++/// Whether `pattern` is a syntactically valid ECMA-262 regular expression under the `u` flag, or
++/// differs from one only by escaping non-alphanumeric characters.
+ #[must_use]
+ pub fn is_valid_ecma_regex(pattern: &str) -> bool {
+     Parser::new(pattern).parse().is_ok()
+@@ -377,7 +380,7 @@
+                 high * 16 + low
+             }
+             'u' => self.unicode_escape()?,
+-            c if is_syntax_character(c) || c == '/' => c as u32,
++            c if !c.is_alphanumeric() => c as u32,
+             _ => return Err(SyntaxError),
+         })
+     }
+@@ -485,13 +488,6 @@
+     }
+ }
+ 
+-fn is_syntax_character(c: char) -> bool {
+-    matches!(
+-        c,
+-        '^' | '$' | '\\' | '.' | '*' | '+' | '?' | '(' | ')' | '[' | ']' | '{' | '}' | '|'
+-    )
+-}
+-
+ /// `ID_Start` plus `$` and `_`, approximated by the Alphabetic property.
+ fn is_identifier_start(c: char) -> bool {
+     c.is_alphabetic() || matches!(c, '$' | '_')
+@@ -550,6 +546,9 @@
+     #[test_case("[\\cA]"; "control escape in class")]
+     #[test_case("[\\p{L}]"; "property in class")]
+     #[test_case("[{}]"; "braces in class")]
++    #[test_case("[a-z&&^b]"; "class intersection syntax is literal")]
++    #[test_case("[a-z--b]"; "adjacent ranges with doubled hyphen")]
++    #[test_case("[a~~b]"; "class symmetric difference syntax is literal")]
+     #[test_case("\\cA"; "control escape")]
+     #[test_case("\\cz"; "lowercase control escape")]
+     #[test_case("\\0"; "nul escape")]
+@@ -568,6 +567,16 @@
+     #[test_case("\\f\\n\\r\\t\\v"; "control escapes")]
+     #[test_case("\\/\\^\\$\\\\\\.\\*\\+\\?\\(\\)\\[\\]\\{\\}\\|"; "identity escapes")]
+     #[test_case("\\b\\B"; "word boundaries")]
++    #[test_case("^\\-?\\d+$"; "escaped dash outside class")]
++    #[test_case("^(\\-?\\d+(\\.\\d+)?),\\s*(\\-?\\d+(\\.\\d+)?)$"; "escaped dashes in groups")]
++    #[test_case("\\:"; "escaped colon")]
++    #[test_case("\\ "; "escaped space")]
++    #[test_case("\\@"; "escaped at sign")]
++    #[test_case("\\#\\%\\&\\'\\\"\\,\\;\\<\\=\\>\\!\\~\\`"; "escaped punctuation")]
++    #[test_case("\\_"; "escaped underscore")]
++    #[test_case("\\§"; "escaped non-ascii symbol")]
++    #[test_case("[\\:\\@\\ \\_]"; "escaped punctuation in class")]
++    #[test_case("[\\!-\\/]"; "range of escaped punctuation")]
+     #[test_case("a*?b+?c??d{2}?e{2,}?f{2,3}?"; "lazy quantifiers")]
+     #[test_case("a{2}"; "exact count")]
+     #[test_case("a{2,}"; "open count")]
+@@ -587,8 +596,8 @@
+ 
+     #[test_case("^(abc]"; "suite unclosed group")]
+     #[test_case("\\a"; "identity escape of a letter")]
+-    #[test_case("\\-"; "escaped dash outside class")]
+-    #[test_case("\\ "; "escaped space")]
++    #[test_case("\\é"; "identity escape of a non-ascii letter")]
++    #[test_case("\\٣"; "identity escape of a non-ascii digit")]
+     #[test_case("\\"; "trailing backslash")]
+     #[test_case("(?P<name>x)"; "python named group")]
+     #[test_case("(?P<n>a)(?P=n)"; "python named backreference")]
+@@ -670,4 +679,16 @@
+     fn invalid(pattern: &str) {
+         assert!(!is_valid_ecma_regex(pattern));
+     }
++
++    #[test]
++    fn accepts_every_escape_the_translation_compiles() {
++        for c in (' '..='~').filter(|c| !c.is_ascii_alphanumeric()) {
++            for pattern in [format!("\\{c}"), format!("[\\{c}]")] {
++                if crate::to_rust_regex(&pattern).is_ok_and(|rust| regex::Regex::new(&rust).is_ok())
++                {
++                    assert!(is_valid_ecma_regex(&pattern), "{pattern}");
++                }
++            }
++        }
++    }
+ }

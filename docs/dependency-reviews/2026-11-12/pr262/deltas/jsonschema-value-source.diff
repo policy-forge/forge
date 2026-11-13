@@ -1,0 +1,2614 @@
+diff -r jsonschema-value-0.57.0/Cargo.lock jsonschema-value-0.60.2/Cargo.lock
+--- jsonschema-value-0.57.0/Cargo.lock	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-value-0.60.2/Cargo.lock	2006-07-23 18:21:28.000000000 -0700
+@@ -95,9 +95,9 @@
+ 
+ [[package]]
+ name = "either"
+-version = "1.18.0"
++version = "1.19.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34"
++checksum = "0e9c71c2167ca323c882b99918929403426e2373ea17242ff5653e0d5e1058be"
+ 
+ [[package]]
+ name = "fraction"
+@@ -136,6 +136,28 @@
+ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
+ 
+ [[package]]
++name = "hegeltest"
++version = "0.48.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "9ed0fc71c55858ebb058e4efdcf71ff8f3757e89167506564e707e0469c8c314"
++dependencies = [
++ "hegeltest-macros",
++ "parking_lot",
++ "serde_json",
++]
++
++[[package]]
++name = "hegeltest-macros"
++version = "0.48.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "817951a827dd75d23c21f92fecf3a62e2f2c2930c0031a93099e16eb33de6896"
++dependencies = [
++ "proc-macro2",
++ "quote",
++ "syn 2.0.119",
++]
++
++[[package]]
+ name = "itertools"
+ version = "0.13.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -152,9 +174,9 @@
+ 
+ [[package]]
+ name = "js-sys"
+-version = "0.3.105"
++version = "0.3.106"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ce57d20d1ea864ce2ac172ab472d409214f4fd359f0b2a2775abdf522e2af99e"
++checksum = "7883d941dae510fb2d978fc3fe018c71c9e2892fd38854de3e8b92c2e5ad9cc5"
+ dependencies = [
+  "cfg-if",
+  "wasm-bindgen",
+@@ -162,17 +184,20 @@
+ 
+ [[package]]
+ name = "jsonschema-value"
+-version = "0.57.0"
++version = "0.60.2"
+ dependencies = [
+  "ahash",
+  "bytecount",
+  "fraction",
+  "getrandom",
++ "hegeltest",
+  "magnus",
++ "memchr",
+  "num-bigint",
+  "num-cmp",
+  "num-traits",
+  "pyo3",
++ "pyo3-build-config",
+  "rb-sys",
+  "serde_json",
+  "test-case",
+@@ -181,15 +206,15 @@
+ 
+ [[package]]
+ name = "lazy_static"
+-version = "1.5.0"
++version = "1.5.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
++checksum = "20870f649af7073d53e38067b2a84312175d56ea15217e1b15bc83506ec50afb"
+ 
+ [[package]]
+ name = "libc"
+-version = "0.2.189"
++version = "0.2.191"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
++checksum = "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a"
+ 
+ [[package]]
+ name = "libloading"
+@@ -202,10 +227,19 @@
+ ]
+ 
+ [[package]]
++name = "lock_api"
++version = "0.4.14"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "224399e74b87b5f3557511d98dff8b14089b3dadafcab6bb93eab67d3aace965"
++dependencies = [
++ "scopeguard",
++]
++
++[[package]]
+ name = "magnus"
+-version = "0.8.2"
++version = "0.9.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "3b36a5b126bbe97eb0d02d07acfeb327036c6319fd816139a49824a83b7f9012"
++checksum = "40ef424404d166cbb71c8b8d19c9c589c748c4547c1afa1928c5504299f6c713"
+ dependencies = [
+  "magnus-macros",
+  "rb-sys",
+@@ -215,9 +249,9 @@
+ 
+ [[package]]
+ name = "magnus-macros"
+-version = "0.8.0"
++version = "0.9.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "47607461fd8e1513cb4f2076c197d8092d921a1ea75bd08af97398f593751892"
++checksum = "9dafde2eeb66f090e0f326112323eb8324b12cb32b5d1210e541d3df6b0ce77e"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -331,6 +365,29 @@
+ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
+ 
+ [[package]]
++name = "parking_lot"
++version = "0.12.5"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "93857453250e3077bd71ff98b6a65ea6621a19bb0f559a85248955ac12c45a1a"
++dependencies = [
++ "lock_api",
++ "parking_lot_core",
++]
++
++[[package]]
++name = "parking_lot_core"
++version = "0.9.12"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "2621685985a2ebf1c516881c026032ac7deafcda1a2c9b7850dc81e3dfcb64c1"
++dependencies = [
++ "cfg-if",
++ "libc",
++ "redox_syscall",
++ "smallvec",
++ "windows-link",
++]
++
++[[package]]
+ name = "portable-atomic"
+ version = "1.15.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -347,9 +404,9 @@
+ 
+ [[package]]
+ name = "pyo3"
+-version = "0.29.2"
++version = "0.30.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "4688ddedf473e32662b9b067670129a8afb8c18e351482c70d62ba4a88171e8b"
++checksum = "229ca13b8a15bb0d1487b81ab975bfcd97513416499a8312011b6036e42e0de4"
+ dependencies = [
+  "libc",
+  "once_cell",
+@@ -361,18 +418,18 @@
+ 
+ [[package]]
+ name = "pyo3-build-config"
+-version = "0.29.2"
++version = "0.30.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "f41027e41b4bd03f6e60f9f417fe24a6341a6bb744edd62b6f709f2a52ea30e9"
++checksum = "70130e2b6dd1ee589a8788026a429561ca5c40fa7a2fa7914c2282eddae24700"
+ dependencies = [
+  "target-lexicon",
+ ]
+ 
+ [[package]]
+ name = "pyo3-ffi"
+-version = "0.29.2"
++version = "0.30.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e591a95526fead067432c3b3a33fc74770b87b1e04e73671090d9c2055a2b327"
++checksum = "5e7ff73c555c286d212d4ce7e5fbda845a973c4f61bd5f160f5f2c3c2a04d1c4"
+ dependencies = [
+  "libc",
+  "pyo3-build-config",
+@@ -380,26 +437,26 @@
+ 
+ [[package]]
+ name = "pyo3-macros"
+-version = "0.29.2"
++version = "0.30.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "73225868fc1cd84eef2c3c230ddb91273bf1de46aeb8a4248da76d32a0924a1c"
++checksum = "c46d2e5862c7bb8207e3b639f713dda3c499933444784154c11d013c5a691b60"
+ dependencies = [
+  "proc-macro2",
+  "pyo3-macros-backend",
+  "quote",
+- "syn 2.0.119",
++ "syn 3.0.9",
+ ]
+ 
+ [[package]]
+ name = "pyo3-macros-backend"
+-version = "0.29.2"
++version = "0.30.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "571575aa3749fa6216757dd47d2a3e7ef360f329a40f0666a9fbd14889024952"
++checksum = "38b89f066f2ae72a2aef52d1537ca2fcd104440ebfadee06e97aa90738a25b9b"
+ dependencies = [
+  "heck",
+  "proc-macro2",
+  "quote",
+- "syn 2.0.119",
++ "syn 3.0.9",
+ ]
+ 
+ [[package]]
+@@ -448,6 +505,15 @@
+ checksum = "cca7ad6a7e21e72151d56fe2495a259b5670e204c3adac41ee7ef676ea08117a"
+ 
+ [[package]]
++name = "redox_syscall"
++version = "0.5.18"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d"
++dependencies = [
++ "bitflags",
++]
++
++[[package]]
+ name = "regex"
+ version = "1.13.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -489,6 +555,12 @@
+ checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
+ 
+ [[package]]
++name = "scopeguard"
++version = "1.2.0"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
++
++[[package]]
+ name = "seq-macro"
+ version = "0.3.6"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -520,14 +592,14 @@
+ dependencies = [
+  "proc-macro2",
+  "quote",
+- "syn 3.0.6",
++ "syn 3.0.9",
+ ]
+ 
+ [[package]]
+ name = "serde_json"
+-version = "1.0.151"
++version = "1.0.154"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "c841b55ecdae098c80dcae9cf767f6f8a0c2cdb3416bbef72181df4d0fe73f14"
++checksum = "e7e9cc8b1b85264074fbcc02a88680c4096b1e47df8f739dceb03bf482f04bd6"
+ dependencies = [
+  "itoa",
+  "memchr",
+@@ -549,6 +621,12 @@
+ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
+ 
+ [[package]]
++name = "smallvec"
++version = "1.16.4"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "d0d5d4b1981b8bbbb7aed204cae5726d683d5d6ac7e74ec54122ea28f315e7c8"
++
++[[package]]
+ name = "syn"
+ version = "2.0.119"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -561,9 +639,9 @@
+ 
+ [[package]]
+ name = "syn"
+-version = "3.0.6"
++version = "3.0.9"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "8593e8e72159ed2257d083c7a454a85cbf854f37a0966d8d483aff8c8a3ebcee"
++checksum = "d78c8dee4c7bf0e14673097256fed6142ce9d3b85a408189d07482442145823b"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -578,42 +656,42 @@
+ 
+ [[package]]
+ name = "test-case"
+-version = "3.3.1"
++version = "3.4.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "eb2550dd13afcd286853192af8601920d959b14c401fcece38071d53bf0768a8"
++checksum = "124953e7f67cb0b2fcfb87e899e4ae5a64fb68e2e160767933cc67b646fb0042"
+ dependencies = [
+  "test-case-macros",
+ ]
+ 
+ [[package]]
+ name = "test-case-core"
+-version = "3.3.1"
++version = "3.4.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "adcb7fd841cd518e279be3d5a3eb0636409487998a4aff22f3de87b81e88384f"
++checksum = "bd097615b407247e102046ba34426bb594923ab3554cf0f3cdfed050f1a5a3e8"
+ dependencies = [
+  "cfg-if",
+  "proc-macro2",
+  "quote",
+- "syn 2.0.119",
++ "syn 3.0.9",
+ ]
+ 
+ [[package]]
+ name = "test-case-macros"
+-version = "3.3.1"
++version = "3.4.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "5c89e72a01ed4c579669add59014b9a524d609c0c88c6a585ce37485879f6ffb"
++checksum = "f4ce35ece947bccac166e1ded639133827a953f69a48ba134d17f91108333082"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+- "syn 2.0.119",
++ "syn 3.0.9",
+  "test-case-core",
+ ]
+ 
+ [[package]]
+ name = "unicode-ident"
+-version = "1.0.26"
++version = "1.0.27"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
++checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
+ 
+ [[package]]
+ name = "version_check"
+@@ -632,9 +710,9 @@
+ 
+ [[package]]
+ name = "wasm-bindgen"
+-version = "0.2.128"
++version = "0.2.129"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "aecb87a33d3b0c5e3b7aa46336eaf486cffafbd281b195e4c8b80d50df2351bf"
++checksum = "9bb54f33acc68fd454578d9820b0bde1a1a3d17aa17bb7b6595806d02886d409"
+ dependencies = [
+  "cfg-if",
+  "once_cell",
+@@ -645,9 +723,9 @@
+ 
+ [[package]]
+ name = "wasm-bindgen-macro"
+-version = "0.2.128"
++version = "0.2.129"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a690d511e3c1a8b3a55e33511e3c2c00c78415cd23650f32b808627f5696b9ed"
++checksum = "2e29d0c35b16e224a7eeb5cd2d25e3e1968fbd65604117b44d3b789d00ee8535"
+ dependencies = [
+  "quote",
+  "wasm-bindgen-macro-support",
+@@ -655,22 +733,22 @@
+ 
+ [[package]]
+ name = "wasm-bindgen-macro-support"
+-version = "0.2.128"
++version = "0.2.129"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "411e4887f0071ef2d2164a9d5fdf2d20efbef78fccd3a78b0c10a1dc5295e48a"
++checksum = "6f501a8bc3719dba86ef8ae4728879c08001bea749eb1333ac5b91e040e2a6b7"
+ dependencies = [
+  "bumpalo",
+  "proc-macro2",
+  "quote",
+- "syn 3.0.6",
++ "syn 3.0.9",
+  "wasm-bindgen-shared",
+ ]
+ 
+ [[package]]
+ name = "wasm-bindgen-shared"
+-version = "0.2.128"
++version = "0.2.129"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "81941cd78d0c92026c33e5e01312845a4cb1e9af3407f9134b100dd03144103e"
++checksum = "23f0c9c52aa7cd7d77769a4cfe2a9adb1b331f489a41d912ce14513d5ab995c6"
+ dependencies = [
+  "unicode-ident",
+ ]
+@@ -689,18 +767,18 @@
+ 
+ [[package]]
+ name = "zerocopy"
+-version = "0.8.57"
++version = "0.8.63"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d35102a9f36d089ccae9e4c6802bc118be4487b80aaffc0ab4e0cf5ce92d2873"
++checksum = "e5fe1f8f1b06191a00962174c61aa5005e0bb391a6d80d07e24d115c01a92ed8"
+ dependencies = [
+  "zerocopy-derive",
+ ]
+ 
+ [[package]]
+ name = "zerocopy-derive"
+-version = "0.8.57"
++version = "0.8.63"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "146c01f5ab44258da43cf276c74a2763db2ff3969c9c652c3f2de07041d0b2bc"
++checksum = "863ad3ac83293fb4d740aedbfdc9240dd8d1a50c1099acd76ce80ce7c7230c7f"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+diff -r jsonschema-value-0.57.0/Cargo.toml jsonschema-value-0.60.2/Cargo.toml
+--- jsonschema-value-0.57.0/Cargo.toml	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-value-0.60.2/Cargo.toml	2006-07-23 18:21:28.000000000 -0700
+@@ -13,9 +13,9 @@
+ edition = "2021"
+ rust-version = "1.85.0"
+ name = "jsonschema-value"
+-version = "0.57.0"
++version = "0.60.2"
+ authors = ["Dmitry Dygalo <dmitry@dygalo.dev>"]
+-build = false
++build = "build.rs"
+ autolib = false
+ autobins = false
+ autoexamples = false
+@@ -34,6 +34,8 @@
+ ]
+ conformance = []
+ default = ["serde_json"]
++jsonb = ["serde_json"]
++jsonb-testkit = ["jsonb"]
+ macros = []
+ magnus = [
+     "dep:magnus",
+@@ -43,7 +45,10 @@
+     "magnus",
+     "magnus/embed",
+ ]
+-pyo3 = ["dep:pyo3"]
++pyo3 = [
++    "dep:pyo3",
++    "dep:pyo3-build-config",
++]
+ pyo3-tests = [
+     "pyo3",
+     "pyo3/auto-initialize",
+@@ -58,6 +63,18 @@
+ name = "conformance"
+ path = "tests/conformance.rs"
+ 
++[[test]]
++name = "jsonb"
++path = "tests/jsonb.rs"
++
++[[test]]
++name = "jsonb_live"
++path = "tests/jsonb_live.rs"
++
++[[test]]
++name = "numeric"
++path = "tests/numeric.rs"
++
+ [dependencies.ahash]
+ version = "0.8"
+ features = ["serde"]
+@@ -73,10 +90,13 @@
+ default-features = false
+ 
+ [dependencies.magnus]
+-version = "0.8"
++version = "0.9"
+ features = ["rb-sys"]
+ optional = true
+ 
++[dependencies.memchr]
++version = "2"
++
+ [dependencies.num-bigint]
+ version = "0.4"
+ optional = true
+@@ -88,8 +108,7 @@
+ version = "0.2.19"
+ 
+ [dependencies.pyo3]
+-version = "0.29"
+-features = ["abi3-py310"]
++version = "0.30"
+ optional = true
+ 
+ [dependencies.rb-sys]
+@@ -103,9 +122,17 @@
+ [dependencies.zmij]
+ version = "1.0.23"
+ 
++[dev-dependencies.hegeltest]
++version = "0.48"
++features = ["serde_json"]
++
+ [dev-dependencies.test-case]
+ version = "3"
+ 
++[build-dependencies.pyo3-build-config]
++version = "0.30"
++optional = true
++
+ [target.'cfg(target_arch = "wasm32")'.dependencies.getrandom]
+ version = "0.3.4"
+ features = ["wasm_js"]
+diff -r jsonschema-value-0.57.0/Cargo.toml.orig jsonschema-value-0.60.2/Cargo.toml.orig
+--- jsonschema-value-0.57.0/Cargo.toml.orig	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-value-0.60.2/Cargo.toml.orig	2006-07-23 18:21:28.000000000 -0700
+@@ -1,6 +1,6 @@
+ [package]
+ name = "jsonschema-value"
+-version = "0.57.0"
++version = "0.60.2"
+ description = "JSON value representations and semantics shared by the jsonschema validator and its bindings"
+ readme = "README.md"
+ rust-version.workspace = true
+@@ -12,12 +12,16 @@
+ [features]
+ default = ["serde_json"]
+ serde_json = ["dep:bytecount"]
+-pyo3 = ["dep:pyo3"]
++pyo3 = ["dep:pyo3", "dep:pyo3-build-config"]
+ # Runs the pyo3 tests: links libpython, so it is not implied by `pyo3`.
+ pyo3-tests = ["pyo3", "pyo3/auto-initialize"]
+ magnus = ["dep:magnus", "dep:rb-sys"]
+ # Runs the magnus tests: links libruby, so it is not implied by `magnus`.
+ magnus-tests = ["magnus", "magnus/embed"]
++# The `json::Jsonb` instance representation for Postgres `jsonb` datums.
++jsonb = ["serde_json"]
++# Builds `jsonb` bytes; for tests and fixture generation, not for validation.
++jsonb-testkit = ["jsonb"]
+ macros = []
+ conformance = []
+ arbitrary-precision = ["serde_json/arbitrary_precision", "dep:num-bigint"]
+@@ -30,18 +34,23 @@
+ ahash.workspace = true
+ bytecount = { version = "0.6", features = ["runtime-dispatch-simd"], optional = true }
+ zmij = "1.0.23"
++memchr = "2"
+ fraction = { version = "0.17", default-features = false, features = [
+   "with-bigint",
+ ] }
+ num-bigint = { version = "0.4", optional = true }
+ num-cmp = "0.1"
+ num-traits = "0.2.19"
+-magnus = { version = "0.8", optional = true, features = ["rb-sys"] }
+-pyo3 = { version = "0.29", optional = true, features = ["abi3-py310"] }
++magnus = { version = "0.9", optional = true, features = ["rb-sys"] }
++pyo3 = { version = "0.30", optional = true }
+ rb-sys = { version = "0.9", optional = true }
+ serde_json = { workspace = true, features = ["float_roundtrip"] }
+ 
++[build-dependencies]
++pyo3-build-config = { version = "0.30", optional = true }
++
+ [dev-dependencies]
++hegeltest = { version = "0.48", features = ["serde_json"] }
+ test-case = "3"
+ 
+ [lints]
+Only in jsonschema-value-0.60.2: build.rs
+diff -r jsonschema-value-0.57.0/src/cmp.rs jsonschema-value-0.60.2/src/cmp.rs
+--- jsonschema-value-0.57.0/src/cmp.rs	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-value-0.60.2/src/cmp.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -17,7 +17,7 @@
+ 
+                 // Check BigInt/BigFraction BEFORE f64 to avoid precision loss
+                 if let Some(right_bigint) = bignum::try_parse_bigint($right) {
+-                    let right_frac = BigFraction::from(right_bigint);
++                    let right_frac = bignum::whole(right_bigint);
+                     left_frac == right_frac
+                 } else if let Some(right_frac) = bignum::try_parse_bigfraction($right) {
+                     left_frac == right_frac
+@@ -31,11 +31,9 @@
+             }
+             #[cfg(not(feature = "arbitrary-precision"))]
+             {
+-                if let Some(b) = $right.as_f64() {
+-                    NumCmp::num_eq($left, b)
+-                } else {
+-                    unreachable!("Numbers always fit in u64/i64/f64 without arbitrary-precision")
+-                }
++                // Past `f64`, so unequal to any finite `$left`. Reachable once another crate in the
++                // build enables `serde_json/arbitrary_precision`.
++                $right.as_f64().is_some_and(|b| NumCmp::num_eq($left, b))
+             }
+         }
+     };
+@@ -51,6 +49,10 @@
+         use crate::numeric::bignum;
+         use fraction::BigFraction;
+ 
++        let (left_text, right_text) = (left.as_str(), right.as_str());
++        if bignum::exceeds_digit_budget(&left_text) || bignum::exceeds_digit_budget(right_text) {
++            return bignum::Decimal::parse(&left_text) == bignum::Decimal::parse(right_text);
++        }
+         // Check BigInt/BigFraction first to avoid precision loss from f64 conversion
+         if let Some(left_bigint) = bignum::try_parse_bigint(&left.to_number()) {
+             if let Some(right_bigint) = bignum::try_parse_bigint(right) {
+@@ -60,9 +62,9 @@
+             } else if let Some(b) = right.as_i64() {
+                 left_bigint == num_bigint::BigInt::from(b)
+             } else if let Some(right_frac) = bignum::try_parse_bigfraction(right) {
+-                BigFraction::from(left_bigint) == right_frac
++                bignum::whole(left_bigint) == right_frac
+             } else if let Some(b) = right.as_f64() {
+-                BigFraction::from(left_bigint) == BigFraction::from(b)
++                bignum::whole(left_bigint) == BigFraction::from(b)
+             } else {
+                 unreachable!("Right is not parseable as any numeric type - should not happen for valid JSON numbers")
+             }
+@@ -70,7 +72,7 @@
+             if let Some(right_frac) = bignum::try_parse_bigfraction(right) {
+                 left_frac == right_frac
+             } else if let Some(right_bigint) = bignum::try_parse_bigint(right) {
+-                left_frac == BigFraction::from(right_bigint)
++                left_frac == bignum::whole(right_bigint)
+             } else if let Some(b) = right.as_u64() {
+                 left_frac == BigFraction::from(b)
+             } else if let Some(b) = right.as_i64() {
+@@ -103,7 +105,8 @@
+         } else if let Some(a) = left.as_f64() {
+             num_cmp!(a, right)
+         } else {
+-            unreachable!("Numbers always fit in u64/i64/f64 without arbitrary-precision")
++            // Past `f64`, with no exact arithmetic to place it against the literal.
++            false
+         }
+     }
+ }
+@@ -141,11 +144,22 @@
+ #[inline]
+ #[must_use]
+ pub fn equal_objects(left: &Map<String, Value>, right: &Map<String, Value>) -> bool {
+-    left.len() == right.len()
+-        && left
+-            .iter()
+-            .zip(right)
+-            .all(|((ka, va), (kb, vb))| ka == kb && equal(va, vb))
++    if left.len() != right.len() {
++        return false;
++    }
++    for ((left_key, left_value), (right_key, right_value)) in left.iter().zip(right) {
++        if left_key != right_key {
++            // With `serde_json/preserve_order` the maps keep insertion order, so the same keys
++            // may come in a different order.
++            return left
++                .iter()
++                .all(|(key, value)| right.get(key).is_some_and(|other| equal(value, other)));
++        }
++        if !equal(left_value, right_value) {
++            return false;
++        }
++    }
++    true
+ }
+ 
+ #[cfg(test)]
+@@ -166,6 +180,7 @@
+     #[test_case(&json!([]), &json!(["foo"]))]
+     #[test_case(&json!([-3]), &json!([-4.0]))]
+     #[test_case(&json!({"a": 1}), &json!({"a": 1.0, "b": 2}))]
++    #[test_case(&json!({"a": 1, "b": 2}), &json!({"a": 1, "c": 2}))]
+     fn are_not_equal(left: &Value, right: &Value) {
+         assert!(!equal(left, right));
+     }
+Only in jsonschema-value-0.60.2/src: jsonb
+diff -r jsonschema-value-0.57.0/src/lib.rs jsonschema-value-0.60.2/src/lib.rs
+--- jsonschema-value-0.57.0/src/lib.rs	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-value-0.60.2/src/lib.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -10,6 +10,8 @@
+ pub mod types;
+ pub mod unique;
+ 
++#[cfg(feature = "jsonb")]
++pub mod jsonb;
+ #[cfg(feature = "magnus")]
+ mod magnus;
+ #[cfg(feature = "pyo3")]
+@@ -18,15 +20,18 @@
+ mod serde_json;
+ mod serde_number;
+ 
++#[cfg(feature = "jsonb")]
++pub use jsonb::{Jsonb, JsonbNode};
+ #[cfg(feature = "magnus")]
+ pub use magnus::{
+     child as magnus_child, invalidate_members_cache as magnus_invalidate_members_cache,
+-    is_object as magnus_is_object, probe_root as magnus_probe_root,
++    is_object as magnus_is_object, object_values as magnus_object_values,
++    probe_root as magnus_probe_root, string_node as magnus_string_node,
+     take_pending_error as magnus_take_pending_error, Magnus, PendingError,
+     PendingErrorScope as MagnusPendingErrorScope, RbNode,
+ };
+ #[cfg(feature = "pyo3")]
+-pub use pyo3::{probe_root, take_pending_error, PendingErrorScope, Pyo3};
++pub use pyo3::{inspect, narrow_array, narrow_object, object_values, stock_enum_value, Pyo3};
+ #[cfg(feature = "serde_json")]
+ pub use serde_json::SerdeJson;
+ 
+diff -r jsonschema-value-0.57.0/src/magnus.rs jsonschema-value-0.60.2/src/magnus.rs
+--- jsonschema-value-0.57.0/src/magnus.rs	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-value-0.60.2/src/magnus.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -58,8 +58,7 @@
+     type StringBuffer = ();
+ 
+     fn with_string_node<T>((): &mut (), string: &str, f: impl FnOnce(RbNode<'_>) -> T) -> T {
+-        let value = unsafe { rb_utf8_str_new(string.as_ptr().cast(), string.len() as c_long) };
+-        f(RbNode::new(value))
++        f(string_node(string))
+     }
+ 
+     fn prepare_key(key: &str) -> PreparedKey {
+@@ -175,6 +174,17 @@
+     Argument(String),
+ }
+ 
++impl From<PendingError> for ::magnus::Error {
++    fn from(error: PendingError) -> Self {
++        let ruby = ::magnus::Ruby::get().expect("Ruby VM should be initialized");
++        match error {
++            PendingError::Type(message) => Self::new(ruby.exception_type_error(), message),
++            PendingError::Encoding(message) => Self::new(ruby.exception_encoding_error(), message),
++            PendingError::Argument(message) => Self::new(ruby.exception_arg_error(), message),
++        }
++    }
++}
++
+ thread_local! {
+     static PENDING_ERROR: RefCell<Option<PendingError>> = const { RefCell::new(None) };
+ }
+@@ -266,6 +276,14 @@
+     }
+ }
+ 
++/// A fresh string node; the caller keeps it on the stack, where conservative marking pins it.
++#[doc(hidden)]
++#[must_use]
++pub fn string_node<'a>(text: &str) -> RbNode<'a> {
++    let value = unsafe { rb_utf8_str_new(text.as_ptr().cast(), text.len() as c_long) };
++    RbNode::new(value)
++}
++
+ /// Whether a node renders its children as named members rather than indices.
+ #[must_use]
+ pub fn is_object(node: RbNode<'_>) -> bool {
+@@ -381,8 +399,8 @@
+ ///
+ /// One place, so `is_number` and `as_number` cannot drift apart.
+ #[inline]
+-fn number_kind(value: VALUE) -> Option<NumberKind> {
+-    match value_kind(value) {
++fn number_kind(value: VALUE, kind: Kind) -> Option<NumberKind> {
++    match kind {
+         // Integers always read; only the float and decimal forms can fail.
+         Kind::Fixnum => Some(NumberKind::Fixnum),
+         Kind::Bignum => Some(NumberKind::Bignum),
+@@ -795,35 +813,64 @@
+                 len: unsafe { rb_sys::RARRAY_LEN(self.value) }.max(0) as usize,
+                 marker: PhantomData,
+             }),
++            Kind::Unsupported => {
++                record_unsupported(self.value);
++                None
++            }
+             _ => None,
+         }
+     }
+ 
+     fn as_string(&self) -> Option<Cow<'a, str>> {
+-        text_of(self.value).map(Cow::Borrowed)
++        match value_kind(self.value) {
++            Kind::Str => str_ref(self.value).map(Cow::Borrowed),
++            Kind::Symbol => symbol_str(self.value).map(Cow::Borrowed),
++            Kind::Unsupported => {
++                record_unsupported(self.value);
++                None
++            }
++            _ => None,
++        }
+     }
+ 
+     fn as_number(&self) -> Option<RbNumber> {
+-        number_kind(self.value).map(|kind| RbNumber {
+-            value: self.value,
+-            kind,
+-        })
++        match value_kind(self.value) {
++            Kind::Unsupported => {
++                record_unsupported(self.value);
++                None
++            }
++            kind => number_kind(self.value, kind).map(|kind| RbNumber {
++                value: self.value,
++                kind,
++            }),
++        }
+     }
+ 
+     fn is_number(&self) -> bool {
+-        number_kind(self.value).is_some()
++        number_kind(self.value, value_kind(self.value)).is_some()
+     }
+ 
+     fn as_boolean(&self) -> Option<bool> {
+         match value_kind(self.value) {
+             Kind::True => Some(true),
+             Kind::False => Some(false),
++            Kind::Unsupported => {
++                record_unsupported(self.value);
++                None
++            }
+             _ => None,
+         }
+     }
+ 
+     fn is_null(&self) -> bool {
+-        unsafe { rb_sys::RB_TYPE(self.value) == ruby_value_type::RUBY_T_NIL }
++        match value_kind(self.value) {
++            Kind::Null => true,
++            Kind::Unsupported => {
++                record_unsupported(self.value);
++                false
++            }
++            _ => false,
++        }
+     }
+ 
+     fn json_type(&self) -> JsonType {
+@@ -850,7 +897,7 @@
+             Kind::Str if is_ascii_only(self.value) => {
+                 Some(unsafe { rb_sys::RSTRING_LEN(self.value) }.max(0) as u64)
+             }
+-            _ => self.as_string().map(|text| text.chars().count() as u64),
++            _ => text_of(self.value).map(|text| text.chars().count() as u64),
+         }
+     }
+ 
+@@ -876,16 +923,18 @@
+         Value::Number(expected) => node
+             .as_number()
+             .is_some_and(|number| cmp::equal_numbers(&number, expected)),
+-        Value::String(expected) => text_of(value).is_some_and(|text| text == expected.as_str()),
++        Value::String(expected) => node
++            .as_string()
++            .is_some_and(|text| text == expected.as_str()),
+         Value::Array(expected) => {
+-            value_kind(value) == Kind::Array
++            node.as_array().is_some()
+                 && (unsafe { rb_sys::RARRAY_LEN(value) }) as usize == expected.len()
+                 && raw_elements(value)
+                     .zip(expected)
+                     .all(|(element, expected)| equals_value(element, expected))
+         }
+         Value::Object(expected) => {
+-            value_kind(value) == Kind::Hash && {
++            node.as_object().is_some() && {
+                 let members = raw_members(value);
+                 members.len() == expected.len()
+                     && members.iter().all(|(key, element)| {
+@@ -938,6 +987,7 @@
+     }
+ }
+ 
++#[derive(Clone, Copy)]
+ pub struct RbHash<'a> {
+     value: VALUE,
+     marker: PhantomData<&'a ()>,
+@@ -1014,19 +1064,44 @@
+     marker: PhantomData<&'a ()>,
+ }
+ 
+-impl<'a> Iterator for RbMembers<'a> {
+-    type Item = (RbName<'a>, RbNode<'a>);
+-
+-    fn next(&mut self) -> Option<Self::Item> {
++impl RbMembers<'_> {
++    fn next_raw(&mut self) -> Option<(VALUE, VALUE)> {
+         if self.index >= self.len {
+             return None;
+         }
+-        let (key, value) = self.entries.get(self.index);
++        let entry = self.entries.get(self.index);
+         self.index += 1;
+-        Some((RbName::new(key), RbNode::new(value)))
++        Some(entry)
+     }
+ }
+ 
++impl<'a> Iterator for RbMembers<'a> {
++    type Item = (RbName<'a>, RbNode<'a>);
++
++    fn next(&mut self) -> Option<Self::Item> {
++        self.next_raw()
++            .map(|(key, value)| (RbName::new(key), RbNode::new(value)))
++    }
++}
++
++/// Member values only; the keys are never typed or decoded.
++pub struct RbValues<'a>(RbMembers<'a>);
++
++impl<'a> Iterator for RbValues<'a> {
++    type Item = RbNode<'a>;
++
++    fn next(&mut self) -> Option<RbNode<'a>> {
++        self.0.next_raw().map(|(_, value)| RbNode::new(value))
++    }
++}
++
++#[doc(hidden)]
++#[must_use]
++pub fn object_values(hash: RbHash<'_>) -> RbValues<'_> {
++    RbValues(hash.members())
++}
++
++#[derive(Clone, Copy)]
+ pub struct RbArray<'a> {
+     value: VALUE,
+     len: usize,
+@@ -1223,11 +1298,85 @@
+         error_path_helpers_walk_the_instance(&ruby);
+         pending_errors_nest(&ruby);
+         unsupported_values_are_recorded_where_read(&ruby);
++        unsupported_silent_reads_stay_silent(&ruby);
++        unsupported_reads_record(&ruby);
+         hashing_covers_every_shape(&ruby);
+         snapshot_edges(&ruby);
+         non_ascii_keys_resolve(&ruby);
++        hash_and_array_handles_copy(&ruby);
++        object_values_skip_the_keys(&ruby);
++        string_nodes_read_back();
++        pending_errors_become_ruby_exceptions(&ruby);
+     }
+ 
++    fn pending_errors_become_ruby_exceptions(ruby: &Ruby) {
++        for (error, class, expected) in [
++            (
++                PendingError::Type("t".to_owned()),
++                ruby.exception_type_error(),
++                "TypeError: t",
++            ),
++            (
++                PendingError::Encoding("e".to_owned()),
++                ruby.exception_encoding_error(),
++                "EncodingError: e",
++            ),
++            (
++                PendingError::Argument("a".to_owned()),
++                ruby.exception_arg_error(),
++                "ArgumentError: a",
++            ),
++        ] {
++            let error = ::magnus::Error::from(error);
++            assert!(error.is_kind_of(class), "{expected}");
++            assert_eq!(error.to_string(), expected);
++        }
++    }
++
++    // Schema-supplied text, such as a property name under `propertyNames`, becomes a string node.
++    fn string_nodes_read_back() {
++        let node = string_node("h\u{e9}llo");
++
++        assert_eq!(node.json_type(), JsonType::String);
++        assert_eq!(node.as_string().as_deref(), Some("h\u{e9}llo"));
++        assert_eq!(node.string_length(), Some(5));
++        assert!(node.equals_value(&json!("h\u{e9}llo")));
++        assert_eq!(pending(), None);
++    }
++
++    // Values-only iteration never types a key, so one that `members()` rejects records nothing.
++    fn object_values_skip_the_keys(ruby: &Ruby) {
++        let node = RbNode::new(eval(ruby, "{ 1 => 'x', b: [true] }"));
++        let object = node.as_object().expect("object");
++
++        let values: Vec<Value> = object_values(object)
++            .map(|value| value.to_value().into_owned())
++            .collect();
++        assert_eq!(values, [json!("x"), json!([true])]);
++        assert_eq!(pending(), None);
++
++        assert_eq!(object.members().count(), 2);
++        assert_eq!(
++            pending().as_deref(),
++            Some("Hash keys must be strings or symbols. Got 'Integer'")
++        );
++    }
++
++    fn hash_and_array_handles_copy(ruby: &Ruby) {
++        let node = RbNode::new(eval(ruby, "{ 'a' => [1, 2] }"));
++        let object = node.as_object().expect("object");
++        let object_copy = object;
++        assert_eq!(object.len(), object_copy.len());
++
++        let array = object
++            .get(&Magnus::prepare_key("a"))
++            .and_then(|found| found.as_array())
++            .expect("array");
++        let array_copy = array;
++        assert_eq!(array.len(), array_copy.len());
++        assert_eq!(pending(), None);
++    }
++
+     fn non_ascii_keys_resolve(ruby: &Ruby) {
+         let node = RbNode::new(parsed(ruby, &json!({"h\u{e9}llo": 1, "\u{1F409}": 2})));
+         let object = node.as_object().expect("object");
+@@ -1430,6 +1579,42 @@
+         assert_eq!(pending(), None);
+     }
+ 
++    // `minLength` and `type: number` read any instance; they answer "not one" without raising.
++    fn unsupported_silent_reads_stay_silent(ruby: &Ruby) {
++        let node = RbNode::new(eval(ruby, "Object.new"));
++
++        assert!(node.string_length().is_none());
++        assert!(!node.is_number());
++        assert_eq!(pending(), None);
++    }
++
++    fn unsupported_reads_record(ruby: &Ruby) {
++        type Read = fn(RbNode<'_>) -> bool;
++        let reads: &[(&str, Read)] = &[
++            ("is_null", |node| !node.is_null()),
++            ("as_boolean", |node| node.as_boolean().is_none()),
++            ("as_number", |node| node.as_number().is_none()),
++            ("as_string", |node| node.as_string().is_none()),
++            ("as_array", |node| node.as_array().is_none()),
++            ("equals_value(string)", |node| {
++                !node.equals_value(&json!("x"))
++            }),
++            ("equals_value(array)", |node| !node.equals_value(&json!([]))),
++            ("equals_value(object)", |node| {
++                !node.equals_value(&json!({}))
++            }),
++        ];
++        for &(name, read) in reads {
++            let node = RbNode::new(eval(ruby, "Object.new"));
++            assert!(read(node), "{name}");
++            assert_eq!(
++                pending().as_deref(),
++                Some("Unsupported type: 'Object'"),
++                "{name}"
++            );
++        }
++    }
++
+     // The hashing path only reaches a shape if no earlier element already collided, so the repeat
+     // sits last.
+     fn hashing_covers_every_shape(ruby: &Ruby) {
+diff -r jsonschema-value-0.57.0/src/numeric.rs jsonschema-value-0.60.2/src/numeric.rs
+--- jsonschema-value-0.57.0/src/numeric.rs	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-value-0.60.2/src/numeric.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -55,24 +55,18 @@
+                     num_cmp::NumCmp::$trait_fn(v, limit)
+                 } else {
+                     #[cfg(feature = "arbitrary-precision")]
+-                    {
+-                        if let Some(big_value) = bignum::try_parse_bigfraction(&value.to_number()) {
+-                            if let Some(limit_f64) = num_traits::ToPrimitive::to_f64(&limit) {
+-                                let limit_frac = BigFraction::from(limit_f64);
+-                                return big_value $op limit_frac;
+-                            }
++                    if let Some(big_value) = bignum::try_parse_bigfraction(&value.to_number()) {
++                        if let Some(limit_f64) = num_traits::ToPrimitive::to_f64(&limit) {
++                            let limit_frac = BigFraction::from(limit_f64);
++                            return big_value $op limit_frac;
+                         }
+-                        // Treat unparsable numbers as infinity based on sign
+-                        let is_negative = value.as_str().starts_with('-');
+-                        if $infinity_positive {
+-                            !is_negative
+-                        } else {
+-                            is_negative
+-                        }
+                     }
+-                    #[cfg(not(feature = "arbitrary-precision"))]
+-                    {
+-                        unreachable!("Always Some without `arbitrary-precision`")
++                    // Past `f64` with nothing to place it exactly: an infinity of its own sign.
++                    let is_negative = value.as_str().starts_with('-');
++                    if $infinity_positive {
++                        !is_negative
++                    } else {
++                        is_negative
+                     }
+                 }
+             }
+@@ -108,18 +102,12 @@
+         num_cmp::NumCmp::num_eq(v, limit)
+     } else {
+         #[cfg(feature = "arbitrary-precision")]
+-        {
+-            if let Some(big_value) = bignum::try_parse_bigfraction(&value.to_number()) {
+-                if let Some(limit_f64) = num_traits::ToPrimitive::to_f64(&limit) {
+-                    return big_value == BigFraction::from(limit_f64);
+-                }
++        if let Some(big_value) = bignum::try_parse_bigfraction(&value.to_number()) {
++            if let Some(limit_f64) = num_traits::ToPrimitive::to_f64(&limit) {
++                return big_value == BigFraction::from(limit_f64);
+             }
+-            false
+         }
+-        #[cfg(not(feature = "arbitrary-precision"))]
+-        {
+-            unreachable!("Always Some without `arbitrary-precision`")
+-        }
++        false
+     }
+ }
+ 
+@@ -203,11 +191,16 @@
+ }
+ 
+ pub fn is_multiple_of_float<N: crate::JsonNumber>(value: &N, multiple: f64) -> bool {
++    #[cfg(feature = "arbitrary-precision")]
++    if let Some(decimal) = bignum::past_digit_budget(&value.as_str()) {
++        return bignum::Decimal::of_limit(multiple)
++            .is_some_and(|multiple| decimal.is_multiple_of(&multiple));
++    }
+     if let Some(value_f64) = value.as_f64() {
+-        // Zero is a multiple of any non-zero number
+-        // This check must come first to avoid division-related edge cases
++        // Zero is a multiple of any non-zero number, but a magnitude below the smallest
++        // subnormal reads as zero without being one.
+         if value_f64.is_zero() {
+-            return true;
++            return decimal_is_zero(&value.as_str());
+         }
+         if value_f64.abs() < multiple {
+             return false;
+@@ -236,6 +229,38 @@
+ /// Beyond this value, f64 loses precision and arithmetic operations become unreliable.
+ const MAX_SAFE_INTEGER: u64 = 1u64 << 53;
+ 
++/// Whether the number written in `text` is exactly zero: `0e5` is, `1e-400` is not.
++fn decimal_is_zero(text: &str) -> bool {
++    let mantissa = text.split(['e', 'E']).next().unwrap_or(text);
++    mantissa
++        .bytes()
++        .all(|byte| !byte.is_ascii_digit() || byte == b'0')
++}
++
++/// Whether the plain decimal integer in `text` divides by `divisor`, by long division over its
++/// digits; exact at any width. `None` for anything else.
++#[cfg(not(feature = "arbitrary-precision"))]
++pub(crate) fn decimal_is_multiple_of(text: &str, divisor: u64) -> Option<bool> {
++    if text.contains(['e', 'E']) {
++        return None;
++    }
++    let text = text.strip_prefix('-').unwrap_or(text);
++    let (digits, fraction) = match text.split_once('.') {
++        Some((digits, fraction)) => (digits, Some(fraction)),
++        None => (text, None),
++    };
++    // A fraction of nothing but zeros leaves the value whole.
++    if fraction.is_some_and(|fraction| !fraction.bytes().all(|byte| byte == b'0')) {
++        return Some(false);
++    }
++    // `remainder` stays below `divisor`, at most 2^53, so the step cannot overflow.
++    let mut remainder = 0_u64;
++    for byte in digits.bytes() {
++        remainder = (remainder * 10 + u64::from(byte - b'0')) % divisor;
++    }
++    Some(remainder == 0)
++}
++
+ pub fn is_multiple_of_integer<N: crate::JsonNumber>(value: &N, multiple: f64) -> bool {
+     // Integer instances use integer modulo directly: it is exact and avoids the slower float
+     // `fract()` + `%`. The divisor guard keeps it exact - divisors above 2^53 may already have
+@@ -254,18 +279,32 @@
+         // An integer past `u64` still divides exactly, and `as_f64` below would answer about the
+         // value it rounds to instead.
+         #[cfg(feature = "arbitrary-precision")]
++        if let Some(decimal) = bignum::past_digit_budget(&value.as_str()) {
++            return bignum::Decimal::of_limit(multiple)
++                .is_some_and(|multiple| decimal.is_multiple_of(&multiple));
++        }
++        #[cfg(feature = "arbitrary-precision")]
+         if let Some(big_value) = bignum::try_parse_bigint(&value.to_number()) {
+             let divisor = num_bigint::BigInt::from(multiple as i64);
+             return bignum::is_multiple_of_bigint(&big_value, &divisor);
+         }
++        // Only where `f64` cannot answer exactly, so the literal is not rendered on the hot path.
++        #[cfg(not(feature = "arbitrary-precision"))]
++        if value
++            .as_f64()
++            .is_none_or(|value_f64| value_f64.abs() >= MAX_SAFE_INTEGER as f64)
++        {
++            if let Some(answer) = decimal_is_multiple_of(&value.as_str(), multiple as u64) {
++                return answer;
++            }
++        }
+     }
+ 
+     if let Some(value_f64) = value.as_f64() {
+         // A magnitude below the smallest subnormal underflows to zero, which the modulo below
+         // would read as the divisor dividing evenly; such a value is a proper fraction of any
+         // whole divisor.
+-        #[cfg(feature = "arbitrary-precision")]
+-        if value_f64 == 0.0 && !bignum::is_zero_literal(&value.to_number()) {
++        if value_f64 == 0.0 && !decimal_is_zero(&value.as_str()) {
+             return false;
+         }
+         // As the divisor has its fractional part as zero, then any value with a non-zero
+@@ -293,9 +332,10 @@
+             // Not an integer - can't be a multiple of an integer divisor
+             false
+         }
++        // Exponent forms past `f64` are placed only by `arbitrary-precision`.
+         #[cfg(not(feature = "arbitrary-precision"))]
+         {
+-            unreachable!("Always Some without `arbitrary-precision`")
++            false
+         }
+     }
+ }
+@@ -308,16 +348,253 @@
+     use serde_json::Number;
+     use std::str::FromStr;
+ 
+-    /// Guardrail for how many decimal shifts we are willing to perform when normalizing
+-    /// a JSON number written in scientific notation.
+-    ///
+-    /// Schema authors (and instances) are untrusted input: a literal like `"1e1000000000"`
+-    /// would otherwise force us to append billions of zeros just to materialize the number,
+-    /// opening the door to denial-of-service attacks. Limiting the exponent adjustment to
+-    /// one million digits keeps conversions deterministic while still covering realistic
+-    /// use-cases (`10^1_000_000` is already astronomically large for JSON Schema).
+-    const MAX_EXPONENT_ADJUSTMENT: u32 = 1_000_000;
++    /// The most digits `BigInt` and `BigFraction` materialise for one number. Their arithmetic
++    /// grows quadratically with the digit count and a short literal like `1e-1000000` writes a
++    /// million, so numbers past this budget take [`Decimal`], which is linear in the written text.
++    const MAX_DIGITS: u64 = 10_000;
+ 
++    /// Whether materialising the number written in `text` takes more than `MAX_DIGITS` digits:
++    /// the digits it writes plus the zeros its exponent shifts in.
++    #[inline]
++    pub fn exceeds_digit_budget(text: &str) -> bool {
++        exceeds_digit_budget_with(text, has_exponent(text))
++    }
++
++    fn has_exponent(text: &str) -> bool {
++        memchr::memchr2(b'e', b'E', text.as_bytes()).is_some()
++    }
++
++    fn exceeds_digit_budget_with(text: &str, has_exponent: bool) -> bool {
++        // Without an exponent the text is at least as long as the digits it materialises.
++        if !has_exponent {
++            return text.len() as u64 > MAX_DIGITS;
++        }
++        let mut digits: u64 = 0;
++        let mut fraction: i64 = 0;
++        let mut in_fraction = false;
++        let mut exponent: i64 = 0;
++        let mut exponent_negative = false;
++        let mut in_exponent = false;
++        for byte in text.bytes() {
++            match byte {
++                b'0'..=b'9' if in_exponent => {
++                    exponent = exponent
++                        .saturating_mul(10)
++                        .saturating_add(i64::from(byte - b'0'));
++                }
++                b'0'..=b'9' => {
++                    digits += 1;
++                    fraction += i64::from(in_fraction);
++                }
++                b'.' => in_fraction = true,
++                b'e' | b'E' => in_exponent = true,
++                b'-' if in_exponent => exponent_negative = true,
++                _ => {}
++            }
++        }
++        let exponent = if exponent_negative {
++            -exponent
++        } else {
++            exponent
++        };
++        digits.saturating_add(exponent.saturating_sub(fraction).unsigned_abs()) > MAX_DIGITS
++    }
++
++    /// The number written in `text` as a [`Decimal`] when it [`exceeds_digit_budget`].
++    pub fn past_digit_budget(text: &str) -> Option<Decimal> {
++        exceeds_digit_budget(text).then(|| Decimal::parse(text))
++    }
++
++    /// A decimal number, `digits * 10^exponent`, with no leading or trailing zeros in `digits`;
++    /// zero has no digits. Exact at any magnitude, with work linear in the written text.
++    #[derive(Debug, Clone, PartialEq, Eq)]
++    pub struct Decimal {
++        negative: bool,
++        digits: Vec<u8>,
++        exponent: i64,
++    }
++
++    impl Decimal {
++        /// The number written in `text`, a JSON number literal.
++        // ponytail: exponents saturate at `i64`, so numbers written past `1e9223372036854775807`
++        // compare equal to each other.
++        pub fn parse(text: &str) -> Self {
++            let mut negative = false;
++            let mut digits = Vec::new();
++            let mut fraction: i64 = 0;
++            let mut in_fraction = false;
++            let mut exponent: i64 = 0;
++            let mut exponent_negative = false;
++            let mut in_exponent = false;
++            for byte in text.bytes() {
++                match byte {
++                    b'0'..=b'9' if in_exponent => {
++                        exponent = exponent
++                            .saturating_mul(10)
++                            .saturating_add(i64::from(byte - b'0'));
++                    }
++                    b'0'..=b'9' => {
++                        if !(digits.is_empty() && byte == b'0') {
++                            digits.push(byte);
++                        }
++                        fraction += i64::from(in_fraction);
++                    }
++                    b'.' => in_fraction = true,
++                    b'e' | b'E' => in_exponent = true,
++                    b'-' if in_exponent => exponent_negative = true,
++                    b'-' => negative = true,
++                    _ => {}
++                }
++            }
++            let trailing = digits
++                .iter()
++                .rev()
++                .take_while(|&&byte| byte == b'0')
++                .count();
++            digits.truncate(digits.len() - trailing);
++            if digits.is_empty() {
++                return Self {
++                    negative: false,
++                    digits,
++                    exponent: 0,
++                };
++            }
++            let exponent = if exponent_negative {
++                -exponent
++            } else {
++                exponent
++            };
++            Self {
++                negative,
++                digits,
++                exponent: exponent
++                    .saturating_sub(fraction)
++                    .saturating_add(trailing as i64),
++            }
++        }
++
++        /// A primitive limit as the decimal it prints as; `None` for infinities and NaN.
++        pub fn of_limit<T: Copy + ToPrimitive>(limit: T) -> Option<Self> {
++            let float = limit.to_f64()?;
++            if float.fract() == 0.0 {
++                if let Some(integer) = limit.to_i64() {
++                    return Some(Self::parse(&integer.to_string()));
++                }
++                if let Some(integer) = limit.to_u64() {
++                    return Some(Self::parse(&integer.to_string()));
++                }
++            }
++            float
++                .is_finite()
++                .then(|| Self::parse(zmij::Buffer::new().format_finite(float)))
++        }
++
++        pub fn of_integer(value: &BigInt) -> Self {
++            Self::parse(&value.to_string())
++        }
++
++        /// `None` when no finite decimal writes `value`.
++        pub fn of_fraction(value: &BigFraction) -> Option<Self> {
++            use num_bigint::BigUint;
++            use num_traits::One;
++
++            let (numerator, denominator) = (value.numer()?, value.denom()?);
++            // Scaling by ten clears one factor of two and one of five, so a finite decimal exists
++            // exactly when those are the denominator's only prime factors.
++            let twos = denominator.trailing_zeros().unwrap_or(0);
++            let mut rest = denominator >> twos;
++            let five = BigUint::from(5_u8);
++            let mut fives = 0_u64;
++            while (&rest % &five).is_zero() {
++                rest /= &five;
++                fives += 1;
++            }
++            if !rest.is_one() {
++                return None;
++            }
++            let places = twos.max(fives);
++            let digits = numerator
++                * BigUint::from(2_u8).pow(u32::try_from(places - twos).ok()?)
++                * five.pow(u32::try_from(places - fives).ok()?);
++            let sign = if value.is_sign_negative() { "-" } else { "" };
++            Some(Self::parse(&format!("{sign}{digits}e-{places}")))
++        }
++
++        pub fn is_integer(&self) -> bool {
++            self.exponent >= 0
++        }
++
++        pub fn is_multiple_of(&self, multiple: &Self) -> bool {
++            use num_bigint::BigUint;
++
++            if self.digits.is_empty() {
++                return true;
++            }
++            if multiple.digits.is_empty() {
++                return false;
++            }
++            // `self / multiple` is `self.digits / (multiple.digits * 10^-shift)`. A negative shift
++            // asks for `self.digits` to divide by ten, which a value with no trailing zero never does.
++            let Ok(shift) =
++                u64::try_from(i128::from(self.exponent) - i128::from(multiple.exponent))
++            else {
++                return false;
++            };
++            let divisor = digit_chunks(&multiple.digits)
++                .fold(BigUint::zero(), |value, (scale, chunk)| {
++                    value * scale + chunk
++                });
++            let remainder = digit_chunks(&self.digits)
++                .fold(BigUint::zero(), |value, (scale, chunk)| {
++                    (value * scale + chunk) % &divisor
++                });
++            let scale = BigUint::from(10_u8).modpow(&BigUint::from(shift), &divisor);
++            (remainder * scale % &divisor).is_zero()
++        }
++    }
++
++    /// `digits` in chunks of 19, each within `u64`, paired with the power of ten it shifts by.
++    fn digit_chunks(digits: &[u8]) -> impl Iterator<Item = (num_bigint::BigUint, u64)> + '_ {
++        digits.chunks(19).map(|chunk| {
++            let value = chunk
++                .iter()
++                .fold(0_u64, |value, byte| value * 10 + u64::from(byte - b'0'));
++            (
++                num_bigint::BigUint::from(10_u64.pow(chunk.len() as u32)),
++                value,
++            )
++        })
++    }
++
++    impl PartialOrd for Decimal {
++        fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
++            Some(self.cmp(other))
++        }
++    }
++
++    impl Ord for Decimal {
++        fn cmp(&self, other: &Self) -> std::cmp::Ordering {
++            let sign = |value: &Self| match (value.digits.is_empty(), value.negative) {
++                (true, _) => 0,
++                (false, true) => -1,
++                (false, false) => 1,
++            };
++            // The position of the leading digit orders magnitudes first; with no trailing zeros,
++            // digit strings sharing that position order lexicographically.
++            let leading = |value: &Self| value.digits.len() as i128 + i128::from(value.exponent);
++            sign(self).cmp(&sign(other)).then_with(|| {
++                let magnitude = leading(self)
++                    .cmp(&leading(other))
++                    .then_with(|| self.digits.cmp(&other.digits));
++                if self.negative {
++                    magnitude.reverse()
++                } else {
++                    magnitude
++                }
++            })
++        }
++    }
++
+     #[derive(Debug, Clone)]
+     struct DecimalComponents {
+         negative: bool,
+@@ -439,23 +716,18 @@
+         Some(BigInt::from(10).pow(exp_u32))
+     }
+ 
+-    fn shift_exceeds_limit(shift: i64) -> bool {
+-        if shift <= 0 {
+-            return false;
++    /// The rational a whole number denotes. `BigFraction::from` writes the integer out in decimal
++    /// and reads it back one digit at a time, while a magnitude over one is already the reduced form.
++    pub fn whole(value: BigInt) -> BigFraction {
++        let (sign, magnitude) = value.into_parts();
++        let fraction = BigFraction::new_raw(magnitude, num_bigint::BigUint::from(1_u8));
++        if sign == num_bigint::Sign::Minus {
++            -fraction
++        } else {
++            fraction
+         }
+-        shift as u64 > u64::from(MAX_EXPONENT_ADJUSTMENT)
+     }
+ 
+-    fn exponent_reduction_exceeds_limit(exponent: i64) -> bool {
+-        if exponent >= 0 {
+-            return false;
+-        }
+-        match exponent.checked_abs() {
+-            Some(abs) => abs as u64 > u64::from(MAX_EXPONENT_ADJUSTMENT),
+-            None => true,
+-        }
+-    }
+-
+     /// Try to parse a Number as `BigInt` if it's outside i64 range or for compile-time
+     /// schema values that need exact representation
+     pub fn try_parse_bigint(num: &Number) -> Option<BigInt> {
+@@ -473,8 +745,12 @@
+             }
+         }
+ 
+-        let has_fraction_or_exponent = num_str.bytes().any(|b| b == b'.' || b == b'e' || b == b'E');
+-        if !has_fraction_or_exponent {
++        let has_exponent = has_exponent(num_str);
++        if exceeds_digit_budget_with(num_str, has_exponent) {
++            return None;
++        }
++
++        if !has_exponent && !num_str.as_bytes().contains(&b'.') {
+             return BigInt::from_str(num_str).ok();
+         }
+ 
+@@ -488,9 +764,6 @@
+                 components.digits.push('0');
+                 shift = 0;
+             } else {
+-                if exponent_reduction_exceeds_limit(components.exponent) {
+-                    return None;
+-                }
+                 let zeros = trailing_zero_count(&components.digits);
+                 if zeros < needed {
+                     return None;
+@@ -502,9 +775,6 @@
+         }
+ 
+         if shift > 0 {
+-            if shift_exceeds_limit(shift) {
+-                return None;
+-            }
+             append_zeros(&mut components.digits, shift as usize)?;
+         }
+ 
+@@ -538,19 +808,12 @@
+ 
+         let num_str = num.as_str();
+ 
+-        // Check for decimal point and exponent in a single pass
+-        let mut has_decimal_point = false;
+-        let mut has_exponent = false;
+-        for b in num_str.bytes() {
+-            if b == b'.' {
+-                has_decimal_point = true;
+-            } else if b == b'e' || b == b'E' {
+-                has_exponent = true;
+-                break;
+-            }
++        let has_exponent = has_exponent(num_str);
++        if !has_exponent && !num_str.as_bytes().contains(&b'.') {
++            return None;
+         }
+ 
+-        if !has_decimal_point && !has_exponent {
++        if exceeds_digit_budget_with(num_str, has_exponent) {
+             return None;
+         }
+ 
+@@ -566,17 +829,13 @@
+             return None;
+         }
+ 
+-        if exponent_reduction_exceeds_limit(components.exponent) {
+-            return None;
+-        }
+-
+         let denom_power = (-shift) as usize;
+         let denominator = pow10_bigint(denom_power)?;
+         let mut numerator = BigInt::from_str(&components.digits).ok()?;
+         if components.negative && !numerator.is_zero() {
+             numerator = -numerator;
+         }
+-        Some(BigFraction::from(numerator) / BigFraction::from(denominator))
++        Some(whole(numerator) / whole(denominator))
+     }
+ 
+     /// Exact ordering of a big-integer instance against a numeric limit.
+@@ -633,6 +892,9 @@
+     where
+         T: Copy + ToPrimitive,
+     {
++        if let Some(value) = past_digit_budget(num.as_str()) {
++            return Some(value.cmp(&Decimal::of_limit(limit)?));
++        }
+         if let Some(big) = try_parse_bigint(num) {
+             return compare_bigint_to_limit(&big, limit);
+         }
+@@ -640,15 +902,6 @@
+         value.partial_cmp(&limit_as_bigfraction(limit)?)
+     }
+ 
+-    /// Whether a JSON number literal denotes exactly zero.
+-    ///
+-    /// Magnitudes below the smallest `f64` subnormal underflow to a signed zero, so the `f64`
+-    /// value alone cannot tell a true zero from a tiny one.
+-    pub(crate) fn is_zero_literal(num: &Number) -> bool {
+-        DecimalComponents::parse(num.as_str())
+-            .is_some_and(|components| digits_are_zero(&components.digits))
+-    }
+-
+     macro_rules! define_bigint_cmp {
+         ($($fn_name:ident, $prim_type:ty, $to_prim:ident, $op:tt, $overflow_sign:expr);* $(;)?) => {
+             $(
+diff -r jsonschema-value-0.57.0/src/numeric_check.rs jsonschema-value-0.60.2/src/numeric_check.rs
+--- jsonschema-value-0.57.0/src/numeric_check.rs	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-value-0.60.2/src/numeric_check.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -52,6 +52,12 @@
+         op: BoundOp,
+         limit: fraction::BigFraction,
+     },
++    /// A limit with more digits than exact arithmetic takes on.
++    #[cfg(feature = "arbitrary-precision")]
++    Decimal {
++        op: BoundOp,
++        limit: numeric::bignum::Decimal,
++    },
+ }
+ 
+ // Codegen inlines every multipleOf that fits f64 and only routes arbitrary-precision
+@@ -62,6 +68,8 @@
+     BigInt(num_bigint::BigInt),
+     #[cfg(feature = "arbitrary-precision")]
+     BigFrac(fraction::BigFraction),
++    #[cfg(feature = "arbitrary-precision")]
++    Decimal(numeric::bignum::Decimal),
+     Unsupported,
+ }
+ 
+@@ -91,10 +99,24 @@
+ }
+ 
+ #[cfg(feature = "arbitrary-precision")]
++fn holds(op: BoundOp, ordering: std::cmp::Ordering) -> bool {
++    match op {
++        BoundOp::Lt => ordering.is_lt(),
++        BoundOp::Lte => ordering.is_le(),
++        BoundOp::Gt => ordering.is_gt(),
++        BoundOp::Gte => ordering.is_ge(),
++    }
++}
++
++#[cfg(feature = "arbitrary-precision")]
+ #[inline]
+ fn check_bigint_bound(op: BoundOp, limit: &num_bigint::BigInt, value: &Number) -> bool {
+-    use fraction::BigFraction;
+-
++    if let Some(instance) = numeric::bignum::past_digit_budget(value.as_str()) {
++        return holds(
++            op,
++            instance.cmp(&numeric::bignum::Decimal::of_integer(limit)),
++        );
++    }
+     if let Some(instance_bigint) = numeric::bignum::try_parse_bigint(value) {
+         return match op {
+             BoundOp::Lt => instance_bigint < *limit,
+@@ -132,7 +154,7 @@
+     }
+ 
+     if let Some(instance_bigfrac) = numeric::bignum::try_parse_bigfraction(value) {
+-        let limit_frac = BigFraction::from(limit.clone());
++        let limit_frac = numeric::bignum::whole(limit.clone());
+         return match op {
+             BoundOp::Lt => instance_bigfrac < limit_frac,
+             BoundOp::Lte => instance_bigfrac <= limit_frac,
+@@ -147,6 +169,11 @@
+ #[cfg(feature = "arbitrary-precision")]
+ #[inline]
+ fn check_bigfrac_bound(op: BoundOp, limit: &fraction::BigFraction, value: &Number) -> bool {
++    if let Some(instance) = numeric::bignum::past_digit_budget(value.as_str()) {
++        if let Some(limit) = numeric::bignum::Decimal::of_fraction(limit) {
++            return holds(op, instance.cmp(&limit));
++        }
++    }
+     if let Some(instance_bigfrac) = numeric::bignum::try_parse_bigfraction(value) {
+         return match op {
+             BoundOp::Lt => instance_bigfrac < *limit,
+@@ -177,7 +204,7 @@
+     // An integer past i64 is exact as a BigInt, while `f64` rounds it onto limits a fractional
+     // digit separates it from, e.g. `-10000000000000000000000000` against the same with `.1`.
+     if let Some(instance_bigint) = numeric::bignum::try_parse_bigint(value) {
+-        let instance_frac = fraction::BigFraction::from(instance_bigint);
++        let instance_frac = numeric::bignum::whole(instance_bigint);
+         return match op {
+             BoundOp::Lt => instance_frac < *limit,
+             BoundOp::Lte => instance_frac <= *limit,
+@@ -203,6 +230,9 @@
+ pub fn compile_bound(op: BoundOp, limit: &Number) -> CompiledBound {
+     #[cfg(feature = "arbitrary-precision")]
+     {
++        if let Some(limit) = numeric::bignum::past_digit_budget(limit.as_str()) {
++            return CompiledBound::Decimal { op, limit };
++        }
+         if let Some(value) = numeric::bignum::try_parse_bigint(limit) {
+             return CompiledBound::BigInt { op, limit: value };
+         }
+@@ -225,20 +255,14 @@
+         return CompiledBound::F64 { op, limit: value };
+     }
+ 
+-    #[cfg(feature = "arbitrary-precision")]
+-    {
+-        let limit = if limit.as_str().starts_with('-') {
+-            f64::NEG_INFINITY
+-        } else {
+-            f64::INFINITY
+-        };
+-        CompiledBound::F64 { op, limit }
+-    }
+-
+-    #[cfg(not(feature = "arbitrary-precision"))]
+-    {
+-        unreachable!("non-arbitrary-precision serde_json::Number always has an f64 representation");
+-    }
++    // Past `f64`; reachable without `arbitrary-precision` once another crate in the build enables
++    // `serde_json/arbitrary_precision`.
++    let limit = if crate::JsonNumber::as_str(limit).starts_with('-') {
++        f64::NEG_INFINITY
++    } else {
++        f64::INFINITY
++    };
++    CompiledBound::F64 { op, limit }
+ }
+ 
+ pub fn check_bound(compiled: &CompiledBound, value: &Number) -> bool {
+@@ -252,6 +276,11 @@
+         CompiledBound::BigInt { op, limit } => check_bigint_bound(*op, limit, value),
+         #[cfg(feature = "arbitrary-precision")]
+         CompiledBound::BigFrac { op, limit } => check_bigfrac_bound(*op, limit, value),
++        #[cfg(feature = "arbitrary-precision")]
++        CompiledBound::Decimal { op, limit } => holds(
++            *op,
++            numeric::bignum::Decimal::parse(value.as_str()).cmp(limit),
++        ),
+     }
+ }
+ 
+@@ -259,6 +288,9 @@
+ pub fn compile_multiple_of(multiple_of: &Number) -> CompiledMultipleOf {
+     #[cfg(feature = "arbitrary-precision")]
+     {
++        if let Some(value) = numeric::bignum::past_digit_budget(multiple_of.as_str()) {
++            return CompiledMultipleOf::Decimal(value);
++        }
+         if let Some(value) = numeric::bignum::try_parse_bigint(multiple_of) {
+             return CompiledMultipleOf::BigInt(value);
+         }
+@@ -272,6 +304,19 @@
+ 
+ #[cfg(feature = "arbitrary-precision")]
+ pub fn check_multiple_of(compiled: &CompiledMultipleOf, value: &Number) -> bool {
++    use numeric::bignum::Decimal;
++
++    if let Some(instance) = numeric::bignum::past_digit_budget(value.as_str()) {
++        let multiple = match compiled {
++            CompiledMultipleOf::BigInt(multiple) => Some(Decimal::of_integer(multiple)),
++            CompiledMultipleOf::BigFrac(multiple) => Decimal::of_fraction(multiple),
++            CompiledMultipleOf::Decimal(multiple) => Some(multiple.clone()),
++            CompiledMultipleOf::Unsupported => return true,
++        };
++        if let Some(multiple) = multiple {
++            return instance.is_multiple_of(&multiple);
++        }
++    }
+     match compiled {
+         #[cfg(feature = "arbitrary-precision")]
+         CompiledMultipleOf::BigInt(multiple) => {
+@@ -302,7 +347,7 @@
+             }
+ 
+             if let Some(instance_bigint) = numeric::bignum::try_parse_bigint(value) {
+-                let value_frac = fraction::BigFraction::from(instance_bigint);
++                let value_frac = numeric::bignum::whole(instance_bigint);
+                 return numeric::bignum::is_multiple_of_bigfrac(&value_frac, multiple);
+             }
+ 
+@@ -319,6 +364,9 @@
+             let multiple_f64 = multiple.to_f64().unwrap_or(f64::INFINITY);
+             numeric::is_multiple_of_float(value, multiple_f64)
+         }
++        CompiledMultipleOf::Decimal(multiple) => {
++            Decimal::parse(value.as_str()).is_multiple_of(multiple)
++        }
+         CompiledMultipleOf::Unsupported => true,
+     }
+ }
+@@ -339,6 +387,9 @@
+ pub fn divisor_kind(divisor: &Number) -> DivisorKind {
+     #[cfg(feature = "arbitrary-precision")]
+     {
++        if numeric::bignum::exceeds_digit_budget(divisor.as_str()) {
++            return DivisorKind::Fractional;
++        }
+         if numeric::bignum::try_parse_bigint(divisor).is_some() {
+             return DivisorKind::Whole;
+         }
+diff -r jsonschema-value-0.57.0/src/pyo3.rs jsonschema-value-0.60.2/src/pyo3.rs
+--- jsonschema-value-0.57.0/src/pyo3.rs	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-value-0.60.2/src/pyo3.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -12,20 +12,23 @@
+ 
+ use std::{
+     borrow::Cow,
+-    cell::RefCell,
++    cell::{Cell, RefCell},
+     hash::{Hash, Hasher},
+     str::FromStr,
+     sync::atomic::{AtomicPtr, Ordering},
+ };
+ 
++#[cfg(not(Py_GIL_DISABLED))]
++use std::sync::atomic::AtomicUsize;
++
+ use ahash::{AHashSet, AHasher};
+ 
+ use pyo3::{
+     exceptions::PyValueError,
+-    ffi,
++    ffi, intern,
+     prelude::*,
+     sync::PyOnceLock,
+-    types::{PyDict, PyString},
++    types::{PyDict, PyString, PyType},
+     Borrowed,
+ };
+ use serde_json::{Map, Number, Value};
+@@ -77,6 +80,8 @@
+     dict: *mut ffi::PyTypeObject,
+     tuple: *mut ffi::PyTypeObject,
+     enum_base: *mut ffi::PyTypeObject,
++    // `Enum.value`, the descriptor stock members read `_value_` through.
++    enum_value: *mut ffi::PyObject,
+     decimal: *mut ffi::PyTypeObject,
+     none: *mut ffi::PyObject,
+     true_: *mut ffi::PyObject,
+@@ -118,6 +123,10 @@
+             dict: py.get_type::<PyDict>().as_type_ptr(),
+             tuple: ptr("builtins", "tuple"),
+             enum_base: ptr("enum", "Enum"),
++            enum_value: py
++                .import("enum")
++                .and_then(|m| m.getattr("Enum")?.getattr("__dict__")?.get_item("value"))
++                .map_or(std::ptr::null_mut(), |value| value.as_ptr()),
+             decimal: ptr("decimal", "Decimal"),
+             none: unsafe { ffi::Py_None() },
+             true_: unsafe { ffi::Py_True() },
+@@ -166,7 +175,84 @@
+     !base.is_null() && unsafe { ffi::PyType_IsSubtype(ty, base) != 0 }
+ }
+ 
+-// Unwrap an `Enum` member to its `.value`, which its parent's attribute slot holds, so the borrow
++/// The `_value_` of an `Enum` member whose class reads `value` the stock way, fetched without
++/// running Python code; `None` when the class overrides `value` or attribute access.
++#[must_use]
++pub fn stock_enum_value<'py>(member: Borrowed<'_, 'py, PyAny>) -> Option<Bound<'py, PyAny>> {
++    let py = member.py();
++    if !reads_value_stock(&member.get_type()) {
++        return None;
++    }
++    let namespace = unsafe {
++        Bound::from_owned_ptr_or_err(
++            py,
++            ffi::PyObject_GenericGetDict(member.as_ptr(), std::ptr::null_mut()),
++        )
++    }
++    .ok()?;
++    namespace
++        .cast_into::<PyDict>()
++        .ok()?
++        .get_item(intern!(py, "_value_"))
++        .ok()
++        .flatten()
++}
++
++const ENUM_CLASSES_LIMIT: usize = 8;
++
++thread_local! {
++    // Verdicts of `reads_value_stock` per enum class. Each entry holds its class, so the address of
++    // a freed class is never mistaken for a live one.
++    static ENUM_CLASSES: RefCell<Vec<(Py<PyType>, bool)>> = const { RefCell::new(Vec::new()) };
++}
++
++// Whether members of `class` read `value` through `Enum`'s own descriptor and default attribute
++// access. The verdict is kept, so a `value` override set on the class after its first check is
++// not seen.
++fn reads_value_stock(class: &Bound<'_, PyType>) -> bool {
++    let cached = ENUM_CLASSES.with(|classes| {
++        classes
++            .borrow()
++            .iter()
++            .find(|(known, _)| known.as_ptr() == class.as_ptr())
++            .map(|(_, stock)| *stock)
++    });
++    if let Some(stock) = cached {
++        return stock;
++    }
++    let stock = inspect_enum_class(class);
++    ENUM_CLASSES.with(|classes| {
++        let mut classes = classes.borrow_mut();
++        if classes.len() == ENUM_CLASSES_LIMIT {
++            classes.remove(0);
++        }
++        classes.push((class.clone().unbind(), stock));
++    });
++    stock
++}
++
++fn inspect_enum_class(class: &Bound<'_, PyType>) -> bool {
++    let py = class.py();
++    let getattro = unsafe { ffi::PyType_GetSlot(class.as_type_ptr(), ffi::Py_tp_getattro) };
++    if getattro != ffi::PyObject_GenericGetAttr as *mut std::ffi::c_void {
++        return false;
++    }
++    let value_name = intern!(py, "value");
++    class
++        .mro()
++        .iter()
++        .find_map(|base| {
++            let namespace = base.getattr(intern!(py, "__dict__")).ok()?;
++            if namespace.contains(value_name).ok()? {
++                namespace.get_item(value_name).ok()
++            } else {
++                None
++            }
++        })
++        .is_some_and(|descriptor| descriptor.as_ptr() == types(py).enum_value)
++}
++
++// Unwrap an `Enum` member to its value, which the member's attribute slot holds, so the borrow
+ // outlives the owned handles dropped here.
+ fn resolved<'py>(node: PyNode<'py>) -> PyNode<'py> {
+     let mut current = node.to_owned();
+@@ -178,7 +264,16 @@
+             return inert(current.py());
+         }
+         seen.push(current.as_ptr());
+-        match current.getattr("value") {
++        let value = match stock_enum_value(current.as_borrowed()) {
++            Some(value) => Ok(value),
++            None if holding() => current.getattr("value"),
++            // A `value` override runs Python code, which may drop what the walk still reads
++            None => {
++                NEEDS_HOLDING.with(|needs| needs.set(true));
++                return inert(current.py());
++            }
++        };
++        match value {
+             Ok(value) => current = value,
+             Err(error) => {
+                 record_value_error(&format!("Failed to access enum value: {error}"));
+@@ -186,7 +281,12 @@
+             }
+         }
+     }
+-    unsafe { Borrowed::from_ptr(current.py(), current.as_ptr()) }
++    let py = current.py();
++    if holding() {
++        unsafe { Borrowed::from_ptr(py, hold(current.into_ptr())) }
++    } else {
++        unsafe { Borrowed::from_ptr(py, current.as_ptr()) }
++    }
+ }
+ 
+ // Stand-in for a node that could not be read; an error is pending, so the result is discarded.
+@@ -215,21 +315,118 @@
+ 
+ /// Take the error recorded while inspecting an instance, if any.
+ #[must_use]
+-pub fn take_pending_error() -> Option<PyErr> {
++pub(crate) fn take_pending_error() -> Option<PyErr> {
+     PENDING_ERROR.with(|slot| slot.borrow_mut().take())
+ }
+ 
+-/// RAII scope giving each call its own error slot and restoring the caller's on exit, so a keyword
+-/// that re-enters validation cannot consume the outer call's error.
+-pub struct PendingErrorScope {
++/// Run `run` over `instance`.
++///
++/// `holding` keeps every object the run reads alive, as Python code it runs (custom keywords or
++/// formats) may drop a container's references. A run without it that reaches such code, an `Enum`
++/// member's `value` override, is redone holding.
++///
++/// # Errors
++///
++/// The first error recorded while reading `instance`; it outranks the run's result.
++pub fn inspect<T>(
++    instance: Borrowed<'_, '_, PyAny>,
++    holding: bool,
++    mut run: impl FnMut() -> T,
++) -> PyResult<T> {
++    let mut holding = holding;
++    loop {
++        let _scope = PendingErrorScope::enter(holding);
++        probe_root(instance);
++        if let Some(error) = take_pending_error() {
++            return Err(error);
++        }
++        let result = run();
++        if !holding && NEEDS_HOLDING.with(Cell::get) {
++            holding = true;
++            continue;
++        }
++        if let Some(error) = take_pending_error() {
++            return Err(error);
++        }
++        return Ok(result);
++    }
++}
++
++thread_local! {
++    // Strong references to the objects a call reads. Python code the call runs (an `Enum` member's
++    // `value` override, a custom keyword or format) or, without the GIL, another thread can drop a
++    // container's own references mid-call, so nodes keep these until the call's scope ends.
++    static HELD: RefCell<Vec<*mut ffi::PyObject>> = const { RefCell::new(Vec::new()) };
++    // Whether the current call holds what it reads; calls that run no Python code skip it.
++    static HOLDING: Cell<bool> = const { Cell::new(false) };
++    // Set when a call without holding reached Python code it did not run; the call is redone
++    // holding.
++    static NEEDS_HOLDING: Cell<bool> = const { Cell::new(false) };
++}
++
++// Calls in any thread that hold what they read. Reads check it instead of the thread's own mode:
++// holding in a call that does not need it is only slower.
++#[cfg(not(Py_GIL_DISABLED))]
++static HOLDING_CALLS: AtomicUsize = AtomicUsize::new(0);
++
++#[inline]
++fn holding() -> bool {
++    cfg!(Py_GIL_DISABLED) || HOLDING.with(Cell::get)
++}
++
++// Takes over the new reference `object` until the enclosing `PendingErrorScope` ends.
++fn hold(object: *mut ffi::PyObject) -> *mut ffi::PyObject {
++    HELD.with(|held| held.borrow_mut().push(object));
++    object
++}
++
++// Holds the borrowed `object`, if any, until the enclosing `PendingErrorScope` ends, when the call
++// holds what it reads.
++#[cfg(not(Py_GIL_DISABLED))]
++#[inline]
++fn held(object: *mut ffi::PyObject) -> *mut ffi::PyObject {
++    if object.is_null() || !holds_reads() {
++        return object;
++    }
++    hold_borrowed(object)
++}
++
++#[cfg(not(Py_GIL_DISABLED))]
++#[inline]
++fn holds_reads() -> bool {
++    HOLDING_CALLS.load(Ordering::Relaxed) != 0
++}
++
++// Out of line, so callers do not look up `HELD` on the path that skips holding.
++#[cfg(not(Py_GIL_DISABLED))]
++#[cold]
++#[inline(never)]
++fn hold_borrowed(object: *mut ffi::PyObject) -> *mut ffi::PyObject {
++    unsafe { ffi::Py_INCREF(object) };
++    hold(object)
++}
++
++// Gives each call its own error slot and holding mode, restoring the caller's on exit, so a
++// keyword that re-enters validation cannot consume the outer call's error. Objects the call holds
++// are released when it ends.
++struct PendingErrorScope {
+     saved: Option<PyErr>,
++    held: usize,
++    holding: bool,
++    needs_holding: bool,
+ }
+ 
+ impl PendingErrorScope {
+-    #[must_use]
+-    pub fn enter() -> Self {
++    fn enter(holding: bool) -> Self {
++        if holding {
++            #[cfg(not(Py_GIL_DISABLED))]
++            HOLDING_CALLS.fetch_add(1, Ordering::Relaxed);
++        }
+         Self {
+             saved: take_pending_error(),
++            held: HELD.with(|held| held.borrow().len()),
++            holding: HOLDING.with(|cell| cell.replace(holding)),
++            needs_holding: NEEDS_HOLDING.with(|cell| cell.replace(false)),
+         }
+     }
+ }
+@@ -238,31 +435,199 @@
+     fn drop(&mut self) {
+         let saved = self.saved.take();
+         PENDING_ERROR.with(|slot| *slot.borrow_mut() = saved);
++        if HOLDING.with(|cell| cell.replace(self.holding)) {
++            #[cfg(not(Py_GIL_DISABLED))]
++            HOLDING_CALLS.fetch_sub(1, Ordering::Relaxed);
++        }
++        NEEDS_HOLDING.with(|cell| cell.set(self.needs_holding));
++        // Released after the borrow ends: dropping an object can run code that validates again.
++        let released = HELD.with(|held| held.borrow_mut().split_off(self.held));
++        for object in released {
++            unsafe { ffi::Py_DECREF(object) };
++        }
+     }
+ }
+ 
++// PyPy runs `PyDict_Next` over one key snapshot per dict and drops it when any loop over that dict
++// finishes, so a loop nested over the same dict ends the outer one. There each cursor walks its own.
++// The value under `key`, or null; lookups by a string key never raise.
++#[inline]
++fn dict_get(dict: *mut ffi::PyObject, key: *mut ffi::PyObject) -> *mut ffi::PyObject {
++    #[cfg(Py_GIL_DISABLED)]
++    {
++        let mut value: *mut ffi::PyObject = std::ptr::null_mut();
++        if unsafe { ffi::PyDict_GetItemRef(dict, key, &raw mut value) } > 0 {
++            hold(value)
++        } else {
++            std::ptr::null_mut()
++        }
++    }
++    #[cfg(not(Py_GIL_DISABLED))]
++    {
++        held(unsafe { ffi::PyDict_GetItem(dict, key) })
++    }
++}
++
++struct DictCursor<'py> {
++    dict: Borrowed<'py, 'py, PyDict>,
++    pos: ffi::Py_ssize_t,
++    #[cfg(PyPy)]
++    keys: Option<Bound<'py, PyAny>>,
++    #[cfg(Py_GIL_DISABLED)]
++    size: ffi::Py_ssize_t,
++    #[cfg(not(Py_GIL_DISABLED))]
++    holding: bool,
++}
++
++impl<'py> DictCursor<'py> {
++    fn new(dict: Borrowed<'py, 'py, PyDict>) -> Self {
++        Self {
++            dict,
++            pos: 0,
++            #[cfg(PyPy)]
++            keys: None,
++            #[cfg(Py_GIL_DISABLED)]
++            size: unsafe { ffi::PyDict_Size(dict.as_ptr()) },
++            #[cfg(not(Py_GIL_DISABLED))]
++            holding: holds_reads(),
++        }
++    }
++
++    // Borrowed key and value of the next member.
++    #[allow(clippy::inline_always)]
++    #[inline(always)]
++    fn next(&mut self) -> Option<(*mut ffi::PyObject, *mut ffi::PyObject)> {
++        // Another thread may resize the dict between steps, so each step locks it and holds what
++        // it read.
++        #[cfg(Py_GIL_DISABLED)]
++        {
++            let dict = self.dict.as_ptr();
++            let mut key: *mut ffi::PyObject = std::ptr::null_mut();
++            let mut value: *mut ffi::PyObject = std::ptr::null_mut();
++            let mut section = unsafe { std::mem::zeroed::<ffi::PyCriticalSection>() };
++            unsafe { ffi::PyCriticalSection_Begin(&raw mut section, dict) };
++            let resized = unsafe { ffi::PyDict_Size(dict) } != self.size;
++            let found = !resized
++                && unsafe {
++                    ffi::PyDict_Next(dict, &raw mut self.pos, &raw mut key, &raw mut value)
++                } != 0;
++            if found {
++                unsafe {
++                    ffi::Py_INCREF(key);
++                    ffi::Py_INCREF(value);
++                }
++            }
++            unsafe { ffi::PyCriticalSection_End(&raw mut section) };
++            if resized {
++                record_value_error("Dictionary changed size during validation");
++            }
++            found.then(|| (hold(key), hold(value)))
++        }
++        #[cfg(all(not(PyPy), not(Py_GIL_DISABLED)))]
++        {
++            let mut key: *mut ffi::PyObject = std::ptr::null_mut();
++            let mut value: *mut ffi::PyObject = std::ptr::null_mut();
++            (unsafe {
++                ffi::PyDict_Next(
++                    self.dict.as_ptr(),
++                    &raw mut self.pos,
++                    &raw mut key,
++                    &raw mut value,
++                )
++            } != 0)
++                .then(|| {
++                    if self.holding {
++                        (hold_borrowed(key), hold_borrowed(value))
++                    } else {
++                        (key, value)
++                    }
++                })
++        }
++        #[cfg(PyPy)]
++        {
++            let py = self.dict.py();
++            let keys = self.keys.get_or_insert_with(|| unsafe {
++                Bound::from_owned_ptr(py, ffi::PyDict_Keys(self.dict.as_ptr()))
++            });
++            if self.pos >= unsafe { ffi::PyList_Size(keys.as_ptr()) } {
++                return None;
++            }
++            let key = held(unsafe { ffi::PyList_GetItem(keys.as_ptr(), self.pos) });
++            self.pos += 1;
++            Some((
++                key,
++                held(unsafe { ffi::PyDict_GetItem(self.dict.as_ptr(), key) }),
++            ))
++        }
++    }
++}
++
++/// Dict iteration yielding values only; the key is never typed or decoded.
++pub struct PyValues<'py>(DictCursor<'py>);
++
++impl<'py> Iterator for PyValues<'py> {
++    type Item = PyNode<'py>;
++
++    // The plain hint is declined at the call sites in generated validators.
++    #[allow(clippy::inline_always)]
++    #[inline(always)]
++    fn next(&mut self) -> Option<PyNode<'py>> {
++        let (_, value) = self.0.next()?;
++        Some(unsafe { Borrowed::from_ptr(self.0.dict.py(), value) })
++    }
++}
++
++#[doc(hidden)]
++#[inline]
++#[must_use]
++pub fn object_values<'py>(dict: Borrowed<'py, 'py, PyDict>) -> PyValues<'py> {
++    PyValues(DictCursor::new(dict))
++}
++
++/// Narrowing for a node whose `json_type` already reported `Array`.
++///
++/// The exact-type hit skips the ladder `as_array` would walk a second time.
++#[inline]
++#[doc(hidden)]
++#[must_use]
++pub fn narrow_array<'py>(node: PyNode<'py>) -> Option<PyArray<'py>> {
++    let t = types(node.py());
++    let ty = unsafe { ffi::Py_TYPE(node.as_ptr()) };
++    if ty == t.list {
++        return Some(PyArray::new(node, false));
++    }
++    if ty == t.tuple {
++        return Some(PyArray::new(node, true));
++    }
++    node.as_array()
++}
++
++/// Narrowing for a node whose `json_type` already reported `Object`.
++#[inline]
++#[doc(hidden)]
++#[must_use]
++pub fn narrow_object<'py>(node: PyNode<'py>) -> Option<Borrowed<'py, 'py, PyDict>> {
++    let t = types(node.py());
++    let ty = unsafe { ffi::Py_TYPE(node.as_ptr()) };
++    if ty == t.dict {
++        return Some(unsafe { node.cast_unchecked::<PyDict>() });
++    }
++    node.as_object()
++}
++
+ /// Record the errors reachable from `node` itself.
+ ///
+ /// Nested ones surface only when a keyword reads that value; scanning the whole instance would cost
+ /// a full traversal per call.
+-pub fn probe_root(node: Borrowed<'_, '_, PyAny>) {
++pub(crate) fn probe_root(node: Borrowed<'_, '_, PyAny>) {
+     match object_type(node) {
+         ObjType::Str => drop(str_ref(node)),
+         ObjType::Enum => drop(resolved(node)),
+         ObjType::Unknown => record_unsupported(node),
+         // Key types only.
+         ObjType::Dict => {
+-            let mut position: ffi::Py_ssize_t = 0;
+-            let mut key: *mut ffi::PyObject = std::ptr::null_mut();
+-            let mut value: *mut ffi::PyObject = std::ptr::null_mut();
+-            while unsafe {
+-                ffi::PyDict_Next(
+-                    node.as_ptr(),
+-                    &raw mut position,
+-                    &raw mut key,
+-                    &raw mut value,
+-                ) != 0
+-            } {
++            let mut cursor = DictCursor::new(unsafe { node.cast_unchecked::<PyDict>() });
++            while let Some((key, _)) = cursor.next() {
+                 let key = unsafe { Borrowed::from_ptr(node.py(), key) };
+                 if !key_is_usable(key) {
+                     record_unusable_key(key);
+@@ -667,11 +1032,8 @@
+     }
+ }
+ 
+-// Lazy `PyDict_Next` iteration; keys and values are borrowed.
+-pub struct PyMembers<'py> {
+-    dict: Borrowed<'py, 'py, PyDict>,
+-    pos: ffi::Py_ssize_t,
+-}
++// Lazy dict iteration; keys and values are borrowed.
++pub struct PyMembers<'py>(DictCursor<'py>);
+ 
+ impl<'py> Iterator for PyMembers<'py> {
+     type Item = (Cow<'py, str>, PyNode<'py>);
+@@ -680,20 +1042,8 @@
+     #[allow(clippy::inline_always)]
+     #[inline(always)]
+     fn next(&mut self) -> Option<Self::Item> {
+-        let mut key: *mut ffi::PyObject = std::ptr::null_mut();
+-        let mut value: *mut ffi::PyObject = std::ptr::null_mut();
+-        if unsafe {
+-            ffi::PyDict_Next(
+-                self.dict.as_ptr(),
+-                &raw mut self.pos,
+-                &raw mut key,
+-                &raw mut value,
+-            )
+-        } == 0
+-        {
+-            return None;
+-        }
+-        let py = self.dict.py();
++        let (key, value) = self.0.next()?;
++        let py = self.0.dict.py();
+         let name = if unsafe { ffi::Py_TYPE(key) } == types(py).str_ {
+             Cow::Borrowed(unsafe { str_ref_ptr(key) }.unwrap_or(""))
+         } else {
+@@ -714,25 +1064,21 @@
+     }
+ 
+     fn get(&self, key: &Py<PyString>) -> Option<PyNode<'py>> {
+-        let py = self.py();
+-        // `PyDict_GetItem` returns a borrowed reference and never raises.
+-        let value = unsafe { ffi::PyDict_GetItem(self.as_ptr(), key.as_ptr()) };
++        let value = dict_get(self.as_ptr(), key.as_ptr());
+         if value.is_null() {
+             None
+         } else {
+-            Some(unsafe { Borrowed::from_ptr(py, value) })
++            Some(unsafe { Borrowed::from_ptr(self.py(), value) })
+         }
+     }
+ 
+     fn members(&self) -> PyMembers<'py> {
+-        PyMembers {
+-            dict: *self,
+-            pos: 0,
+-        }
++        PyMembers(DictCursor::new(*self))
+     }
+ }
+ 
+-// Array over a Python `list` or `tuple`.
++// Array over a Python `list` or `tuple`; helpers that take one per element pass it by value.
++#[derive(Clone, Copy)]
+ pub struct PyArray<'py> {
+     sequence: PyNode<'py>,
+     is_tuple: bool,
+@@ -769,6 +1115,8 @@
+             is_tuple: self.is_tuple,
+             index: 0,
+             len: self.len,
++            #[cfg(not(Py_GIL_DISABLED))]
++            holding: holds_reads(),
+         }
+     }
+ 
+@@ -874,20 +1222,16 @@
+             if unsafe { ffi::PyDict_Size(left_ptr) != ffi::PyDict_Size(right_ptr) } {
+                 return false;
+             }
+-            let mut position: ffi::Py_ssize_t = 0;
+-            let mut key: *mut ffi::PyObject = std::ptr::null_mut();
+-            let mut value: *mut ffi::PyObject = std::ptr::null_mut();
+-            while unsafe {
+-                ffi::PyDict_Next(left_ptr, &raw mut position, &raw mut key, &raw mut value) != 0
+-            } {
++            let mut cursor = DictCursor::new(unsafe { left.cast_unchecked::<PyDict>() });
++            while let Some((key, value)) = cursor.next() {
+                 let key_node = unsafe { Borrowed::from_ptr(left.py(), key) };
+                 // Legal keys hash as their JSON name, so lookup agrees with `key_to_string`.
+                 if !key_is_usable(key_node) {
+                     record_unusable_key(key_node);
+                     return false;
+                 }
+-                // Borrowed, never raises; a missing key means the objects differ.
+-                let other = unsafe { ffi::PyDict_GetItem(right_ptr, key) };
++                // A missing key means the objects differ.
++                let other = dict_get(right_ptr, key);
+                 if other.is_null() {
+                     return false;
+                 }
+@@ -975,6 +1319,8 @@
+     is_tuple: bool,
+     index: usize,
+     len: usize,
++    #[cfg(not(Py_GIL_DISABLED))]
++    holding: bool,
+ }
+ 
+ impl<'py> Iterator for PyElements<'py> {
+@@ -990,21 +1336,50 @@
+         let index = self.index as ffi::Py_ssize_t;
+         self.index += 1;
+         let ptr = self.sequence.as_ptr();
+-        // `*_GetItem` return borrowed references; keep them borrowed for `'py`.
++        // Another thread may shrink the list and drop an item, so each one is held.
++        #[cfg(Py_GIL_DISABLED)]
+         let borrowed = unsafe {
+             if self.is_tuple {
+                 ffi::PyTuple_GetItem(ptr, index)
+             } else {
++                let item = ffi::PyList_GetItemRef(ptr, index);
++                if item.is_null() {
++                    item
++                } else {
++                    hold(item)
++                }
++            }
++        };
++        #[cfg(all(any(Py_LIMITED_API, PyPy, GraalPy), not(Py_GIL_DISABLED)))]
++        let borrowed = unsafe {
++            if self.is_tuple {
++                ffi::PyTuple_GetItem(ptr, index)
++            } else {
+                 ffi::PyList_GetItem(ptr, index)
+             }
+         };
++        // Direct reads skip the call and bounds check; a list can still shrink under a callback.
++        #[cfg(not(any(Py_LIMITED_API, PyPy, GraalPy, Py_GIL_DISABLED)))]
++        let borrowed = unsafe {
++            if self.is_tuple {
++                ffi::PyTuple_GET_ITEM(ptr, index)
++            } else if index < ffi::PyList_GET_SIZE(ptr) {
++                ffi::PyList_GET_ITEM(ptr, index)
++            } else {
++                std::ptr::null_mut()
++            }
++        };
+         if borrowed.is_null() {
+-            // Resized by a callback since `len` was read; clear the IndexError CPython just set.
++            // Resized by a callback since `len` was read; `*_GetItem` also set an IndexError to clear.
+             unsafe { ffi::PyErr_Clear() };
+             record_value_error("Sequence changed size during validation");
+             self.index = self.len;
+             return None;
+         }
++        #[cfg(not(Py_GIL_DISABLED))]
++        if self.holding && !self.is_tuple {
++            hold_borrowed(borrowed);
++        }
+         Some(unsafe { Borrowed::from_ptr(self.sequence.py(), borrowed) })
+     }
+ }
+@@ -1014,6 +1389,7 @@
+ mod tests {
+     use super::*;
+     use serde_json::json;
++    use std::ffi::CString;
+     use test_case::test_case;
+ 
+     fn to_py<'py>(py: Python<'py>, value: &Value) -> Bound<'py, PyAny> {
+@@ -1304,4 +1680,76 @@
+             assert_eq!(decimal.as_number().expect("number").as_f64(), Some(1.5));
+         });
+     }
++
++    #[test_case("{'a': 1, 'b': [2], 'c': None}", &json!([1, [2], null]); "every value")]
++    #[test_case("{}", &json!([]); "empty")]
++    fn object_values_yields_values(expr: &str, expected: &Value) {
++        Python::attach(|py| {
++            let owned = py
++                .eval(CString::new(expr).unwrap().as_c_str(), None, None)
++                .expect("eval");
++            let dict = owned.cast::<PyDict>().expect("dict").as_borrowed();
++            let values: Vec<Value> = object_values(dict)
++                .map(|value| value.to_value().into_owned())
++                .collect();
++            assert_eq!(Value::Array(values), *expected);
++        });
++    }
++
++    #[test_case("[1, 'a']", false; "list")]
++    #[test_case("(1, 'a')", true; "tuple")]
++    #[test_case("type('L', (list,), {})([1, 'a'])", false; "list subclass")]
++    fn narrow_array_accepts_sequences(expr: &str, is_tuple: bool) {
++        Python::attach(|py| {
++            let owned = py
++                .eval(CString::new(expr).unwrap().as_c_str(), None, None)
++                .expect("eval");
++            let node = unsafe { Borrowed::from_ptr(py, owned.as_ptr()) };
++            let array = narrow_array(node).expect("array");
++            assert_eq!(array.sequence.as_ptr(), node.as_ptr());
++            assert_eq!(array.is_tuple, is_tuple);
++            let values: Vec<Value> = array
++                .elements()
++                .map(|item| item.to_value().into_owned())
++                .collect();
++            assert_eq!(values, [json!(1), json!("a")]);
++        });
++    }
++
++    #[test_case("{'a': 1}"; "dict")]
++    #[test_case("type('D', (dict,), {})(a=1)"; "dict subclass")]
++    fn narrow_object_accepts_dicts(expr: &str) {
++        Python::attach(|py| {
++            let owned = py
++                .eval(CString::new(expr).unwrap().as_c_str(), None, None)
++                .expect("eval");
++            let node = unsafe { Borrowed::from_ptr(py, owned.as_ptr()) };
++            let dict = narrow_object(node).expect("object");
++            assert_eq!(dict.as_ptr(), node.as_ptr());
++            let values: Vec<Value> = object_values(dict)
++                .map(|value| value.to_value().into_owned())
++                .collect();
++            assert_eq!(values, [json!(1)]);
++        });
++    }
++
++    #[test_case("{'a': 1}", "[1]"; "dict and list")]
++    #[test_case("1", "1"; "int")]
++    #[test_case("'a'", "'a'"; "string")]
++    fn narrow_rejects_other_types(not_array: &str, not_object: &str) {
++        Python::attach(|py| {
++            let _ = take_pending_error();
++            let eval = |expr: &str| {
++                py.eval(CString::new(expr).unwrap().as_c_str(), None, None)
++                    .expect("eval")
++            };
++            let owned = eval(not_array);
++            let node = unsafe { Borrowed::from_ptr(py, owned.as_ptr()) };
++            assert!(narrow_array(node).is_none());
++            let owned = eval(not_object);
++            let node = unsafe { Borrowed::from_ptr(py, owned.as_ptr()) };
++            assert!(narrow_object(node).is_none());
++            assert!(take_pending_error().is_none());
++        });
++    }
+ }
+diff -r jsonschema-value-0.57.0/src/types.rs jsonschema-value-0.60.2/src/types.rs
+--- jsonschema-value-0.57.0/src/types.rs	2006-07-23 18:21:28.000000000 -0700
++++ jsonschema-value-0.60.2/src/types.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -233,6 +233,9 @@
+             }
+         }
+ 
++        if let Some(decimal) = bignum::past_digit_budget(text) {
++            return decimal.is_integer();
++        }
+         // Important: check BigFraction BEFORE as_f64() to avoid precision loss.
+         if bignum::try_parse_bigint(n).is_some() {
+             true
+@@ -252,7 +255,11 @@
+         } else if let Some(f) = n.as_f64() {
+             f.fract() == 0.
+         } else {
+-            unreachable!("Numbers always fit in u64/i64/f64 without arbitrary-precision")
++            // Past `f64`, reachable once another crate in the build enables
++            // `serde_json/arbitrary_precision`. Exponent forms are placed only by
++            // `arbitrary-precision`.
++            crate::numeric::decimal_is_multiple_of(&crate::JsonNumber::as_str(n), 1)
++                .unwrap_or(false)
+         }
+     }
+ }
+Only in jsonschema-value-0.60.2/tests: fixtures
+Only in jsonschema-value-0.60.2/tests: jsonb.rs
+Only in jsonschema-value-0.60.2/tests: jsonb_live.rs
+Only in jsonschema-value-0.60.2/tests: numeric.rs

@@ -1,0 +1,2344 @@
+diff -r hyper-1.11.1/Cargo.lock hyper-1.12.0/Cargo.lock
+--- hyper-1.11.1/Cargo.lock	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/Cargo.lock	2006-07-23 18:21:28.000000000 -0700
+@@ -188,7 +188,7 @@
+ 
+ [[package]]
+ name = "hyper"
+-version = "1.11.1"
++version = "1.12.0"
+ dependencies = [
+  "atomic-waker",
+  "bytes",
+@@ -622,9 +622,9 @@
+ 
+ [[package]]
+ name = "want"
+-version = "0.3.1"
++version = "0.3.2"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "bfa7760aed19e106de2c7c0b581b509f2f25d3dacaf737cb82ac61bc6d760b0e"
++checksum = "ec4cdd0dd910afe868b7ef477227d8d538b46b3075031afee8a9f2acb0a2ed0b"
+ dependencies = [
+  "try-lock",
+ ]
+diff -r hyper-1.11.1/Cargo.toml hyper-1.12.0/Cargo.toml
+--- hyper-1.11.1/Cargo.toml	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/Cargo.toml	2006-07-23 18:21:28.000000000 -0700
+@@ -13,7 +13,7 @@
+ edition = "2021"
+ rust-version = "1.63"
+ name = "hyper"
+-version = "1.11.1"
++version = "1.12.0"
+ authors = ["Sean McArthur <sean@seanmonstar.com>"]
+ build = false
+ include = [
+@@ -86,7 +86,6 @@
+ ]
+ http1 = [
+     "dep:atomic-waker",
+-    "dep:futures-channel",
+     "dep:futures-core",
+     "dep:httparse",
+     "dep:itoa",
+@@ -179,7 +178,7 @@
+ default-features = false
+ 
+ [dependencies.want]
+-version = "0.3"
++version = "0.3.2"
+ optional = true
+ 
+ [dev-dependencies.form_urlencoded]
+@@ -249,43 +248,34 @@
+ arithmetic_side_effects = "allow"
+ as_conversions = "allow"
+ blanket_clippy_restriction_lints = "allow"
+-cast_possible_truncation = "allow"
+ cast_precision_loss = "allow"
+ checked_conversions = "allow"
+ clone_on_ref_ptr = "allow"
+ cognitive_complexity = "allow"
+-collapsible_match = "allow"
+ decimal_literal_representation = "allow"
+ default_numeric_fallback = "allow"
++definition_in_module_root = "allow"
+ else_if_without_else = "allow"
+-enum_glob_use = "allow"
+ error_impl_error = "allow"
+ expect_used = "allow"
+ field_scoped_visibility_modifiers = "allow"
+ float_arithmetic = "allow"
+ if_not_else = "allow"
+ if_then_some_else_none = "allow"
+-ignored_unit_patterns = "allow"
+ impl_trait_in_params = "allow"
+ implicit_return = "allow"
+ indexing_slicing = "allow"
+ inline_modules = "allow"
+ inline_trait_bounds = "allow"
+-integer_division = "allow"
+-integer_division_remainder_used = "allow"
+ items_after_statements = "allow"
+ let_underscore_must_use = "allow"
+ let_underscore_untyped = "allow"
+ let_unit_value = "allow"
+-map_err_ignore = "allow"
+-map_unwrap_or = "allow"
+ match_wild_err_arm = "allow"
+ min_ident_chars = "allow"
+ missing_assert_message = "allow"
+ missing_docs_in_private_items = "allow"
+-missing_fields_in_debug = "allow"
+ missing_inline_in_public_items = "allow"
+-missing_panics_doc = "allow"
+ missing_trait_methods = "allow"
+ mod_module_files = "allow"
+ module_inception = "allow"
+@@ -293,9 +283,9 @@
+ multiple_inherent_impl = "allow"
+ multiple_unsafe_ops_per_block = "allow"
+ must_use_candidate = "allow"
++needless_bool = "allow"
+ needless_pass_by_value = "allow"
+ new_without_default = "allow"
+-panic = "allow"
+ panic_in_result_fn = "allow"
+ pattern_type_mismatch = "allow"
+ pub_use = "allow"
+@@ -304,6 +294,7 @@
+ redundant_closure_for_method_calls = "allow"
+ redundant_else = "allow"
+ renamed_function_params = "allow"
++rest_pattern_accessible_field = "allow"
+ same_name_method = "allow"
+ self_named_module_files = "deny"
+ semicolon_inside_block = "allow"
+@@ -312,7 +303,6 @@
+ shadow_same = "allow"
+ shadow_unrelated = "allow"
+ single_call_fn = "allow"
+-single_char_lifetime_names = "allow"
+ std_instead_of_alloc = "allow"
+ std_instead_of_core = "allow"
+ struct_excessive_bools = "allow"
+@@ -320,8 +310,8 @@
+ too_many_lines = "allow"
+ trivially_copy_pass_by_ref = "allow"
+ type_complexity = "allow"
++unnecessary_rest_pattern = "allow"
+ unnecessary_safety_comment = "allow"
+-unnecessary_trailing_comma = "allow"
+ unnested_or_patterns = "allow"
+ unreachable = "allow"
+ unseparated_literal_suffix = "allow"
+@@ -329,7 +319,6 @@
+ unused_trait_names = "allow"
+ unwrap_in_result = "allow"
+ used_underscore_items = "allow"
+-useless_borrows_in_formatting = "allow"
+ wildcard_enum_match_arm = "allow"
+ 
+ [lints.clippy.pedantic]
+diff -r hyper-1.11.1/Cargo.toml.orig hyper-1.12.0/Cargo.toml.orig
+--- hyper-1.11.1/Cargo.toml.orig	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/Cargo.toml.orig	2006-07-23 18:21:28.000000000 -0700
+@@ -1,6 +1,6 @@
+ [package]
+ name = "hyper"
+-version = "1.11.1"
++version = "1.12.0"
+ description = "A protective and efficient HTTP library for all."
+ readme = "README.md"
+ homepage = "https://hyper.rs"
+@@ -39,7 +39,7 @@
+ pin-project-lite = { version = "0.2.4", optional = true }
+ smallvec = { version = "1.12", features = ["const_generics", "const_new"], optional = true }
+ tracing = { version = "0.1", default-features = false, features = ["std"], optional = true }
+-want = { version = "0.3", optional = true }
++want = { version = "0.3.2", optional = true }
+ 
+ [dev-dependencies]
+ form_urlencoded = "1"
+@@ -81,7 +81,7 @@
+ ]
+ 
+ # HTTP versions
+-http1 = ["dep:atomic-waker", "dep:futures-channel", "dep:futures-core", "dep:httparse", "dep:itoa"]
++http1 = ["dep:atomic-waker", "dep:futures-core", "dep:httparse", "dep:itoa"]
+ http2 = ["dep:atomic-waker", "dep:futures-channel", "dep:futures-core", "dep:h2"]
+ 
+ # Client/Server
+@@ -115,40 +115,30 @@
+ 
+ arithmetic_side_effects = "allow" # TODO: consider
+ as_conversions = "allow" # TODO: tricky
+-cast_possible_truncation = "allow" # TODO: consider
+ cast_precision_loss = "allow" # TODO: consider
+ checked_conversions = "allow"
+-collapsible_match = "allow"
+ else_if_without_else = "allow"
+-enum_glob_use = "allow"
+ float_arithmetic = "allow"
+-ignored_unit_patterns = "allow"
+ indexing_slicing = "allow"
+-integer_division = "allow"
+-integer_division_remainder_used = "allow"
+ let_unit_value = "allow"
+-map_err_ignore = "allow"
+-map_unwrap_or = "allow"
+ match_wild_err_arm = "allow"
+-missing_fields_in_debug = "allow" # TODO: use finish_non_exhaustive
+-missing_panics_doc = "allow" # TODO: might be false
+ multiple_inherent_impl = "allow"
+ multiple_unsafe_ops_per_block = "allow"
+ needless_pass_by_value = "allow"
+-panic = "allow"
+ pattern_type_mismatch = "allow"
+ redundant_closure_for_method_calls = "allow"
+ redundant_else = "allow"
+-single_char_lifetime_names = "allow"
+ struct_excessive_bools = "allow" # TODO: bogus lint?
+ trivially_copy_pass_by_ref = "allow"
+-unnecessary_trailing_comma = "allow"
+ unnested_or_patterns = "allow"
+ unused_async = "allow" # TODO: is it for API?
+ unused_trait_names = "allow" # TODO: kinda annoying, but might be good to deny
+ unwrap_in_result = "allow"
+-useless_borrows_in_formatting = "allow"
+ wildcard_enum_match_arm = "allow"
++definition_in_module_root = "allow"
++unnecessary_rest_pattern = "allow"
++rest_pattern_accessible_field = "allow"
++needless_bool = "allow"
+ 
+ # explicitly allowed
+ absolute_paths = "allow" # sometimes its cleaner
+@@ -357,3 +347,8 @@
+ name = "h1_shutdown_while_buffered"
+ path = "tests/h1_shutdown_while_buffered.rs"
+ required-features = ["full"]
++
++[[test]]
++name = "h1_ready_in_flight"
++path = "tests/h1_ready_in_flight.rs"
++required-features = ["full"]
+Only in hyper-1.12.0/src/body: chan.rs
+diff -r hyper-1.11.1/src/body/incoming.rs hyper-1.12.0/src/body/incoming.rs
+--- hyper-1.11.1/src/body/incoming.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/body/incoming.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -1,38 +1,25 @@
+ use std::fmt;
+-#[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+-use std::future::Future;
+ use std::pin::Pin;
+ use std::task::{Context, Poll};
+ 
+ use bytes::Bytes;
+-#[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+-use futures_channel::{mpsc, oneshot};
+ #[cfg(all(
+     any(feature = "http1", feature = "http2"),
+     any(feature = "client", feature = "server")
+ ))]
+ use futures_core::ready;
+-#[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+-use futures_core::{stream::FusedStream, Stream}; // for mpsc::Receiver
+-#[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+-use http::HeaderMap;
+ use http_body::{Body, Frame, SizeHint};
+ 
++#[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
++use super::chan;
+ #[cfg(all(
+     any(feature = "http1", feature = "http2"),
+     any(feature = "client", feature = "server")
+ ))]
+ use super::DecodedLength;
+-#[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+-use crate::common::watch;
+ #[cfg(all(feature = "http2", any(feature = "client", feature = "server")))]
+ use crate::proto::h2::ping;
+ 
+-#[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+-type BodySender = mpsc::Sender<Result<Bytes, crate::Error>>;
+-#[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+-type TrailersSender = oneshot::Sender<HeaderMap>;
+-
+ /// A stream of `Bytes`, used when receiving bodies from the network.
+ ///
+ /// Note that Users should not instantiate this struct directly. When working with the hyper client,
+@@ -58,9 +45,7 @@
+     #[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+     Chan {
+         content_length: DecodedLength,
+-        want_tx: watch::Sender,
+-        data_rx: mpsc::Receiver<Result<Bytes, crate::Error>>,
+-        trailers_rx: oneshot::Receiver<HeaderMap>,
++        rx: chan::Receiver,
+     },
+     #[cfg(all(feature = "http2", any(feature = "client", feature = "server")))]
+     H2 {
+@@ -86,19 +71,9 @@
+ ///
+ /// [`Body::channel()`]: struct.Body.html#method.channel
+ /// [`Sender::abort()`]: struct.Sender.html#method.abort
+-#[must_use = "Sender does nothing unless sent on"]
+ #[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+-pub(crate) struct Sender {
+-    want_rx: watch::Receiver,
+-    data_tx: BodySender,
+-    trailers_tx: Option<TrailersSender>,
+-}
++pub(crate) use super::chan::Sender;
+ 
+-#[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+-const WANT_PENDING: usize = 1;
+-#[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+-const WANT_READY: usize = 2;
+-
+ impl Incoming {
+     /// Create a `Body` stream with an associated sender half.
+     ///
+@@ -112,27 +87,9 @@
+ 
+     #[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+     pub(crate) fn new_channel(content_length: DecodedLength, wanter: bool) -> (Sender, Incoming) {
+-        let (data_tx, data_rx) = mpsc::channel(0);
+-        let (trailers_tx, trailers_rx) = oneshot::channel();
++        let (tx, rx) = chan::channel(wanter);
++        let rx = Incoming::new(Kind::Chan { content_length, rx });
+ 
+-        // If wanter is true, `Sender::poll_ready()` won't becoming ready
+-        // until the `Body` has been polled for data once.
+-        let want = if wanter { WANT_PENDING } else { WANT_READY };
+-
+-        let (want_tx, want_rx) = watch::channel(want);
+-
+-        let tx = Sender {
+-            want_rx,
+-            data_tx,
+-            trailers_tx: Some(trailers_tx),
+-        };
+-        let rx = Incoming::new(Kind::Chan {
+-            content_length,
+-            want_tx,
+-            data_rx,
+-            trailers_rx,
+-        });
+-
+         (tx, rx)
+     }
+ 
+@@ -210,24 +167,13 @@
+             #[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+             Kind::Chan {
+                 content_length: len,
+-                data_rx,
+-                want_tx,
+-                trailers_rx,
++                rx,
+             } => {
+-                want_tx.send(WANT_READY);
+-
+-                if !data_rx.is_terminated() {
+-                    if let Some(chunk) = ready!(Pin::new(data_rx).poll_next(cx)?) {
+-                        len.sub_if(chunk.len() as u64);
+-                        return Poll::Ready(Some(Ok(Frame::data(chunk))));
+-                    }
++                if let Some(chunk) = ready!(rx.poll_next(cx)?) {
++                    len.sub_if(chunk.len() as u64);
++                    return Poll::Ready(Some(Ok(Frame::data(chunk))));
+                 }
+-
+-                // check trailers after data is terminated
+-                match ready!(Pin::new(trailers_rx).poll(cx)) {
+-                    Ok(t) => Poll::Ready(Some(Ok(Frame::trailers(t)))),
+-                    Err(_) => Poll::Ready(None),
+-                }
++                Poll::Ready(rx.take_trailers().map(Frame::trailers).map(Ok))
+             }
+             #[cfg(all(feature = "http2", any(feature = "client", feature = "server")))]
+             Kind::H2 {
+@@ -353,120 +299,12 @@
+     }
+ }
+ 
+-#[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+-impl Sender {
+-    /// Check to see if this `Sender` can send more data.
+-    pub(crate) fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<crate::Result<()>> {
+-        // Check if the receiver end has tried polling for the body yet
+-        ready!(self.poll_want(cx)?);
+-        self.data_tx
+-            .poll_ready(cx)
+-            .map_err(|_| crate::Error::new_closed())
+-    }
+-
+-    fn poll_want(&mut self, cx: &mut Context<'_>) -> Poll<crate::Result<()>> {
+-        match self.want_rx.load(cx) {
+-            WANT_READY => Poll::Ready(Ok(())),
+-            WANT_PENDING => Poll::Pending,
+-            watch::CLOSED => Poll::Ready(Err(crate::Error::new_closed())),
+-            unexpected => unreachable!("want_rx value: {}", unexpected),
+-        }
+-    }
+-
+-    #[cfg(test)]
+-    async fn ready(&mut self) -> crate::Result<()> {
+-        futures_util::future::poll_fn(|cx| self.poll_ready(cx)).await
+-    }
+-
+-    /// Send data on data channel when it is ready.
+-    #[cfg(test)]
+-    #[allow(unused)]
+-    pub(crate) async fn send_data(&mut self, chunk: Bytes) -> crate::Result<()> {
+-        self.ready().await?;
+-        self.data_tx
+-            .try_send(Ok(chunk))
+-            .map_err(|_| crate::Error::new_closed())
+-    }
+-
+-    /// Send trailers on trailers channel.
+-    #[allow(unused)]
+-    #[allow(clippy::unused_async_trait_impl)]
+-    pub(crate) async fn send_trailers(&mut self, trailers: HeaderMap) -> crate::Result<()> {
+-        let tx = match self.trailers_tx.take() {
+-            Some(tx) => tx,
+-            None => return Err(crate::Error::new_closed()),
+-        };
+-        tx.send(trailers).map_err(|_| crate::Error::new_closed())
+-    }
+-
+-    /// Try to send data on this channel.
+-    ///
+-    /// # Errors
+-    ///
+-    /// Returns `Err(Bytes)` if the channel could not (currently) accept
+-    /// another `Bytes`.
+-    ///
+-    /// # Note
+-    ///
+-    /// This is mostly useful for when trying to send from some other thread
+-    /// that doesn't have an async context. If in an async context, prefer
+-    /// `send_data()` instead.
+-    #[cfg(feature = "http1")]
+-    pub(crate) fn try_send_data(&mut self, chunk: Bytes) -> Result<(), Bytes> {
+-        self.data_tx
+-            .try_send(Ok(chunk))
+-            .map_err(|err| err.into_inner().expect("just sent Ok"))
+-    }
+-
+-    #[cfg(feature = "http1")]
+-    pub(crate) fn try_send_trailers(
+-        &mut self,
+-        trailers: HeaderMap,
+-    ) -> Result<(), Option<HeaderMap>> {
+-        let tx = match self.trailers_tx.take() {
+-            Some(tx) => tx,
+-            None => return Err(None),
+-        };
+-
+-        tx.send(trailers).map_err(Some)
+-    }
+-
+-    #[cfg(test)]
+-    pub(crate) fn abort(mut self) {
+-        self.send_error(crate::Error::new_body_write_aborted());
+-    }
+-
+-    pub(crate) fn send_error(&mut self, err: crate::Error) {
+-        let _ = self
+-            .data_tx
+-            // clone so the send works even if buffer is full
+-            .clone()
+-            .try_send(Err(err));
+-    }
+-}
+-
+-#[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+-impl fmt::Debug for Sender {
+-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+-        #[derive(Debug)]
+-        struct Open;
+-        #[derive(Debug)]
+-        struct Closed;
+-
+-        let mut builder = f.debug_tuple("Sender");
+-        match self.want_rx.peek() {
+-            watch::CLOSED => builder.field(&Closed),
+-            _ => builder.field(&Open),
+-        };
+-
+-        builder.finish()
+-    }
+-}
+-
+ #[cfg(test)]
+ mod tests {
+     #[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+     use std::mem;
++    #[cfg(all(feature = "nightly", not(miri)))]
++    use std::pin::Pin;
+     #[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+     use std::task::Poll;
+ 
+@@ -474,6 +312,8 @@
+     use super::{Body, Incoming, SizeHint};
+     #[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+     use super::{DecodedLength, Sender};
++    #[cfg(all(feature = "nightly", not(miri)))]
++    use bytes::Bytes;
+     #[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+     use http_body_util::BodyExt;
+ 
+@@ -494,7 +334,7 @@
+ 
+         assert_eq!(
+             mem::size_of::<Sender>(),
+-            mem::size_of::<usize>() * 5,
++            mem::size_of::<usize>() * 2,
+             "Sender"
+         );
+ 
+@@ -505,6 +345,51 @@
+         );
+     }
+ 
++    #[cfg(all(feature = "nightly", not(miri)))]
++    #[bench]
++    fn bench_channel_create_and_drop(b: &mut test::Bencher) {
++        b.iter(|| {
++            let _ = test::black_box(Incoming::new_channel(
++                DecodedLength::CHUNKED,
++                /* wanter = */ false,
++            ));
++        });
++    }
++
++    #[cfg(all(feature = "nightly", not(miri)))]
++    #[bench]
++    fn bench_channel_data_handoff(b: &mut test::Bencher) {
++        let (mut tx, mut body) =
++            Incoming::new_channel(DecodedLength::CHUNKED, /* wanter = */ false);
++        let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
++
++        b.iter(|| {
++            assert!(tx.poll_ready(&mut cx).is_ready());
++            tx.try_send_data(Bytes::from_static(b"hello world"))
++                .unwrap();
++            let frame = match Pin::new(&mut body).poll_frame(&mut cx) {
++                Poll::Ready(Some(Ok(frame))) => frame,
++                unexpected => panic!("unexpected body poll: {unexpected:?}"),
++            };
++            test::black_box(frame);
++        });
++    }
++
++    #[cfg(all(feature = "nightly", not(miri)))]
++    #[bench]
++    fn bench_channel_want_transition(b: &mut test::Bencher) {
++        let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
++
++        b.iter(|| {
++            let (mut tx, mut body) =
++                Incoming::new_channel(DecodedLength::CHUNKED, /* wanter = */ true);
++            assert!(tx.poll_ready(&mut cx).is_pending());
++            assert!(Pin::new(&mut body).poll_frame(&mut cx).is_pending());
++            assert!(tx.poll_ready(&mut cx).is_ready());
++            let _ = test::black_box((tx, body));
++        });
++    }
++
+     #[cfg(all(feature = "http1", any(feature = "client", feature = "server")))]
+     #[test]
+     fn size_hint() {
+diff -r hyper-1.11.1/src/body/mod.rs hyper-1.12.0/src/body/mod.rs
+--- hyper-1.11.1/src/body/mod.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/body/mod.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -79,6 +79,8 @@
+ ))]
+ pub(crate) use self::length::DecodedLength;
+ 
++#[cfg(all(any(feature = "client", feature = "server"), feature = "http1"))]
++mod chan;
+ mod incoming;
+ #[cfg(all(
+     any(feature = "http1", feature = "http2"),
+diff -r hyper-1.11.1/src/client/conn/http1.rs hyper-1.12.0/src/client/conn/http1.rs
+--- hyper-1.11.1/src/client/conn/http1.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/client/conn/http1.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -101,6 +101,7 @@
+     /// # Errors
+     ///
+     /// Returns an error if the connection encounters an error while being polled to completion.
++    #[allow(clippy::missing_panics_doc)]
+     pub async fn without_shutdown(self) -> crate::Result<Parts<T>> {
+         let mut conn = Some(self);
+         crate::common::future::poll_fn(move |cx| -> Poll<crate::Result<Parts<T>>> {
+@@ -131,6 +132,7 @@
+     h1_title_case_headers: bool,
+     h1_preserve_header_case: bool,
+     h1_max_headers: Option<usize>,
++    h1_max_header_size: Option<usize>,
+     #[cfg(feature = "ffi")]
+     h1_preserve_header_order: bool,
+     h1_read_buf_exact_size: Option<usize>,
+@@ -237,7 +239,7 @@
+                     Ok(Ok(resp)) => Ok(resp),
+                     Ok(Err(err)) => Err(err),
+                     // this is definite bug if it happens, but it shouldn't happen!
+-                    Err(_canceled) => panic!("dispatch dropped without returning error"),
++                    Err(_canceled) => unreachable!("dispatch dropped without returning error"),
+                 },
+                 Err(_req) => {
+                     debug!("connection was not ready");
+@@ -267,7 +269,7 @@
+                     Ok(Ok(res)) => Ok(res),
+                     Ok(Err(err)) => Err(err),
+                     // this is definite bug if it happens, but it shouldn't happen!
+-                    Err(_) => panic!("dispatch dropped without returning error"),
++                    Err(_) => unreachable!("dispatch dropped without returning error"),
+                 },
+                 Err(req) => {
+                     debug!("connection was not ready");
+@@ -352,6 +354,7 @@
+             h1_title_case_headers: false,
+             h1_preserve_header_case: false,
+             h1_max_headers: None,
++            h1_max_header_size: None,
+             #[cfg(feature = "ffi")]
+             h1_preserve_header_order: false,
+             h1_max_buf_size: None,
+@@ -500,6 +503,21 @@
+         self
+     }
+ 
++    /// Set the maximum size of response headers (including the status line) in bytes.
++    ///
++    /// If the server sends headers exceeding this limit, the error "message head is too large"
++    /// is returned.
++    ///
++    /// If not configured, then the [`max_buf_size`](Builder::max_buf_size) will naturally be reached and applied.
++    ///
++    /// This value is also used as the maximum size limit for chunked trailers.
++    ///
++    /// Default is `None`.
++    pub fn max_header_size(&mut self, val: usize) -> &mut Self {
++        self.h1_max_header_size = Some(val);
++        self
++    }
++
+     /// Set whether to support preserving original header order.
+     ///
+     /// Currently, this will record the order in which headers are received, and store this
+@@ -587,6 +605,9 @@
+             if let Some(max_headers) = opts.h1_max_headers {
+                 conn.set_http1_max_headers(max_headers);
+             }
++            if let Some(max_header_size) = opts.h1_max_header_size {
++                conn.set_http1_max_header_size(max_header_size);
++            }
+             #[cfg(feature = "ffi")]
+             if opts.h1_preserve_header_order {
+                 conn.set_preserve_header_order();
+diff -r hyper-1.11.1/src/client/conn/http2.rs hyper-1.12.0/src/client/conn/http2.rs
+--- hyper-1.11.1/src/client/conn/http2.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/client/conn/http2.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -170,7 +170,7 @@
+                     Ok(Ok(resp)) => Ok(resp),
+                     Ok(Err(err)) => Err(err),
+                     // this is definite bug if it happens, but it shouldn't happen!
+-                    Err(_canceled) => panic!("dispatch dropped without returning error"),
++                    Err(_canceled) => unreachable!("dispatch dropped without returning error"),
+                 },
+                 Err(_req) => {
+                     debug!("connection was not ready");
+@@ -201,7 +201,7 @@
+                     Ok(Ok(res)) => Ok(res),
+                     Ok(Err(err)) => Err(err),
+                     // this is definite bug if it happens, but it shouldn't happen!
+-                    Err(_) => panic!("dispatch dropped without returning error"),
++                    Err(_) => unreachable!("dispatch dropped without returning error"),
+                 },
+                 Err(req) => {
+                     debug!("connection was not ready");
+diff -r hyper-1.11.1/src/client/dispatch.rs hyper-1.12.0/src/client/dispatch.rs
+--- hyper-1.11.1/src/client/dispatch.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/client/dispatch.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -111,7 +111,7 @@
+         let (tx, rx) = oneshot::channel();
+         self.inner
+             .send(Envelope(Some((val, Callback::Retry(Some(tx))))))
+-            .map(move |_| rx)
++            .map(move |()| rx)
+             .map_err(|mut e| (e.0).0.take().expect("envelope not dropped").0)
+     }
+ 
+@@ -123,7 +123,7 @@
+         let (tx, rx) = oneshot::channel();
+         self.inner
+             .send(Envelope(Some((val, Callback::NoRetry(Some(tx))))))
+-            .map(move |_| rx)
++            .map(move |()| rx)
+             .map_err(|mut e| (e.0).0.take().expect("envelope not dropped").0)
+     }
+ 
+@@ -150,7 +150,7 @@
+         let (tx, rx) = oneshot::channel();
+         self.inner
+             .send(Envelope(Some((val, Callback::Retry(Some(tx))))))
+-            .map(move |_| rx)
++            .map(move |()| rx)
+             .map_err(|mut e| (e.0).0.take().expect("envelope not dropped").0)
+     }
+ 
+@@ -158,7 +158,7 @@
+         let (tx, rx) = oneshot::channel();
+         self.inner
+             .send(Envelope(Some((val, Callback::NoRetry(Some(tx))))))
+-            .map(move |_| rx)
++            .map(move |()| rx)
+             .map_err(|mut e| (e.0).0.take().expect("envelope not dropped").0)
+     }
+ }
+@@ -182,6 +182,12 @@
+     pub(crate) fn poll_recv(&mut self, cx: &mut Context<'_>) -> Poll<Option<(T, Callback<T, U>)>> {
+         match self.inner.poll_recv(cx) {
+             Poll::Ready(item) => {
++                // A want signaled after finding the queue empty can land after
++                // the Sender's `give()` for the message taken here, as can one
++                // signaled on a coop-budget Pending with a message queued.
++                // Withdraw it, or the Sender reports this connection as ready
++                // while it is still serving this message.
++                self.taker.unwant();
+                 Poll::Ready(item.map(|mut env| env.0.take().expect("envelope not dropped")))
+             }
+             Poll::Pending => {
+@@ -408,7 +414,7 @@
+     }
+ 
+     /// Helper to check if the future is ready after polling once.
+-    struct PollOnce<'a, F>(&'a mut F);
++    struct PollOnce<'fut, F>(&'fut mut F);
+ 
+     impl<F, T> Future for PollOnce<'_, F>
+     where
+diff -r hyper-1.11.1/src/common/buf.rs hyper-1.12.0/src/common/buf.rs
+--- hyper-1.11.1/src/common/buf.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/common/buf.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -56,7 +56,7 @@
+     }
+ 
+     #[inline]
+-    fn chunks_vectored<'t>(&'t self, dst: &mut [IoSlice<'t>]) -> usize {
++    fn chunks_vectored<'data>(&'data self, dst: &mut [IoSlice<'data>]) -> usize {
+         if dst.is_empty() {
+             return 0;
+         }
+diff -r hyper-1.11.1/src/common/lock.rs hyper-1.12.0/src/common/lock.rs
+--- hyper-1.11.1/src/common/lock.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/common/lock.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -4,6 +4,7 @@
+     fn panic_if_poisoned(self) -> T;
+ }
+ 
++#[allow(clippy::panic)]
+ impl<T> LockResultExt<T> for LockResult<T> {
+     #[track_caller]
+     fn panic_if_poisoned(self) -> T {
+diff -r hyper-1.11.1/src/common/mod.rs hyper-1.12.0/src/common/mod.rs
+--- hyper-1.11.1/src/common/mod.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/common/mod.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -18,5 +18,3 @@
+     all(any(feature = "client", feature = "server"), feature = "http2"),
+ ))]
+ pub(crate) mod time;
+-#[cfg(all(any(feature = "client", feature = "server"), feature = "http1"))]
+-pub(crate) mod watch;
+diff -r hyper-1.11.1/src/common/time.rs hyper-1.12.0/src/common/time.rs
+--- hyper-1.11.1/src/common/time.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/common/time.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -33,6 +33,7 @@
+     #[cfg(all(any(feature = "client", feature = "server"), feature = "http2"))]
+     pub(crate) fn sleep(&self, duration: Duration) -> Pin<Box<dyn Sleep>> {
+         match &self {
++            #[allow(clippy::panic)]
+             Time::Empty => {
+                 panic!("You must supply a timer.")
+             }
+@@ -43,6 +44,7 @@
+     #[cfg(all(feature = "server", feature = "http1"))]
+     pub(crate) fn sleep_until(&self, deadline: Instant) -> Pin<Box<dyn Sleep>> {
+         match &self {
++            #[allow(clippy::panic)]
+             Time::Empty => {
+                 panic!("You must supply a timer.")
+             }
+@@ -59,6 +61,7 @@
+ 
+     pub(crate) fn reset(&self, sleep: &mut Pin<Box<dyn Sleep>>, new_deadline: Instant) {
+         match &self {
++            #[allow(clippy::panic)]
+             Time::Empty => {
+                 panic!("You must supply a timer.")
+             }
+@@ -77,7 +80,8 @@
+                 Time::Timer(..) => Some(dur),
+             },
+             Dur::Configured(Some(dur)) => match self {
+-                Time::Empty => panic!("timeout `{name}` set, but no timer set",),
++                #[allow(clippy::panic)]
++                Time::Empty => panic!("timeout `{name}` set, but no timer set"),
+                 Time::Timer(..) => Some(dur),
+             },
+             Dur::Default(None) | Dur::Configured(None) => None,
+Only in hyper-1.11.1/src/common: watch.rs
+diff -r hyper-1.11.1/src/ext/h1_reason_phrase.rs hyper-1.12.0/src/ext/h1_reason_phrase.rs
+--- hyper-1.11.1/src/ext/h1_reason_phrase.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/ext/h1_reason_phrase.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -40,8 +40,12 @@
+     }
+ 
+     /// Converts a static byte slice to a reason phrase.
++    ///
++    /// # Panics
++    ///
++    /// This method will panic if 'reason' contains an invalid byte. In a const context,
++    /// this is a compile-time error instead.
+     pub const fn from_static(reason: &'static [u8]) -> Self {
+-        // TODO: this can be made const once MSRV is >= 1.57.0
+         assert!(
+             find_invalid_byte(reason).is_none(),
+             "invalid byte in static reason phrase"
+diff -r hyper-1.11.1/src/ext/informational.rs hyper-1.12.0/src/ext/informational.rs
+--- hyper-1.11.1/src/ext/informational.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/ext/informational.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -66,7 +66,7 @@
+ // being either a real reference, or moving the http::Response into the closure,
+ // in a backwards-compatible change in the future.
+ #[derive(Debug)]
+-pub struct Response<'a>(&'a http::Response<()>);
++pub struct Response<'resp>(&'resp http::Response<()>);
+ 
+ impl Response<'_> {
+     #[inline]
+diff -r hyper-1.11.1/src/ext/mod.rs hyper-1.12.0/src/ext/mod.rs
+--- hyper-1.11.1/src/ext/mod.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/ext/mod.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -113,8 +113,8 @@
+ }
+ 
+ #[cfg(feature = "http2")]
+-impl<'a> From<&'a str> for Protocol {
+-    fn from(value: &'a str) -> Self {
++impl<'proto> From<&'proto str> for Protocol {
++    fn from(value: &'proto str) -> Self {
+         Self {
+             inner: h2::ext::Protocol::from(value),
+         }
+@@ -165,10 +165,10 @@
+     /// Returns a view of all spellings associated with that header name,
+     /// in the order they were found.
+     #[cfg(feature = "client")]
+-    pub(crate) fn get_all<'a>(
+-        &'a self,
++    pub(crate) fn get_all<'hdr>(
++        &'hdr self,
+         name: &HeaderName,
+-    ) -> impl Iterator<Item = impl AsRef<[u8]> + 'a> + 'a {
++    ) -> impl Iterator<Item = impl AsRef<[u8]> + 'hdr> + 'hdr {
+         self.get_all_internal(name)
+     }
+ 
+@@ -257,41 +257,6 @@
+     // here.
+     /// This returns an iterator that provides header names and indexes
+     /// in the original order received.
+-    ///
+-    /// # Examples
+-    /// ```no_run
+-    /// use hyper::ext::OriginalHeaderOrder;
+-    /// use hyper::header::{HeaderName, HeaderValue, HeaderMap};
+-    ///
+-    /// let mut h_order = OriginalHeaderOrder::default();
+-    /// let mut h_map = Headermap::new();
+-    ///
+-    /// let name1 = b"Set-CookiE";
+-    /// let value1 = b"a=b";
+-    /// h_map.append(name1);
+-    /// h_order.append(name1);
+-    ///
+-    /// let name2 = b"Content-Encoding";
+-    /// let value2 = b"gzip";
+-    /// h_map.append(name2, value2);
+-    /// h_order.append(name2);
+-    ///
+-    /// let name3 = b"SET-COOKIE";
+-    /// let value3 = b"c=d";
+-    /// h_map.append(name3, value3);
+-    /// h_order.append(name3)
+-    ///
+-    /// let mut iter = h_order.get_in_order()
+-    ///
+-    /// let (name, idx) = iter.next();
+-    /// assert_eq!(b"a=b", h_map.get_all(name).nth(idx).unwrap());
+-    ///
+-    /// let (name, idx) = iter.next();
+-    /// assert_eq!(b"gzip", h_map.get_all(name).nth(idx).unwrap());
+-    ///
+-    /// let (name, idx) = iter.next();
+-    /// assert_eq!(b"c=d", h_map.get_all(name).nth(idx).unwrap());
+-    /// ```
+     pub(crate) fn get_in_order(&self) -> impl Iterator<Item = &(HeaderName, usize)> {
+         self.entry_order.iter()
+     }
+diff -r hyper-1.11.1/src/ffi/task.rs hyper-1.12.0/src/ffi/task.rs
+--- hyper-1.11.1/src/ffi/task.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/ffi/task.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -128,7 +128,7 @@
+ /// its only purpose is to provide access to the waker. See `hyper_waker`.
+ ///
+ /// Corresponding Rust type: <https://doc.rust-lang.org/std/task/struct.Context.html>
+-pub struct hyper_context<'a>(Context<'a>);
++pub struct hyper_context<'ctx>(Context<'ctx>);
+ 
+ /// A waker that is saved and used to waken a pending task.
+ ///
+@@ -511,7 +511,9 @@
+ // ===== impl hyper_context =====
+ 
+ impl hyper_context<'_> {
+-    pub(crate) fn wrap<'a, 'b>(cx: &'a mut Context<'b>) -> &'a mut hyper_context<'b> {
++    pub(crate) fn wrap<'borrow, 'ctx>(
++        cx: &'borrow mut Context<'ctx>,
++    ) -> &'borrow mut hyper_context<'ctx> {
+         // A struct with only one field has the same layout as that field.
+         unsafe { std::mem::transmute::<&mut Context<'_>, &mut hyper_context<'_>>(cx) }
+     }
+diff -r hyper-1.11.1/src/proto/h1/conn.rs hyper-1.12.0/src/proto/h1/conn.rs
+--- hyper-1.11.1/src/proto/h1/conn.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/proto/h1/conn.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -11,7 +11,7 @@
+ use crate::rt::{Read, Write};
+ use bytes::{Buf, Bytes};
+ use futures_core::ready;
+-use http::header::{HeaderValue, CONNECTION};
++use http::header::{Entry, HeaderValue, CONNECTION};
+ use http::{HeaderMap, Method, Version};
+ use http_body::Frame;
+ use httparse::ParserConfig;
+@@ -58,6 +58,7 @@
+                 method: None,
+                 h1_parser_config: ParserConfig::default(),
+                 h1_max_headers: None,
++                h1_max_header_size: None,
+                 #[cfg(feature = "server")]
+                 h1_header_read_timeout: None,
+                 #[cfg(feature = "server")]
+@@ -141,6 +142,10 @@
+         self.state.h1_max_headers = Some(val);
+     }
+ 
++    pub(crate) fn set_http1_max_header_size(&mut self, val: usize) {
++        self.state.h1_max_header_size = Some(val);
++    }
++
+     #[cfg(feature = "server")]
+     pub(crate) fn set_http1_header_read_timeout(&mut self, val: Duration) {
+         self.state.h1_header_read_timeout = Some(val);
+@@ -241,6 +246,7 @@
+                 req_method: &mut self.state.method,
+                 h1_parser_config: self.state.h1_parser_config.clone(),
+                 h1_max_headers: self.state.h1_max_headers,
++                h1_max_header_size: self.state.h1_max_header_size,
+                 preserve_header_case: self.state.preserve_header_case,
+                 #[cfg(feature = "ffi")]
+                 preserve_header_order: self.state.preserve_header_order,
+@@ -309,7 +315,7 @@
+                 self.try_keep_alive(cx);
+             }
+         } else if msg.expect_continue && msg.head.version.gt(&Version::HTTP_10) {
+-            let h1_max_header_size = None; // TODO: remove this when we land h1_max_header_size support
++            let h1_max_header_size = self.state.h1_max_header_size;
+             self.state.reading = Reading::Continue(Decoder::new(
+                 msg.decode,
+                 self.state.h1_max_headers,
+@@ -317,7 +323,7 @@
+             ));
+             wants = wants.add(Wants::EXPECT);
+         } else {
+-            let h1_max_header_size = None; // TODO: remove this when we land h1_max_header_size support
++            let h1_max_header_size = self.state.h1_max_header_size;
+             self.state.reading = Reading::Body(Decoder::new(
+                 msg.decode,
+                 self.state.h1_max_headers,
+@@ -664,10 +670,11 @@
+ 
+     // Fix keep-alive when Connection: keep-alive header is not present
+     fn fix_keep_alive(&mut self, head: &mut MessageHead<T::Outgoing>) {
+-        let outgoing_is_keep_alive = head
+-            .headers
+-            .get(CONNECTION)
+-            .map_or(false, headers::connection_keep_alive);
++        let connection_entry = head.headers.entry(CONNECTION);
++        let outgoing_is_keep_alive = match &connection_entry {
++            Entry::Occupied(entry) => entry.iter().any(headers::connection_keep_alive),
++            Entry::Vacant(_) => false,
++        };
+ 
+         if !outgoing_is_keep_alive {
+             match head.version {
+@@ -676,12 +683,14 @@
+                 Version::HTTP_10 => self.state.disable_keep_alive(),
+                 // If response is version 1.1 and keep-alive is wanted, add
+                 // Connection: keep-alive header when not present
+-                Version::HTTP_11 => {
+-                    if self.state.wants_keep_alive() {
+-                        head.headers
+-                            .insert(CONNECTION, HeaderValue::from_static("keep-alive"));
++                Version::HTTP_11 if self.state.wants_keep_alive() => match connection_entry {
++                    Entry::Occupied(mut entry) => {
++                        entry.append(HeaderValue::from_static("keep-alive"));
+                     }
+-                }
++                    Entry::Vacant(entry) => {
++                        entry.insert(HeaderValue::from_static("keep-alive"));
++                    }
++                },
+                 _ => (),
+             }
+         }
+@@ -700,8 +709,16 @@
+             }
+             Version::HTTP_11 => {
+                 if let KA::Disabled = self.state.keep_alive.status() {
+-                    head.headers
+-                        .insert(CONNECTION, HeaderValue::from_static("close"));
++                    match head.headers.entry(CONNECTION) {
++                        Entry::Occupied(mut entry) => {
++                            if !entry.iter().any(headers::connection_close) {
++                                entry.append(HeaderValue::from_static("close"));
++                            }
++                        }
++                        Entry::Vacant(entry) => {
++                            entry.insert(HeaderValue::from_static("close"));
++                        }
++                    }
+                 }
+             }
+             _ => (),
+@@ -935,6 +952,7 @@
+     method: Option<Method>,
+     h1_parser_config: ParserConfig,
+     h1_max_headers: Option<usize>,
++    h1_max_header_size: Option<usize>,
+     #[cfg(feature = "server")]
+     h1_header_read_timeout: Option<Duration>,
+     #[cfg(feature = "server")]
+@@ -1005,7 +1023,7 @@
+ 
+         // Purposefully leaving off other fields..
+ 
+-        builder.finish()
++        builder.finish_non_exhaustive()
+     }
+ }
+ 
+diff -r hyper-1.11.1/src/proto/h1/decode.rs hyper-1.12.0/src/proto/h1/decode.rs
+--- hyper-1.11.1/src/proto/h1/decode.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/proto/h1/decode.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -286,12 +286,12 @@
+     };
+ }
+ 
+-struct StepArgs<'a> {
+-    chunk_size: &'a mut u64,
+-    chunk_buf: &'a mut Option<Bytes>,
+-    extensions_cnt: &'a mut u64,
+-    trailers_buf: &'a mut Option<BytesMut>,
+-    trailers_cnt: &'a mut usize,
++struct StepArgs<'args> {
++    chunk_size: &'args mut u64,
++    chunk_buf: &'args mut Option<Bytes>,
++    extensions_cnt: &'args mut u64,
++    trailers_buf: &'args mut Option<BytesMut>,
++    trailers_cnt: &'args mut usize,
+     max_headers_cnt: usize,
+     max_headers_bytes: usize,
+ }
+@@ -314,7 +314,10 @@
+             max_headers_bytes,
+         }: StepArgs<'_>,
+     ) -> Poll<Result<ChunkedState, io::Error>> {
+-        use self::ChunkedState::*;
++        use self::ChunkedState::{
++            Body, BodyCr, BodyLf, End, EndCr, EndLf, Extension, Size, SizeLf, SizeLws, Start,
++            Trailer, TrailerLf,
++        };
+         match *self {
+             Start => ChunkedState::read_start(cx, body, chunk_size),
+             Size => ChunkedState::read_size(cx, body, chunk_size),
+@@ -649,7 +652,7 @@
+                     Err(_) => {
+                         return Err(io::Error::new(
+                             io::ErrorKind::InvalidInput,
+-                            format!("Invalid header name: {:?}", &header),
++                            format!("Invalid header name: {header:?}"),
+                         ));
+                     }
+                 };
+@@ -659,7 +662,7 @@
+                     Err(_) => {
+                         return Err(io::Error::new(
+                             io::ErrorKind::InvalidInput,
+-                            format!("Invalid header value: {:?}", &header),
++                            format!("Invalid header value: {header:?}"),
+                         ));
+                     }
+                 };
+diff -r hyper-1.11.1/src/proto/h1/dispatch.rs hyper-1.12.0/src/proto/h1/dispatch.rs
+--- hyper-1.11.1/src/proto/h1/dispatch.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/proto/h1/dispatch.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -509,10 +509,10 @@
+ 
+ /// A drop guard to allow a mutable borrow of an Option while being able to
+ /// set whether the `Option` should be cleared on drop.
+-struct OptGuard<'a, T>(Pin<&'a mut Option<T>>, bool);
++struct OptGuard<'opt, T>(Pin<&'opt mut Option<T>>, bool);
+ 
+-impl<'a, T> OptGuard<'a, T> {
+-    fn new(pin: Pin<&'a mut Option<T>>) -> Self {
++impl<'opt, T> OptGuard<'opt, T> {
++    fn new(pin: Pin<&'opt mut Option<T>>) -> Self {
+         OptGuard(pin, false)
+     }
+ 
+diff -r hyper-1.11.1/src/proto/h1/encode.rs hyper-1.12.0/src/proto/h1/encode.rs
+--- hyper-1.11.1/src/proto/h1/encode.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/proto/h1/encode.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -142,13 +142,18 @@
+             }
+             Kind::Length(remaining) => {
+                 trace!("sized write, len = {}", len);
+-                if len as u64 > *remaining {
+-                    let limit = *remaining as usize;
+-                    *remaining = 0;
+-                    BufKind::Limited(msg.take(limit))
+-                } else {
+-                    *remaining -= len as u64;
+-                    BufKind::Exact(msg)
++                match usize::try_from(*remaining) {
++                    // Holding more than is owed, so write only what is left.
++                    Ok(limit) if limit < len => {
++                        *remaining = 0;
++                        BufKind::Limited(msg.take(limit))
++                    }
++                    // Ok(_) => Owed at least what we hold, write all of it.
++                    // Err(_) => Owed more than `usize` can represent, write all of it.
++                    Ok(_) | Err(_) => {
++                        *remaining -= len as u64;
++                        BufKind::Exact(msg)
++                    }
+                 }
+             }
+             #[cfg(feature = "server")]
+@@ -241,6 +246,7 @@
+                         dst.buffer(msg);
+                         !self.is_last
+                     }
++                    #[allow(clippy::cast_possible_truncation)]
+                     Ordering::Greater => {
+                         dst.buffer(msg.take(remaining as usize));
+                         !self.is_last
+@@ -317,7 +323,7 @@
+     }
+ 
+     #[inline]
+-    fn chunks_vectored<'t>(&'t self, dst: &mut [IoSlice<'t>]) -> usize {
++    fn chunks_vectored<'data>(&'data self, dst: &mut [IoSlice<'data>]) -> usize {
+         match &self.kind {
+             BufKind::Exact(b) => b.chunks_vectored(dst),
+             BufKind::Limited(b) => b.chunks_vectored(dst),
+@@ -328,12 +334,8 @@
+     }
+ }
+ 
+-#[cfg(target_pointer_width = "32")]
+-const USIZE_BYTES: usize = 4;
++const USIZE_BYTES: usize = std::mem::size_of::<usize>();
+ 
+-#[cfg(target_pointer_width = "64")]
+-const USIZE_BYTES: usize = 8;
+-
+ // each byte will become 2 hex
+ const CHUNK_SIZE_MAX_BYTES: usize = USIZE_BYTES * 2;
+ 
+@@ -369,6 +371,7 @@
+     }
+ 
+     #[inline]
++    #[allow(clippy::cast_possible_truncation)]
+     fn advance(&mut self, cnt: usize) {
+         assert!(cnt <= self.remaining());
+         self.pos += cnt as u8; // just asserted cnt fits in u8
+@@ -385,12 +388,14 @@
+ }
+ 
+ impl fmt::Write for ChunkSize {
++    #[allow(clippy::cast_possible_truncation)]
+     fn write_str(&mut self, num: &str) -> fmt::Result {
+         use std::io::Write;
+         (&mut self.bytes[self.len.into()..])
+             .write_all(num.as_bytes())
+             .expect("&mut [u8].write() cannot error");
+-        self.len += num.len() as u8; // safe because bytes is never bigger than 256
++        debug_assert!(u8::try_from(num.len()).is_ok());
++        self.len += num.len() as u8; // safe because bytes is never bigger than 255
+         Ok(())
+     }
+ }
+diff -r hyper-1.11.1/src/proto/h1/io.rs hyper-1.12.0/src/proto/h1/io.rs
+--- hyper-1.11.1/src/proto/h1/io.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/proto/h1/io.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -47,7 +47,7 @@
+         f.debug_struct("Buffered")
+             .field("read_buf", &self.read_buf)
+             .field("write_buf", &self.write_buf)
+-            .finish()
++            .finish_non_exhaustive()
+     }
+ }
+ 
+@@ -188,6 +188,7 @@
+                     req_method: parse_ctx.req_method,
+                     h1_parser_config: parse_ctx.h1_parser_config.clone(),
+                     h1_max_headers: parse_ctx.h1_max_headers,
++                    h1_max_header_size: parse_ctx.h1_max_header_size,
+                     preserve_header_case: parse_ctx.preserve_header_case,
+                     #[cfg(feature = "ffi")]
+                     preserve_header_order: parse_ctx.preserve_header_order,
+@@ -200,8 +201,14 @@
+                 self.partial_len = None;
+                 return Poll::Ready(Ok(msg));
+             } else {
+-                let max = self.read_buf_strategy.max();
+                 let curr_len = self.read_buf.len();
++                if let Some(max_header_size) = parse_ctx.h1_max_header_size {
++                    if curr_len >= max_header_size {
++                        debug!("max_header_size ({}) reached, closing", max_header_size);
++                        return Poll::Ready(Err(crate::Error::new_too_large()));
++                    }
++                }
++                let max = self.read_buf_strategy.max();
+                 if curr_len >= max {
+                     debug!("max_buf_size ({}) reached, closing", max);
+                     return Poll::Ready(Err(crate::Error::new_too_large()));
+@@ -240,7 +247,7 @@
+         let dst = unsafe { self.read_buf.chunk_mut().as_uninit_slice_mut() };
+         let mut buf = ReadBuf::uninit(dst);
+         match Pin::new(&mut self.io).poll_read(cx, buf.unfilled()) {
+-            Poll::Ready(Ok(_)) => {
++            Poll::Ready(Ok(())) => {
+                 let n = buf.filled().len();
+                 trace!("received {} bytes", n);
+                 // Safety: we just read that many bytes into the
+@@ -534,12 +541,7 @@
+             strategy,
+         }
+     }
+-}
+ 
+-impl<B> WriteBuf<B>
+-where
+-    B: Buf,
+-{
+     fn set_strategy(&mut self, strategy: WriteStrategy) {
+         self.strategy = strategy;
+     }
+@@ -601,7 +603,7 @@
+         f.debug_struct("WriteBuf")
+             .field("remaining", &self.remaining())
+             .field("strategy", &self.strategy)
+-            .finish()
++            .finish_non_exhaustive()
+     }
+ }
+ 
+@@ -637,7 +639,7 @@
+     }
+ 
+     #[inline]
+-    fn chunks_vectored<'t>(&'t self, dst: &mut [IoSlice<'t>]) -> usize {
++    fn chunks_vectored<'data>(&'data self, dst: &mut [IoSlice<'data>]) -> usize {
+         let n = self.headers.chunks_vectored(dst);
+         self.queue.chunks_vectored(&mut dst[n..]) + n
+     }
+@@ -702,6 +704,7 @@
+                 req_method: &mut None,
+                 h1_parser_config: Default::default(),
+                 h1_max_headers: None,
++                h1_max_header_size: None,
+                 preserve_header_case: false,
+                 #[cfg(feature = "ffi")]
+                 preserve_header_order: false,
+diff -r hyper-1.11.1/src/proto/h1/mod.rs hyper-1.12.0/src/proto/h1/mod.rs
+--- hyper-1.11.1/src/proto/h1/mod.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/proto/h1/mod.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -68,26 +68,27 @@
+     wants_upgrade: bool,
+ }
+ 
+-pub(crate) struct ParseContext<'a> {
+-    cached_headers: &'a mut Option<HeaderMap>,
+-    req_method: &'a mut Option<Method>,
++pub(crate) struct ParseContext<'ctx> {
++    cached_headers: &'ctx mut Option<HeaderMap>,
++    req_method: &'ctx mut Option<Method>,
+     h1_parser_config: ParserConfig,
+     h1_max_headers: Option<usize>,
++    h1_max_header_size: Option<usize>,
+     preserve_header_case: bool,
+     #[cfg(feature = "ffi")]
+     preserve_header_order: bool,
+     h09_responses: bool,
+     #[cfg(feature = "client")]
+-    on_informational: &'a mut Option<crate::ext::OnInformational>,
++    on_informational: &'ctx mut Option<crate::ext::OnInformational>,
+ }
+ 
+ /// Passed to `Http1Transaction::encode`.
+-pub(crate) struct Encode<'a, T> {
+-    head: &'a mut MessageHead<T>,
++pub(crate) struct Encode<'encode, T> {
++    head: &'encode mut MessageHead<T>,
+     body: Option<BodyLength>,
+     #[cfg(feature = "server")]
+     keep_alive: bool,
+-    req_method: &'a mut Option<Method>,
++    req_method: &'encode mut Option<Method>,
+     title_case_headers: bool,
+     #[cfg(feature = "server")]
+     date_header: bool,
+diff -r hyper-1.11.1/src/proto/h1/role.rs hyper-1.12.0/src/proto/h1/role.rs
+--- hyper-1.11.1/src/proto/h1/role.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/proto/h1/role.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -180,6 +180,11 @@
+             ) {
+                 Ok(httparse::Status::Complete(parsed_len)) => {
+                     trace!("Request.parse Complete({})", parsed_len);
++                    if let Some(max_header_size) = ctx.h1_max_header_size {
++                        if parsed_len > max_header_size {
++                            return Err(Parse::TooLarge);
++                        }
++                    }
+                     len = parsed_len;
+                     let uri = req.path.expect("httparse completed");
+                     if uri.len() > MAX_URI_LEN {
+@@ -256,6 +261,7 @@
+         };
+ 
+         let mut headers = ctx.cached_headers.take().unwrap_or_default();
++        let mut saw_connection_close = false;
+ 
+         headers.reserve(headers_len);
+ 
+@@ -308,12 +314,14 @@
+                     con_len = Some(len);
+                 }
+                 header::CONNECTION => {
+-                    // keep_alive was previously set to default for Version
+-                    if keep_alive {
+-                        // HTTP/1.1
+-                        keep_alive = !headers::connection_close(&value);
+-                    } else {
+-                        // HTTP/1.0
++                    // A message may carry more than one `Connection` line. Once
++                    // any of them asks to close, a later `keep-alive` must not
++                    // undo it.
++                    if saw_connection_close || headers::connection_close(&value) {
++                        saw_connection_close = true;
++                        keep_alive = false;
++                    } else if !keep_alive {
++                        // HTTP/1.0, which defaults to close
+                         keep_alive = headers::connection_keep_alive(&value);
+                     }
+                 }
+@@ -433,6 +441,7 @@
+                     debug!("response with HTTP2 version coerced to HTTP/1.1");
+                     extend(dst, b"HTTP/1.1 ");
+                 }
++                #[allow(clippy::panic)]
+                 other => panic!("unexpected response version: {other:?}"),
+             }
+ 
+@@ -1052,6 +1061,11 @@
+                 ) {
+                     Ok(httparse::Status::Complete(len)) => {
+                         trace!("Response.parse Complete({})", len);
++                        if let Some(max_header_size) = ctx.h1_max_header_size {
++                            if len > max_header_size {
++                                return Err(Parse::TooLarge);
++                            }
++                        }
+                         let status = StatusCode::from_u16(res.code.expect("httparse completed"))?;
+ 
+                         let reason = {
+@@ -1101,6 +1115,7 @@
+             let mut headers = ctx.cached_headers.take().unwrap_or_default();
+ 
+             let mut keep_alive = version == Version::HTTP_11;
++            let mut saw_connection_close = false;
+ 
+             let mut header_case_map = if ctx.preserve_header_case {
+                 Some(HeaderCaseMap::default())
+@@ -1123,12 +1138,14 @@
+                 let value = header_value!(slice.slice(header.value.0..header.value.1));
+ 
+                 if let header::CONNECTION = name {
+-                    // keep_alive was previously set to default for Version
+-                    if keep_alive {
+-                        // HTTP/1.1
+-                        keep_alive = !headers::connection_close(&value);
+-                    } else {
+-                        // HTTP/1.0
++                    // A message may carry more than one `Connection` line. Once
++                    // any of them asks to close, a later `keep-alive` must not
++                    // undo it.
++                    if saw_connection_close || headers::connection_close(&value) {
++                        saw_connection_close = true;
++                        keep_alive = false;
++                    } else if !keep_alive {
++                        // HTTP/1.0, which defaults to close
+                         keep_alive = headers::connection_keep_alive(&value);
+                     }
+                 }
+@@ -1221,6 +1238,7 @@
+                 debug!("request with HTTP2 version coerced to HTTP/1.1");
+                 extend(dst, b"HTTP/1.1");
+             }
++            #[allow(clippy::panic)]
+             other => panic!("unexpected request version: {other:?}"),
+         }
+         extend(dst, b"\r\n");
+@@ -1404,6 +1422,9 @@
+                         Method::GET | Method::HEAD | Method::CONNECT => Some(Encoder::length(0)),
+                         _ => {
+                             te.insert(HeaderValue::from_static("chunked"));
++                            // A valid Content-Length would have taken precedence above.
++                            // Remove any invalid values now that we're using chunked.
++                            should_remove_con_len = true;
+                             Some(Encoder::chunked())
+                         }
+                     }
+@@ -1437,7 +1458,7 @@
+         // This is because we need a second mutable borrow to remove
+         // content-length header.
+         if let Some(encoder) = encoder {
+-            if should_remove_con_len && existing_con_len.is_some() {
++            if should_remove_con_len {
+                 headers.remove(header::CONTENT_LENGTH);
+             }
+             return encoder;
+@@ -1652,7 +1673,7 @@
+ }
+ 
+ #[cfg(feature = "client")]
+-struct FastWrite<'a>(&'a mut Vec<u8>);
++struct FastWrite<'data>(&'data mut Vec<u8>);
+ 
+ #[cfg(feature = "client")]
+ impl fmt::Write for FastWrite<'_> {
+@@ -1692,6 +1713,7 @@
+                 req_method: &mut method,
+                 h1_parser_config: Default::default(),
+                 h1_max_headers: None,
++                h1_max_header_size: None,
+                 preserve_header_case: false,
+                 #[cfg(feature = "ffi")]
+                 preserve_header_order: false,
+@@ -1720,6 +1742,7 @@
+             req_method: &mut Some(crate::Method::GET),
+             h1_parser_config: Default::default(),
+             h1_max_headers: None,
++            h1_max_header_size: None,
+             preserve_header_case: false,
+             #[cfg(feature = "ffi")]
+             preserve_header_order: false,
+@@ -1744,6 +1767,7 @@
+             req_method: &mut None,
+             h1_parser_config: Default::default(),
+             h1_max_headers: None,
++            h1_max_header_size: None,
+             preserve_header_case: false,
+             #[cfg(feature = "ffi")]
+             preserve_header_order: false,
+@@ -1765,6 +1789,7 @@
+             req_method: &mut Some(crate::Method::GET),
+             h1_parser_config: Default::default(),
+             h1_max_headers: None,
++            h1_max_header_size: None,
+             preserve_header_case: false,
+             #[cfg(feature = "ffi")]
+             preserve_header_order: false,
+@@ -1788,6 +1813,7 @@
+             req_method: &mut Some(crate::Method::GET),
+             h1_parser_config: Default::default(),
+             h1_max_headers: None,
++            h1_max_header_size: None,
+             preserve_header_case: false,
+             #[cfg(feature = "ffi")]
+             preserve_header_order: false,
+@@ -1815,6 +1841,7 @@
+             req_method: &mut Some(crate::Method::GET),
+             h1_parser_config,
+             h1_max_headers: None,
++            h1_max_header_size: None,
+             preserve_header_case: false,
+             #[cfg(feature = "ffi")]
+             preserve_header_order: false,
+@@ -1839,6 +1866,7 @@
+             req_method: &mut Some(crate::Method::GET),
+             h1_parser_config: Default::default(),
+             h1_max_headers: None,
++            h1_max_header_size: None,
+             preserve_header_case: false,
+             #[cfg(feature = "ffi")]
+             preserve_header_order: false,
+@@ -1867,6 +1895,7 @@
+             req_method: &mut method,
+             h1_parser_config,
+             h1_max_headers: None,
++            h1_max_header_size: None,
+             preserve_header_case: false,
+             #[cfg(feature = "ffi")]
+             preserve_header_order: false,
+@@ -1894,6 +1923,7 @@
+             req_method: &mut None,
+             h1_parser_config: Default::default(),
+             h1_max_headers: None,
++            h1_max_header_size: None,
+             preserve_header_case: false,
+             #[cfg(feature = "ffi")]
+             preserve_header_order: false,
+@@ -1914,6 +1944,7 @@
+             req_method: &mut None,
+             h1_parser_config: Default::default(),
+             h1_max_headers: None,
++            h1_max_header_size: None,
+             preserve_header_case: true,
+             #[cfg(feature = "ffi")]
+             preserve_header_order: false,
+@@ -1953,6 +1984,7 @@
+                     req_method: &mut None,
+                     h1_parser_config: Default::default(),
+                     h1_max_headers: None,
++                    h1_max_header_size: None,
+                     preserve_header_case: false,
+                     #[cfg(feature = "ffi")]
+                     preserve_header_order: false,
+@@ -1974,6 +2006,7 @@
+                     req_method: &mut None,
+                     h1_parser_config: Default::default(),
+                     h1_max_headers: None,
++                    h1_max_header_size: None,
+                     preserve_header_case: false,
+                     #[cfg(feature = "ffi")]
+                     preserve_header_order: false,
+@@ -2214,6 +2247,7 @@
+                     req_method: &mut Some(Method::GET),
+                     h1_parser_config: Default::default(),
+                     h1_max_headers: None,
++                    h1_max_header_size: None,
+                     preserve_header_case: false,
+                     #[cfg(feature = "ffi")]
+                     preserve_header_order: false,
+@@ -2235,6 +2269,7 @@
+                     req_method: &mut Some(m),
+                     h1_parser_config: Default::default(),
+                     h1_max_headers: None,
++                    h1_max_header_size: None,
+                     preserve_header_case: false,
+                     #[cfg(feature = "ffi")]
+                     preserve_header_order: false,
+@@ -2256,6 +2291,7 @@
+                     req_method: &mut Some(Method::GET),
+                     h1_parser_config: Default::default(),
+                     h1_max_headers: None,
++                    h1_max_header_size: None,
+                     preserve_header_case: false,
+                     #[cfg(feature = "ffi")]
+                     preserve_header_order: false,
+@@ -2527,8 +2563,168 @@
+         );
+     }
+ 
++    #[cfg(feature = "server")]
++    #[test]
++    fn test_parse_request_multiple_connection_headers() {
++        fn parse(s: &str) -> ParsedMessage<RequestLine> {
++            let mut bytes = BytesMut::from(s);
++            Server::parse(
++                &mut bytes,
++                ParseContext {
++                    cached_headers: &mut None,
++                    req_method: &mut None,
++                    h1_parser_config: Default::default(),
++                    h1_max_headers: None,
++                    h1_max_header_size: None,
++                    preserve_header_case: false,
++                    #[cfg(feature = "ffi")]
++                    preserve_header_order: false,
++                    h09_responses: false,
++                    #[cfg(feature = "client")]
++                    on_informational: &mut None,
++                },
++            )
++            .unwrap()
++            .unwrap()
++        }
++
++        assert!(
++            !parse(
++                "\
++                 GET / HTTP/1.1\r\n\
++                 connection: close\r\n\
++                 connection: keep-alive\r\n\
++                 \r\n\
++                 "
++            )
++            .keep_alive,
++            "close before keep-alive is still close"
++        );
++
++        assert!(
++            !parse(
++                "\
++                 GET / HTTP/1.1\r\n\
++                 connection: keep-alive\r\n\
++                 connection: close\r\n\
++                 \r\n\
++                 "
++            )
++            .keep_alive,
++            "keep-alive before close is still close"
++        );
++
++        assert!(
++            parse(
++                "\
++                 GET / HTTP/1.0\r\n\
++                 connection: keep-alive\r\n\
++                 connection: foo\r\n\
++                 \r\n\
++                 "
++            )
++            .keep_alive,
++            "HTTP/1.0 keep-alive is not undone by an unrelated token"
++        );
++
++        assert!(
++            !parse(
++                "\
++                 GET / HTTP/1.0\r\n\
++                 connection: keep-alive\r\n\
++                 connection: close\r\n\
++                 \r\n\
++                 "
++            )
++            .keep_alive,
++            "HTTP/1.0 close wins over an earlier keep-alive"
++        );
++    }
++
+     #[cfg(feature = "client")]
+     #[test]
++    fn test_parse_response_multiple_connection_headers() {
++        fn parse(s: &str) -> ParsedMessage<StatusCode> {
++            let mut bytes = BytesMut::from(s);
++            Client::parse(
++                &mut bytes,
++                ParseContext {
++                    cached_headers: &mut None,
++                    req_method: &mut Some(Method::GET),
++                    h1_parser_config: Default::default(),
++                    h1_max_headers: None,
++                    h1_max_header_size: None,
++                    preserve_header_case: false,
++                    #[cfg(feature = "ffi")]
++                    preserve_header_order: false,
++                    h09_responses: false,
++                    #[cfg(feature = "client")]
++                    on_informational: &mut None,
++                },
++            )
++            .unwrap()
++            .unwrap()
++        }
++
++        assert!(
++            !parse(
++                "\
++                 HTTP/1.1 200 OK\r\n\
++                 content-length: 0\r\n\
++                 connection: close\r\n\
++                 connection: keep-alive\r\n\
++                 \r\n\
++                 "
++            )
++            .keep_alive,
++            "close before keep-alive is still close"
++        );
++
++        assert!(
++            !parse(
++                "\
++                 HTTP/1.1 200 OK\r\n\
++                 content-length: 0\r\n\
++                 connection: keep-alive\r\n\
++                 connection: close\r\n\
++                 \r\n\
++                 "
++            )
++            .keep_alive,
++            "keep-alive before close is still close"
++        );
++
++        assert!(
++            parse(
++                "\
++                 HTTP/1.0 200 OK\r\n\
++                 content-length: 0\r\n\
++                 connection: keep-alive\r\n\
++                 connection: foo\r\n\
++                 \r\n\
++                 "
++            )
++            .keep_alive,
++            "HTTP/1.0 keep-alive is not undone by an unrelated token"
++        );
++
++        assert!(
++            !parse(
++                "\
++                 HTTP/1.0 200 OK\r\n\
++                 content-length: 0\r\n\
++                 connection: keep-alive\r\n\
++                 connection: close\r\n\
++                 \r\n\
++                 "
++            )
++            .keep_alive,
++            "HTTP/1.0 close wins over an earlier keep-alive"
++        );
++    }
++
++    #[cfg(feature = "client")]
++    #[test]
+     fn test_client_obs_fold_line() {
+         fn unfold(src: &str) -> String {
+             let mut buf = src.as_bytes().to_vec();
+@@ -2546,6 +2742,118 @@
+     }
+ 
+     #[test]
++    fn test_client_request_encode_explicit_transfer_encoding_removes_content_length() {
++        use crate::proto::BodyLength;
++        use http::header::HeaderValue;
++
++        for values in [
++            vec!["10"],
++            vec![""],
++            vec!["abc"],
++            vec!["+10"],
++            vec!["18446744073709551616"],
++            vec!["10", "11"],
++            vec!["10, 11"],
++            vec!["10", "abc"],
++        ] {
++            for transfer_encoding in ["chunked", "gzip"] {
++                for body in [BodyLength::Known(10), BodyLength::Unknown] {
++                    let mut head = MessageHead::default();
++                    for value in &values {
++                        head.headers
++                            .append("content-length", HeaderValue::from_static(value));
++                    }
++                    head.headers.insert(
++                        "transfer-encoding",
++                        HeaderValue::from_static(transfer_encoding),
++                    );
++
++                    let mut vec = Vec::new();
++                    let encoder = Client::encode(
++                        Encode {
++                            head: &mut head,
++                            body: Some(body),
++                            #[cfg(feature = "server")]
++                            keep_alive: true,
++                            req_method: &mut None,
++                            title_case_headers: false,
++                            #[cfg(feature = "server")]
++                            date_header: true,
++                        },
++                        &mut vec,
++                    )
++                    .unwrap();
++
++                    assert!(encoder.is_chunked());
++                    let expected_te = if transfer_encoding == "chunked" {
++                        "chunked"
++                    } else {
++                        "gzip, chunked"
++                    };
++                    assert_eq!(
++                        vec,
++                        format!("GET / HTTP/1.1\r\ntransfer-encoding: {expected_te}\r\n\r\n")
++                            .as_bytes(),
++                        "content-length: {values:?}, transfer-encoding: {transfer_encoding}"
++                    );
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn test_client_request_encode_automatic_transfer_encoding_removes_content_length() {
++        use crate::proto::BodyLength;
++        use http::header::HeaderValue;
++
++        for values in [
++            vec![],
++            vec![""],
++            vec!["abc"],
++            vec!["+10"],
++            vec!["18446744073709551616"],
++            vec!["10", "11"],
++            vec!["10, 11"],
++            vec!["10", "abc"],
++            vec!["10"],
++        ] {
++            let mut head = RequestHead::default();
++            head.subject.0 = Method::POST;
++            for value in &values {
++                head.headers
++                    .append("content-length", HeaderValue::from_static(value));
++            }
++
++            let mut vec = Vec::new();
++            let encoder = Client::encode(
++                Encode {
++                    head: &mut head,
++                    body: Some(BodyLength::Unknown),
++                    #[cfg(feature = "server")]
++                    keep_alive: true,
++                    req_method: &mut None,
++                    title_case_headers: false,
++                    #[cfg(feature = "server")]
++                    date_header: true,
++                },
++                &mut vec,
++            )
++            .unwrap();
++
++            if values == ["10"] {
++                assert_eq!(encoder, Encoder::length(10));
++                assert_eq!(vec, b"POST / HTTP/1.1\r\ncontent-length: 10\r\n\r\n");
++            } else {
++                assert!(encoder.is_chunked());
++                assert_eq!(
++                    vec, b"POST / HTTP/1.1\r\ntransfer-encoding: chunked\r\n\r\n",
++                    "content-length: {values:?}"
++                );
++            }
++        }
++    }
++
++    #[test]
+     fn test_client_request_encode_title_case() {
+         use crate::proto::BodyLength;
+         use http::header::HeaderValue;
+@@ -2826,6 +3134,7 @@
+                 req_method: &mut Some(Method::GET),
+                 h1_parser_config: Default::default(),
+                 h1_max_headers: None,
++                h1_max_header_size: None,
+                 preserve_header_case: false,
+                 #[cfg(feature = "ffi")]
+                 preserve_header_order: false,
+@@ -2870,6 +3179,7 @@
+                         req_method: &mut None,
+                         h1_parser_config: Default::default(),
+                         h1_max_headers: max_headers,
++                        h1_max_header_size: None,
+                         preserve_header_case: false,
+                         #[cfg(feature = "ffi")]
+                         preserve_header_order: false,
+@@ -2894,6 +3204,7 @@
+                         req_method: &mut None,
+                         h1_parser_config: Default::default(),
+                         h1_max_headers: max_headers,
++                        h1_max_header_size: None,
+                         preserve_header_case: false,
+                         #[cfg(feature = "ffi")]
+                         preserve_header_order: false,
+@@ -2971,6 +3282,78 @@
+     }
+ 
+     #[test]
++    #[cfg(feature = "server")]
++    fn test_h1_server_max_header_size() {
++        let _ = pretty_env_logger::try_init();
++
++        let req_str = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n";
++        assert_eq!(req_str.len(), 37);
++
++        let parse_req = |max_header_size: Option<usize>| {
++            let mut bytes = BytesMut::from(req_str);
++            Server::parse(
++                &mut bytes,
++                ParseContext {
++                    cached_headers: &mut None,
++                    req_method: &mut None,
++                    h1_parser_config: Default::default(),
++                    h1_max_headers: None,
++                    h1_max_header_size: max_header_size,
++                    preserve_header_case: false,
++                    #[cfg(feature = "ffi")]
++                    preserve_header_order: false,
++                    h09_responses: false,
++                    #[cfg(feature = "client")]
++                    on_informational: &mut None,
++                },
++            )
++        };
++
++        // Server checks
++        parse_req(None).unwrap().unwrap();
++        parse_req(Some(37)).unwrap().unwrap();
++        parse_req(Some(50)).unwrap().unwrap();
++        assert!(matches!(parse_req(Some(36)), Err(Parse::TooLarge)));
++        assert!(matches!(parse_req(Some(10)), Err(Parse::TooLarge)));
++    }
++
++    #[test]
++    #[cfg(feature = "client")]
++    fn test_h1_client_max_header_size() {
++        let _ = pretty_env_logger::try_init();
++
++        let resp_str = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
++        assert_eq!(resp_str.len(), 38);
++
++        let parse_resp = |max_header_size: Option<usize>| {
++            let mut bytes = BytesMut::from(resp_str);
++            Client::parse(
++                &mut bytes,
++                ParseContext {
++                    cached_headers: &mut None,
++                    req_method: &mut None,
++                    h1_parser_config: Default::default(),
++                    h1_max_headers: None,
++                    h1_max_header_size: max_header_size,
++                    preserve_header_case: false,
++                    #[cfg(feature = "ffi")]
++                    preserve_header_order: false,
++                    h09_responses: false,
++                    #[cfg(feature = "client")]
++                    on_informational: &mut None,
++                },
++            )
++        };
++
++        // Client checks
++        parse_resp(None).unwrap().unwrap();
++        parse_resp(Some(38)).unwrap().unwrap();
++        parse_resp(Some(50)).unwrap().unwrap();
++        assert!(matches!(parse_resp(Some(37)), Err(Parse::TooLarge)));
++        assert!(matches!(parse_resp(Some(10)), Err(Parse::TooLarge)));
++    }
++
++    #[test]
+     fn test_is_complete_fast() {
+         let s = b"GET / HTTP/1.1\r\na: b\r\n\r\n";
+         for n in 0..s.len() {
+@@ -3014,6 +3397,7 @@
+                 req_method: &mut None,
+                 h1_parser_config: Default::default(),
+                 h1_max_headers: None,
++                h1_max_header_size: None,
+                 preserve_header_case: false,
+                 #[cfg(feature = "ffi")]
+                 preserve_header_order: false,
+@@ -3097,6 +3481,7 @@
+                     req_method: &mut None,
+                     h1_parser_config: Default::default(),
+                     h1_max_headers: None,
++                    h1_max_header_size: None,
+                     preserve_header_case: false,
+                     #[cfg(feature = "ffi")]
+                     preserve_header_order: false,
+@@ -3142,6 +3527,7 @@
+                     req_method: &mut None,
+                     h1_parser_config: Default::default(),
+                     h1_max_headers: None,
++                    h1_max_header_size: None,
+                     preserve_header_case: false,
+                     #[cfg(feature = "ffi")]
+                     preserve_header_order: false,
+diff -r hyper-1.11.1/src/proto/h2/mod.rs hyper-1.12.0/src/proto/h2/mod.rs
+--- hyper-1.11.1/src/proto/h2/mod.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/proto/h2/mod.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -319,7 +319,7 @@
+         }
+     }
+ 
+-    fn chunks_vectored<'a>(&'a self, dst: &mut [IoSlice<'a>]) -> usize {
++    fn chunks_vectored<'data>(&'data self, dst: &mut [IoSlice<'data>]) -> usize {
+         match self {
+             Self::Buf(b) => b.chunks_vectored(dst),
+             Self::Cursor(c) => c.chunks_vectored(dst),
+diff -r hyper-1.11.1/src/proto/h2/ping.rs hyper-1.12.0/src/proto/h2/ping.rs
+--- hyper-1.11.1/src/proto/h2/ping.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/proto/h2/ping.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -361,12 +361,12 @@
+ // ===== impl Bdp =====
+ 
+ /// Any higher than this likely will be hitting the TCP flow control.
+-const BDP_LIMIT: usize = 1024 * 1024 * 16;
++const BDP_LIMIT: WindowSize = 1024 * 1024 * 16;
+ 
+ impl Bdp {
+     fn calculate(&mut self, bytes: usize, rtt: Duration) -> Option<WindowSize> {
+         // No need to do any math if we're at the limit.
+-        if self.bdp as usize == BDP_LIMIT {
++        if self.bdp == BDP_LIMIT {
+             self.stabilize_delay();
+             return None;
+         }
+@@ -395,8 +395,11 @@
+ 
+         // if the current `bytes` sample is at least 2/3 the previous
+         // bdp, increase to double the current sample.
++        #[allow(clippy::integer_division_remainder_used)]
++        #[allow(clippy::integer_division)]
+         if bytes >= self.bdp as usize * 2 / 3 {
+-            self.bdp = (bytes * 2).min(BDP_LIMIT) as WindowSize;
++            self.bdp =
++                WindowSize::try_from((bytes * 2).min(BDP_LIMIT as usize)).unwrap_or(BDP_LIMIT);
+             trace!("BDP increased to {}", self.bdp);
+ 
+             self.stable_count = 0;
+diff -r hyper-1.11.1/src/proto/h2/server.rs hyper-1.12.0/src/proto/h2/server.rs
+--- hyper-1.11.1/src/proto/h2/server.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/proto/h2/server.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -267,8 +267,7 @@
+                         let ping = self
+                             .ping
+                             .as_ref()
+-                            .map(|ping| ping.0.clone())
+-                            .unwrap_or_else(ping::disabled);
++                            .map_or_else(ping::disabled, |ping| ping.0.clone());
+ 
+                         // Record the headers received
+                         ping.record_non_data();
+diff -r hyper-1.11.1/src/proto/h2/upgrade.rs hyper-1.12.0/src/proto/h2/upgrade.rs
+--- hyper-1.11.1/src/proto/h2/upgrade.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/proto/h2/upgrade.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -1,11 +1,8 @@
+ use std::future::Future;
+ use std::io::Cursor;
+ use std::pin::Pin;
+-use std::sync::atomic::{AtomicBool, Ordering};
+-use std::sync::Arc;
+ use std::task::{Context, Poll};
+ 
+-use atomic_waker::AtomicWaker;
+ use bytes::{Buf, Bytes};
+ use futures_channel::{mpsc, oneshot};
+ use futures_core::{ready, Stream};
+@@ -23,15 +20,10 @@
+ ) -> (H2Upgraded, UpgradedSendStreamTask<B>) {
+     let (tx, rx) = mpsc::channel(1);
+     let (error_tx, error_rx) = oneshot::channel();
+-    let close_notify = Arc::new(UpgradedCloseNotify::new());
+ 
+     (
+         H2Upgraded {
+-            send_stream: UpgradedSendStreamBridge {
+-                tx,
+-                error_rx,
+-                close_notify: close_notify.clone(),
+-            },
++            send_stream: UpgradedSendStreamBridge { tx, error_rx },
+             recv_stream,
+             ping,
+             buf: Bytes::new(),
+@@ -39,7 +31,7 @@
+         UpgradedSendStreamTask {
+             h2_tx: send_stream,
+             rx,
+-            close_notify,
++            buffered: None,
+             error_tx: Some(error_tx),
+         },
+     )
+@@ -55,48 +47,8 @@
+ struct UpgradedSendStreamBridge {
+     tx: mpsc::Sender<Cursor<Box<[u8]>>>,
+     error_rx: oneshot::Receiver<crate::Error>,
+-    close_notify: Arc<UpgradedCloseNotify>,
+ }
+ 
+-impl Drop for UpgradedSendStreamBridge {
+-    fn drop(&mut self) {
+-        self.close_notify.close();
+-    }
+-}
+-
+-struct UpgradedCloseNotify {
+-    closed: AtomicBool,
+-    task: AtomicWaker,
+-}
+-
+-impl UpgradedCloseNotify {
+-    fn new() -> Self {
+-        Self {
+-            closed: AtomicBool::new(false),
+-            task: AtomicWaker::new(),
+-        }
+-    }
+-
+-    fn close(&self) {
+-        self.closed.store(true, Ordering::Release);
+-        self.task.wake();
+-    }
+-
+-    fn poll_closed(&self, cx: &mut Context<'_>) -> Poll<()> {
+-        if self.closed.load(Ordering::Acquire) {
+-            return Poll::Ready(());
+-        }
+-
+-        self.task.register(cx.waker());
+-
+-        if self.closed.load(Ordering::Acquire) {
+-            Poll::Ready(())
+-        } else {
+-            Poll::Pending
+-        }
+-    }
+-}
+-
+ pin_project! {
+     #[must_use = "futures do nothing unless polled"]
+     pub struct UpgradedSendStreamTask<B> {
+@@ -104,7 +56,7 @@
+         h2_tx: SendStream<SendBuf<B>>,
+         #[pin]
+         rx: mpsc::Receiver<Cursor<Box<[u8]>>>,
+-        close_notify: Arc<UpgradedCloseNotify>,
++        buffered: Option<Cursor<Box<[u8]>>>,
+         error_tx: Option<oneshot::Sender<crate::Error>>,
+     }
+ }
+@@ -123,35 +75,6 @@
+         // one of the sides hanging up, so the task doesn't live around
+         // longer than it's meant to.
+         loop {
+-            // we don't have the next chunk of data yet, so just reserve 1 byte to make
+-            // sure there's some capacity available. h2 will handle the capacity management
+-            // for the actual body chunk.
+-            me.h2_tx.reserve_capacity(1);
+-
+-            let h2_has_capacity = if me.h2_tx.capacity() == 0 {
+-                // poll_capacity oddly needs a loop
+-                loop {
+-                    match me.h2_tx.poll_capacity(cx) {
+-                        Poll::Ready(Some(Ok(0))) => {}
+-                        Poll::Ready(Some(Ok(_))) => break true,
+-                        Poll::Ready(Some(Err(e))) => {
+-                            return Poll::Ready(Err(crate::Error::new_body_write(e)))
+-                        }
+-                        Poll::Ready(None) => {
+-                            // None means the stream is no longer in a
+-                            // streaming state, we either finished it
+-                            // somehow, or the remote reset us.
+-                            return Poll::Ready(Err(crate::Error::new_body_write(
+-                                "send stream capacity unexpectedly closed",
+-                            )));
+-                        }
+-                        Poll::Pending => break false,
+-                    }
+-                }
+-            } else {
+-                true
+-            };
+-
+             match me.h2_tx.poll_reset(cx) {
+                 Poll::Ready(Ok(reason)) => {
+                     trace!("stream received RST_STREAM: {:?}", reason);
+@@ -165,30 +88,43 @@
+                 Poll::Pending => (),
+             }
+ 
+-            // If h2 has no capacity, don't pull another item from the mpsc
+-            // receiver. That would free a channel slot and let the writer
+-            // enqueue more data without h2 backpressure.
+-            //
+-            // Still allow the task to finish once the upgraded write side is
+-            // gone and the mpsc queue is empty.
+-            if !h2_has_capacity {
+-                // `size_hint` reads the queued message count without popping,
+-                // so an accepted write stays queued until h2 capacity returns.
+-                if me.rx.size_hint().0 == 0 && me.close_notify.poll_closed(cx).is_ready() {
+-                    me.h2_tx
+-                        .send_data(SendBuf::None, true)
+-                        .map_err(crate::Error::new_body_write)?;
+-                    return Poll::Ready(Ok(()));
++            // A write taken from the mpsc receiver waits here for h2 capacity,
++            // and the next one isn't pulled until it has been handed to h2, so
++            // the writer still sees h2 backpressure.
++            if me.buffered.is_some() {
++                // poll_capacity oddly needs a loop
++                while me.h2_tx.capacity() == 0 {
++                    match ready!(me.h2_tx.poll_capacity(cx)) {
++                        Some(Ok(0)) => {}
++                        Some(Ok(_)) => break,
++                        Some(Err(e)) => return Poll::Ready(Err(crate::Error::new_body_write(e))),
++                        None => {
++                            // None means the stream is no longer in a
++                            // streaming state, we either finished it
++                            // somehow, or the remote reset us.
++                            return Poll::Ready(Err(crate::Error::new_body_write(
++                                "send stream capacity unexpectedly closed",
++                            )));
++                        }
++                    }
+                 }
+ 
+-                return Poll::Pending;
++                let cursor = me.buffered.take().expect("checked is_some above");
++                me.h2_tx
++                    .send_data(SendBuf::Cursor(cursor), false)
++                    .map_err(crate::Error::new_body_write)?;
++                continue;
+             }
+ 
+             match me.rx.as_mut().poll_next(cx) {
+                 Poll::Ready(Some(cursor)) => {
+-                    me.h2_tx
+-                        .send_data(SendBuf::Cursor(cursor), false)
+-                        .map_err(crate::Error::new_body_write)?;
++                    // Only reserve capacity once there is something to send.
++                    // Reserving while idle, even a single byte, pins that
++                    // capacity on the connection-level window (#4003). As in
++                    // `PipeToSendStream`, h2 raises the request to the
++                    // buffered length inside `send_data`.
++                    me.h2_tx.reserve_capacity(1);
++                    *me.buffered = Some(cursor);
+                 }
+                 Poll::Ready(None) => {
+                     me.h2_tx
+@@ -328,7 +264,6 @@
+         cx: &mut Context<'_>,
+     ) -> Poll<Result<(), std::io::Error>> {
+         self.send_stream.tx.close_channel();
+-        self.send_stream.close_notify.close();
+         match Pin::new(&mut self.send_stream.error_rx).poll(cx) {
+             Poll::Ready(Ok(reason)) => Poll::Ready(Err(io_error(reason))),
+             Poll::Ready(Err(_task_dropped)) => Poll::Ready(Ok(())),
+diff -r hyper-1.11.1/src/rt/io.rs hyper-1.12.0/src/rt/io.rs
+--- hyper-1.11.1/src/rt/io.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/rt/io.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -164,8 +164,8 @@
+ /// It is undefined behavior to de-initialize any bytes from the uninitialized
+ /// region, since it is merely unknown whether this region is uninitialized or
+ /// not, and if part of it turns out to be initialized, it must stay initialized.
+-pub struct ReadBuf<'a> {
+-    raw: &'a mut [MaybeUninit<u8>],
++pub struct ReadBuf<'data> {
++    raw: &'data mut [MaybeUninit<u8>],
+     filled: usize,
+     init: usize,
+ }
+@@ -227,8 +227,8 @@
+ /// assert_eq!(read_buf.filled(), b"hello");
+ /// ```
+ #[derive(Debug)]
+-pub struct ReadBufCursor<'a> {
+-    buf: &'a mut ReadBuf<'a>,
++pub struct ReadBufCursor<'buf> {
++    buf: &'buf mut ReadBuf<'buf>,
+ }
+ 
+ impl<'data> ReadBuf<'data> {
+@@ -337,6 +337,11 @@
+     /// # Safety
+     ///
+     /// The caller must take care that `n` more bytes have been initialized.
++    ///
++    /// # Panics
++    ///
++    /// This method will panic if advancing would cause the filled cursor to
++    /// overflow `usize`.
+     #[inline]
+     pub unsafe fn advance(&mut self, n: usize) {
+         self.buf.filled = self.buf.filled.checked_add(n).expect("overflow");
+diff -r hyper-1.11.1/src/server/conn/http1.rs hyper-1.12.0/src/server/conn/http1.rs
+--- hyper-1.11.1/src/server/conn/http1.rs	2006-07-23 18:21:28.000000000 -0700
++++ hyper-1.12.0/src/server/conn/http1.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -77,6 +77,7 @@
+     h1_title_case_headers: bool,
+     h1_preserve_header_case: bool,
+     h1_max_headers: Option<usize>,
++    h1_max_header_size: Option<usize>,
+     h1_header_read_timeout: Dur,
+     h1_writev: Option<bool>,
+     max_buf_size: Option<usize>,
+@@ -178,6 +179,7 @@
+     /// # Error
+     ///
+     /// This errors if the underlying connection protocol is not HTTP/1.
++    #[allow(clippy::missing_panics_doc)]
+     pub fn without_shutdown(self) -> impl Future<Output = crate::Result<Parts<I, S>>> {
+         let mut zelf = Some(self);
+         crate::common::future::poll_fn(move |cx| {
+@@ -247,6 +249,7 @@
+             h1_title_case_headers: false,
+             h1_preserve_header_case: false,
+             h1_max_headers: None,
++            h1_max_header_size: None,
+             h1_header_read_timeout: Dur::Default(Some(Duration::from_secs(30))),
+             h1_writev: None,
+             max_buf_size: None,
+@@ -340,6 +343,21 @@
+         self
+     }
+ 
++    /// Set the maximum size of request headers (including the start line) in bytes.
++    ///
++    /// If the client sends headers exceeding this limit, the server responds to the
++    /// client with "431 Request Header Fields Too Large" and closes the connection.
++    ///
++    /// If not configured, then the [`max_buf_size`](Builder::max_buf_size) will naturally be reached and applied.
++    ///
++    /// This value is also used as the maximum size limit for chunked trailers.
++    ///
++    /// Default is `None`.
++    pub fn max_header_size(&mut self, val: usize) -> &mut Self {
++        self.h1_max_header_size = Some(val);
++        self
++    }
++
+     /// Set a timeout for reading client request headers. If a client does not
+     /// transmit the entire header within this time, the connection is closed.
+     ///
+@@ -475,6 +493,9 @@
+         if let Some(max_headers) = self.h1_max_headers {
+             conn.set_http1_max_headers(max_headers);
+         }
++        if let Some(max_header_size) = self.h1_max_header_size {
++            conn.set_http1_max_header_size(max_header_size);
++        }
+         if let Some(dur) = self
+             .timer
+             .check(self.h1_header_read_timeout, "header_read_timeout")
