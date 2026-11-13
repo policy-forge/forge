@@ -1,0 +1,17 @@
+# Whitelist: only release-build inputs enter the context. Tests, fixtures,
+# docs (except the embedded OpenAPI contracts) and tooling stay out.
+*
+!.cargo
+!Cargo.toml
+!Cargo.lock
+!README.md
+!src
+!schemas
+!benches
+!ui
+ui/*
+!ui/workspace.js
+!ui/workspace.css
+!docs
+docs/*
+!docs/api

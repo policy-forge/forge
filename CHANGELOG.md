@@ -12,6 +12,10 @@ inventory of all post-v1.1.0 changes.
 
 ### Added
 
+- Local container packaging (#63): multi-stage Dockerfile with digest-pinned
+  bases and a non-root runtime, Docker Compose loopback workspace setup, and
+  container usage documentation (`docs/container.md`). No conversion or
+  workspace behavior changes.
 - Local workspace field help: every editable field (unlock, filters,
   registrations, uploads, conversions, decision/mapping forms, exports, bundle
   panels and restore acknowledgments, including dynamically shown inputs) now

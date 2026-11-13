@@ -66,3 +66,7 @@ Thumbs.db
 
 # Approved browser development dependencies
 /ui/node_modules/
+
+# === Container local workspace (docker-compose.yml project mount) ===
+/forge-project/
+/.smoke/

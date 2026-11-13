@@ -1140,6 +1140,7 @@ remain open.
 ## Further Reading
 
 - [README.md](../README.md) — project overview and quick start
+- [Container packaging](container.md) — Docker/Compose build, CLI conversion and loopback workspace in containers
 - [Portable review queues](review-queues.md) — asserted review policy, immutable responses, recorded exports and explicit queue supersession
 - [Lifecycle review exchange candidate](lifecycle-review-exchange.md) — separate `/2` formats, candidate CLI commands and qualification limits
 - [Authoring review exchange candidate](authoring-review-exchange.md) — whole saved-plan `/3` review, private inputs and qualification limits
