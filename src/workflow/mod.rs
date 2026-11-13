@@ -127,14 +127,18 @@ mod tests {
 
     #[test]
     fn credential_shapes_are_refused() {
-        for secret in [
+        for (case, secret) in [
             "ghp_0123456789abcdef",
             "github_pat_abc",
             "glpat-abc",
             "Authorization: Bearer abc",
             "-----BEGIN PRIVATE KEY-----",
-        ] {
-            assert!(reject_secret_text(secret, "field").is_err(), "{secret}");
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            // Report the case number, never the credential-shaped input itself.
+            assert!(reject_secret_text(secret, "field").is_err(), "case {case} was accepted");
         }
         assert!(reject_secret_text("ordinary policy title", "field").is_ok());
     }

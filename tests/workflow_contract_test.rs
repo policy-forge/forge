@@ -251,8 +251,8 @@ fn reports_and_state_are_redacted_and_deterministic() {
     let (state, report) = fixture.apply(&document, &ConnectorState::empty(), &mut client);
     let rendered = report.render().unwrap();
     assert_eq!(rendered, report.render().unwrap());
-    for secret in ["fake-phase1-token", "Bearer", "Authorization"] {
-        assert!(!rendered.contains(secret), "audit report leaked {secret}");
+    for (case, secret) in ["fake-phase1-token", "Bearer", "Authorization"].into_iter().enumerate() {
+        assert!(!rendered.contains(secret), "audit report leaked credential marker {case}");
         assert!(!state.render().unwrap().contains(secret));
     }
     let log = format!("{:?}", server.requests().unwrap());
@@ -386,7 +386,10 @@ fn tampered_idempotency_key_is_refused_at_parse() {
 
 #[test]
 fn credential_shaped_payloads_are_refused() {
-    for secret in ["ghp_0123456789abcdef", "-----BEGIN PRIVATE KEY-----", "Authorization: Bearer x"]
+    for (case, secret) in
+        ["ghp_0123456789abcdef", "-----BEGIN PRIVATE KEY-----", "Authorization: Bearer x"]
+            .into_iter()
+            .enumerate()
     {
         let mut item = WorkItem {
             id: change_set::item_id(WorkItemKind::Gap, &"a".repeat(64), "ac-1"),
@@ -403,10 +406,10 @@ fn credential_shaped_payloads_are_refused() {
             },
             excerpt: None,
         };
-        assert!(ChangeSet::new(vec![item.clone()]).is_err(), "{secret}");
+        assert!(ChangeSet::new(vec![item.clone()]).is_err(), "title case {case} was accepted");
         item.title = "gap: ac-1".to_string();
         item.excerpt = Some(secret.to_string());
-        assert!(ChangeSet::new(vec![item]).is_err(), "{secret}");
+        assert!(ChangeSet::new(vec![item]).is_err(), "excerpt case {case} was accepted");
     }
 }
 
