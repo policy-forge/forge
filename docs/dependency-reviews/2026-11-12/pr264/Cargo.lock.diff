@@ -1,0 +1,29 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 309e37d..6969e5b 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1649,9 +1649,9 @@ checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
+ 
+ [[package]]
+ name = "quick-xml"
+-version = "0.41.0"
++version = "0.42.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e660451e55124f798a69a5af3f49ccfbefbd41910eefd25caf2393e1f3473ec1"
++checksum = "41b1177fdf999d2321d3fb46ff47159d9c1fb9ad66a4879f8c50a0b504615e9b"
+ dependencies = [
+  "memchr",
+  "serde",
+diff --git a/Cargo.toml b/Cargo.toml
+index d0932a3..bbbaa34 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -25,7 +25,7 @@ uuid = { version = "1", features = ["serde", "v4", "v5"] }
+ # Embedded local schemas do not require HTTP or filesystem resolvers, so keep
+ # resolver defaults disabled to preserve FORGE's offline-only validation path.
+ jsonschema = { version = "0.57", default-features = false }
+-quick-xml = { version = "0.41", features = ["serialize"] }
++quick-xml = { version = "0.42", features = ["serialize"] }
+ rayon = "1"
+ tempfile = "3"
+ pdf-extract = "0.12"
