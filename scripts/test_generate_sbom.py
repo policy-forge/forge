@@ -148,7 +148,7 @@ class GenerateSbomTests(unittest.TestCase):
         refs.add(document["metadata"]["component"]["bom-ref"])
         for entry in document["dependencies"]:
             self.assertIn(entry["ref"], refs)
-            self.assertTrue(set(entry["dependsOn"]) <= refs)
+            self.assertLessEqual(set(entry["dependsOn"]), refs)
 
     def test_as_of_changes_serial_only(self):
         first = self.fixture.build("2026-11-12")
