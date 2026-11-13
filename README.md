@@ -362,6 +362,10 @@ forge lifecycle status --record policy-lifecycle.json \
 forge lifecycle queue --record policy-lifecycle.json \
   --as-of 2026-08-25 --format json
 
+# Informational due/overdue review alerts for an explicit date; never mutates records
+forge lifecycle alerts --record policy-lifecycle.json \
+  --as-of 2026-08-25 --format json
+
 # Export deterministic unsigned approval evidence; refuses drifted approvals
 forge lifecycle attest --record policy-lifecycle.json \
   --output approval-attestation.json
@@ -378,6 +382,15 @@ link bounded PRD-057 findings with repeatable `--impact-finding-id` values.
 artifact-identity-changed, and non-approved states require action. Exit codes
 are `0` for a valid record under the selected gate, `1` for a valid
 action-required result, and `2` for an invalid record or transition.
+
+`lifecycle alerts` projects the same date-relative schedule classification into
+an informational due/overdue report (`forge.policy-lifecycle-alerts/1`). Each
+alert carries the policy/version keys, recorded state, declared owners, next
+review date, and whole days until review (negative when overdue). Alerts never
+change review state, imply approval, or deliver notifications; the workspace
+owner queue surfaces the same due-soon/overdue alerts as badges and a per-page
+summary. Delivery channels (email, webhooks, scheduled execution) remain out of
+scope per PRDs 057/065/068.
 
 ### Framework Applicability and Policy Gaps
 

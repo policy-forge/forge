@@ -2,6 +2,8 @@
 
 pub mod record;
 
+/// Crate-internal pure review-alert projection over the existing schedule classification.
+pub(crate) mod alerts;
 /// Shared pure portfolio checks consumed by CLI loading and captured workspace status.
 pub(crate) mod portfolio;
 /// Crate-internal pure status projection over validated captured lifecycle facts.
@@ -30,6 +32,7 @@ const TRUST_BOUNDARY: &str =
     "actor identities and authority are declared locally and are not authenticated by FORGE";
 const STATUS_SCHEMA_VERSION: &str = "forge.policy-lifecycle-status/1";
 const QUEUE_SCHEMA_VERSION: &str = "forge.policy-lifecycle-queue/1";
+const ALERTS_SCHEMA_VERSION: &str = "forge.policy-lifecycle-alerts/1";
 const ATTESTATION_SCHEMA_VERSION: &str = "forge.policy-approval-attestation/1";
 
 /// Inputs for a deterministic lifecycle scaffold.
@@ -309,6 +312,36 @@ pub fn execute_queue(
     let action_required = gate_action_required(&reports, gate);
     let queue = build_queue(reports, as_of);
     write_queue(&queue, format, output)?;
+    Ok(action_required)
+}
+
+/// Emit deterministic informational due/overdue review alerts for an explicit date.
+///
+/// Alerts project the existing schedule classification only; they never change review
+/// state, imply approval, or deliver notifications. The selected gate keeps the same
+/// action-required exit contract as status and queue.
+///
+/// # Errors
+///
+/// Returns [`ForgeError::Lifecycle`] or [`ForgeError::Io`] when a record, artifact, portfolio,
+/// date calculation, destination, serialization, or write is invalid.
+pub fn execute_alerts(
+    paths: &[PathBuf],
+    as_of: NaiveDate,
+    format: &LifecycleOutputFormat,
+    gate: &LifecycleGate,
+    output: Option<&Path>,
+) -> Result<bool, ForgeError> {
+    let loaded = load_portfolio(paths)?;
+    validate_report_destination(output, &loaded)?;
+    validate_portfolio(&loaded)?;
+    let reports = loaded
+        .iter()
+        .map(|(path, record)| status_report(path, record, Some(as_of)))
+        .collect::<Result<Vec<_>, _>>()?;
+    let action_required = gate_action_required(&reports, gate);
+    let alerts = alerts::build_alerts(&reports, as_of);
+    write_alerts(&alerts, format, output)?;
     Ok(action_required)
 }
 
@@ -789,6 +822,42 @@ fn write_queue(
                 }
             }
             let _ = writeln!(value, "note: {TRUST_BOUNDARY}");
+            value
+        }
+    };
+    crate::cli::output::write_output(&rendered, output)
+}
+
+fn write_alerts(
+    alerts: &alerts::AlertsReport,
+    format: &LifecycleOutputFormat,
+    output: Option<&Path>,
+) -> Result<(), ForgeError> {
+    let rendered = match format {
+        LifecycleOutputFormat::Json => {
+            let mut value = serde_json::to_string_pretty(alerts)
+                .map_err(|source| error(format!("cannot serialize lifecycle alerts: {source}")))?;
+            value.push('\n');
+            value
+        }
+        LifecycleOutputFormat::Text => {
+            let mut value = String::new();
+            if alerts.alerts.is_empty() {
+                let _ = writeln!(value, "no due or overdue reviews as of {}", alerts.as_of);
+            }
+            for alert in &alerts.alerts {
+                let _ = writeln!(
+                    value,
+                    "{}:{} {} next-review {} ({} days) owners {}",
+                    alert.policy_key,
+                    alert.version_key,
+                    alert.derived_status,
+                    alert.next_review_date,
+                    alert.days_until_review,
+                    alert.owner_keys.join(",")
+                );
+            }
+            let _ = writeln!(value, "note: alerts are informational; {TRUST_BOUNDARY}");
             value
         }
     };

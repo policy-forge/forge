@@ -425,16 +425,27 @@ function inspectionCounts(response, kind) {
   return labels[kind].map(([key, label]) => `${response.counts[key]} ${label}`).join(" · ");
 }
 
+/** Classify one computed queue row as an informational review alert; no authority or delivery is implied. */
+function reviewAlertStatus(derivedStatus) {
+  return derivedStatus === "overdue" || derivedStatus === "due-soon" ? derivedStatus : null;
+}
+
 /** Render bounded selected rows from explicit metadata allowlists; all strings use textContent. */
 function inspectionRows(kind, rows, select) {
   const display = node("div");
-  if (!rows.length) {display.append(node("p", "No matching metadata rows.", "empty")); return display;}
+  if (!rows.length) {display.append(node("p", kind === "queue" ? "No matching review alerts or owner placements." : "No matching metadata rows.", "empty")); return display;}
   if (kind === "queue") {
+    const alerts = rows.filter(row => reviewAlertStatus(row.derived_status));
+    const summary = node("p", alerts.length
+      ? `${alerts.filter(row => row.derived_status === "overdue").length} overdue and ${alerts.filter(row => row.derived_status === "due-soon").length} due-soon review placements on this page. Alerts are informational; they do not change review state or imply approval.`
+      : "No due or overdue reviews on this page.", "muted");
+    summary.setAttribute("role", "status"); summary.setAttribute("aria-live", "polite"); summary.setAttribute("data-review-alerts", "");
+    display.append(summary);
     const groups = new Map();
     for (const row of rows) {if (!groups.has(row.owner_key)) groups.set(row.owner_key, []); groups.get(row.owner_key).push(row);}
     for (const [owner, items] of groups) {
       display.append(node("h3", `Declared owner ${inspectionValue(owner)} — this page's placements`),
-        table("Lifecycle owner placements on this page", [["Record", "record_id"], ["Policy", "policy_key"], ["Version", "version_key"], ["Stored state", "state"], ["Computed status", "derived_status"], ["Next review", "next_review_date"], ["Blockers", "blockers"]], items.map(item => ({...item, blockers:inspectionTokens(item.blockers)}))));
+        table("Lifecycle owner placements on this page", [["Record", "record_id"], ["Policy", "policy_key"], ["Version", "version_key"], ["Stored state", "state"], ["Computed status", "derived_status"], ["Review alert", "alert"], ["Next review", "next_review_date"], ["Blockers", "blockers"]], items.map(item => ({...item, alert:reviewAlertStatus(item.derived_status) ?? "—", blockers:inspectionTokens(item.blockers)}))));
       for (const item of items) display.append(button(`Inspect record ${item.record_id}`, () => select(item.record_id)));
     }
     return display;

@@ -3224,6 +3224,31 @@ test("S3 lifecycle owner filter keeps distinct full-scope and matching placement
   assert.equal(s3Parts(app,"queue").display.textContent.includes("owner-B"),false);
 });
 
+/** Due/overdue queue rows surface informational review alerts without effects or authority claims. */
+test("S3 review alerts summarize due-soon and overdue placements without effects",async()=>{
+  const alertRow=(owner,derived_status,blockers)=>({record_id:s3RecordId,resource_id:s3RecordId,owner_key:owner,next_review_date:"2026-10-03",policy_key:"policy-key",version_key:"v1",state:"approved",derived_status,blockers});
+  const app=await s3App({"/lifecycle/queue":url=>s3Page("queue",[alertRow("owner-A","overdue",["overdue"]),alertRow("owner-B","due-soon",["due-soon"])],{as_of:url.searchParams.get("as_of"),counts:{distinct_records:1,total_owner_placements:2,matching_owner_placements:2,total_groups:2,matching_groups:2}})});
+  await s3Date(app);
+  const parts=s3Parts(app,"queue");
+  assert.match(parts.display.textContent,/1 overdue and 1 due-soon review placements on this page/);
+  assert.match(parts.display.textContent,/do not change review state or imply approval/);
+  const summary=parts.display.querySelector("[data-review-alerts]");
+  assert.ok(summary,"per-page alert summary is present");
+  assert.equal(summary.getAttribute("role"),"status");
+  // Alert classification is read-only: no non-GET lifecycle route is requested.
+  assert.equal(app.requests.some(request=>(request.options?.method??"GET")!=="GET"&&request.route.startsWith("/lifecycle")),false);
+});
+
+/** A clean dated portfolio reports no alerts rather than implying review action. */
+test("S3 review alerts report no due or overdue reviews for a clean portfolio",async()=>{
+  const app=await s3App();
+  await s3Date(app);
+  const parts=s3Parts(app,"queue");
+  assert.match(parts.display.textContent,/No due or overdue reviews on this page/);
+  const summary=parts.display.querySelector("[data-review-alerts]");
+  assert.ok(summary,"per-page alert summary is present");
+});
+
 /** Failed cross-endpoint date staging keeps the old inventory's usable recorded-history controls and date semantics. */
 test("S3 mixed inventory/queue captures retain the prior date and do not compute a selected record",async()=>{
   const app=await s3App({/** Supply a foreign queue capture so the dated group cannot replace recorded inventory. */ "/lifecycle/queue":url=>s3Page("queue",[],{snapshot_version:"d".repeat(64),as_of:url.searchParams.get("as_of"),counts:{distinct_records:0,total_owner_placements:0,matching_owner_placements:0,total_groups:0,matching_groups:0}})});
