@@ -233,9 +233,9 @@
    "sha256": "890e33a86a0b38f81ddaefc122b15729976ce1b181bfbb1c96720049e4313bbb"
   },
   {
-   "bytes": 7323,
+   "bytes": 7464,
    "path": "scripts/test_workspace_windows_staged_qualification.py",
-   "sha256": "2e188ea908c4414e16ccb0166bf2cb435e1fa433ab6ecb259e15971a517bd3e2"
+   "sha256": "e50f623d4d8461cfc863328445ea31decd3f1a91a38323b4f52286061c45ec8a"
   },
   {
    "bytes": 76377,
@@ -312,8 +312,8 @@
   },
   "identity": {
    "harness": {
-    "bytes": 7323,
-    "sha256": "2e188ea908c4414e16ccb0166bf2cb435e1fa433ab6ecb259e15971a517bd3e2"
+    "bytes": 7464,
+    "sha256": "e50f623d4d8461cfc863328445ea31decd3f1a91a38323b4f52286061c45ec8a"
    },
    "provided_release_binary": null
   },

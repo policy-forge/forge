@@ -89,7 +89,7 @@ def new_receipt():
         "platform": {
             "system": "Windows" if windows else "unsupported",
             "build": sys.getwindowsversion().build if windows else None,
-            "architecture": "unsupported",
+            "architecture": (os.environ.get("PROCESSOR_ARCHITECTURE") or "unknown") if windows else "unsupported",
             "python": ".".join(map(str, sys.version_info[:3])),
         },
         "identity": {"harness": file_pin(__file__, 131072), "provided_release_binary": None},
@@ -108,7 +108,7 @@ def new_receipt():
 def run(args):
     """Fail closed off Windows; on Windows require the native port before any check."""
     out = Path(args.out).resolve()
-    out.mkdir(mode=0o700, exist_ok=True)
+    out.mkdir(mode=0o700)  # fresh private output: fail fast if it already exists, like the sibling workflows
     receipt = new_receipt()
     try:
         if sys.platform != "win32":
