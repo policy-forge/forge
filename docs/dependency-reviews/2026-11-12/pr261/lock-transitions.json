@@ -1,0 +1,22 @@
+{
+  "format": "forge.dependency-review-lock-transitions/1",
+  "pr": 261,
+  "head_oid": "e15c5a7861069aa19c2d5487933647052908363e",
+  "transitions": [
+    {
+      "package": "hyper",
+      "old_version": "1.11.1",
+      "new_version": "1.12.0",
+      "old_checksum": "27b501faa50e7a26c3d3560ca625132f4078a17771f4810baf70475ae48cbe43",
+      "new_checksum": "2c3e324da4c95177d6291d4c8730197c0d1822f8a9766814a4a44fa5ab797c9c"
+    }
+  ],
+  "removed": [
+    {
+      "package": "futures-channel",
+      "version": "0.3.34",
+      "checksum": "b1f9e3d69d39e4862ffed03ed071a76f9a13ba1d9109d355b0f0aa6b15e393c4",
+      "change": "removed"
+    }
+  ]
+}

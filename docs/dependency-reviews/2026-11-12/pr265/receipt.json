@@ -1,0 +1,13 @@
+{
+  "pr": 265,
+  "url": "https://github.com/policy-forge/forge/pull/265",
+  "head_oid": "24616651b0f72a81d6d23682f8370139301ef516",
+  "base_oid": "b4226bb35d796222c30f93235ac22118dd26a344",
+  "state_at_review": "OPEN",
+  "ci_run_id": 41756372632,
+  "ci_run_url": "https://github.com/policy-forge/forge/actions/runs/41756372632",
+  "version_scope": "zip 8.6.0 -> 9.0.0 in retained 2026-10-02 evidence manifests pr162/pr163/pr164 only",
+  "accepted_audit": false,
+  "human_signoff": null,
+  "scope": "Bounded agent-assisted differential source review; no merge permission, no audit approval."
+}
