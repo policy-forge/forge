@@ -82,16 +82,16 @@ fn assert_profile_xml_includes(content: &str, requested_id: &str) {
     loop {
         match reader.read_event_into(&mut buffer).expect("profile XML must be well-formed") {
             quick_xml::events::Event::Start(event) => match event.name().as_ref() {
-                b"profile" => saw_profile = true,
-                b"import" => saw_import = true,
-                b"include-controls" => saw_include_controls = true,
-                b"with-id" => inside_with_id = true,
+                "profile" => saw_profile = true,
+                "import" => saw_import = true,
+                "include-controls" => saw_include_controls = true,
+                "with-id" => inside_with_id = true,
                 _ => {}
             },
             quick_xml::events::Event::Text(text) if inside_with_id => {
-                saw_requested_id |= String::from_utf8_lossy(text.as_ref()).trim() == requested_id;
+                saw_requested_id |= text.trim() == requested_id;
             }
-            quick_xml::events::Event::End(event) if event.name().as_ref() == b"with-id" => {
+            quick_xml::events::Event::End(event) if event.name().as_ref() == "with-id" => {
                 inside_with_id = false;
             }
             quick_xml::events::Event::Eof => break,

@@ -221,71 +221,70 @@ fn extract_docx_document_xml(xml: &str) -> Result<String, ForgeError> {
     loop {
         match reader.read_event() {
             Ok(XmlEvent::Start(element)) => match element.name().as_ref() {
-                b"w:p" => {
+                "w:p" => {
                     in_paragraph = true;
                     paragraph.clear();
                     style = None;
                     is_list_item = false;
                 }
-                b"w:tbl" => in_table = true,
-                b"w:tr" => {
+                "w:tbl" => in_table = true,
+                "w:tr" => {
                     in_row = true;
                     row.clear();
                 }
-                b"w:tc" => {
+                "w:tc" => {
                     in_cell = true;
                     cell.clear();
                 }
-                b"w:numPr" if in_paragraph => is_list_item = true,
-                b"w:pStyle" if in_paragraph => {
+                "w:numPr" if in_paragraph => is_list_item = true,
+                "w:pStyle" if in_paragraph => {
                     for attr in element.attributes().flatten() {
-                        if attr.key.as_ref() == b"w:val" {
-                            style = Some(String::from_utf8_lossy(attr.value.as_ref()).into_owned());
+                        if attr.key.as_ref() == "w:val" {
+                            style = Some(attr.value.into_owned());
                         }
                     }
                 }
                 _ => {}
             },
             Ok(XmlEvent::Empty(element)) => match element.name().as_ref() {
-                b"w:numPr" if in_paragraph => is_list_item = true,
-                b"w:pStyle" if in_paragraph => {
+                "w:numPr" if in_paragraph => is_list_item = true,
+                "w:pStyle" if in_paragraph => {
                     for attr in element.attributes().flatten() {
-                        if attr.key.as_ref() == b"w:val" {
-                            style = Some(String::from_utf8_lossy(attr.value.as_ref()).into_owned());
+                        if attr.key.as_ref() == "w:val" {
+                            style = Some(attr.value.into_owned());
                         }
                     }
                 }
                 _ => {}
             },
             Ok(XmlEvent::Text(text)) => {
-                let decoded = String::from_utf8_lossy(text.as_ref());
                 if in_cell {
-                    cell.push_str(&decoded);
+                    cell.push_str(&text);
                 } else if in_paragraph {
-                    paragraph.push_str(&decoded);
+                    paragraph.push_str(&text);
                 }
             }
             Ok(XmlEvent::End(element)) => match element.name().as_ref() {
-                b"w:p" => {
+                "w:p" => {
                     let text = paragraph.trim();
                     if !text.is_empty() && !in_table {
                         output.push(format_docx_paragraph(text, style.as_deref(), is_list_item));
                     }
                     in_paragraph = false;
                 }
-                b"w:tc" => {
+                "w:tc" => {
                     if in_row {
                         row.push(cell.trim().to_string());
                     }
                     in_cell = false;
                 }
-                b"w:tr" => {
+                "w:tr" => {
                     if !row.is_empty() {
                         output.push(format!("| {} |", row.join(" | ")));
                     }
                     in_row = false;
                 }
-                b"w:tbl" => in_table = false,
+                "w:tbl" => in_table = false,
                 _ => {}
             },
             Ok(XmlEvent::Eof) => break,
