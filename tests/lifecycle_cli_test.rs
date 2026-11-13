@@ -488,6 +488,83 @@ fn explicit_date_status_is_byte_deterministic_and_due_soon_boundary_is_inclusive
     assert_eq!(overdue_report[0]["derived_status"], "overdue");
 }
 
+/// Alerts project the existing schedule classification without touching record bytes.
+#[test]
+fn alerts_report_due_overdue_boundaries_and_leave_records_unchanged() {
+    let fixture = Fixture::new("alerts-policy", false);
+    let record_before = std::fs::read(&fixture.record).expect("record bytes");
+    let source_before = std::fs::read(&fixture.source).expect("source bytes");
+    let artifact_before = std::fs::read(&fixture.artifact).expect("artifact bytes");
+    let base = [
+        "lifecycle",
+        "alerts",
+        "--record",
+        fixture.record.to_str().expect("record"),
+        "--format",
+        "json",
+        "--gate",
+        "none",
+    ];
+    // Review date is 2026-09-24 with the default 30-day due-soon window.
+    let due_today = run(&[base.as_slice(), &["--as-of", "2026-09-24"]].concat());
+    assert!(due_today.status.success(), "{}", String::from_utf8_lossy(&due_today.stderr));
+    let report: Value = serde_json::from_slice(&due_today.stdout).expect("alerts json");
+    assert_eq!(report["schema_version"], "forge.policy-lifecycle-alerts/1");
+    assert_eq!(report["as_of"], "2026-09-24");
+    assert_eq!(report["alerts"][0]["derived_status"], "due-soon");
+    assert_eq!(report["alerts"][0]["days_until_review"], 0);
+    assert_eq!(report["alerts"][0]["next_review_date"], "2026-09-24");
+
+    let overdue = run(&[base.as_slice(), &["--as-of", "2026-09-25"]].concat());
+    assert!(overdue.status.success());
+    let overdue_report: Value = serde_json::from_slice(&overdue.stdout).expect("overdue json");
+    assert_eq!(overdue_report["alerts"][0]["derived_status"], "overdue");
+    assert_eq!(overdue_report["alerts"][0]["days_until_review"], -1);
+
+    let future = run(&[base.as_slice(), &["--as-of", "2026-08-01"]].concat());
+    assert!(future.status.success());
+    let future_report: Value = serde_json::from_slice(&future.stdout).expect("future json");
+    assert_eq!(future_report["alerts"], json!([]));
+
+    // Byte determinism and no mutation of governed artifacts.
+    let repeated = run(&[base.as_slice(), &["--as-of", "2026-09-24"]].concat());
+    assert_eq!(due_today.stdout, repeated.stdout);
+    assert_eq!(std::fs::read(&fixture.record).expect("record"), record_before);
+    assert_eq!(std::fs::read(&fixture.source).expect("source"), source_before);
+    assert_eq!(std::fs::read(&fixture.artifact).expect("artifact"), artifact_before);
+}
+
+/// The publication gate keeps the shared exit contract: due-soon informational, overdue blocks.
+#[test]
+fn alerts_gate_treats_due_soon_as_informational_but_blocks_overdue() {
+    let fixture = Fixture::new("alerts-gate-policy", false);
+    fixture.approve();
+    let due_soon = run(&[
+        "lifecycle",
+        "alerts",
+        "--record",
+        fixture.record.to_str().expect("record"),
+        "--as-of",
+        "2026-08-25",
+        "--format",
+        "json",
+    ]);
+    assert!(due_soon.status.success(), "{}", String::from_utf8_lossy(&due_soon.stderr));
+    let overdue = run(&[
+        "lifecycle",
+        "alerts",
+        "--record",
+        fixture.record.to_str().expect("record"),
+        "--as-of",
+        "2026-09-25",
+        "--format",
+        "json",
+    ]);
+    assert_eq!(overdue.status.code(), Some(1), "{}", String::from_utf8_lossy(&overdue.stderr));
+    let report: Value = serde_json::from_slice(&overdue.stdout).expect("overdue alerts json");
+    assert_eq!(report["alerts"][0]["derived_status"], "overdue");
+}
+
 #[test]
 fn publication_gate_treats_due_soon_as_informational_but_blocks_overdue() {
     let fixture = Fixture::new("publication-gate-policy", false);

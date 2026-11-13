@@ -17,6 +17,10 @@ Source and generated-artifact fingerprints come from captured registered bytes. 
 
 Recorded history shows event identity, sequence, timestamps, state changes and declared actors. It asserts neither current freshness nor authenticated approval. Lifecycle finding references remain unresolved when no comparison pair is supplied. Titles, rationale, party names and source content are excluded. Owner queues count distinct records and owner memberships separately; one policy can have several owners.
 
+### Review alerts
+
+The dated owner queue surfaces informational due/overdue review alerts derived from the same explicit-date schedule classification as `forge lifecycle status`. Each placement whose computed status is `due-soon` or `overdue` carries a **Review alert** badge, and the queue page opens with a summary count of overdue and due-soon placements on that page. A clean page reports no due or overdue reviews. Alerts are read-only projections: they never change recorded review state, imply approval, or deliver notifications. Delivery channels (email, webhooks, scheduled execution) remain out of scope per PRDs 057/065/068; the deterministic `forge lifecycle alerts` CLI report is the offline export surface.
+
 ## Framework comparisons
 
 The comparison inventory reports declared availability without claiming a current analysis. Selecting a comparison validates its exact registered input closure and reruns the shared framework-impact engine over captured copies. Detail reports a captured-current comparison, complete change/finding counts and provenance.

@@ -69,7 +69,7 @@ technical surfaces, not claims that their full PRD acceptance gates are complete
 | `assessment_results/` | Human-authored Assessment Results and revision review |
 | `authoring/` | Human assignments, drafting plans and traceable skeletons |
 | `framework/` | Read-only framework revision impact |
-| `lifecycle/` | Deterministic local lifecycle records and review queues |
+| `lifecycle/` | Deterministic local lifecycle records, review queues and due/overdue alerts |
 | `linkage/` | Evidence/implementation indexes and maintenance reports |
 | `mapping/` | Human-reviewed Control Mapping workflows |
 | `migration/` | Read-only source-policy revision analysis |
