@@ -1,0 +1,591 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+   Compiling proc-macro2 v1.0.106
+   Compiling quote v1.0.45
+   Compiling unicode-ident v1.0.24
+   Compiling libc v0.2.191
+   Compiling cfg-if v1.0.4
+   Compiling version_check v0.9.5
+   Compiling serde_core v1.0.229
+   Compiling typenum v1.20.1
+   Compiling memchr v2.8.0
+   Compiling autocfg v1.5.0
+   Compiling serde v1.0.229
+   Compiling rand_core v0.10.1
+   Compiling generic-array v0.14.7
+   Compiling itoa v1.0.17
+   Compiling getrandom v0.4.3
+   Compiling num-traits v0.2.19
+   Compiling stable_deref_trait v1.2.1
+   Compiling zerocopy v0.8.42
+   Compiling once_cell v1.21.3
+   Compiling getrandom v0.3.4
+   Compiling smallvec v1.15.1
+   Compiling bitflags v2.11.0
+   Compiling regex-syntax v0.8.11
+   Compiling equivalent v1.0.2
+   Compiling zmij v1.0.23
+   Compiling aho-corasick v1.1.4
+   Compiling serde_json v1.0.151
+   Compiling crypto-common v0.1.7
+   Compiling block-padding v0.3.3
+   Compiling crossbeam-utils v0.8.21
+   Compiling litemap v0.8.1
+   Compiling cmov v0.5.4
+   Compiling writeable v0.6.2
+   Compiling inout v0.1.4
+   Compiling ctutils v0.4.5
+   Compiling num-integer v0.1.46
+   Compiling regex-automata v0.4.18
+   Compiling hybrid-array v0.4.15
+   Compiling crc32fast v1.5.0
+   Compiling rustix v1.1.4
+   Compiling crossbeam-epoch v0.9.20
+   Compiling pin-project-lite v0.2.17
+   Compiling icu_normalizer_data v2.1.1
+   Compiling icu_properties_data v2.1.2
+   Compiling heck v0.5.0
+   Compiling syn v2.0.117
+   Compiling syn v3.0.6
+   Compiling num-bigint v0.4.8
+   Compiling cipher v0.4.4
+   Compiling block-buffer v0.10.4
+   Compiling ahash v0.8.12
+   Compiling ref-cast v1.0.25
+   Compiling simd-adler32 v0.3.9
+   Compiling bytes v1.12.1
+   Compiling hashbrown v0.16.1
+   Compiling adler2 v2.0.1
+   Compiling utf8parse v0.2.2
+   Compiling parking_lot_core v0.9.12
+   Compiling serde_derive v1.0.229
+   Compiling tinyvec_macros v0.1.1
+   Compiling anstyle-parse v1.0.0
+   Compiling indexmap v2.13.0
+   Compiling http v1.5.0
+   Compiling miniz_oxide v0.8.9
+   Compiling tinyvec v1.11.0
+   Compiling errno v0.3.14
+   Compiling cpufeatures v0.2.17
+   Compiling num-rational v0.4.2
+   Compiling digest v0.10.7
+   Compiling block-buffer v0.12.1
+   Compiling synstructure v0.13.2
+   Compiling crypto-common v0.2.2
+   Compiling zerocopy-derive v0.8.42
+   Compiling zerovec-derive v0.11.2
+   Compiling displaydoc v0.2.5
+   Compiling ref-cast-impl v1.0.25
+   Compiling num-iter v0.1.45
+   Compiling num-complex v0.4.6
+   Compiling zerofrom-derive v0.1.6
+   Compiling yoke-derive v0.8.1
+   Compiling bit-vec v0.8.0
+   Compiling scopeguard v1.2.0
+   Compiling is_terminal_polyfill v1.70.2
+   Compiling either v1.15.0
+   Compiling colorchoice v1.0.4
+   Compiling anstyle v1.0.14
+   Compiling cfg_aliases v0.2.2
+   Compiling fastrand v2.3.0
+   Compiling percent-encoding v2.3.2
+   Compiling anstyle-query v1.1.5
+   Compiling rayon-core v1.13.0
+   Compiling httparse v1.10.1
+   Compiling thiserror v2.0.21
+   Compiling futures-core v0.3.34
+   Compiling const-oid v0.10.2
+   Compiling log v0.4.29
+   Compiling digest v0.11.3
+   Compiling anstream v1.0.0
+   Compiling nix v0.31.3
+   Compiling lock_api v0.4.14
+   Compiling bit-set v0.8.0
+   Compiling num v0.4.3
+   Compiling crossbeam-deque v0.8.6
+   Compiling flate2 v1.1.9
+   Compiling http-body v1.1.0
+   Compiling signal-hook-registry v1.4.8
+   Compiling unicode-normalization v0.1.25
+   Compiling mio v1.2.3
+   Compiling socket2 v0.6.5
+   Compiling thiserror-impl v2.0.21
+   Compiling tracing-core v0.1.36
+   Compiling chacha20 v0.10.2
+   Compiling unicode-general-category v1.1.0
+   Compiling pom v1.1.0
+   Compiling find-msvc-tools v0.1.9
+   Compiling allocator-api2 v0.2.21
+   Compiling borrow-or-share v0.2.4
+   Compiling strsim v0.11.1
+   Compiling unicode-properties v0.1.4
+   Compiling unicode-bidi v0.3.18
+   Compiling clap_lex v1.0.0
+   Compiling shlex v1.3.0
+   Compiling foldhash v0.2.0
+   Compiling base64ct v1.8.3
+   Compiling phc v0.6.1
+   Compiling hashbrown v0.17.1
+   Compiling tempfile v3.27.0
+   Compiling cc v1.2.56
+   Compiling clap_builder v4.6.7
+   Compiling stringprep v0.1.5
+   Compiling rand v0.10.2
+   Compiling tokio v1.54.1
+   Compiling parking_lot v0.12.5
+   Compiling fraction v0.17.0
+   Compiling futures-channel v0.3.34
+   Compiling md-5 v0.10.6
+   Compiling sha2 v0.10.9
+   Compiling tracing-attributes v0.1.31
+   Compiling strum_macros v0.28.0
+   Compiling aes v0.8.4
+   Compiling rand_core v0.9.5
+   Compiling regex v1.13.1
+   Compiling clap_derive v4.6.7
+   Compiling ecb v0.1.2
+   Compiling cbc v0.1.2
+   Compiling nom v8.0.0
+   Compiling encoding_rs v0.8.35
+   Compiling vsimd v0.8.0
+   Compiling utf8_iter v1.0.4
+   Compiling unicode-width v0.2.2
+   Compiling httpdate v1.0.3
+   Compiling rangemap v1.7.1
+   Compiling lazy_static v1.5.0
+   Compiling outref v0.5.2
+   Compiling num-cmp v0.1.0
+   Compiling pulldown-cmark v0.13.4
+   Compiling micromap v0.3.0
+   Compiling weezl v0.1.12
+   Compiling winnow v1.0.4
+   Compiling core-foundation-sys v0.8.7
+   Compiling ttf-parser v0.25.1
+   Compiling atomic-waker v1.1.2
+   Compiling anyhow v1.0.104
+   Compiling bytecount v0.6.9
+   Compiling hyper v1.11.1
+   Compiling iana-time-zone v0.1.65
+   Compiling toml_parser v1.1.5+spec-1.1.0
+   Compiling serde_spanned v1.1.2
+   Compiling toml_datetime v1.1.2+spec-1.1.0
+   Compiling uuid-simd v0.8.0
+   Compiling sharded-slab v0.1.7
+   Compiling getopts v0.2.24
+   Compiling rayon v1.12.0
+   Compiling alloca v0.4.0
+   Compiling password-hash v0.6.1
+   Compiling type1-encoding-parser v0.1.1
+   Compiling adobe-cmap-parser v0.4.1
+   Compiling tracing-log v0.2.0
+   Compiling fancy-regex v0.19.2
+   Compiling blake2 v0.11.0
+   Compiling form_urlencoded v1.2.2
+   Compiling cpufeatures v0.3.0
+   Compiling zerofrom v0.1.6
+   Compiling rtoolbox v0.0.6
+   Compiling matchers v0.2.0
+   Compiling euclid v0.20.14
+   Compiling jsonschema-regex v0.57.0
+   Compiling thread_local v1.1.9
+   Compiling ryu v1.0.23
+   Compiling plotters-backend v0.3.7
+   Compiling yoke v0.8.1
+   Compiling typed-path v0.13.0
+   Compiling sha1_smol v1.0.1
+   Compiling zeroize v1.9.0
+   Compiling ciborium-io v0.2.2
+   Compiling nu-ansi-term v0.50.3
+   Compiling unicase v2.9.0
+   Compiling data-encoding v2.10.0
+   Compiling cff-parser v0.2.0
+   Compiling pulldown-cmark-escape v0.11.0
+   Compiling unsafe-libyaml v0.2.11
+   Compiling postscript v0.14.1
+   Compiling zerovec v0.11.5
+   Compiling zerotrie v0.2.3
+   Compiling zip v9.1.0
+   Compiling argon2 v0.6.0
+   Compiling uuid v1.26.1
+   Compiling plotters-svg v0.3.7
+   Compiling rpassword v7.5.4
+   Compiling tinystr v0.8.2
+   Compiling potential_utf v0.1.4
+   Compiling sha2 v0.11.0
+   Compiling icu_collections v2.1.1
+   Compiling lopdf v0.42.0
+   Compiling icu_locale_core v2.1.1
+   Compiling toml v1.1.8+spec-1.1.0
+   Compiling hyper-util v0.1.21
+   Compiling strum v0.28.0
+   Compiling clap v4.6.7
+   Compiling http-body-util v0.1.5
+   Compiling fluent-uri v0.4.1
+   Compiling email_address v0.2.9
+   Compiling serde_yaml_ng v0.10.0
+   Compiling chrono v0.4.45
+   Compiling tracing v0.1.44
+   Compiling icu_provider v2.1.1
+   Compiling half v2.7.1
+   Compiling ppv-lite86 v0.2.21
+   Compiling quick-xml v0.42.0
+   Compiling itertools v0.13.0
+   Compiling ciborium-ll v0.2.2
+   Compiling wait-timeout v0.2.1
+   Compiling icu_properties v2.1.2
+   Compiling icu_normalizer v2.1.1
+   Compiling jsonschema-value v0.57.0
+   Compiling referencing v0.57.0
+   Compiling tracing-subscriber v0.3.23
+   Compiling fnv v1.0.7
+   Compiling cast v0.3.0
+   Compiling quick-error v1.2.3
+   Compiling subtle v2.6.1
+   Compiling idna_adapter v1.2.1
+   Compiling base64 v0.22.1
+   Compiling same-file v1.0.6
+   Compiling criterion-plot v0.8.2
+   Compiling rusty-fork v0.3.1
+   Compiling pdf-extract v0.12.1
+   Compiling idna v1.1.0
+   Compiling ciborium v0.2.2
+   Compiling rand_chacha v0.9.0
+   Compiling tinytemplate v1.2.1
+   Compiling plotters v0.3.7
+   Compiling walkdir v2.5.0
+   Compiling rand v0.9.4
+   Compiling url v2.5.8
+   Compiling jsonschema v0.57.0
+   Compiling rand_xorshift v0.4.0
+   Compiling console v0.16.4
+   Compiling page_size v0.6.0
+   Compiling anes v0.1.6
+   Compiling similar v2.7.0
+   Compiling unarray v0.1.4
+   Compiling oorandom v11.1.5
+   Compiling proptest v1.11.0
+   Compiling insta v1.49.0
+   Compiling criterion v0.8.2
+   Compiling forge v1.1.0 (/private/tmp/deprev-2026-11-12/wt-pr264)
+error[E0308]: mismatched types
+   --> src/cli/export.rs:171:62
+    |
+171 |                 let qualified_name = String::from_utf8_lossy(element_name.as_ref());
+    |                                      ----------------------- ^^^^^^^^^^^^^^^^^^^^^ expected `&[u8]`, found `&str`
+    |                                      |
+    |                                      arguments to this function are incorrect
+    |
+    = note: expected reference `&[u8]`
+               found reference `&str`
+note: associated function defined here
+   --> /opt/homebrew/Cellar/rust/1.99.1/lib/rustlib/src/rust/library/alloc/src/string.rs:628:12
+    |
+628 |     pub fn from_utf8_lossy(v: &[u8]) -> Cow<'_, str> {
+    |            ^^^^^^^^^^^^^^^
+
+error[E0277]: can't compare `str` with `[u8]`
+   --> src/cli/export.rs:183:47
+    |
+183 |                     if attribute.key.as_ref() == namespace_attribute.as_bytes()
+    |                                               ^^ no implementation for `str == [u8]`
+    |
+    = help: the trait `PartialEq<[u8]>` is not implemented for `str`
+    = help: the following other types implement trait `PartialEq<Rhs>`:
+              `&str` implements `PartialEq<Authority>`
+              `&str` implements `PartialEq<ByteStr>`
+              `&str` implements `PartialEq<ByteString>`
+              `&str` implements `PartialEq<Cow<'_, str>>`
+              `&str` implements `PartialEq<HeaderName>`
+              `&str` implements `PartialEq<HeaderValue>`
+              `&str` implements `PartialEq<Method>`
+              `&str` implements `PartialEq<OsString>`
+            and 57 others
+    = note: required for `&str` to implement `PartialEq<&[u8]>`
+
+error[E0277]: can't compare `str` with `[u8]`
+   --> src/cli/export.rs:185:29
+    |
+184 |                         && attribute.value.as_ref()
+    |                            ------------------------
+185 |                             != crate::export::xml_serializer::OSCAL_NS.as_bytes()
+    |                             ^^ --------------------------------------------------
+    |                             |
+    |                             no implementation for `str == [u8]`
+    |
+    = help: the trait `PartialEq<[u8]>` is not implemented for `str`
+    = help: the following other types implement trait `PartialEq<Rhs>`:
+              `&str` implements `PartialEq<Authority>`
+              `&str` implements `PartialEq<ByteStr>`
+              `&str` implements `PartialEq<ByteString>`
+              `&str` implements `PartialEq<Cow<'_, str>>`
+              `&str` implements `PartialEq<HeaderName>`
+              `&str` implements `PartialEq<HeaderValue>`
+              `&str` implements `PartialEq<Method>`
+              `&str` implements `PartialEq<OsString>`
+            and 57 others
+    = note: required for `&str` to implement `PartialEq<&[u8]>`
+
+error[E0308]: mismatched types
+   --> src/cli/export.rs:190:57
+    |
+190 | ...                   String::from_utf8_lossy(attribute.value.as_ref()),
+    |                       ----------------------- ^^^^^^^^^^^^^^^^^^^^^^^^ expected `&[u8]`, found `&str`
+    |                       |
+    |                       arguments to this function are incorrect
+    |
+    = note: expected reference `&[u8]`
+               found reference `&str`
+note: associated function defined here
+   --> /opt/homebrew/Cellar/rust/1.99.1/lib/rustlib/src/rust/library/alloc/src/string.rs:628:12
+    |
+628 |     pub fn from_utf8_lossy(v: &[u8]) -> Cow<'_, str> {
+    |            ^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:224:17
+    |
+223 |             Ok(XmlEvent::Start(element)) => match element.name().as_ref() {
+    |                                                   ----------------------- this expression has type `&str`
+224 |                 b"w:p" => {
+    |                 ^^^^^^ expected `&str`, found `&[u8; 3]`
+    |
+    = note: expected reference `&str`
+               found reference `&'static [u8; 3]`
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:230:17
+    |
+223 |             Ok(XmlEvent::Start(element)) => match element.name().as_ref() {
+    |                                                   ----------------------- this expression has type `&str`
+...
+230 |                 b"w:tbl" => in_table = true,
+    |                 ^^^^^^^^ expected `&str`, found `&[u8; 5]`
+    |
+    = note: expected reference `&str`
+               found reference `&'static [u8; 5]`
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:231:17
+    |
+223 |             Ok(XmlEvent::Start(element)) => match element.name().as_ref() {
+    |                                                   ----------------------- this expression has type `&str`
+...
+231 |                 b"w:tr" => {
+    |                 ^^^^^^^ expected `&str`, found `&[u8; 4]`
+    |
+    = note: expected reference `&str`
+               found reference `&'static [u8; 4]`
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:235:17
+    |
+223 |             Ok(XmlEvent::Start(element)) => match element.name().as_ref() {
+    |                                                   ----------------------- this expression has type `&str`
+...
+235 |                 b"w:tc" => {
+    |                 ^^^^^^^ expected `&str`, found `&[u8; 4]`
+    |
+    = note: expected reference `&str`
+               found reference `&'static [u8; 4]`
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:239:17
+    |
+223 |             Ok(XmlEvent::Start(element)) => match element.name().as_ref() {
+    |                                                   ----------------------- this expression has type `&str`
+...
+239 |                 b"w:numPr" if in_paragraph => is_list_item = true,
+    |                 ^^^^^^^^^^ expected `&str`, found `&[u8; 7]`
+    |
+    = note: expected reference `&str`
+               found reference `&'static [u8; 7]`
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:240:17
+    |
+223 |             Ok(XmlEvent::Start(element)) => match element.name().as_ref() {
+    |                                                   ----------------------- this expression has type `&str`
+...
+240 |                 b"w:pStyle" if in_paragraph => {
+    |                 ^^^^^^^^^^^ expected `&str`, found `&[u8; 8]`
+    |
+    = note: expected reference `&str`
+               found reference `&'static [u8; 8]`
+
+error[E0277]: can't compare `str` with `[u8; 5]`
+   --> src/ingest/mod.rs:242:46
+    |
+242 |                         if attr.key.as_ref() == b"w:val" {
+    |                                              ^^ no implementation for `str == [u8; 5]`
+    |
+    = help: the trait `PartialEq<[u8; 5]>` is not implemented for `str`
+    = help: the following other types implement trait `PartialEq<Rhs>`:
+              `&str` implements `PartialEq<Authority>`
+              `&str` implements `PartialEq<ByteStr>`
+              `&str` implements `PartialEq<ByteString>`
+              `&str` implements `PartialEq<Cow<'_, str>>`
+              `&str` implements `PartialEq<HeaderName>`
+              `&str` implements `PartialEq<HeaderValue>`
+              `&str` implements `PartialEq<Method>`
+              `&str` implements `PartialEq<OsString>`
+            and 57 others
+    = note: required for `&str` to implement `PartialEq<&[u8; 5]>`
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:243:66
+    |
+243 | ...                   style = Some(String::from_utf8_lossy(attr.value.as_ref()).into_owned());
+    |                                    ----------------------- ^^^^^^^^^^^^^^^^^^^ expected `&[u8]`, found `&str`
+    |                                    |
+    |                                    arguments to this function are incorrect
+    |
+    = note: expected reference `&[u8]`
+               found reference `&str`
+note: associated function defined here
+   --> /opt/homebrew/Cellar/rust/1.99.1/lib/rustlib/src/rust/library/alloc/src/string.rs:628:12
+    |
+628 |     pub fn from_utf8_lossy(v: &[u8]) -> Cow<'_, str> {
+    |            ^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:250:17
+    |
+249 |             Ok(XmlEvent::Empty(element)) => match element.name().as_ref() {
+    |                                                   ----------------------- this expression has type `&str`
+250 |                 b"w:numPr" if in_paragraph => is_list_item = true,
+    |                 ^^^^^^^^^^ expected `&str`, found `&[u8; 7]`
+    |
+    = note: expected reference `&str`
+               found reference `&'static [u8; 7]`
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:251:17
+    |
+249 |             Ok(XmlEvent::Empty(element)) => match element.name().as_ref() {
+    |                                                   ----------------------- this expression has type `&str`
+250 |                 b"w:numPr" if in_paragraph => is_list_item = true,
+251 |                 b"w:pStyle" if in_paragraph => {
+    |                 ^^^^^^^^^^^ expected `&str`, found `&[u8; 8]`
+    |
+    = note: expected reference `&str`
+               found reference `&'static [u8; 8]`
+
+error[E0277]: can't compare `str` with `[u8; 5]`
+   --> src/ingest/mod.rs:253:46
+    |
+253 |                         if attr.key.as_ref() == b"w:val" {
+    |                                              ^^ no implementation for `str == [u8; 5]`
+    |
+    = help: the trait `PartialEq<[u8; 5]>` is not implemented for `str`
+    = help: the following other types implement trait `PartialEq<Rhs>`:
+              `&str` implements `PartialEq<Authority>`
+              `&str` implements `PartialEq<ByteStr>`
+              `&str` implements `PartialEq<ByteString>`
+              `&str` implements `PartialEq<Cow<'_, str>>`
+              `&str` implements `PartialEq<HeaderName>`
+              `&str` implements `PartialEq<HeaderValue>`
+              `&str` implements `PartialEq<Method>`
+              `&str` implements `PartialEq<OsString>`
+            and 57 others
+    = note: required for `&str` to implement `PartialEq<&[u8; 5]>`
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:254:66
+    |
+254 | ...                   style = Some(String::from_utf8_lossy(attr.value.as_ref()).into_owned());
+    |                                    ----------------------- ^^^^^^^^^^^^^^^^^^^ expected `&[u8]`, found `&str`
+    |                                    |
+    |                                    arguments to this function are incorrect
+    |
+    = note: expected reference `&[u8]`
+               found reference `&str`
+note: associated function defined here
+   --> /opt/homebrew/Cellar/rust/1.99.1/lib/rustlib/src/rust/library/alloc/src/string.rs:628:12
+    |
+628 |     pub fn from_utf8_lossy(v: &[u8]) -> Cow<'_, str> {
+    |            ^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:261:55
+    |
+261 |                 let decoded = String::from_utf8_lossy(text.as_ref());
+    |                               ----------------------- ^^^^^^^^^^^^^ expected `&[u8]`, found `&str`
+    |                               |
+    |                               arguments to this function are incorrect
+    |
+    = note: expected reference `&[u8]`
+               found reference `&str`
+note: associated function defined here
+   --> /opt/homebrew/Cellar/rust/1.99.1/lib/rustlib/src/rust/library/alloc/src/string.rs:628:12
+    |
+628 |     pub fn from_utf8_lossy(v: &[u8]) -> Cow<'_, str> {
+    |            ^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:269:17
+    |
+268 |             Ok(XmlEvent::End(element)) => match element.name().as_ref() {
+    |                                                 ----------------------- this expression has type `&str`
+269 |                 b"w:p" => {
+    |                 ^^^^^^ expected `&str`, found `&[u8; 3]`
+    |
+    = note: expected reference `&str`
+               found reference `&'static [u8; 3]`
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:276:17
+    |
+268 |             Ok(XmlEvent::End(element)) => match element.name().as_ref() {
+    |                                                 ----------------------- this expression has type `&str`
+...
+276 |                 b"w:tc" => {
+    |                 ^^^^^^^ expected `&str`, found `&[u8; 4]`
+    |
+    = note: expected reference `&str`
+               found reference `&'static [u8; 4]`
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:282:17
+    |
+268 |             Ok(XmlEvent::End(element)) => match element.name().as_ref() {
+    |                                                 ----------------------- this expression has type `&str`
+...
+282 |                 b"w:tr" => {
+    |                 ^^^^^^^ expected `&str`, found `&[u8; 4]`
+    |
+    = note: expected reference `&str`
+               found reference `&'static [u8; 4]`
+
+error[E0308]: mismatched types
+   --> src/ingest/mod.rs:288:17
+    |
+268 |             Ok(XmlEvent::End(element)) => match element.name().as_ref() {
+    |                                                 ----------------------- this expression has type `&str`
+...
+288 |                 b"w:tbl" => in_table = false,
+    |                 ^^^^^^^^ expected `&str`, found `&[u8; 5]`
+    |
+    = note: expected reference `&str`
+               found reference `&'static [u8; 5]`
+
+error[E0308]: mismatched types
+   --> src/oscal_cli/invoker.rs:294:44
+    |
+294 |                 return std::str::from_utf8(element.local_name().as_ref())
+    |                        ------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&[u8]`, found `&str`
+    |                        |
+    |                        arguments to this function are incorrect
+    |
+    = note: expected reference `&[u8]`
+               found reference `&str`
+note: function defined here
+   --> /opt/homebrew/Cellar/rust/1.99.1/lib/rustlib/src/rust/library/core/src/str/converts.rs:89:14
+    |
+ 89 | pub const fn from_utf8(v: &[u8]) -> Result<&str, Utf8Error> {
+    |              ^^^^^^^^^
+
+Some errors have detailed explanations: E0277, E0308.
+For more information about an error, try `rustc --explain E0277`.
+error: could not compile `forge` (lib) due to 22 previous errors
