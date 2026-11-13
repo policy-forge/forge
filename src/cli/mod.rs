@@ -6,6 +6,8 @@ pub mod diff;
 /// Drift subcommand: content-safe, canonical artifact comparison for CI.
 pub mod drift;
 pub mod export;
+/// Integration subcommand: connector-neutral change sets and fake adapter (PRD 065 Phase 1).
+pub mod integration;
 pub mod migrate;
 pub mod output;
 pub mod profile;
@@ -299,6 +301,12 @@ pub enum Commands {
     Lifecycle {
         #[command(subcommand)]
         command: LifecycleCommand,
+    },
+
+    /// Export connector-neutral change sets and run the fake-server plan/apply/reconcile contract
+    Integration {
+        #[command(subcommand)]
+        command: integration::IntegrationCommand,
     },
 
     /// Declare framework applicability and analyze policy-mapping gaps
@@ -1601,6 +1609,24 @@ pub enum LifecycleCommand {
         #[arg(long)]
         output: Option<PathBuf>,
     },
+    /// Emit informational due/overdue review alerts for an explicit date
+    Alerts {
+        /// Lifecycle record; repeat to alert across a portfolio
+        #[arg(long = "record", required = true)]
+        records: Vec<PathBuf>,
+        /// Explicit alert date (YYYY-MM-DD)
+        #[arg(long)]
+        as_of: chrono::NaiveDate,
+        /// Alert output format
+        #[arg(long, value_enum, default_value = "json")]
+        format: LifecycleOutputFormat,
+        /// Gate that determines whether action-required status exits 1
+        #[arg(long, value_enum, default_value = "publication")]
+        gate: LifecycleGate,
+        /// Write the alerts atomically instead of stdout
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
     /// Emit deterministic unsigned approval evidence for external signing
     Attest {
         /// Approved, non-drifted lifecycle record
@@ -2772,6 +2798,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             };
             if action_required { Err(ForgeError::LinkageActionRequired) } else { Ok(()) }
         }
+        Commands::Integration { command } => integration::execute(command),
         Commands::Lifecycle { command } => match command {
             LifecycleCommand::Init {
                 source,
@@ -2863,6 +2890,19 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             }
             LifecycleCommand::Queue { records, as_of, format, gate, output } => {
                 if crate::lifecycle::execute_queue(
+                    records,
+                    *as_of,
+                    format,
+                    gate,
+                    output.as_deref(),
+                )? {
+                    Err(ForgeError::LifecycleActionRequired)
+                } else {
+                    Ok(())
+                }
+            }
+            LifecycleCommand::Alerts { records, as_of, format, gate, output } => {
+                if crate::lifecycle::execute_alerts(
                     records,
                     *as_of,
                     format,

@@ -50,10 +50,14 @@ fn run_cli() -> ExitCode {
         EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(default_filter));
     if matches!(
         &cli.command,
-        cli::Commands::Workspace { .. } | cli::Commands::Mcp { .. } | cli::Commands::Review { .. }
+        cli::Commands::Workspace { .. }
+            | cli::Commands::Mcp { .. }
+            | cli::Commands::Review { .. }
+            | cli::Commands::Integration { .. }
     ) {
-        // Workspace, MCP and private review data must never enter process logs, even
-        // with RUST_LOG=trace or --verbose. Bootstrap uses explicit safe output.
+        // Workspace, MCP, private review and integration credential data must never
+        // enter process logs, even with RUST_LOG=trace or --verbose. Bootstrap uses
+        // explicit safe output.
         tracing::subscriber::set_global_default(tracing::subscriber::NoSubscriber::default())
             .expect("private workflow installs the process subscriber once");
     } else {

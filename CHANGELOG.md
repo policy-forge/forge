@@ -21,6 +21,13 @@ inventory of all post-v1.1.0 changes.
   shared `fieldHelp` table in `ui/workspace.js`; a field without an entry fails
   to render. See [Field help markers](docs/local-workspace.md#field-help-markers)
   for the coverage inventory. No API, dependency or validation change.
+- F22 release scaffolding (DRAFT, owner approval pending): offline
+  deterministic CycloneDX 1.6 draft SBOM generator
+  (`scripts/generate_sbom.py`, tested by `scripts/test_generate_sbom.py`)
+  derived from `Cargo.lock` + the committed dependency graph, plus
+  `docs/release/` support matrix, proposed support policy, and release
+  runbook with an offline rollback-rehearsal receipt. No release is
+  published or authorized by these artifacts.
 - PRD-061 S-1: `forge author scaffold --manifest <FILE>` writes an empty
   `forge.authoring-pack/1` template bound to the project's exact framework
   inventory and baseline. It creates no assignments and leaves the required

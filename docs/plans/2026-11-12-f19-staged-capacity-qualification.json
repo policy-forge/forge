@@ -1,0 +1,339 @@
+{
+ "basis": "b4226bb35d796222c30f93235ac22118dd26a344",
+ "branch": "feat/restore-staged-capacity",
+ "deterministic_fixture_controls": {
+  "failed": 0,
+  "file": "scripts/test_workspace_staged_capacity_controls.py",
+  "passed": 5
+ },
+ "existing_deterministic_rust_controls": [
+  "workspace::source_transfers::tests::shared_capacity_is_not_a_second_stage_pool",
+  "workspace::source_transfers::tests::cancel_during_off_lock_preparation_never_releases_held_bytes_early",
+  "workspace::source_transfers::tests::peak_charge_cannot_credit_raw_drop_before_complete_plan_retention",
+  "workspace::source_transfers::tests::original_expiry_boundary_is_not_extended_by_progress_or_reads",
+  "workspace::root_transaction::tests::restart_after_interrupted_publication_rolls_back_owned_targets"
+ ],
+ "finding": "Staged API2.4 transport code is merged and complete; the open agent-runnable remainder was native larger-capacity qualification (gap audit comment 1302: not attempted). No production code change was required.",
+ "format": "forge.f19-staged-capacity-qualification/1",
+ "limitations": [
+  "Native macOS larger-capacity qualification only; no Windows/browser/AT/human/release acceptance.",
+  "Native interrupted-publication rollback is qualified by the deterministic Rust restart control; there is no production phase-fault hook for racy native mid-restore injection, so native termination is after a settled commit (cleanup verified).",
+  "The Windows harness is prepared-not-run and fails closed off Windows; the Windows source-restore port returns typed unavailable until its native implementation lands.",
+  "A test/check count is not a requirement or acceptance count; cohorts remain separate.",
+  "No merge, tag, release, publication or final goal completion is authorized or recorded."
+ ],
+ "native_capacity_run_1": {
+  "check_count": 8,
+  "checks": [
+   "full-capacity-stage-create-and-ready",
+   "logical-cap-boundary-exact-and-one-over",
+   "unresolved-reservation-blocks-shared-pool-overflow",
+   "discard-releases-unresolved-reservation",
+   "conservative-shared-admission-refuses-below-cap-preview",
+   "larger-restorable-preview-and-exact-commit",
+   "abnormal-termination-durable-outcome-survives-restart",
+   "fresh-read-only-restart-outcome-and-write-refusal"
+  ],
+  "expected_check_count": 8,
+  "failure": null,
+  "format": "forge.s6-real-staged-capacity-workflow/1",
+  "normal_session_exits": 2,
+  "platform": "darwin",
+  "scope": "actual native Unix authenticated API2.4 larger-capacity only; no browser/Windows/power-loss/AT/release/human acceptance",
+  "sources": {
+   "binary": {
+    "bytes": 25066000,
+    "sha256": "3e5715d086aef3e5cd3bc08153f68437da6263cf768db2b179a57e460b99ac13"
+   },
+   "source_capacity_workflow": {
+    "bytes": 18048,
+    "sha256": "02fbf9aedc87afaa2ced470b94514b21353fb1c25474768cb1b52add19df1267"
+   },
+   "source_client": {
+    "bytes": 76377,
+    "sha256": "4a65e9b0c6c567042249920313172ef55e8bbdcc4addecdc15b180a87b0a0591"
+   }
+  },
+  "status": "passed",
+  "unobserved_checks": []
+ },
+ "native_capacity_run_2": {
+  "check_count": 8,
+  "checks": [
+   "full-capacity-stage-create-and-ready",
+   "logical-cap-boundary-exact-and-one-over",
+   "unresolved-reservation-blocks-shared-pool-overflow",
+   "discard-releases-unresolved-reservation",
+   "conservative-shared-admission-refuses-below-cap-preview",
+   "larger-restorable-preview-and-exact-commit",
+   "abnormal-termination-durable-outcome-survives-restart",
+   "fresh-read-only-restart-outcome-and-write-refusal"
+  ],
+  "expected_check_count": 8,
+  "failure": null,
+  "format": "forge.s6-real-staged-capacity-workflow/1",
+  "normal_session_exits": 2,
+  "platform": "darwin",
+  "scope": "actual native Unix authenticated API2.4 larger-capacity only; no browser/Windows/power-loss/AT/release/human acceptance",
+  "sources": {
+   "binary": {
+    "bytes": 25066000,
+    "sha256": "3e5715d086aef3e5cd3bc08153f68437da6263cf768db2b179a57e460b99ac13"
+   },
+   "source_capacity_workflow": {
+    "bytes": 18048,
+    "sha256": "02fbf9aedc87afaa2ced470b94514b21353fb1c25474768cb1b52add19df1267"
+   },
+   "source_client": {
+    "bytes": 76377,
+    "sha256": "4a65e9b0c6c567042249920313172ef55e8bbdcc4addecdc15b180a87b0a0591"
+   }
+  },
+  "status": "passed",
+  "unobserved_checks": []
+ },
+ "native_capacity_run_3": {
+  "check_count": 8,
+  "checks": [
+   "full-capacity-stage-create-and-ready",
+   "logical-cap-boundary-exact-and-one-over",
+   "unresolved-reservation-blocks-shared-pool-overflow",
+   "discard-releases-unresolved-reservation",
+   "conservative-shared-admission-refuses-below-cap-preview",
+   "larger-restorable-preview-and-exact-commit",
+   "abnormal-termination-durable-outcome-survives-restart",
+   "fresh-read-only-restart-outcome-and-write-refusal"
+  ],
+  "expected_check_count": 8,
+  "failure": null,
+  "format": "forge.s6-real-staged-capacity-workflow/1",
+  "normal_session_exits": 2,
+  "platform": "darwin",
+  "scope": "actual native Unix authenticated API2.4 larger-capacity only; no browser/Windows/power-loss/AT/release/human acceptance",
+  "sources": {
+   "binary": {
+    "bytes": 25066000,
+    "sha256": "3e5715d086aef3e5cd3bc08153f68437da6263cf768db2b179a57e460b99ac13"
+   },
+   "source_capacity_workflow": {
+    "bytes": 18048,
+    "sha256": "02fbf9aedc87afaa2ced470b94514b21353fb1c25474768cb1b52add19df1267"
+   },
+   "source_client": {
+    "bytes": 76377,
+    "sha256": "4a65e9b0c6c567042249920313172ef55e8bbdcc4addecdc15b180a87b0a0591"
+   }
+  },
+  "status": "passed",
+  "unobserved_checks": []
+ },
+ "native_capacity_run_4": {
+  "check_count": 8,
+  "checks": [
+   "full-capacity-stage-create-and-ready",
+   "logical-cap-boundary-exact-and-one-over",
+   "unresolved-reservation-blocks-shared-pool-overflow",
+   "discard-releases-unresolved-reservation",
+   "conservative-shared-admission-refuses-below-cap-preview",
+   "larger-restorable-preview-and-exact-commit",
+   "abnormal-termination-durable-outcome-survives-restart",
+   "fresh-read-only-restart-outcome-and-write-refusal"
+  ],
+  "expected_check_count": 8,
+  "failure": null,
+  "format": "forge.s6-real-staged-capacity-workflow/1",
+  "normal_session_exits": 2,
+  "platform": "darwin",
+  "scope": "actual native Unix authenticated API2.4 larger-capacity only; no browser/Windows/power-loss/AT/release/human acceptance",
+  "sources": {
+   "binary": {
+    "bytes": 25066000,
+    "sha256": "3e5715d086aef3e5cd3bc08153f68437da6263cf768db2b179a57e460b99ac13"
+   },
+   "source_capacity_workflow": {
+    "bytes": 18048,
+    "sha256": "02fbf9aedc87afaa2ced470b94514b21353fb1c25474768cb1b52add19df1267"
+   },
+   "source_client": {
+    "bytes": 76377,
+    "sha256": "4a65e9b0c6c567042249920313172ef55e8bbdcc4addecdc15b180a87b0a0591"
+   }
+  },
+  "status": "passed",
+  "unobserved_checks": []
+ },
+ "native_capacity_run_5": {
+  "check_count": 8,
+  "checks": [
+   "full-capacity-stage-create-and-ready",
+   "logical-cap-boundary-exact-and-one-over",
+   "unresolved-reservation-blocks-shared-pool-overflow",
+   "discard-releases-unresolved-reservation",
+   "conservative-shared-admission-refuses-below-cap-preview",
+   "larger-restorable-preview-and-exact-commit",
+   "abnormal-termination-durable-outcome-survives-restart",
+   "fresh-read-only-restart-outcome-and-write-refusal"
+  ],
+  "expected_check_count": 8,
+  "failure": null,
+  "format": "forge.s6-real-staged-capacity-workflow/1",
+  "normal_session_exits": 2,
+  "platform": "darwin",
+  "scope": "actual native Unix authenticated API2.4 larger-capacity only; no browser/Windows/power-loss/AT/release/human acceptance",
+  "sources": {
+   "binary": {
+    "bytes": 25066000,
+    "sha256": "3e5715d086aef3e5cd3bc08153f68437da6263cf768db2b179a57e460b99ac13"
+   },
+   "source_capacity_workflow": {
+    "bytes": 18048,
+    "sha256": "02fbf9aedc87afaa2ced470b94514b21353fb1c25474768cb1b52add19df1267"
+   },
+   "source_client": {
+    "bytes": 76377,
+    "sha256": "4a65e9b0c6c567042249920313172ef55e8bbdcc4addecdc15b180a87b0a0591"
+   }
+  },
+  "status": "passed",
+  "unobserved_checks": []
+ },
+ "recorded_utc": "2026-11-12T19:26:46.257474+00:00",
+ "release_binary": {
+  "bytes": 25066000,
+  "path": "target/release/forge",
+  "sha256": "3e5715d086aef3e5cd3bc08153f68437da6263cf768db2b179a57e460b99ac13"
+ },
+ "remaining_gates": [
+  "Native Windows staged transaction, platform/crash/rollback and no-replace publication acceptance (later hardware gate).",
+  "Independent contract review, dependency/OS-denial qualification, AT/participant acceptance and final integrated documentation review."
+ ],
+ "restart_race_resolution": {
+  "confirmation": "5 consecutive native runs, 5 passed 8/8, with the final pinned script.",
+  "fix": "larger_restore now polls until cleanup_state==verified (terminal record fsynced) before abnormal termination, matching the maintained staged workflow restore_confirm; the settle-sleep/bounded-retry restart shim was removed.",
+  "flock_probe": "macOS flock releases synchronously at process exit: acquirable within 0.2 ms after SIGKILL+reap in 20/20 probe trials; the earlier async-flock-release theory was wrong.",
+  "root_cause": "The script killed the session at public succeeded/committed, which is projected at commit-decided before the terminal journal persist. A SIGKILL inside NativeJournal::replace leaves transactions.next on disk; NativeJournal::open then fails closed permanently (recovery-required), so no launch retry can succeed. Journal forensics on the failed run confirmed commit-decided, cleanup_verified=false, transactions.next present.",
+  "symptom": "Intermittent restart failure (1 of 4 early runs): fresh session launch raised RuntimeError after SIGKILL."
+ },
+ "robustness_confirmation": {
+  "checks_per_run": 8,
+  "failed": 0,
+  "passed": 5,
+  "runs": 5,
+  "script_sha256": "02fbf9aedc87afaa2ced470b94514b21353fb1c25474768cb1b52add19df1267"
+ },
+ "source_pins": [
+  {
+   "bytes": 18048,
+   "path": "scripts/test_workspace_staged_capacity_workflow.py",
+   "sha256": "02fbf9aedc87afaa2ced470b94514b21353fb1c25474768cb1b52add19df1267"
+  },
+  {
+   "bytes": 3569,
+   "path": "scripts/test_workspace_staged_capacity_controls.py",
+   "sha256": "890e33a86a0b38f81ddaefc122b15729976ce1b181bfbb1c96720049e4313bbb"
+  },
+  {
+   "bytes": 7464,
+   "path": "scripts/test_workspace_windows_staged_qualification.py",
+   "sha256": "e50f623d4d8461cfc863328445ea31decd3f1a91a38323b4f52286061c45ec8a"
+  },
+  {
+   "bytes": 76377,
+   "path": "scripts/workspace_client.py",
+   "sha256": "4a65e9b0c6c567042249920313172ef55e8bbdcc4addecdc15b180a87b0a0591"
+  },
+  {
+   "bytes": 34451,
+   "path": "scripts/test_workspace_staged_source_workflow.py",
+   "sha256": "7932ff43bdb9e99d3de80028b4fdd2b75629fceba8b260a8a5941d8a47b27077"
+  },
+  {
+   "bytes": 41372,
+   "path": "src/workspace/source_transfers.rs",
+   "sha256": "8dba5e326d3c4c4da90c424dbf44d79a2e623e526b3713435aee1636cc212f6d"
+  },
+  {
+   "bytes": 55535,
+   "path": "src/workspace/http_staged.rs",
+   "sha256": "e63a39d7d15afcb52675d26fc949493f1d9d8f95e3eb0a940486d7e6750e0cde"
+  },
+  {
+   "bytes": 22790,
+   "path": "src/workspace/staged_source_bundles.rs",
+   "sha256": "9ead7b3450f1e0d2b64215a5a15237c2242942b7ba853b6d2528f7368f977807"
+  },
+  {
+   "bytes": 70626,
+   "path": "src/workspace/source_receipts.rs",
+   "sha256": "02ffd2cc2bfa6eab6f72595af27d688d9e793591056cc9c8b3f111e799f1a2db"
+  },
+  {
+   "bytes": 126037,
+   "path": "src/workspace/root_transaction.rs",
+   "sha256": "1d96ccced2f78c594705d49fa9c70c8f9899b0830b7987be836eca74b5e89c2e"
+  }
+ ],
+ "toolchain": {
+  "arch": "arm64",
+  "platform": "darwin",
+  "rustc": "1.99.1 (58cf8f9c3 2026-10-13) (Homebrew)"
+ },
+ "verification": {
+  "cargo_clippy_all_targets": "passed, zero warnings (this session; no Rust production code changed)",
+  "cargo_fmt_check": "passed (this session)",
+  "cargo_test_full_suite": {
+   "failed": 0,
+   "ignored": 3,
+   "note": "Observed on this branch by the prior agent run; the pre-commit hook re-runs cargo test --locked at commit.",
+   "passed": 4498,
+   "summaries": 77
+  }
+ },
+ "windows_prepared": {
+  "acceptance_eligible": false,
+  "checks": {
+   "windows-conservative-shared-admission-refusal": "unmeasured",
+   "windows-crash-after-commit-durable-outcome": "unmeasured",
+   "windows-crash-before-commit-conditional-rollback": "unmeasured",
+   "windows-directory-durability-no-link-ancestry": "unmeasured",
+   "windows-larger-exact-restore-index-last": "unmeasured",
+   "windows-no-replace-publication-foreign-preserved": "unmeasured",
+   "windows-qualified-private-state-owner-dacl": "unmeasured",
+   "windows-read-only-restart-no-recovery-write": "unmeasured",
+   "windows-restart-recovery-truthful-none-committed-unknown": "unmeasured",
+   "windows-shared-pool-unresolved-reservation-retention": "unmeasured",
+   "windows-staged-full-capacity-transport": "unmeasured",
+   "windows-sticky-cancellation-deadline": "unmeasured"
+  },
+  "expected_check_count": 12,
+  "failure": {
+   "code": "unsupported-platform",
+   "stage": "platform"
+  },
+  "identity": {
+   "harness": {
+    "bytes": 7464,
+    "sha256": "e50f623d4d8461cfc863328445ea31decd3f1a91a38323b4f52286061c45ec8a"
+   },
+   "provided_release_binary": null
+  },
+  "limitations": [
+   "Prepared by an agent on a non-Windows host; no Windows observation is recorded.",
+   "The Windows source-restore port returns typed unavailable until its native implementation lands.",
+   "Crash/rollback and no-replace publication require the real Windows hardware gate.",
+   "No merge, tag, release, publication or human acceptance is authorized or recorded."
+  ],
+  "measured_check_count": 0,
+  "platform": {
+   "architecture": "unsupported",
+   "build": null,
+   "python": "3.15.2",
+   "system": "unsupported"
+  },
+  "schema_version": "forge.windows-staged-qualification/1",
+  "scope": "windows-staged-transaction-crash-rollback-qualification",
+  "scoped_complete": false,
+  "status": "incomplete",
+  "truth_state": "prepared-not-run"
+ }
+}

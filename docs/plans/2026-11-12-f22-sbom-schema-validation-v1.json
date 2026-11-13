@@ -1,0 +1,25 @@
+{
+  "basis": "b4226bb35d796222c30f93235ac22118dd26a344",
+  "date": "2026-11-12",
+  "document": {
+    "bytes": 215555,
+    "path": "docs/release/sbom-2026-11-12.json",
+    "sha256": "599556eff39da342951e59f27b993336fa7ba7359ffe1dd2eca307533662f7aa"
+  },
+  "format": "forge.f22-sbom-schema-validation/1",
+  "limits": [
+    "Schema conformance only; not an audit, safety, or release-acceptance claim.",
+    "Draft SBOM is a dependency inventory from Cargo.lock + committed graph; the release workflow regenerates the authoritative SBOM with cargo-cyclonedx at the tag.",
+    "One-time network fetch of the official schema for validation; the generator itself is fully offline."
+  ],
+  "result": {
+    "errors": 0,
+    "outcome": "pass"
+  },
+  "schema": {
+    "bytes": 190498,
+    "sha256": "1ebcb88a2c845ecb6ff7bee7aeabdff9422cb0347f3d6875b241bd444b7e098f",
+    "url": "https://cyclonedx.org/schema/bom-1.6.schema.json"
+  },
+  "validator": "jsonschema (Draft7Validator + FormatChecker) in throwaway /tmp/f22-sbom-validate venv; validation-only tooling, not a project dependency"
+}
