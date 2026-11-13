@@ -428,10 +428,14 @@ fn excerpt(include: bool, text: &str) -> Result<Option<String>, ForgeError> {
     if !include {
         return Ok(None);
     }
-    let mut bounded = text.to_string();
-    bounded.truncate(MAX_EXCERPT_BYTES);
-    reject_secret_text(&bounded, "excerpt")?;
-    Ok(Some(bounded))
+    // `String::truncate` panics inside a multi-byte character, so back up to a boundary.
+    let mut end = text.len().min(MAX_EXCERPT_BYTES);
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    let bounded = &text[..end];
+    reject_secret_text(bounded, "excerpt")?;
+    Ok(Some(bounded.to_string()))
 }
 
 #[cfg(test)]
@@ -490,6 +494,18 @@ mod tests {
         value = serde_json::to_value(&set).unwrap();
         value["schema_version"] = serde_json::json!("forge.integration-change-set/2");
         assert!(parse(&serde_json::to_vec(&value).unwrap()).is_err());
+    }
+
+    #[test]
+    fn excerpt_truncates_on_a_char_boundary() {
+        // An em dash (3 bytes) straddles the byte limit; truncation must not split it.
+        let text = format!("{}\u{2014}tail", "a".repeat(MAX_EXCERPT_BYTES - 1));
+        let kept = excerpt(true, &text).unwrap().unwrap();
+        assert_eq!(kept, "a".repeat(MAX_EXCERPT_BYTES - 1));
+        // Plain ASCII still keeps exactly the limit, and opting out keeps nothing.
+        let ascii = excerpt(true, &"b".repeat(MAX_EXCERPT_BYTES + 10)).unwrap().unwrap();
+        assert_eq!(ascii.len(), MAX_EXCERPT_BYTES);
+        assert_eq!(excerpt(false, &text).unwrap(), None);
     }
 
     #[test]

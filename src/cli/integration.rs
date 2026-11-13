@@ -11,7 +11,7 @@ use clap::Subcommand;
 
 use crate::ForgeError;
 use crate::cli::output::write_output;
-use crate::workflow::{change_set, config, fake, plan};
+use crate::workflow::{change_set, config, fake, plan, read_bounded};
 
 /// Explicit integration operations.
 #[derive(Subcommand)]
@@ -165,13 +165,9 @@ pub fn execute(command: &IntegrationCommand) -> Result<(), ForgeError> {
             ttl_hours,
             output,
         } => {
-            let config_bytes = std::fs::read(config_path).map_err(|cause| {
-                ForgeError::Integration(format!("cannot read connector config: {cause}"))
-            })?;
+            let config_bytes = read_bounded(config_path, config::MAX_CONFIG_BYTES)?;
             let connector = config::ConnectorConfig::parse(&config_bytes)?;
-            let set_bytes = std::fs::read(set_path).map_err(|cause| {
-                ForgeError::Integration(format!("cannot read change set: {cause}"))
-            })?;
+            let set_bytes = read_bounded(set_path, change_set::MAX_CHANGE_SET_BYTES)?;
             let set = change_set::parse(&set_bytes)?;
             let state = plan::load_state(state_path)?;
             let now = as_of.unwrap_or_else(Utc::now);
@@ -197,17 +193,11 @@ pub fn execute(command: &IntegrationCommand) -> Result<(), ForgeError> {
             confirm,
             report,
         } => {
-            let config_bytes = std::fs::read(config_path).map_err(|cause| {
-                ForgeError::Integration(format!("cannot read connector config: {cause}"))
-            })?;
+            let config_bytes = read_bounded(config_path, config::MAX_CONFIG_BYTES)?;
             let connector = config::ConnectorConfig::parse(&config_bytes)?;
-            let set_bytes = std::fs::read(set_path).map_err(|cause| {
-                ForgeError::Integration(format!("cannot read change set: {cause}"))
-            })?;
+            let set_bytes = read_bounded(set_path, change_set::MAX_CHANGE_SET_BYTES)?;
             let set = change_set::parse(&set_bytes)?;
-            let plan_bytes = std::fs::read(plan_path).map_err(|cause| {
-                ForgeError::Integration(format!("cannot read dry-run plan: {cause}"))
-            })?;
+            let plan_bytes = read_bounded(plan_path, plan::MAX_DOCUMENT_BYTES)?;
             let document = plan::Plan::parse(&plan_bytes)?;
             let state = plan::load_state(state_path)?;
             let now = as_of.unwrap_or_else(Utc::now);

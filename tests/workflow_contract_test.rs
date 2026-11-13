@@ -777,3 +777,70 @@ fn cli_plan_apply_reconcile_flow() {
         serde_json::from_slice(&std::fs::read(root.join("state.json")).unwrap()).unwrap();
     assert_eq!(after, state);
 }
+
+/// Inputs are read through the bounded regular-file guard, so a symlinked
+/// connector config is refused instead of silently followed.
+#[cfg(unix)]
+#[test]
+fn cli_plan_refuses_symlinked_inputs() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().canonicalize().unwrap();
+    write_json(&root.join("gaps.json"), &applicability_report());
+    write_json(
+        &root.join("connector.json"),
+        &json!({
+            "schema_version": CONFIG_SCHEMA_VERSION,
+            "connector": "github-issues",
+            "targets": [TARGET],
+            "network": NetworkPolicy::default()
+        }),
+    );
+    let export = run_in(
+        &root,
+        &[
+            "integration",
+            "export",
+            "--root",
+            ".",
+            "--applicability-report",
+            "gaps.json",
+            "--output",
+            "change-set.json",
+        ],
+    );
+    assert!(export.status.success(), "{}", String::from_utf8_lossy(&export.stderr));
+    std::os::unix::fs::symlink(root.join("connector.json"), root.join("link.json")).unwrap();
+    for (flag, link_target) in [("--connector-config", "link.json"), ("--change-set", "link.json")]
+    {
+        let (config, set) = if flag == "--connector-config" {
+            (link_target, "change-set.json")
+        } else {
+            ("connector.json", link_target)
+        };
+        let planned = run_in(
+            &root,
+            &[
+                "integration",
+                "plan",
+                "--root",
+                ".",
+                "--change-set",
+                set,
+                "--connector-config",
+                config,
+                "--state",
+                "state.json",
+                "--as-of",
+                "2026-11-12T00:00:00Z",
+                "--output",
+                "plan.json",
+            ],
+        );
+        assert!(!planned.status.success(), "symlinked input via {flag} must be refused");
+        assert!(
+            String::from_utf8_lossy(&planned.stderr).contains("regular file"),
+            "{}",
+            String::from_utf8_lossy(&planned.stderr)
+        );
+    }
+}
