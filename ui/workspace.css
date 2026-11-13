@@ -62,3 +62,11 @@ button[aria-disabled=true] { cursor: default; }
 [data-bundle-panel] { overflow-wrap: anywhere; }
 
 [data-inspection-panel] { overflow-wrap: anywhere; }
+.field-label { display: flex; align-items: baseline; gap: 8px; }
+.field-label label { margin-bottom: 0; }
+.field-info { min-height: 0; width: 28px; height: 28px; padding: 0; border-radius: 50%; background: white; color: var(--accent); border: 1px solid var(--accent); font-size: 15px; line-height: 1; flex: none; align-self: center; }
+.field-info:hover { background: #e4ede7; color: #163d2d; }
+.field-info[aria-expanded="true"] { background: var(--accent); color: white; }
+.field-hint { margin: 0 0 8px; color: #52605b; font-size: 13px; max-width: 70ch; }
+.field-info-panel { border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; background: white; padding: 4px 16px; margin: 0 0 12px; max-width: 70ch; font-size: 14px; }
+.field-info-panel p { margin: 10px 0; }

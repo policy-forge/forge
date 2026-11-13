@@ -57,7 +57,7 @@ const receipt={format:'forge.s6-native-browser-development/1',status:'error',mod
   const asset=page.waitForResponse(response=>/\/assets\/[a-f0-9]{64}\.js$/.test(new URL(response.url()).pathname));const style=page.waitForResponse(response=>/\/assets\/[a-f0-9]{64}\.css$/.test(new URL(response.url()).pathname));
   await page.goto(origin);assert.deepEqual(await(await asset).body(),sourceJS);assert.deepEqual(await(await style).body(),sourceCSS);
   assert.equal(await page.locator('meta[name="forge-api-major"]').getAttribute('content'),'2');const negotiated=await page.locator('meta[name="forge-api-contract-version"]').getAttribute('content');assert(['2.2.0','2.3.0','2.4.0'].includes(negotiated));receipt.contract_version=negotiated;
-  const passphrase=page.getByLabel('Workspace passphrase');await focused(passphrase,'initial-passphrase');await passphrase.fill('synthetic S6 browser bundle passphrase 062');await passphrase.press('Enter');
+  const passphrase=page.getByLabel('Workspace passphrase',{exact:true});await focused(passphrase,'initial-passphrase');await passphrase.fill('synthetic S6 browser bundle passphrase 062');await passphrase.press('Enter');
   await page.waitForFunction(()=>document.getElementById('status').textContent==='Project state loaded.');
   const navigation=page.getByRole('button',{name:'Trace & Reports',exact:true});await navigation.focus();await navigation.press('Enter');await page.waitForFunction(()=>document.getElementById('view-title').textContent==='Trace & Reports');await focused(page.locator('#view-title'),'Trace-heading');
   const panel=page.locator('[data-bundle-effects]');await panel.waitFor();assert.match(await panel.textContent(),/Export metadata or replace the index/);
@@ -66,10 +66,19 @@ const receipt={format:'forge.s6-native-browser-development/1',status:'error',mod
   const localAck=page.getByLabel('I understand that labels, resource keys, paths and hashes can reveal project information.',{exact:true});await localAck.focus();await localAck.press('Space');
   const localDownload=page.getByRole('button',{name:'Download metadata bundle',exact:true});await localDownload.focus();const localPending=page.waitForEvent('download');await localDownload.press('Enter');const local=await localPending;assert.equal(local.suggestedFilename(),'forge-workspace-index-and-hashes.json');await local.saveAs(path.join(out,'query-metadata.json'));
   const localBundle=JSON.parse(fs.readFileSync(path.join(out,'query-metadata.json')));assert.equal(localBundle.index.resources.length,2);assert.equal(localBundle.index.schema_version,'forge.workspace/1');assert.deepEqual(files(),before);assert.equal(await page.locator('#status').textContent(),globalStatus);await focused(localDownload,'local-query-download-control');receipt.local_query_download_no_project_write=true;
-  const exportTarget=page.getByLabel('Metadata export project-relative target');const sensitive=page.getByLabel('I acknowledge that exported labels, keys, paths and hashes are sensitive metadata.',{exact:true});const exportButton=page.getByRole('button',{name:'Prepare metadata export',exact:true});
-  const selectedFile=page.getByLabel('Choose a bundle for index replacement');const schema=page.getByLabel('Replacement target index schema');const ack=page.getByLabel('I acknowledge replacing the index label and all registrations; source files will not be deleted.',{exact:true});const importButton=page.getByRole('button',{name:'Prepare index replacement',exact:true});
+  const exportTarget=page.getByLabel('Metadata export project-relative target',{exact:true});const sensitive=page.getByLabel('I acknowledge that exported labels, keys, paths and hashes are sensitive metadata.',{exact:true});const exportButton=page.getByRole('button',{name:'Prepare metadata export',exact:true});
+  const selectedFile=page.getByLabel('Choose a bundle for index replacement',{exact:true});const schema=page.getByLabel('Replacement target index schema',{exact:true});const ack=page.getByLabel('I acknowledge replacing the index label and all registrations; source files will not be deleted.',{exact:true});const importButton=page.getByRole('button',{name:'Prepare index replacement',exact:true});
   await exportTarget.fill('metadata-export.json');assert.equal(await sensitive.isChecked(),false);assert.equal(await exportButton.getAttribute('aria-disabled'),'true');
-  await exportTarget.focus();await exportTarget.press('Tab');await focused(sensitive,'native-Tab-sensitivity-checkbox');await sensitive.press('Space');assert.equal(await sensitive.isChecked(),true);
+  await exportTarget.focus();await exportTarget.press('Tab');await focused(page.getByRole('button',{name:'About: I acknowledge that exported labels, keys, paths and hashes are sensitive metadata.',exact:true}),'native-Tab-export-marker');
+  await page.keyboard.press('Tab');await focused(sensitive,'native-Tab-sensitivity-checkbox');await sensitive.press('Space');assert.equal(await sensitive.isChecked(),true);
+  // Field info markers: keyboard toggle, association, docs+example content, Escape return.
+  for(const label of ['Metadata export project-relative target','Replacement target index schema']){
+   const marker=page.getByRole('button',{name:'About: '+label,exact:true});await marker.focus();await marker.press('Enter');
+   const panelId=await marker.getAttribute('aria-controls');const info=page.locator('[id="'+panelId+'"]');
+   assert.equal(await marker.getAttribute('aria-expanded'),'true');assert.equal(await info.isVisible(),true);
+   assert.match(await info.textContent(),/Example: /);assert.match(await info.textContent(),/Guide: docs\//);
+   await marker.press('Escape');assert.equal(await info.isVisible(),false);await focused(marker,'info-marker-escape-'+label);
+  }
   if(mode==='writable'){
    assert.equal(await exportButton.getAttribute('aria-disabled'),'false');receipt.phase='export-dismissal';await prepared(exportButton);await dismissed(exportButton);assert.deepEqual(files(),before);
    await prepared(exportButton);await dismissed(exportButton,true);assert.deepEqual(files(),before);

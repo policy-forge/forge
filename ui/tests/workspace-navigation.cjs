@@ -121,6 +121,20 @@ class FakeNode {
     }
   }
 
+  /** Insert one node before a reference child, matching the DOM's re-parenting. */
+  insertBefore(child, reference) {
+    if (child.parentNode) child.remove();
+    child.parentNode = this;
+    this.children.splice(reference === null ? this.children.length : this.children.indexOf(reference), 0, child);
+    return child;
+  }
+
+  /** Expose the following sibling used by real-DOM insertion order. */
+  get nextSibling() {
+    if (!this.parentNode) return null;
+    return this.parentNode.children[this.parentNode.children.indexOf(this) + 1] ?? null;
+  }
+
   /** Prepend nodes while preserving their supplied order. */
   prepend(...nodes) {
     const previous = [...this.children];
@@ -316,8 +330,11 @@ class FakeDocument {
     main.tabIndex = -1;
     const unlock = add(main, "section", "unlock-panel");
     const unlockForm = add(unlock, "form", "unlock-form");
+    const passphraseLabel = add(unlockForm, "label", "", "Workspace passphrase");
+    passphraseLabel.htmlFor = "passphrase";
     add(unlockForm, "input", "passphrase");
-    add(unlockForm, "button", "", "Unlock workspace");
+    const unlockSubmit = add(unlockForm, "button", "", "Unlock workspace");
+    unlockSubmit.setAttribute("type", "submit");
     const workspace = add(main, "section", "workspace");
     add(workspace, "nav", "navigation");
     add(workspace, "h1", "view-title", "Overview");
@@ -666,7 +683,7 @@ test("initial unlock preserves a project-load failure's error-summary focus", as
   assert.equal(app.document.activeElement, app.byId("error"));
   assert.match(app.byId("error").textContent, /Synthetic initial-load failure/);
   assert.equal(app.byId("passphrase").value, "");
-  assert.equal(form.querySelector("button").disabled, false);
+  assert.equal(form.querySelector('button[type="submit"]').disabled, false);
   assert.equal(app.byId("view-title").textContent, "Overview");
 });
 
@@ -1709,7 +1726,7 @@ function unlockedSession(readOnly = true) {
 function beginUnlock(app, trigger = "field") {
   const field = app.byId("passphrase");
   const form = app.byId("unlock-form");
-  const submit = form.querySelector("button");
+  const submit = form.querySelector('button[type="submit"]');
   field.value = "synthetic test passphrase";
   (trigger === "field" ? field : submit).focus();
   return { field, form, submit, action: form.fire("submit") };
@@ -1722,7 +1739,7 @@ test("locked source initialization focuses and describes the passphrase field", 
   const app = harness();
   assert.equal(app.document.activeElement, app.byId("passphrase"));
   assert.equal(app.byId("status").textContent, "Workspace locked — passphrase required.");
-  assert.equal(app.byId("passphrase").getAttribute("aria-describedby"), "status");
+  assert.equal(app.byId("passphrase").getAttribute("aria-describedby"), "status passphrase-hint");
   assert.equal(app.requests.length, 0);
 });
 
@@ -4392,3 +4409,143 @@ for (const version of ["2.3.0", "2.4.0"]) {
     assert.equal(app.byId("preview-dialog").open, false);staged24Unconfirmed(app);
   });
 }
+
+/** Resolve the info marker rendered beside one labelled field through its accessible name. */
+function markerFor(app, label, root = app.document.body) {
+  const marker = root.querySelectorAll("button").find(node => node.getAttribute("aria-label") === "About: " + label);
+  assert(marker, "Missing info marker: " + label);
+  return marker;
+}
+
+/** Assert one field's complete marker/help contract: association, naming, hint and docs+example content. */
+function assertFieldHelp(app, label, root = app.document.body) {
+  const input = app.byLabel(label);
+  const marker = markerFor(app, label, root);
+  assert.equal(marker.type, "button");
+  assert.equal(marker.getAttribute("aria-expanded"), "false");
+  const panel = app.byId(marker.getAttribute("aria-controls"));
+  assert(panel);
+  assert.equal(panel.hidden, true);
+  assert(input.getAttribute("aria-describedby").split(" ").includes(input.id + "-hint"));
+  const hint = app.byId(input.id + "-hint");
+  assert(hint);
+  assert.match(hint.textContent, /^(Required|Optional|Check|Defaults)/);
+  assert.match(panel.textContent, /Example: /);
+  assert.match(panel.textContent, /Guide: docs\//);
+  return {input, marker, panel, hint};
+}
+
+test("every rendered field carries one info marker with inline hint and docs plus example", async () => {
+  const app = harness({
+    "/session/unlock": () => unlockedSession(false),
+    "/resources": () => ({resource_version: "synthetic-version-1", page: {items: [{
+      resource_id: "res_synthetic0001", key: "access-policy", role: "policy-source", path: "access.md",
+      sha256: "a".repeat(64), size_bytes: 1, validation_state: "valid", stale: false, version: "synthetic-version-1",
+    }], total_matching: 1, next_cursor: null}}),
+  });
+  await beginUnlock(app).action;
+  await app.run('navigate("Policies & Artifacts")');
+  const labels = app.byId("view").querySelectorAll("label").map(label => label.textContent);
+  assert(labels.length >= 9, "Expected the full writable Policies & Artifacts inventory");
+  for (const label of labels) assertFieldHelp(app, label, app.byId("view"));
+  // Every marker sits outside its label so the field's accessible name is exactly the label text.
+  for (const label of app.byId("view").querySelectorAll("label"))
+    assert.equal(label.querySelectorAll("button").length, 0);
+  const markers = app.byId("view").querySelectorAll("button").filter(node => (node.getAttribute("aria-label") || "").startsWith("About: "));
+  assert.equal(markers.length, labels.length);
+});
+
+test("info markers toggle by keyboard-style activation, associate content, and close with Escape", async () => {
+  const app = harness();
+  await beginUnlock(app).action;
+  await app.run('readOnly = false; navigate("Policies & Artifacts")');
+  const {marker, panel} = assertFieldHelp(app, "Project-relative file path", app.byId("view"));
+  marker.focus();
+  await marker.fire("click");
+  assert.equal(marker.getAttribute("aria-expanded"), "true");
+  assert.equal(panel.hidden, false);
+  assert.match(panel.textContent, /policies\/access\.md/);
+  assert.match(panel.textContent, /Absolute paths/);
+  await panel.fire("keydown");
+  const escape = {type: "keydown", key: "Escape", target: panel, currentTarget: panel, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }};
+  panel.dispatchEvent(escape);
+  assert.equal(escape.defaultPrevented, true);
+  assert.equal(panel.hidden, true);
+  assert.equal(marker.getAttribute("aria-expanded"), "false");
+  assert.equal(app.document.activeElement, marker);
+  // Escape while closed is inert and activation toggles back open.
+  const inert = {type: "keydown", key: "Escape", target: panel, currentTarget: panel, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }};
+  panel.dispatchEvent(inert);
+  assert.equal(inert.defaultPrevented, false);
+  await marker.fire("click");
+  assert.equal(panel.hidden, false);
+  await marker.fire("click");
+  assert.equal(panel.hidden, true);
+});
+
+test("unlock passphrase marker explains the terminal credential without renaming the field", async () => {
+  const app = harness();
+  const {marker, panel, hint} = assertFieldHelp(app, "Workspace passphrase", app.byId("unlock-form"));
+  assert.equal(app.byId("passphrase").getAttribute("aria-describedby"), "status passphrase-hint");
+  assert.match(hint.textContent, /15–128/);
+  await marker.fire("click");
+  assert.match(panel.textContent, /terminal/);
+  assert.match(panel.textContent, /autumn-river-lantern/);
+  // Marker activation never submits the unlock form.
+  assert.equal(app.requests.length, 0);
+  assert.equal(app.byId("unlock-panel").hidden, false);
+});
+
+test("the reported manifest-path field documents destination semantics, examples and conflict behavior", async () => {
+  const app = harness({
+    "/session/unlock": () => unlockedSession(false),
+    "/resources": () => ({resource_version: "synthetic-version-1", page: {items: [{
+      resource_id: "res_synthetic0001", key: "framework", role: "oscal-catalog-artifact", path: "framework.json",
+      sha256: "a".repeat(64), size_bytes: 1, validation_state: "valid", stale: false, version: "synthetic-version-1",
+    }], total_matching: 1, next_cursor: null}}),
+    "/applicability/draft": () => ({status: 404, body: {code: "not-found", message: "Synthetic absent draft.", retryable: false}}),
+  });
+  await beginUnlock(app).action;
+  await app.run('navigate("Framework Scope")');
+  const {marker, panel, hint} = assertFieldHelp(app, "New decision manifest path within project", app.byId("view"));
+  assert.match(hint.textContent, /applicability\.json/);
+  await marker.fire("click");
+  assert.match(panel.textContent, /relative to the opened project/);
+  assert.match(panel.textContent, /Example: applicability\.json \(or scope\/applicability\.json when scope\/ already exists\)/);
+  assert.match(panel.textContent, /Absolute paths, parent traversal \(\.\.\), symlink targets/);
+  assert.match(panel.textContent, /conflict instead of overwriting/);
+  assert.match(panel.textContent, /preview.*confirm.*register/s);
+  assertFieldHelp(app, "Framework Catalog", app.byId("view"));
+});
+
+test("review-queue and framework filters keep optional markers with All defaults", async () => {
+  const app = harness({"/session/unlock": () => unlockedSession(), "/review-queue/items": url => queuePage(url)});
+  await beginUnlock(app).action;
+  await app.run('navigate("Review Queue")');
+  const reason = assertFieldHelp(app, "Reason", app.byId("view"));
+  assert.equal(reason.input.required, false);
+  assert.match(reason.hint.textContent, /All shows every reason/);
+  await reason.marker.fire("click");
+  assert.match(reason.panel.textContent, /stale-input/);
+});
+
+test("lifecycle date and impact filters carry markers on the API2 inspection surface", async () => {
+  const app = await s3App();
+  for (const label of ["Explicit lifecycle review date", "Lifecycle owner key", "Stored lifecycle state"]) {
+    const field = assertFieldHelp(app, label, app.byId("view"));
+    assert.equal(field.input.required, false);
+  }
+  const date = markerFor(app, "Explicit lifecycle review date", app.byId("view"));
+  await date.fire("click");
+  assert.match(app.byId(date.getAttribute("aria-controls")).textContent, /2026-11-12/);
+});
+
+test("metadata and source bundle panels mark every field including acknowledgments", async () => {
+  const app = await s6App({}, false, "2.3.0");
+  const labels = app.byId("view").querySelectorAll("label").map(label => label.textContent);
+  assert(labels.length >= 15, "Expected both bundle panels' full field inventory");
+  for (const label of labels) assertFieldHelp(app, label, app.byId("view"));
+  const target = markerFor(app, "Metadata export project-relative target", app.byId("view"));
+  await target.fire("click");
+  assert.match(app.byId(target.getAttribute("aria-controls")).textContent, /exports\/metadata\.json/);
+});
