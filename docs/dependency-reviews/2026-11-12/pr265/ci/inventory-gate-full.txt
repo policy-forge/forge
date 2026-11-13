@@ -1,0 +1,849 @@
+Dependency inventory gate	UNKNOWN STEP	﻿2026-11-04T01:46:55.4164119Z Current runner version: '2.338.2'
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4185621Z ##[group]Runner Image Provisioner
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4186351Z Hosted Compute Agent
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4186856Z Version: 20261021.618
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4187449Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4188065Z Build Date: 2026-10-21T00:45:21Z
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4188824Z Worker ID: {64ea3a26-afe4-487f-b4a3-ec208215f28d}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4189462Z Region: centralus
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4189935Z Cloud: Azure
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4190432Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4191607Z ##[group]Operating System
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4192164Z Ubuntu
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4192650Z 24.04.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4193088Z LTS
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4193574Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4194048Z ##[group]Runner Image
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4194542Z Image: ubuntu-24.04
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4195150Z Version: 20261025.353.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4196198Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261025.353/images/ubuntu/Ubuntu2404-Readme.md
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4197480Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261025.353
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4198260Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4199406Z ##[group]GITHUB_TOKEN Permissions
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4201092Z Contents: read
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4201679Z Metadata: read
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4202198Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4203929Z Secret source: Dependabot
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4204702Z Cache mode: write
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4205557Z Prepare workflow directory
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4512352Z Prepare all required actions
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.4550568Z Getting action download info
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.6962036Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:55.7742462Z Download action repository 'actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0' (SHA:6d4fd22b20465ccc0f7354476588e8df7c9ca0e0)
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.2366769Z Download action repository 'dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c' (SHA:4360b52568e2003a75bf9bc1d59f33a8e3fc893c)
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.3873137Z Download action repository 'actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9' (SHA:cf430e030ddbb5b0abf93d22962f4752f3646cd9)
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.6236776Z Complete job name: Dependency inventory gate
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.6989365Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.6990488Z with:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.6990925Z   persist-credentials: false
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.6991501Z   repository: policy-forge/forge
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.6998084Z   token: ***
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.6998633Z   ssh-strict: true
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.6999082Z   ssh-user: git
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.6999503Z   clean: true
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.6999950Z   sparse-checkout-cone-mode: true
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.7000512Z   fetch-depth: 1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.7000943Z   fetch-tags: false
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.7001387Z   show-progress: true
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.7001885Z   lfs: false
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.7002296Z   submodules: false
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.7002760Z   set-safe-directory: true
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.7003296Z   allow-unsafe-pr-checkout: false
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.7004115Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.7004515Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.7005020Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.7005488Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.8903420Z Syncing repository: policy-forge/forge
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.8996398Z ##[group]Getting Git version info
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.8997552Z Working directory is '/home/runner/work/forge/forge'
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.8999344Z [command]/usr/bin/git version
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9000221Z git version 2.56.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9002761Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9008872Z Temporarily overriding HOME='/home/runner/work/_temp/bd869f55-c09f-4ca3-aa63-748a7b7ffcdc' before making global git config changes
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9011752Z Adding repository directory to the temporary git global config as a safe directory
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9014349Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/forge/forge
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9041774Z Deleting the contents of '/home/runner/work/forge/forge'
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9044780Z ##[group]Determining repository object format
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9046312Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9047586Z ##[group]Initializing the repository
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9049443Z [command]/usr/bin/git init /home/runner/work/forge/forge
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9147146Z hint: Using 'master' as the name for the initial branch. This default branch name
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9149351Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9151321Z hint: to use in all of your new repositories, which will suppress this warning,
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9152816Z hint: call:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9153603Z hint:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9154647Z hint: 	git config --global init.defaultBranch <name>
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9155854Z hint:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9158760Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9160762Z hint: 'development'. The just-created branch can be renamed via this command:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9163008Z hint:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9164034Z hint: 	git branch -m <name>
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9164891Z hint:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9166010Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9167832Z Initialized empty Git repository in /home/runner/work/forge/forge/.git/
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9171062Z [command]/usr/bin/git remote add origin https://github.com/policy-forge/forge
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9210348Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9211554Z ##[group]Disabling automatic garbage collection
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9213497Z [command]/usr/bin/git config --local gc.auto 0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9244710Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9245703Z ##[group]Setting up auth
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9246660Z Removing SSH command configuration
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9251182Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9285583Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9600944Z Removing HTTP extra header
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9607352Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9660415Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9865553Z Removing includeIf entries pointing to credentials config files
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9869298Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:56.9904806Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:57.0109505Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-e3d10f4f-9601-463b-8f6a-8cf376e26c7b.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:57.0148814Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/forge/forge/.git.path /home/runner/work/_temp/git-credentials-e3d10f4f-9601-463b-8f6a-8cf376e26c7b.config
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:57.0184518Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/forge/forge/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-e3d10f4f-9601-463b-8f6a-8cf376e26c7b.config
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:57.0221673Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-e3d10f4f-9601-463b-8f6a-8cf376e26c7b.config
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:57.0265070Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-e3d10f4f-9601-463b-8f6a-8cf376e26c7b.config
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:57.0300373Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:57.0301589Z ##[group]Fetching the repository
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:57.0306417Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +3208978ece22adb0b5236277e99d4d99bf401958:refs/remotes/pull/265/merge
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.1476017Z From https://github.com/policy-forge/forge
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.1476709Z  * [new ref]         3208978ece22adb0b5236277e99d4d99bf401958 -> pull/265/merge
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.1478712Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.1479380Z ##[group]Determining the checkout info
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.1479961Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.1483640Z [command]/usr/bin/git sparse-checkout disable
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.1542931Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.1575879Z ##[group]Checking out the ref
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.1579501Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/265/merge
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4906095Z Note: switching to 'refs/remotes/pull/265/merge'.
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4906537Z 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4906772Z You are in 'detached HEAD' state. You can look around, make experimental
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4907190Z changes and commit them, and you can discard any commits you make in this
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4907646Z state without impacting any branches by switching back to a branch.
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4907889Z 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4908079Z If you want to create a new branch to retain commits you create, you may
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4908654Z do so (now or later) by using -c with the switch command. Example:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4908920Z 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4909050Z   git switch -c <new-branch-name>
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4910128Z 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4910269Z Or undo this operation with:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4910503Z 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4910614Z   git switch -
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4910777Z 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4911153Z Turn off this advice by setting config variable advice.detachedHead to false
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4911508Z 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4911849Z HEAD is now at 3208978 Merge 24616651b0f72a81d6d23682f8370139301ef516 into b4226bb35d796222c30f93235ac22118dd26a344
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4932511Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.4987965Z [command]/usr/bin/git log -1 --format=%H
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5023922Z 3208978ece22adb0b5236277e99d4d99bf401958
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5032388Z ##[group]Removing auth
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5032712Z Removing SSH command configuration
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5035365Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5071121Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5276254Z Removing HTTP extra header
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5279781Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5316026Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5517363Z Removing includeIf entries pointing to credentials config files
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5520441Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5552446Z includeif.gitdir:/home/runner/work/forge/forge/.git.path
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5553883Z includeif.gitdir:/home/runner/work/forge/forge/.git/worktrees/*.path
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5554417Z includeif.gitdir:/github/workspace/.git.path
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5554868Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5560231Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/forge/forge/.git.path
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5589310Z /home/runner/work/_temp/git-credentials-e3d10f4f-9601-463b-8f6a-8cf376e26c7b.config
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5602443Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/forge/forge/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-e3d10f4f\-9601\-463b\-8f6a\-8cf376e26c7b\.config
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5641264Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/forge/forge/.git/worktrees/*.path
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5669388Z /home/runner/work/_temp/git-credentials-e3d10f4f-9601-463b-8f6a-8cf376e26c7b.config
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5676170Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/forge/forge/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-e3d10f4f\-9601\-463b\-8f6a\-8cf376e26c7b\.config
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5713572Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5743386Z /github/runner_temp/git-credentials-e3d10f4f-9601-463b-8f6a-8cf376e26c7b.config
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5749816Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-e3d10f4f\-9601\-463b\-8f6a\-8cf376e26c7b\.config
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5788198Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5816801Z /github/runner_temp/git-credentials-e3d10f4f-9601-463b-8f6a-8cf376e26c7b.config
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5823700Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-e3d10f4f\-9601\-463b\-8f6a\-8cf376e26c7b\.config
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.5861307Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6069736Z Removing credentials config '/home/runner/work/_temp/git-credentials-e3d10f4f-9601-463b-8f6a-8cf376e26c7b.config'
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6070836Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6331016Z ##[group]Run actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6331373Z with:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6331555Z   python-version: 3.11
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6331752Z   check-latest: false
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6333664Z   token: ***
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6333924Z   mirror: https://raw.githubusercontent.com/actions/python-versions/main
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6334239Z   update-environment: true
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6334438Z   allow-prereleases: false
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6334625Z   freethreaded: false
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6334798Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6334953Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6335135Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.6335306Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7247262Z ##[group]Installed versions
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7604270Z Successfully set up CPython (3.11.17)
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7604843Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7845891Z ##[group]Run dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7846248Z with:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7846420Z   toolchain: stable
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7846615Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7846779Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7846965Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7847193Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7847556Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7847899Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7848214Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7848751Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7849051Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7849309Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7915089Z ##[start-action display=Parse toolchain version;id=__dtolnay_rust-toolchain.parse]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7972156Z ##[group]Run if [[ -z $toolchain ]]; then
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7972507Z ^[[36;1mif [[ -z $toolchain ]]; then^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7972956Z ^[[36;1m  # GitHub does not enforce `required: true` inputs itself. https://github.com/actions/runner/issues/1070^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7973594Z ^[[36;1m  echo "'toolchain' is a required input" >&2^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7973841Z ^[[36;1m  exit 1^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7974111Z ^[[36;1melif [[ $toolchain =~ ^stable' '[0-9]+' '(year|month|week|day)s?' 'ago$ ]]; then^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7974447Z ^[[36;1m  if [[ Linux == macOS ]]; then^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7974877Z ^[[36;1m    echo "toolchain=1.$((($(date -v-$(sed 's/stable \([0-9]*\) \(.\).*/\1\2/' <<< $toolchain) +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7975290Z ^[[36;1m  else^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7975610Z ^[[36;1m    echo "toolchain=1.$((($(date --date "${toolchain#stable }" +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7975983Z ^[[36;1m  fi^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7976241Z ^[[36;1melif [[ $toolchain =~ ^stable' 'minus' '[0-9]+' 'releases?$ ]]; then^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7976657Z ^[[36;1m  echo "toolchain=1.$((($(date +%s)/60/60/24-16569)/7/6-${toolchain//[^0-9]/}))" >> $GITHUB_OUTPUT^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7977020Z ^[[36;1melif [[ $toolchain =~ ^1\.[0-9]+$ ]]; then^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7977418Z ^[[36;1m  echo "toolchain=1.$((i=${toolchain#1.}, c=($(date +%s)/60/60/24-16569)/7/6, i+9*i*(10*i<=c)+90*i*(100*i<=c)))" >> $GITHUB_OUTPUT^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7977786Z ^[[36;1melse^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7977992Z ^[[36;1m  echo "toolchain=$toolchain" >> $GITHUB_OUTPUT^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.7978237Z ^[[36;1mfi^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8134244Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8134547Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8134719Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8134917Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8135152Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8135509Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8135841Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8136149Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8136447Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8136757Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8137018Z   toolchain: stable
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8137195Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8223689Z ##[end-action id=__dtolnay_rust-toolchain.parse;outcome=success;conclusion=success;duration_ms=30]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8228823Z ##[start-action display=Construct rustup command line;id=__dtolnay_rust-toolchain.flags]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8253554Z ##[group]Run echo "targets=$(for t in ${targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8254254Z ^[[36;1mecho "targets=$(for t in ${targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8254736Z ^[[36;1mecho "components=$(for c in ${components//,/ }; do echo -n ' --component' $c; done)" >> $GITHUB_OUTPUT^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8255110Z ^[[36;1mecho "downgrade=" >> $GITHUB_OUTPUT^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8272037Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8272302Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8272473Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8272663Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8272893Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8273238Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8273647Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8295526Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8295872Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8296190Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8296466Z   targets: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8296625Z   components: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8296835Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8347148Z ##[end-action id=__dtolnay_rust-toolchain.flags;outcome=success;conclusion=success;duration_ms=11]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8349357Z ##[start-action display=Set $CARGO_HOME;id=__dtolnay_rust-toolchain.__run]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8373721Z ##[group]Run echo CARGO_HOME=${CARGO_HOME:-"$HOME/.cargo"} >> $GITHUB_ENV
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8374105Z ^[[36;1mecho CARGO_HOME=${CARGO_HOME:-"$HOME/.cargo"} >> $GITHUB_ENV^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8390615Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8390883Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8391052Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8391246Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8391473Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8391807Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8392146Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8392443Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8392753Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8393066Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8393332Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8433850Z ##[end-action id=__dtolnay_rust-toolchain.__run;outcome=success;conclusion=success;duration_ms=8]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8435561Z ##[start-action display=Install rustup if needed;id=__dtolnay_rust-toolchain.__run_2]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8462871Z ##[group]Run if ! command -v rustup &>/dev/null; then
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8463182Z ^[[36;1mif ! command -v rustup &>/dev/null; then^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8463763Z ^[[36;1m  curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://sh.rustup.rs | sh -s -- --default-toolchain none -y^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8464309Z ^[[36;1m  echo "$CARGO_HOME/bin" >> $GITHUB_PATH^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8464540Z ^[[36;1mfi^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8481011Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8481282Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8481460Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8481652Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8481873Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8482211Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8482537Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8482834Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8483133Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8483426Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8483695Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8483897Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8524194Z ##[end-action id=__dtolnay_rust-toolchain.__run_2;outcome=success;conclusion=success;duration_ms=8]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8525990Z ##[start-action display=Install rustup if needed on windows;id=__dtolnay_rust-toolchain.__run_3]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8530413Z ##[end-action id=__dtolnay_rust-toolchain.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8539135Z ##[start-action display=rustup toolchain install stable;id=__dtolnay_rust-toolchain.__run_4]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8563525Z ##[group]Run rustup toolchain install stable --profile minimal --no-self-update
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8563955Z ^[[36;1mrustup toolchain install stable --profile minimal --no-self-update^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8580502Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8580770Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8580934Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8581120Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8581343Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8581681Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8582007Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8582300Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8582718Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8583017Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8583277Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8583488Z   RUSTUP_PERMIT_COPY_RENAME: 1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:46:59.8583692Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:01.9623116Z info: syncing channel updates for stable-x86_64-unknown-linux-gnu
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2786469Z 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2861503Z   stable-x86_64-unknown-linux-gnu unchanged - rustc 1.99.1 (58cf8f9c3 2026-10-13)
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2861817Z 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2894641Z ##[end-action id=__dtolnay_rust-toolchain.__run_4;outcome=success;conclusion=success;duration_ms=2435]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2900145Z ##[start-action display=rustup default stable;id=__dtolnay_rust-toolchain.__run_5]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2919639Z ##[group]Run rustup default stable
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2919895Z ^[[36;1mrustup default stable^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2937520Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2937805Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2937972Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2938162Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2938683Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2939017Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2939341Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2939639Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2939940Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2940231Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2940508Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.2940712Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3015727Z info: using existing install for stable-x86_64-unknown-linux-gnu
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3023147Z info: default toolchain set to stable-x86_64-unknown-linux-gnu
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3023401Z 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3091106Z   stable-x86_64-unknown-linux-gnu unchanged - rustc 1.99.1 (58cf8f9c3 2026-10-13)
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3091505Z 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3104734Z ##[end-action id=__dtolnay_rust-toolchain.__run_5;outcome=success;conclusion=success;duration_ms=20]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3106555Z ##[start-action display=Create cachekey;id=__dtolnay_rust-toolchain.rustc-version]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3125411Z ##[group]Run DATE=$(rustc +stable --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3126022Z ^[[36;1mDATE=$(rustc +stable --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3126627Z ^[[36;1mHASH=$(rustc +stable --version --verbose | sed -ne 's/^commit-hash: //p')^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3127012Z ^[[36;1mecho "cachekey=$(echo $DATE$HASH | head -c12)" >> $GITHUB_OUTPUT^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3143223Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3143497Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3143662Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3143870Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3144091Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3144423Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3144756Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3145051Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3145340Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3145632Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3145895Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3146093Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3801466Z ##[end-action id=__dtolnay_rust-toolchain.rustc-version;outcome=success;conclusion=success;duration_ms=69]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3803602Z ##[start-action display=Disable incremental compilation;id=__dtolnay_rust-toolchain.__run_6]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3822916Z ##[group]Run if [ -z "${CARGO_INCREMENTAL+set}" ]; then
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3823227Z ^[[36;1mif [ -z "${CARGO_INCREMENTAL+set}" ]; then^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3823495Z ^[[36;1m  echo CARGO_INCREMENTAL=0 >> $GITHUB_ENV^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3823714Z ^[[36;1mfi^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3840912Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3841175Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3841339Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3841523Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3841742Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3842073Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3842401Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3842697Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3842991Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3843289Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3843551Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3843749Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3882768Z ##[end-action id=__dtolnay_rust-toolchain.__run_6;outcome=success;conclusion=success;duration_ms=7]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3884564Z ##[start-action display=Enable colors in Cargo output;id=__dtolnay_rust-toolchain.__run_7]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3902047Z ##[group]Run if [ -z "${CARGO_TERM_COLOR+set}" ]; then
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3902343Z ^[[36;1mif [ -z "${CARGO_TERM_COLOR+set}" ]; then^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3902612Z ^[[36;1m  echo CARGO_TERM_COLOR=always >> $GITHUB_ENV^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3902838Z ^[[36;1mfi^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3918002Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3918525Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3918828Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3919198Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3919545Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3920002Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3920502Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3920903Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3921384Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3921878Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3922294Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3922664Z   CARGO_INCREMENTAL: 0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3922955Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3974467Z ##[end-action id=__dtolnay_rust-toolchain.__run_7;outcome=success;conclusion=success;duration_ms=8]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3976248Z ##[start-action display=Enable Cargo sparse registry;id=__dtolnay_rust-toolchain.__run_8]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3995255Z ##[group]Run # implemented in 1.66, stabilized in 1.68, made default in 1.70
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3995670Z ^[[36;1m# implemented in 1.66, stabilized in 1.68, made default in 1.70^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3996212Z ^[[36;1mif [ -z "${CARGO_REGISTRIES_CRATES_IO_PROTOCOL+set}" -o -f "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol ]; then^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3996749Z ^[[36;1m  if rustc +stable --version --verbose | grep -q '^release: 1\.6[89]\.'; then^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3997174Z ^[[36;1m    touch "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3997575Z ^[[36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse >> $GITHUB_ENV^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3997975Z ^[[36;1m  elif rustc +stable --version --verbose | grep -q '^release: 1\.6[67]\.'; then^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3998623Z ^[[36;1m    touch "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3999030Z ^[[36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git >> $GITHUB_ENV^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3999300Z ^[[36;1m  fi^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.3999593Z ^[[36;1mfi^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4015009Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4015276Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4015440Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4015628Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4015848Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4016180Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4016502Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4016791Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4017082Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4017369Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4017644Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4017845Z   CARGO_INCREMENTAL: 0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4018020Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4276255Z ##[end-action id=__dtolnay_rust-toolchain.__run_8;outcome=success;conclusion=success;duration_ms=29]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4278273Z ##[start-action display=Work around spurious network errors in curl 8.0;id=__dtolnay_rust-toolchain.__run_9]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4297787Z ##[group]Run # https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/timeout.20investigation
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4298526Z ^[[36;1m# https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/timeout.20investigation^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4299044Z ^[[36;1mif rustc +stable --version --verbose | grep -q '^release: 1\.7[01]\.'; then^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4299401Z ^[[36;1m  echo CARGO_HTTP_MULTIPLEXING=false >> $GITHUB_ENV^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4299649Z ^[[36;1mfi^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4316042Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4316315Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4316480Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4316674Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4316896Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4317243Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4317568Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4317860Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4318151Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4318595Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4318968Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4319166Z   CARGO_INCREMENTAL: 0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4319342Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4467028Z ##[end-action id=__dtolnay_rust-toolchain.__run_9;outcome=success;conclusion=success;duration_ms=18]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4470236Z ##[start-action display=rustc +stable --version --verbose;id=__dtolnay_rust-toolchain.__run_10]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4488243Z ##[group]Run rustc +stable --version --verbose
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4488789Z ^[[36;1mrustc +stable --version --verbose^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4504609Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4504878Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4505042Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4505232Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4505447Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4505770Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4506090Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4506389Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4506674Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4506961Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4507228Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4507429Z   CARGO_INCREMENTAL: 0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4507600Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4633313Z rustc 1.99.1 (58cf8f9c3 2026-10-13)
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4633903Z binary: rustc
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4634218Z commit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4634593Z commit-date: 2026-10-13
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4634891Z host: x86_64-unknown-linux-gnu
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4635172Z release: 1.99.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4635421Z LLVM version: 23.1.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4651636Z ##[end-action id=__dtolnay_rust-toolchain.__run_10;outcome=success;conclusion=success;duration_ms=18]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4701613Z ##[group]Run cargo fetch --locked
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4701855Z ^[[36;1mcargo fetch --locked^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4718513Z shell: /usr/bin/bash -e {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4718715Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4718877Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4719065Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4719283Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4719623Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4719948Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4720253Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4720544Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4720834Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4721092Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4721295Z   CARGO_INCREMENTAL: 0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:02.4721470Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:03.3196056Z ^[[1m^[[92m    Updating^[[0m crates.io index
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.4970899Z ^[[1m^[[92m Downloading^[[0m crates ...
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6157224Z ^[[1m^[[92m  Downloaded^[[0m jsonschema-regex v0.57.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6196259Z ^[[1m^[[92m  Downloaded^[[0m email_address v0.2.9
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6209028Z ^[[1m^[[92m  Downloaded^[[0m data-encoding v2.10.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6264105Z ^[[1m^[[92m  Downloaded^[[0m windows-strings v0.5.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6278940Z ^[[1m^[[92m  Downloaded^[[0m tinytemplate v1.2.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6313626Z ^[[1m^[[92m  Downloaded^[[0m unicase v2.9.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6335263Z ^[[1m^[[92m  Downloaded^[[0m either v1.15.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6346984Z ^[[1m^[[92m  Downloaded^[[0m crunchy v0.2.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6354084Z ^[[1m^[[92m  Downloaded^[[0m android_system_properties v0.1.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6365821Z ^[[1m^[[92m  Downloaded^[[0m anstyle-parse v1.0.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6380721Z ^[[1m^[[92m  Downloaded^[[0m oorandom v11.1.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6389319Z ^[[1m^[[92m  Downloaded^[[0m cfg-if v1.0.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6395438Z ^[[1m^[[92m  Downloaded^[[0m clap_lex v1.0.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6405638Z ^[[1m^[[92m  Downloaded^[[0m rustversion v1.0.22
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6438089Z ^[[1m^[[92m  Downloaded^[[0m atomic-waker v1.1.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6448120Z ^[[1m^[[92m  Downloaded^[[0m same-file v1.0.6
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6458786Z ^[[1m^[[92m  Downloaded^[[0m is_terminal_polyfill v1.70.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6465708Z ^[[1m^[[92m  Downloaded^[[0m once_cell_polyfill v1.70.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6473869Z ^[[1m^[[92m  Downloaded^[[0m equivalent v1.0.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6482533Z ^[[1m^[[92m  Downloaded^[[0m wasm-bindgen-macro v0.2.114
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6492189Z ^[[1m^[[92m  Downloaded^[[0m inout v0.1.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6501397Z ^[[1m^[[92m  Downloaded^[[0m criterion-plot v0.8.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6517231Z ^[[1m^[[92m  Downloaded^[[0m cast v0.3.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6527750Z ^[[1m^[[92m  Downloaded^[[0m password-hash v0.6.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6539258Z ^[[1m^[[92m  Downloaded^[[0m utf8parse v0.2.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6549178Z ^[[1m^[[92m  Downloaded^[[0m ciborium-ll v0.2.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6552435Z ^[[1m^[[92m  Downloaded^[[0m ciborium-io v0.2.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6559679Z ^[[1m^[[92m  Downloaded^[[0m iana-time-zone-haiku v0.1.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6567721Z ^[[1m^[[92m  Downloaded^[[0m getopts v0.2.24
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6584369Z ^[[1m^[[92m  Downloaded^[[0m futures-core v0.3.34
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6596056Z ^[[1m^[[92m  Downloaded^[[0m winapi-util v0.1.11
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6610388Z ^[[1m^[[92m  Downloaded^[[0m windows-interface v0.59.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6620959Z ^[[1m^[[92m  Downloaded^[[0m windows-implement v0.60.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6631511Z ^[[1m^[[92m  Downloaded^[[0m windows-link v0.2.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6638783Z ^[[1m^[[92m  Downloaded^[[0m num-integer v0.1.46
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6653271Z ^[[1m^[[92m  Downloaded^[[0m plotters-backend v0.3.7
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6667235Z ^[[1m^[[92m  Downloaded^[[0m strsim v0.11.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6677601Z ^[[1m^[[92m  Downloaded^[[0m anstyle-wincon v3.0.11
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6687723Z ^[[1m^[[92m  Downloaded^[[0m cfg_aliases v0.2.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6697214Z ^[[1m^[[92m  Downloaded^[[0m wasm-bindgen-shared v0.2.114
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6705149Z ^[[1m^[[92m  Downloaded^[[0m rand_chacha v0.9.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6716169Z ^[[1m^[[92m  Downloaded^[[0m weezl v0.1.12
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6741411Z ^[[1m^[[92m  Downloaded^[[0m plotters-svg v0.3.7
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6749425Z ^[[1m^[[92m  Downloaded^[[0m page_size v0.6.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6760000Z ^[[1m^[[92m  Downloaded^[[0m alloca v0.4.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6771321Z ^[[1m^[[92m  Downloaded^[[0m once_cell v1.21.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6797623Z ^[[1m^[[92m  Downloaded^[[0m pulldown-cmark-escape v0.11.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6804628Z ^[[1m^[[92m  Downloaded^[[0m bit-set v0.8.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6818271Z ^[[1m^[[92m  Downloaded^[[0m generic-array v0.14.7
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6833490Z ^[[1m^[[92m  Downloaded^[[0m httpdate v1.0.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6849925Z ^[[1m^[[92m  Downloaded^[[0m http-body v1.1.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6855949Z ^[[1m^[[92m  Downloaded^[[0m anstyle v1.0.14
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6876336Z ^[[1m^[[92m  Downloaded^[[0m anes v0.1.6
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6914425Z ^[[1m^[[92m  Downloaded^[[0m find-msvc-tools v0.1.9
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6932952Z ^[[1m^[[92m  Downloaded^[[0m windows-result v0.4.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6950822Z ^[[1m^[[92m  Downloaded^[[0m anstream v1.0.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6975951Z ^[[1m^[[92m  Downloaded^[[0m colorchoice v1.0.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.6987539Z ^[[1m^[[92m  Downloaded^[[0m anstyle-query v1.1.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7001590Z ^[[1m^[[92m  Downloaded^[[0m ciborium v0.2.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7032552Z ^[[1m^[[92m  Downloaded^[[0m half v2.7.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7069951Z ^[[1m^[[92m  Downloaded^[[0m shlex v1.3.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7086378Z ^[[1m^[[92m  Downloaded^[[0m quote v1.0.45
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7119561Z ^[[1m^[[92m  Downloaded^[[0m quick-xml v0.41.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7202908Z ^[[1m^[[92m  Downloaded^[[0m num-traits v0.2.19
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7228683Z ^[[1m^[[92m  Downloaded^[[0m walkdir v2.5.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7246287Z ^[[1m^[[92m  Downloaded^[[0m md-5 v0.10.6
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7257432Z ^[[1m^[[92m  Downloaded^[[0m core-foundation-sys v0.8.7
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7280184Z ^[[1m^[[92m  Downloaded^[[0m base64ct v1.8.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7298505Z ^[[1m^[[92m  Downloaded^[[0m pulldown-cmark v0.13.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7336779Z ^[[1m^[[92m  Downloaded^[[0m clap_derive v4.6.7
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7353933Z ^[[1m^[[92m  Downloaded^[[0m windows-core v0.62.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7376749Z ^[[1m^[[92m  Downloaded^[[0m phc v0.6.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7388882Z ^[[1m^[[92m  Downloaded^[[0m rand_core v0.10.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7400649Z ^[[1m^[[92m  Downloaded^[[0m utf8_iter v1.0.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7407861Z ^[[1m^[[92m  Downloaded^[[0m cpufeatures v0.2.17
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7417752Z ^[[1m^[[92m  Downloaded^[[0m ecb v0.1.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7428828Z ^[[1m^[[92m  Downloaded^[[0m block-padding v0.3.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7434754Z ^[[1m^[[92m  Downloaded^[[0m outref v0.5.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7443244Z ^[[1m^[[92m  Downloaded^[[0m ref-cast v1.0.25
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7464246Z ^[[1m^[[92m  Downloaded^[[0m ref-cast-impl v1.0.25
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7470124Z ^[[1m^[[92m  Downloaded^[[0m num v0.4.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7477143Z ^[[1m^[[92m  Downloaded^[[0m console v0.16.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7489864Z ^[[1m^[[92m  Downloaded^[[0m httparse v1.10.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7508246Z ^[[1m^[[92m  Downloaded^[[0m futures-channel v0.3.34
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7522057Z ^[[1m^[[92m  Downloaded^[[0m http-body-util v0.1.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7536683Z ^[[1m^[[92m  Downloaded^[[0m clap v4.6.7
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7662808Z ^[[1m^[[92m  Downloaded^[[0m iana-time-zone v0.1.65
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7683925Z ^[[1m^[[92m  Downloaded^[[0m argon2 v0.6.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7697188Z ^[[1m^[[92m  Downloaded^[[0m blake2 v0.11.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7712349Z ^[[1m^[[92m  Downloaded^[[0m anyhow v1.0.104
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7741712Z ^[[1m^[[92m  Downloaded^[[0m bitflags v2.11.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7773801Z ^[[1m^[[92m  Downloaded^[[0m getrandom v0.4.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7802574Z ^[[1m^[[92m  Downloaded^[[0m wasm-bindgen v0.2.114
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7821625Z ^[[1m^[[92m  Downloaded^[[0m wasm-bindgen-macro-support v0.2.114
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7836005Z ^[[1m^[[92m  Downloaded^[[0m adler2 v2.0.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7845016Z ^[[1m^[[92m  Downloaded^[[0m crc32fast v1.5.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7859115Z ^[[1m^[[92m  Downloaded^[[0m form_urlencoded v1.2.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7864845Z ^[[1m^[[92m  Downloaded^[[0m rand_xorshift v0.4.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7872675Z ^[[1m^[[92m  Downloaded^[[0m scopeguard v1.2.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7881757Z ^[[1m^[[92m  Downloaded^[[0m encode_unicode v1.0.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7900763Z ^[[1m^[[92m  Downloaded^[[0m base64 v0.22.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7928959Z ^[[1m^[[92m  Downloaded^[[0m type1-encoding-parser v0.1.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7934599Z ^[[1m^[[92m  Downloaded^[[0m uuid-simd v0.8.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7943183Z ^[[1m^[[92m  Downloaded^[[0m adobe-cmap-parser v0.4.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7947618Z ^[[1m^[[92m  Downloaded^[[0m block-buffer v0.10.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7955142Z ^[[1m^[[92m  Downloaded^[[0m num-cmp v0.1.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7961180Z ^[[1m^[[92m  Downloaded^[[0m num-iter v0.1.45
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7967784Z ^[[1m^[[92m  Downloaded^[[0m strum v0.28.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7974335Z ^[[1m^[[92m  Downloaded^[[0m postscript v0.14.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.7995117Z ^[[1m^[[92m  Downloaded^[[0m version_check v0.9.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8004302Z ^[[1m^[[92m  Downloaded^[[0m cipher v0.4.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8014854Z ^[[1m^[[92m  Downloaded^[[0m cbc v0.1.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8027643Z ^[[1m^[[92m  Downloaded^[[0m foldhash v0.2.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8039326Z ^[[1m^[[92m  Downloaded^[[0m borrow-or-share v0.2.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8047775Z ^[[1m^[[92m  Downloaded^[[0m rand_core v0.9.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8058116Z ^[[1m^[[92m  Downloaded^[[0m autocfg v1.5.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8072333Z ^[[1m^[[92m  Downloaded^[[0m crypto-common v0.1.7
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8079489Z ^[[1m^[[92m  Downloaded^[[0m heck v0.5.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8088916Z ^[[1m^[[92m  Downloaded^[[0m unarray v0.1.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8097972Z ^[[1m^[[92m  Downloaded^[[0m tinyvec_macros v0.1.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8103857Z ^[[1m^[[92m  Downloaded^[[0m idna_adapter v1.2.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8110569Z ^[[1m^[[92m  Downloaded^[[0m wait-timeout v0.2.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8121686Z ^[[1m^[[92m  Downloaded^[[0m quick-error v1.2.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8130948Z ^[[1m^[[92m  Downloaded^[[0m stringprep v0.1.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8142119Z ^[[1m^[[92m  Downloaded^[[0m sha2 v0.10.9
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8161216Z ^[[1m^[[92m  Downloaded^[[0m similar v2.7.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8201234Z ^[[1m^[[92m  Downloaded^[[0m bytes v1.12.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8227882Z ^[[1m^[[92m  Downloaded^[[0m unicode-ident v1.0.24
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8248801Z ^[[1m^[[92m  Downloaded^[[0m proc-macro2 v1.0.106
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8270837Z ^[[1m^[[92m  Downloaded^[[0m sha1_smol v1.0.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8280555Z ^[[1m^[[92m  Downloaded^[[0m writeable v0.6.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8293820Z ^[[1m^[[92m  Downloaded^[[0m rusty-fork v0.3.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8305184Z ^[[1m^[[92m  Downloaded^[[0m fnv v1.0.7
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8311935Z ^[[1m^[[92m  Downloaded^[[0m ppv-lite86 v0.2.21
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8321346Z ^[[1m^[[92m  Downloaded^[[0m bit-vec v0.8.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8333137Z ^[[1m^[[92m  Downloaded^[[0m digest v0.10.7
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8346740Z ^[[1m^[[92m  Downloaded^[[0m cff-parser v0.2.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8359732Z ^[[1m^[[92m  Downloaded^[[0m vsimd v0.8.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8375228Z ^[[1m^[[92m  Downloaded^[[0m strum_macros v0.28.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8392866Z ^[[1m^[[92m  Downloaded^[[0m redox_syscall v0.5.18
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8411351Z ^[[1m^[[92m  Downloaded^[[0m lock_api v0.4.14
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8421225Z ^[[1m^[[92m  Downloaded^[[0m num-rational v0.4.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8430688Z ^[[1m^[[92m  Downloaded^[[0m num-complex v0.4.6
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8441725Z ^[[1m^[[92m  Downloaded^[[0m bytecount v0.6.9
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8455979Z ^[[1m^[[92m  Downloaded^[[0m http v1.5.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8483672Z ^[[1m^[[92m  Downloaded^[[0m itertools v0.13.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8534253Z ^[[1m^[[92m  Downloaded^[[0m cc v1.2.56
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8556880Z ^[[1m^[[92m  Downloaded^[[0m memchr v2.8.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8596789Z ^[[1m^[[92m  Downloaded^[[0m indexmap v2.13.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8628809Z ^[[1m^[[92m  Downloaded^[[0m bumpalo v3.20.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8649193Z ^[[1m^[[92m  Downloaded^[[0m js-sys v0.3.91
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8667000Z ^[[1m^[[92m  Downloaded^[[0m url v2.5.8
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8686595Z ^[[1m^[[92m  Downloaded^[[0m synstructure v0.13.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8694565Z ^[[1m^[[92m  Downloaded^[[0m icu_collections v2.1.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8740058Z ^[[1m^[[92m  Downloaded^[[0m icu_normalizer_data v2.1.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8756243Z ^[[1m^[[92m  Downloaded^[[0m pin-project-lite v0.2.17
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8799502Z ^[[1m^[[92m  Downloaded^[[0m nu-ansi-term v0.50.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8817230Z ^[[1m^[[92m  Downloaded^[[0m matchers v0.2.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8825251Z ^[[1m^[[92m  Downloaded^[[0m toml v1.1.8+spec-1.1.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8855618Z ^[[1m^[[92m  Downloaded^[[0m toml_parser v1.1.5+spec-1.1.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8873056Z ^[[1m^[[92m  Downloaded^[[0m toml_datetime v1.1.2+spec-1.1.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8882906Z ^[[1m^[[92m  Downloaded^[[0m serde_spanned v1.1.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8891968Z ^[[1m^[[92m  Downloaded^[[0m crypto-common v0.2.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8900577Z ^[[1m^[[92m  Downloaded^[[0m cpufeatures v0.3.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8911294Z ^[[1m^[[92m  Downloaded^[[0m itoa v1.0.17
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8922191Z ^[[1m^[[92m  Downloaded^[[0m unicode-general-category v1.1.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8933914Z ^[[1m^[[92m  Downloaded^[[0m parking_lot v0.12.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8952262Z ^[[1m^[[92m  Downloaded^[[0m parking_lot_core v0.9.12
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.8967873Z ^[[1m^[[92m  Downloaded^[[0m fancy-regex v0.19.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9018718Z ^[[1m^[[92m  Downloaded^[[0m insta v1.49.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9092416Z ^[[1m^[[92m  Downloaded^[[0m hyper-util v0.1.21
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9141477Z ^[[1m^[[92m  Downloaded^[[0m hyper v1.11.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9194706Z ^[[1m^[[92m  Downloaded^[[0m criterion v0.8.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9251999Z ^[[1m^[[92m  Downloaded^[[0m plotters v0.3.7
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9323027Z ^[[1m^[[92m  Downloaded^[[0m zip v9.1.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9374390Z ^[[1m^[[92m  Downloaded^[[0m typed-path v0.13.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9427213Z ^[[1m^[[92m  Downloaded^[[0m hashbrown v0.16.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9465907Z ^[[1m^[[92m  Downloaded^[[0m yoke v0.8.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9479129Z ^[[1m^[[92m  Downloaded^[[0m rangemap v1.7.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9495828Z ^[[1m^[[92m  Downloaded^[[0m percent-encoding v2.3.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9502492Z ^[[1m^[[92m  Downloaded^[[0m rpassword v7.5.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9519993Z ^[[1m^[[92m  Downloaded^[[0m getrandom v0.3.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9545895Z ^[[1m^[[92m  Downloaded^[[0m unicode-properties v0.1.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9560417Z ^[[1m^[[92m  Downloaded^[[0m unicode-bidi v0.3.18
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9578651Z ^[[1m^[[92m  Downloaded^[[0m chacha20 v0.10.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9596483Z ^[[1m^[[92m  Downloaded^[[0m allocator-api2 v0.2.21
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9615849Z ^[[1m^[[92m  Downloaded^[[0m fluent-uri v0.4.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9636520Z ^[[1m^[[92m  Downloaded^[[0m ahash v0.8.12
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9654758Z ^[[1m^[[92m  Downloaded^[[0m jsonschema-value v0.57.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9670785Z ^[[1m^[[92m  Downloaded^[[0m clap_builder v4.6.7
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9719323Z ^[[1m^[[92m  Downloaded^[[0m r-efi v6.0.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9756190Z ^[[1m^[[92m  Downloaded^[[0m miniz_oxide v0.8.9
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9774558Z ^[[1m^[[92m  Downloaded^[[0m simd-adler32 v0.3.9
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9788212Z ^[[1m^[[92m  Downloaded^[[0m smallvec v1.15.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9803911Z ^[[1m^[[92m  Downloaded^[[0m thread_local v1.1.9
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9815299Z ^[[1m^[[92m  Downloaded^[[0m lazy_static v1.5.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9828493Z ^[[1m^[[92m  Downloaded^[[0m digest v0.11.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9845787Z ^[[1m^[[92m  Downloaded^[[0m cmov v0.5.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9859271Z ^[[1m^[[92m  Downloaded^[[0m hybrid-array v0.4.15
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9876271Z ^[[1m^[[92m  Downloaded^[[0m const-oid v0.10.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9894903Z ^[[1m^[[92m  Downloaded^[[0m rtoolbox v0.0.6
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9906279Z ^[[1m^[[92m  Downloaded^[[0m wit-bindgen v0.51.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9930703Z ^[[1m^[[92m  Downloaded^[[0m r-efi v5.3.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9967386Z ^[[1m^[[92m  Downloaded^[[0m tinyvec v1.11.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:04.9986420Z ^[[1m^[[92m  Downloaded^[[0m rand v0.10.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0014746Z ^[[1m^[[92m  Downloaded^[[0m referencing v0.57.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0048508Z ^[[1m^[[92m  Downloaded^[[0m micromap v0.3.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0086244Z ^[[1m^[[92m  Downloaded^[[0m chrono v0.4.45
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0137217Z ^[[1m^[[92m  Downloaded^[[0m zeroize v1.9.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0149072Z ^[[1m^[[92m  Downloaded^[[0m uuid v1.26.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0171937Z ^[[1m^[[92m  Downloaded^[[0m serde_core v1.0.229
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0192772Z ^[[1m^[[92m  Downloaded^[[0m yoke-derive v0.8.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0200022Z ^[[1m^[[92m  Downloaded^[[0m stable_deref_trait v1.2.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0206395Z ^[[1m^[[92m  Downloaded^[[0m displaydoc v0.2.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0228248Z ^[[1m^[[92m  Downloaded^[[0m potential_utf v0.1.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0235784Z ^[[1m^[[92m  Downloaded^[[0m valuable v0.1.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0250687Z ^[[1m^[[92m  Downloaded^[[0m log v0.4.29
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0269274Z ^[[1m^[[92m  Downloaded^[[0m sharded-slab v0.1.7
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0294056Z ^[[1m^[[92m  Downloaded^[[0m winnow v1.0.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0366688Z ^[[1m^[[92m  Downloaded^[[0m wasi v0.11.1+wasi-snapshot-preview1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0378989Z ^[[1m^[[92m  Downloaded^[[0m subtle v2.6.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0387297Z ^[[1m^[[92m  Downloaded^[[0m ctutils v0.4.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0403225Z ^[[1m^[[92m  Downloaded^[[0m crossbeam-utils v0.8.21
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0422780Z ^[[1m^[[92m  Downloaded^[[0m crossbeam-deque v0.8.6
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0433299Z ^[[1m^[[92m  Downloaded^[[0m crossbeam-epoch v0.9.20
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0452148Z ^[[1m^[[92m  Downloaded^[[0m zerocopy-derive v0.8.42
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0520415Z ^[[1m^[[92m  Downloaded^[[0m rand v0.9.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0548866Z ^[[1m^[[92m  Downloaded^[[0m pdf-extract v0.12.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0565519Z ^[[1m^[[92m  Downloaded^[[0m nom v8.0.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0606262Z ^[[1m^[[92m  Downloaded^[[0m num-bigint v0.4.8
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0642123Z ^[[1m^[[92m  Downloaded^[[0m syn v2.0.117
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0722251Z ^[[1m^[[92m  Downloaded^[[0m flate2 v1.1.9
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0759528Z ^[[1m^[[92m  Downloaded^[[0m tracing-core v0.1.36
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0780167Z ^[[1m^[[92m  Downloaded^[[0m tracing-attributes v0.1.31
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0800457Z ^[[1m^[[92m  Downloaded^[[0m socket2 v0.6.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0814687Z ^[[1m^[[92m  Downloaded^[[0m errno v0.3.14
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0826094Z ^[[1m^[[92m  Downloaded^[[0m thiserror v2.0.21
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0874675Z ^[[1m^[[92m  Downloaded^[[0m serde_yaml_ng v0.10.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0899505Z ^[[1m^[[92m  Downloaded^[[0m rayon-core v1.13.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0926853Z ^[[1m^[[92m  Downloaded^[[0m unicode-normalization v0.1.25
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0953507Z ^[[1m^[[92m  Downloaded^[[0m euclid v0.20.14
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.0975835Z ^[[1m^[[92m  Downloaded^[[0m fraction v0.17.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1018844Z ^[[1m^[[92m  Downloaded^[[0m nix v0.31.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1108288Z ^[[1m^[[92m  Downloaded^[[0m serde_derive v1.0.229
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1131206Z ^[[1m^[[92m  Downloaded^[[0m serde v1.0.229
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1157699Z ^[[1m^[[92m  Downloaded^[[0m zerovec v0.11.5
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1197573Z ^[[1m^[[92m  Downloaded^[[0m icu_provider v2.1.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1217091Z ^[[1m^[[92m  Downloaded^[[0m mio v1.2.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1262524Z ^[[1m^[[92m  Downloaded^[[0m thiserror-impl v2.0.21
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1283846Z ^[[1m^[[92m  Downloaded^[[0m typenum v1.20.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1301485Z ^[[1m^[[92m  Downloaded^[[0m wasip2 v1.0.2+wasi-0.2.9
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1332425Z ^[[1m^[[92m  Downloaded^[[0m ttf-parser v0.25.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1403391Z ^[[1m^[[92m  Downloaded^[[0m aes v0.8.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1429425Z ^[[1m^[[92m  Downloaded^[[0m hashbrown v0.17.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1469535Z ^[[1m^[[92m  Downloaded^[[0m icu_locale_core v2.1.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1520245Z ^[[1m^[[92m  Downloaded^[[0m regex v1.13.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1561173Z ^[[1m^[[92m  Downloaded^[[0m pom v1.1.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1586220Z ^[[1m^[[92m  Downloaded^[[0m idna v1.1.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1613818Z ^[[1m^[[92m  Downloaded^[[0m zerotrie v0.2.3
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1641407Z ^[[1m^[[92m  Downloaded^[[0m tinystr v0.8.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1656363Z ^[[1m^[[92m  Downloaded^[[0m aho-corasick v1.1.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1697055Z ^[[1m^[[92m  Downloaded^[[0m signal-hook-registry v1.4.8
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1706419Z ^[[1m^[[92m  Downloaded^[[0m rayon v1.12.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1776822Z ^[[1m^[[92m  Downloaded^[[0m proptest v1.11.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1849050Z ^[[1m^[[92m  Downloaded^[[0m lopdf v0.42.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1909966Z ^[[1m^[[92m  Downloaded^[[0m zmij v1.0.23
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.1923325Z ^[[1m^[[92m  Downloaded^[[0m zerocopy v0.8.42
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2049942Z ^[[1m^[[92m  Downloaded^[[0m zerovec-derive v0.11.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2060661Z ^[[1m^[[92m  Downloaded^[[0m zerofrom v0.1.6
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2067057Z ^[[1m^[[92m  Downloaded^[[0m tempfile v3.27.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2086427Z ^[[1m^[[92m  Downloaded^[[0m tracing-log v0.2.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2096550Z ^[[1m^[[92m  Downloaded^[[0m fastrand v2.3.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2106240Z ^[[1m^[[92m  Downloaded^[[0m unicode-width v0.2.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2152286Z ^[[1m^[[92m  Downloaded^[[0m icu_properties v2.1.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2168659Z ^[[1m^[[92m  Downloaded^[[0m icu_normalizer v2.1.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2195595Z ^[[1m^[[92m  Downloaded^[[0m zerofrom-derive v0.1.6
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2202981Z ^[[1m^[[92m  Downloaded^[[0m icu_properties_data v2.1.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2278747Z ^[[1m^[[92m  Downloaded^[[0m serde_json v1.0.151
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2333134Z ^[[1m^[[92m  Downloaded^[[0m syn v3.0.6
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2414471Z ^[[1m^[[92m  Downloaded^[[0m block-buffer v0.12.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2423889Z ^[[1m^[[92m  Downloaded^[[0m litemap v0.8.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2440575Z ^[[1m^[[92m  Downloaded^[[0m regex-syntax v0.8.11
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2493811Z ^[[1m^[[92m  Downloaded^[[0m sha2 v0.11.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2521030Z ^[[1m^[[92m  Downloaded^[[0m unsafe-libyaml v0.2.11
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.2545263Z ^[[1m^[[92m  Downloaded^[[0m web-sys v0.3.91
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.3496226Z ^[[1m^[[92m  Downloaded^[[0m regex-automata v0.4.18
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.3604568Z ^[[1m^[[92m  Downloaded^[[0m ryu v1.0.23
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.3628912Z ^[[1m^[[92m  Downloaded^[[0m jsonschema v0.57.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.3784637Z ^[[1m^[[92m  Downloaded^[[0m tracing v0.1.44
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.3908033Z ^[[1m^[[92m  Downloaded^[[0m tracing-subscriber v0.3.23
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.3970660Z ^[[1m^[[92m  Downloaded^[[0m libc v0.2.191
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.4320579Z ^[[1m^[[92m  Downloaded^[[0m encoding_rs v0.8.35
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.4478163Z ^[[1m^[[92m  Downloaded^[[0m winapi v0.3.9
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.4781268Z ^[[1m^[[92m  Downloaded^[[0m tokio v1.54.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.5133489Z ^[[1m^[[92m  Downloaded^[[0m rustix v1.1.4
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.5332904Z ^[[1m^[[92m  Downloaded^[[0m linux-raw-sys v0.12.1
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.5819320Z ^[[1m^[[92m  Downloaded^[[0m windows-sys v0.61.2
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.6314698Z ^[[1m^[[92m  Downloaded^[[0m winapi-i686-pc-windows-gnu v0.4.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.7380845Z ^[[1m^[[92m  Downloaded^[[0m winapi-x86_64-pc-windows-gnu v0.4.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9844287Z ##[group]Run python -B scripts/dependency_graph.py check > "$RUNNER_TEMP/dependency-graph-check.json"
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9844880Z ^[[36;1mpython -B scripts/dependency_graph.py check > "$RUNNER_TEMP/dependency-graph-check.json"^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9862624Z shell: /usr/bin/bash -e {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9862831Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9863001Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9863190Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9863411Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9863742Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9864062Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9864355Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9864645Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9864937Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9865400Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9865604Z   CARGO_INCREMENTAL: 0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:05.9865778Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4198194Z ##[group]Run as_of="$(date -u +%F)"
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4198665Z ^[[36;1mas_of="$(date -u +%F)"^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4199059Z ^[[36;1mpython -B scripts/dependency_inventory.py gate --as-of "$as_of" > "$RUNNER_TEMP/dependency-inventory.json"^[[0m
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4216618Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4216895Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4217058Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4217245Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4217469Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4217805Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4218124Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4218583Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4218938Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4219284Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4219551Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4219751Z   CARGO_INCREMENTAL: 0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.4219925Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7601579Z ##[group]Run actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7601922Z with:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7602097Z   name: dependency-inventory
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7602508Z   path: /home/runner/work/_temp/dependency-inventory.json
+Dependency inventory gate	UNKNOWN STEP	/home/runner/work/_temp/dependency-graph-check.json
+Dependency inventory gate	UNKNOWN STEP	
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7602903Z   if-no-files-found: error
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7603096Z   retention-days: 30
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7603272Z   compression-level: 6
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7603447Z   overwrite: false
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7603623Z   include-hidden-files: false
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7603824Z   archive: true
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7604003Z env:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7604161Z   CARGO_TERM_COLOR: always
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7604345Z   RUSTC_WRAPPER: 
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7604561Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7604889Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7605241Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7605538Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7605826Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7606117Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7606379Z   CARGO_HOME: /home/runner/.cargo
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7606582Z   CARGO_INCREMENTAL: 0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.7606757Z ##[endgroup]
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.8828836Z Multiple search paths detected. Calculating the least common ancestor of all paths
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.8830543Z The least common ancestor is /home/runner/work/_temp. This will be the root directory of the artifact
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.8831211Z With the provided path, there will be 2 files uploaded
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.8831714Z Artifact name is valid!
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:08.8831919Z Root directory input is valid!
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:09.1695940Z Uploading artifact: dependency-inventory.zip
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:09.1729177Z Beginning upload of artifact content to blob storage
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:09.3916158Z Uploaded bytes 30514
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:09.4356839Z Finished uploading artifact content to blob storage!
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:09.4357640Z SHA256 digest of uploaded artifact is 6a21cbc19cc957e5d086a77adc325b3fbc6660e50f434d8b232bab211171bb86
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:09.4358547Z Finalizing artifact upload
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:09.9537532Z Artifact dependency-inventory successfully finalized. Artifact ID 13288372495
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:09.9538205Z Artifact dependency-inventory has been successfully uploaded! Final size is 30514 bytes. Artifact ID is 13288372495
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:09.9541449Z Artifact download URL: https://github.com/policy-forge/forge/actions/runs/41756372632/artifacts/13288372495
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.0651096Z Post job cleanup.
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.1874152Z Post job cleanup.
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.2615293Z [command]/usr/bin/git version
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.2641314Z git version 2.56.0
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.2672391Z Temporarily overriding HOME='/home/runner/work/_temp/50991a71-39a2-49ce-b17c-e63d30acde8b' before making global git config changes
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.2673447Z Adding repository directory to the temporary git global config as a safe directory
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.2675775Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/forge/forge
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.2950567Z Removing SSH command configuration
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.2954789Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.2993504Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.3239262Z Removing HTTP extra header
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.3244496Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.3291000Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.3510288Z Removing includeIf entries pointing to credentials config files
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.3516186Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.3584542Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Dependency inventory gate	UNKNOWN STEP	2026-11-04T01:47:10.3946540Z Cleaning up orphan processes

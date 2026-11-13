@@ -1,0 +1,8 @@
+{"completedAt":"2026-10-30T14:05:30Z","conclusion":"failure","databaseId":124101477297,"name":"Dependency inventory gate","startedAt":"2026-10-30T14:05:13Z"}
+{"completedAt":"2026-10-30T14:27:12Z","conclusion":"success","databaseId":124101477691,"name":"Test (windows-latest)","startedAt":"2026-10-30T14:04:27Z"}
+{"completedAt":"2026-10-30T14:08:49Z","conclusion":"failure","databaseId":124101477726,"name":"Supply-chain audits","startedAt":"2026-10-30T14:05:46Z"}
+{"completedAt":"2026-10-30T14:29:08Z","conclusion":"success","databaseId":124101477836,"name":"Test (macos-latest)","startedAt":"2026-10-30T14:08:22Z"}
+{"completedAt":"2026-10-30T14:04:49Z","conclusion":"success","databaseId":124101477887,"name":"Dependency fixtures (macos-latest)","startedAt":"2026-10-30T14:04:35Z"}
+{"completedAt":"2026-10-30T14:06:57Z","conclusion":"success","databaseId":124101477914,"name":"Dependency fixtures (ubuntu-latest)","startedAt":"2026-10-30T14:06:46Z"}
+{"completedAt":"2026-10-30T14:07:13Z","conclusion":"success","databaseId":124101477945,"name":"Dependency fixtures (windows-latest)","startedAt":"2026-10-30T14:06:37Z"}
+{"completedAt":"2026-10-30T14:26:59Z","conclusion":"success","databaseId":124101478137,"name":"Test (ubuntu-latest)","startedAt":"2026-10-30T14:07:41Z"}
