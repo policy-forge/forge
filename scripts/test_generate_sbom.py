@@ -264,7 +264,7 @@ class CommittedStoreTests(unittest.TestCase):
         self.assertEqual(len(refs), len(locked))
         for entry in document["dependencies"]:
             self.assertIn(entry["ref"], refs)
-            self.assertTrue(set(entry["dependsOn"]) <= refs)
+            self.assertLessEqual(set(entry["dependsOn"]), refs)
         for component in document["components"]:
             self.assertRegex(component["hashes"][0]["content"], r"^[0-9a-f]{64}$")
             self.assertEqual(component["scope"] in ("required", "optional"), True)
