@@ -1,9 +1,11 @@
 # Supply-chain security update decisions — 2026-11-12
 
-Status: **PROPOSED — owner approval required.** This packet records
-agent-assisted differential review evidence and proposes exact-identity
-temporary exceptions. It is not an accepted source audit, not human
-sign-off, not merge permission, and not release acceptance. Policy:
+Status: **The three exact-identity temporary exceptions are
+OWNER-APPROVED (2026-11-13, see [Owner approval record](#owner-approval-record));
+human audit sign-off and the Dependabot alert dismissal remain open.** This
+packet records agent-assisted differential review evidence for those
+exceptions. It is not an accepted source audit, not human sign-off, not merge
+permission, and not release acceptance. Policy:
 [PRD 069](../PRD/069-prd-dependency-security-audit.md); conventions follow
 the [2026-10-24 renewal record](2026-10-24-dependency-renewal-and-update-decisions.md).
 
@@ -66,10 +68,27 @@ Proposed exception terms (matching the October pattern): owner
 `brianluby`, created 2026-11-12, review by 2026-11-26, expiry 2026-12-26
 (44 days, within the 90-day policy maximum). Entries are drafted in
 `supply-chain/dependency-exceptions.json` and matching native vet
-exemptions in `supply-chain/config.toml`, all marked **PROPOSED pending
-owner approval**. On approval, strike the PROPOSED markers and record the
-decision here; on rejection, revert the three lockfile bumps and the
-store changes together.
+exemptions in `supply-chain/config.toml`. They were drafted as **PROPOSED
+pending owner approval**; on approval the PROPOSED markers are struck and the
+decision recorded below, and on rejection the three lockfile bumps and the
+store changes would be reverted together.
+
+## Owner approval record
+
+- **Decision:** the three proposed exceptions are approved as proposed:
+  `zip 9.1.2`, `pulldown-cmark 0.13.6` and `rustix 1.1.6`; owner `brianluby`,
+  created 2026-11-12, review by 2026-11-26, expiry 2026-12-26.
+- **Approved by:** `brianluby`, as an attributable GitHub review comment
+  ("Approved.") on the CodeRabbit finding about pending exceptions:
+  <https://github.com/policy-forge/forge/pull/266#discussion_r4559418015>, posted 2026-11-13 (UTC).
+- **Recorded in:** the PROPOSED markers in
+  `supply-chain/dependency-exceptions.json` and `supply-chain/config.toml`
+  were struck on the owner's instruction; each record's `approval_reference`
+  points at this document.
+- **Not covered by this approval:** human audit sign-off (F03, ticket #5),
+  merge permission, release acceptance, dismissal of the 25 retained-evidence
+  Dependabot alerts (still a proposed owner action below), and whether the
+  `pulldown-cmark`/`rustix` updates should move to a separate PR.
 
 ## Bounded differential review evidence (agent-assisted)
 

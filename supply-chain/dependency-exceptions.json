@@ -374,7 +374,7 @@
       "name": "pulldown-cmark",
       "version": "0.13.6",
       "checksum": "3db2be46835f013dd3f4fa7f5f7402c537787b54ebb6fe2b94bbdd7e2669bb7b",
-      "rationale": "PROPOSED, pending owner approval. Exact-identity temporary exception for the pulldown-cmark 0.13.4 -> 0.13.6 security update closing RUSTSEC-2026-0414 and RUSTSEC-2026-0433 (ENABLE_WIKILINKS event growth; Forge never enables that option). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance."
+      "rationale": "Owner-approved exact-identity temporary exception for the pulldown-cmark 0.13.4 -> 0.13.6 security update closing RUSTSEC-2026-0414 and RUSTSEC-2026-0433 (ENABLE_WIKILINKS event growth; Forge never enables that option). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Owner approval recorded by brianluby on PR #266 (2026-11-13); see approval_reference."
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
@@ -464,7 +464,7 @@
       "name": "rustix",
       "version": "1.1.6",
       "checksum": "e5e76742e5294153d4dde1207dbec5bdd81eef6fabdc0d2118babadabfd858aa",
-      "rationale": "PROPOSED, pending owner approval. Exact-identity temporary exception for the rustix 1.1.4 -> 1.1.6 update closing RUSTSEC-2026-0486 (xattr zero-length buffer unsoundness, INFO). Runtime reach is via tempfile only. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance."
+      "rationale": "Owner-approved exact-identity temporary exception for the rustix 1.1.4 -> 1.1.6 update closing RUSTSEC-2026-0486 (xattr zero-length buffer unsoundness, INFO). Runtime reach is via tempfile only. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Owner approval recorded by brianluby on PR #266 (2026-11-13); see approval_reference."
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
@@ -720,7 +720,7 @@
       "name": "zip",
       "version": "9.1.2",
       "checksum": "ec2e3161de27091f18a831d9494e9c53378a34833af5c1dda35ad85849da18d6",
-      "rationale": "PROPOSED, pending owner approval. Exact-identity temporary exception for the zip 9.1.0 -> 9.1.2 security update closing GHSA-m665-v7pm-7grj (critical zip cloaking), GHSA-hjqx-j4rw-g7xv, GHSA-q7v9-x93c-xqv3, GHSA-9hj8-73fh-9963, GHSA-8hxf-qr8p-62x4. Replaces the retired 9.1.0 exception. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance."
+      "rationale": "Owner-approved exact-identity temporary exception for the zip 9.1.0 -> 9.1.2 security update closing GHSA-m665-v7pm-7grj (critical zip cloaking), GHSA-hjqx-j4rw-g7xv, GHSA-q7v9-x93c-xqv3, GHSA-9hj8-73fh-9963, GHSA-8hxf-qr8p-62x4. Replaces the retired 9.1.0 exception. Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance. Owner approval recorded by brianluby on PR #266 (2026-11-13); see approval_reference."
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
