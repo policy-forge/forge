@@ -100,6 +100,21 @@ inventory of all post-v1.1.0 changes.
   exhaustive matches need a new arm; this falls under the recorded `2.0.0`
   major-release decision. A document that also carries an `assessment-results`
   root next to another model root is now reported as ambiguous.
+- Upgraded `quick-xml` from 0.41 to 0.42 (supersedes Dependabot PR #264). The
+  reader API now yields `&str` element names and attribute values instead of byte
+  slices, and the reader rejects non-UTF-8 input with an encoding error rather
+  than passing invalid bytes through for lossy decoding; Forge's existing
+  refusal behavior for invalid UTF-8 is preserved. XML serialization output is
+  unchanged for typical inputs. One upstream escaping change applies to values
+  that contain XML whitespace: 0.42 escapes `\r` in text and `\r`, `\n`, `\t` in
+  attribute values as numeric character references (`&#13;`, `&#10;`, `&#9;`) so
+  they survive XML end-of-line/attribute normalization. Markdown-derived prose
+  and identifiers never contain these characters, so catalog/component XML bytes
+  are unchanged; only an attribute value carrying a literal tab (e.g. a heading
+  with a tab used as a trace `source-section` prop) serializes differently. The
+  new form is semantically equivalent and round-trips identically. A PROPOSED
+  exact-identity `cargo-vet` exemption and dependency exception record the bump
+  pending owner approval (PRD 069).
 
 ## [1.1.0] — 2026-06-09
 

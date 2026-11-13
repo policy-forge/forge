@@ -1,0 +1,456 @@
+diff -r referencing-0.57.0/Cargo.lock referencing-0.60.2/Cargo.lock
+--- referencing-0.57.0/Cargo.lock	2006-07-23 18:21:28.000000000 -0700
++++ referencing-0.60.2/Cargo.lock	2006-07-23 18:21:28.000000000 -0700
+@@ -75,7 +75,7 @@
+ dependencies = [
+  "proc-macro2",
+  "quote",
+- "syn 3.0.6",
++ "syn 3.0.9",
+ ]
+ 
+ [[package]]
+@@ -110,9 +110,9 @@
+ 
+ [[package]]
+ name = "cc"
+-version = "1.4.7"
++version = "1.10.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "54413ede23c2daf518f35156dfde027feb2374004d63bd497f983c8db9c0e313"
++checksum = "86e055fa6e3e40ad6187ba25b6855eeb635d5271f8e0f0e1e9a5826b8d75bea0"
+ dependencies = [
+  "find-msvc-tools",
+  "shlex",
+@@ -184,9 +184,9 @@
+ 
+ [[package]]
+ name = "codspeed"
+-version = "5.0.2"
++version = "5.0.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "c0379da47d0de730b2f7900e3f2d9c3b5efc21b46875282305300b4851f03e70"
++checksum = "1cade51e6e6e30e7ea2cd9599fa5d5d5f48255a6b221bbd0cab1cf32f3c23c65"
+ dependencies = [
+  "anyhow",
+  "cc",
+@@ -202,9 +202,9 @@
+ 
+ [[package]]
+ name = "codspeed-criterion-compat"
+-version = "5.0.2"
++version = "5.0.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "65f64942456bd4514b06ba4c72623bf197931d05d3d1db61b8a0c6289b30b2c7"
++checksum = "b5d1640d31b122c8d754939c6ae4040709a9602f289d11e43075476a21285020"
+ dependencies = [
+  "clap",
+  "codspeed",
+@@ -215,9 +215,9 @@
+ 
+ [[package]]
+ name = "codspeed-criterion-compat-walltime"
+-version = "5.0.2"
++version = "5.0.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "e86691354129085562c025293f9e8b35bf9054813bb9981be3a96aa8490c07d1"
++checksum = "2a83eed387b8f84aad4cb29607758bec3ab3f53b1734af934ddae7fee626d8ce"
+ dependencies = [
+  "anes",
+  "cast",
+@@ -298,21 +298,21 @@
+ 
+ [[package]]
+ name = "either"
+-version = "1.18.0"
++version = "1.19.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34"
++checksum = "0e9c71c2167ca323c882b99918929403426e2373ea17242ff5653e0d5e1058be"
+ 
+ [[package]]
+ name = "equivalent"
+-version = "1.0.2"
++version = "1.0.3"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
++checksum = "00d174d5400e5e8fd687ad1049e2f578285fa914201b1af7e8b112a4546bd826"
+ 
+ [[package]]
+ name = "find-msvc-tools"
+-version = "0.1.13"
++version = "0.1.15"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ef25905e51abafe4dcea6c15fec58c57b601cdbd0ee53d22ea1d3016c587d39b"
++checksum = "1c66915cc5391097de7a2b0b972e8505aa33c0df401fd3a6811dbdb32881ba48"
+ 
+ [[package]]
+ name = "fluent-uri"
+@@ -387,7 +387,7 @@
+ dependencies = [
+  "proc-macro2",
+  "quote",
+- "syn 3.0.6",
++ "syn 3.0.9",
+ ]
+ 
+ [[package]]
+@@ -517,9 +517,9 @@
+ 
+ [[package]]
+ name = "js-sys"
+-version = "0.3.105"
++version = "0.3.106"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ce57d20d1ea864ce2ac172ab472d409214f4fd359f0b2a2775abdf522e2af99e"
++checksum = "7883d941dae510fb2d978fc3fe018c71c9e2892fd38854de3e8b92c2e5ad9cc5"
+ dependencies = [
+  "cfg-if",
+  "wasm-bindgen",
+@@ -527,9 +527,9 @@
+ 
+ [[package]]
+ name = "libc"
+-version = "0.2.189"
++version = "0.2.191"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
++checksum = "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a"
+ 
+ [[package]]
+ name = "lock_api"
+@@ -686,12 +686,12 @@
+ dependencies = [
+  "proc-macro2",
+  "quote",
+- "syn 3.0.6",
++ "syn 3.0.9",
+ ]
+ 
+ [[package]]
+ name = "referencing"
+-version = "0.57.0"
++version = "0.60.2"
+ dependencies = [
+  "ahash",
+  "async-trait",
+@@ -788,14 +788,14 @@
+ dependencies = [
+  "proc-macro2",
+  "quote",
+- "syn 3.0.6",
++ "syn 3.0.9",
+ ]
+ 
+ [[package]]
+ name = "serde_json"
+-version = "1.0.151"
++version = "1.0.154"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "c841b55ecdae098c80dcae9cf767f6f8a0c2cdb3416bbef72181df4d0fe73f14"
++checksum = "e7e9cc8b1b85264074fbcc02a88680c4096b1e47df8f739dceb03bf482f04bd6"
+ dependencies = [
+  "itoa",
+  "memchr",
+@@ -818,9 +818,9 @@
+ 
+ [[package]]
+ name = "smallvec"
+-version = "1.16.1"
++version = "1.16.4"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "ba467056f1b547ed52077911161fc86985becbc60e8e1857c8a144dab0def891"
++checksum = "d0d5d4b1981b8bbbb7aed204cae5726d683d5d6ac7e74ec54122ea28f315e7c8"
+ 
+ [[package]]
+ name = "statrs"
+@@ -845,9 +845,9 @@
+ 
+ [[package]]
+ name = "syn"
+-version = "3.0.6"
++version = "3.0.9"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "8593e8e72159ed2257d083c7a454a85cbf854f37a0966d8d483aff8c8a3ebcee"
++checksum = "d78c8dee4c7bf0e14673097256fed6142ce9d3b85a408189d07482442145823b"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+@@ -856,34 +856,34 @@
+ 
+ [[package]]
+ name = "test-case"
+-version = "3.3.1"
++version = "3.4.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "eb2550dd13afcd286853192af8601920d959b14c401fcece38071d53bf0768a8"
++checksum = "124953e7f67cb0b2fcfb87e899e4ae5a64fb68e2e160767933cc67b646fb0042"
+ dependencies = [
+  "test-case-macros",
+ ]
+ 
+ [[package]]
+ name = "test-case-core"
+-version = "3.3.1"
++version = "3.4.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "adcb7fd841cd518e279be3d5a3eb0636409487998a4aff22f3de87b81e88384f"
++checksum = "bd097615b407247e102046ba34426bb594923ab3554cf0f3cdfed050f1a5a3e8"
+ dependencies = [
+  "cfg-if",
+  "proc-macro2",
+  "quote",
+- "syn 2.0.119",
++ "syn 3.0.9",
+ ]
+ 
+ [[package]]
+ name = "test-case-macros"
+-version = "3.3.1"
++version = "3.4.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "5c89e72a01ed4c579669add59014b9a524d609c0c88c6a585ce37485879f6ffb"
++checksum = "f4ce35ece947bccac166e1ded639133827a953f69a48ba134d17f91108333082"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+- "syn 2.0.119",
++ "syn 3.0.9",
+  "test-case-core",
+ ]
+ 
+@@ -899,9 +899,9 @@
+ 
+ [[package]]
+ name = "tokio"
+-version = "1.53.1"
++version = "1.54.1"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "202caea871b69668250d242070849eb495be178ed697a3e98aebce5bc81a0bed"
++checksum = "b52fd3255258d26fac7264ab5a76b53c13367136dc011d3d6ad4f8ed070396a3"
+ dependencies = [
+  "pin-project-lite",
+  "tokio-macros",
+@@ -915,14 +915,14 @@
+ dependencies = [
+  "proc-macro2",
+  "quote",
+- "syn 3.0.6",
++ "syn 3.0.9",
+ ]
+ 
+ [[package]]
+ name = "unicode-ident"
+-version = "1.0.26"
++version = "1.0.27"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
++checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
+ 
+ [[package]]
+ name = "version_check"
+@@ -951,9 +951,9 @@
+ 
+ [[package]]
+ name = "wasm-bindgen"
+-version = "0.2.128"
++version = "0.2.129"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "aecb87a33d3b0c5e3b7aa46336eaf486cffafbd281b195e4c8b80d50df2351bf"
++checksum = "9bb54f33acc68fd454578d9820b0bde1a1a3d17aa17bb7b6595806d02886d409"
+ dependencies = [
+  "cfg-if",
+  "once_cell",
+@@ -964,9 +964,9 @@
+ 
+ [[package]]
+ name = "wasm-bindgen-macro"
+-version = "0.2.128"
++version = "0.2.129"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a690d511e3c1a8b3a55e33511e3c2c00c78415cd23650f32b808627f5696b9ed"
++checksum = "2e29d0c35b16e224a7eeb5cd2d25e3e1968fbd65604117b44d3b789d00ee8535"
+ dependencies = [
+  "quote",
+  "wasm-bindgen-macro-support",
+@@ -974,22 +974,22 @@
+ 
+ [[package]]
+ name = "wasm-bindgen-macro-support"
+-version = "0.2.128"
++version = "0.2.129"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "411e4887f0071ef2d2164a9d5fdf2d20efbef78fccd3a78b0c10a1dc5295e48a"
++checksum = "6f501a8bc3719dba86ef8ae4728879c08001bea749eb1333ac5b91e040e2a6b7"
+ dependencies = [
+  "bumpalo",
+  "proc-macro2",
+  "quote",
+- "syn 3.0.6",
++ "syn 3.0.9",
+  "wasm-bindgen-shared",
+ ]
+ 
+ [[package]]
+ name = "wasm-bindgen-shared"
+-version = "0.2.128"
++version = "0.2.129"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "81941cd78d0c92026c33e5e01312845a4cb1e9af3407f9134b100dd03144103e"
++checksum = "23f0c9c52aa7cd7d77769a4cfe2a9adb1b331f489a41d912ce14513d5ab995c6"
+ dependencies = [
+  "unicode-ident",
+ ]
+@@ -1048,18 +1048,18 @@
+ 
+ [[package]]
+ name = "zerocopy"
+-version = "0.8.57"
++version = "0.8.63"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d35102a9f36d089ccae9e4c6802bc118be4487b80aaffc0ab4e0cf5ce92d2873"
++checksum = "e5fe1f8f1b06191a00962174c61aa5005e0bb391a6d80d07e24d115c01a92ed8"
+ dependencies = [
+  "zerocopy-derive",
+ ]
+ 
+ [[package]]
+ name = "zerocopy-derive"
+-version = "0.8.57"
++version = "0.8.63"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "146c01f5ab44258da43cf276c74a2763db2ff3969c9c652c3f2de07041d0b2bc"
++checksum = "863ad3ac83293fb4d740aedbfdc9240dd8d1a50c1099acd76ce80ce7c7230c7f"
+ dependencies = [
+  "proc-macro2",
+  "quote",
+diff -r referencing-0.57.0/Cargo.toml referencing-0.60.2/Cargo.toml
+--- referencing-0.57.0/Cargo.toml	2006-07-23 18:21:28.000000000 -0700
++++ referencing-0.60.2/Cargo.toml	2006-07-23 18:21:28.000000000 -0700
+@@ -13,7 +13,7 @@
+ edition = "2021"
+ rust-version = "1.85.0"
+ name = "referencing"
+-version = "0.57.0"
++version = "0.60.2"
+ authors = ["Dmitry Dygalo <dmitry@dygalo.dev>"]
+ build = false
+ autolib = false
+diff -r referencing-0.57.0/Cargo.toml.orig referencing-0.60.2/Cargo.toml.orig
+--- referencing-0.57.0/Cargo.toml.orig	2006-07-23 18:21:28.000000000 -0700
++++ referencing-0.60.2/Cargo.toml.orig	2006-07-23 18:21:28.000000000 -0700
+@@ -1,6 +1,6 @@
+ [package]
+ name = "referencing"
+-version = "0.57.0"
++version = "0.60.2"
+ description = "An implementation-agnostic JSON reference resolution library for Rust."
+ readme = "README.md"
+ rust-version.workspace = true
+diff -r referencing-0.57.0/src/anchor.rs referencing-0.60.2/src/anchor.rs
+--- referencing-0.57.0/src/anchor.rs	2006-07-23 18:21:28.000000000 -0700
++++ referencing-0.60.2/src/anchor.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -44,18 +44,26 @@
+                 resource.draft(),
+             )),
+             Anchor::Dynamic { name, resource } => {
++                let scope = resolver.dynamic_scope();
+                 let mut last = *resource;
+-                for uri in &resolver.dynamic_scope() {
++                let mut found_in = None;
++                for uri in &scope {
+                     match resolver.lookup_anchor(uri, name) {
+                         Ok(anchor) => {
+                             if let Anchor::Dynamic { resource, .. } = anchor {
+                                 last = resource;
++                                found_in = Some(uri);
+                             }
+                         }
+                         Err(Error::NoSuchAnchor { .. }) => {}
+                         Err(err) => return Err(err),
+                     }
+                 }
++                // The anchor's own document is the base for references inside it
++                let resolver = match found_in {
++                    Some(uri) => resolver.at_uri(uri)?,
++                    None => resolver,
++                };
+                 Ok(Resolved::new(
+                     last.contents(),
+                     resolver.in_subresource(last)?,
+@@ -226,6 +234,38 @@
+     }
+ 
+     #[test]
++    fn dynamic_anchor_in_another_document_uses_that_document_as_base() {
++        let root = Draft::Draft202012.create_resource(json!({
++            "$id": "https://example.com/root.json",
++            "$defs": {"node": {"$dynamicAnchor": "node"}}
++        }));
++        let tree = Draft::Draft202012.create_resource(json!({
++            "$id": "https://example.com/tree.json",
++            "$dynamicAnchor": "node"
++        }));
++        let registry = Registry::new()
++            .extend([
++                ("https://example.com/root.json", &root),
++                ("https://example.com/tree.json", &tree),
++            ])
++            .expect("Invalid resources")
++            .prepare()
++            .expect("Invalid resources");
++        let resolver = registry.resolver(
++            crate::uri::from_str("https://example.com/root.json").expect("Invalid base URI"),
++        );
++
++        let tree = resolver.lookup("tree.json").expect("Lookup failed");
++        let node = tree.resolver().lookup("#node").expect("Lookup failed");
++
++        assert_eq!(node.contents(), &root.contents()["$defs"]["node"]);
++        assert_eq!(
++            node.resolver().base_uri().as_str(),
++            "https://example.com/root.json"
++        );
++    }
++
++    #[test]
+     fn test_multiple_lookup_dynamic_ref_to_nondynamic_ref() {
+         let one = Draft::Draft202012.create_resource(json!({"$anchor": "fooAnchor"}));
+         let two = Draft::Draft202012.create_resource(json!({
+diff -r referencing-0.57.0/src/resolver.rs referencing-0.60.2/src/resolver.rs
+--- referencing-0.57.0/src/resolver.rs	2006-07-23 18:21:28.000000000 -0700
++++ referencing-0.60.2/src/resolver.rs	2006-07-23 18:21:28.000000000 -0700
+@@ -175,6 +175,17 @@
+             Ok(self.clone())
+         }
+     }
++    /// The same resolver based at `uri`, keeping the dynamic scope.
++    #[inline]
++    pub(crate) fn at_uri(&self, uri: &Uri<String>) -> Result<Self, Error> {
++        Ok(Resolver {
++            registry: self.registry,
++            base_uri: self
++                .registry
++                .resolve_uri(&self.base_uri.borrow(), uri.as_str())?,
++            scopes: self.scopes.clone(),
++        })
++    }
+     #[must_use]
+     #[inline]
+     pub fn dynamic_scope(&self) -> List<Uri<String>> {
+@@ -208,10 +219,13 @@
+         self.registry.resolve_uri(base, uri)
+     }
+ 
+-    /// Vocabulary of the containing resource root (the resolver's base URI), so a
+-    /// `$schema`-less subschema inherits it; falls back to `contents`.
++    /// Vocabulary of `contents` when it declares `$schema`; otherwise of the containing resource
++    /// root (the resolver's base URI), so a `$schema`-less subschema inherits it.
+     #[must_use]
+     pub fn find_vocabularies(&self, draft: Draft, contents: &Value) -> VocabularySet {
++        if contents.get("$schema").is_some() {
++            return self.registry.find_vocabularies(draft, contents);
++        }
+         if let Some(resource) = self.registry.resource_by_uri(self.base_uri.as_ref()) {
+             return self.registry.find_vocabularies(draft, resource.contents());
+         }
