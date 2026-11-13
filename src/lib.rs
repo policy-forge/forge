@@ -104,6 +104,8 @@ pub mod types;
 pub mod uuid;
 /// OSCAL schema and semantic validation.
 pub mod validate;
+/// Connector-neutral change sets and the fake-server adapter contract (PRD 065 Phase 1).
+pub mod workflow;
 mod workspace;
 
 pub use batch::{BatchSummary, FileOutcome, FileResult, format_batch_summary};
