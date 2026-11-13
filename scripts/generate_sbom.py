@@ -47,7 +47,9 @@ def _fail(message: str) -> None:
     raise InputError(message)
 
 
-def _identity(raw: str) -> tuple[str, str, str]:
+def _identity(raw: object) -> tuple[str, str, str]:
+    if not isinstance(raw, str):
+        _fail("graph edge endpoint is not a string identity")
     value = load_json(raw.encode("utf-8"))
     if (not isinstance(value, list) or len(value) != 3
             or not all(isinstance(part, str) for part in value)):

@@ -186,6 +186,28 @@ class GenerateSbomTests(unittest.TestCase):
         with self.assertRaises(common.InputError):
             self.fixture.build()
 
+    def _build_with_edge(self, edge: dict) -> None:
+        # The fixture's sync() only accepts well-formed edges, so write the malformed
+        # edge into the graph file directly, as the other graph-corruption tests do.
+        self.fixture.graph["graphs"][0]["edges"].append(edge)
+        self.fixture.write("supply-chain/dependency-graph.json", json.dumps(self.fixture.graph))
+        self.fixture.build()
+
+    def test_non_string_edge_endpoint_refused(self):
+        # A non-string `from`/`to` must fail as InputError, not an uncaught AttributeError.
+        for field in ("from", "to"):
+            for bad in (None, 7, ["alpha", "1.0.0", "x"], {"name": "alpha"}):
+                with self.subTest(field=field, bad=bad):
+                    edge = {"from": ident("alpha", "1.0.0"), "kind": "normal",
+                            "to": ident("alpha", "1.0.0")}
+                    edge[field] = bad
+                    with self.assertRaises(common.InputError):
+                        self._build_with_edge(edge)
+
+    def test_missing_edge_endpoint_refused(self):
+        with self.assertRaises(common.InputError):
+            self._build_with_edge({"kind": "normal", "to": ident("alpha", "1.0.0")})
+
     def test_missing_root_refused(self):
         self.fixture.graph["graphs"][0]["roots"] = []
         self.fixture.write("supply-chain/dependency-graph.json", json.dumps(self.fixture.graph))
