@@ -839,8 +839,9 @@ version = "1.2.3"
 criteria = "safe-to-run"
 
 [[exemptions.quick-xml]]
-version = "0.41.0"
+version = "0.42.0"
 criteria = "safe-to-deploy"
+notes = "PROPOSED pending owner approval; quick-xml 0.42 API migration, see https://github.com/policy-forge/forge/pull/268"
 
 [[exemptions.quote]]
 version = "1.0.45"
