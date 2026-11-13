@@ -197,6 +197,21 @@
       "version": "0.17.1"
     },
     {
+      "approval_reference": "https://github.com/policy-forge/forge/pull/261",
+      "checksum": "2c3e324da4c95177d6291d4c8730197c0d1822f8a9766814a4a44fa5ab797c9c",
+      "created_on": "2026-11-13",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2026-12-27",
+      "name": "hyper",
+      "owner": "brianluby",
+      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the hyper 1.11.1 -> 1.12.0 Dependabot upgrade (PR #261). The prior 1.11.1 identity was only a legacy unowned cargo-vet exemption and is retired because the lock no longer contains it. Agent-assisted differential review only (PR #267 review packet); no accepted source audit, safety certification or release acceptance is asserted.",
+      "review_by": "2026-11-27",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "1.12.0"
+    },
+    {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
       "checksum": "ddc03d96684f9226b8a787cdb71488417b53ab5ea8fdb1dac946cb9431cc8bff",
       "created_on": "2026-10-24",
@@ -212,49 +227,49 @@
       "version": "0.1.21"
     },
     {
-      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
-      "checksum": "71160ed5f6dbe36a2d6be79f4ca03ee09a99d2866f340faed49458913449aefa",
-      "created_on": "2026-10-06",
+      "approval_reference": "https://github.com/policy-forge/forge/pull/262",
+      "checksum": "a42a11b47492e6a2cc76e9c7bcc8077776cb31dac444e0795d7f61bcc6441c08",
+      "created_on": "2026-11-13",
       "criteria": [
         "safe-to-deploy"
       ],
-      "expires_on": "2026-11-23",
+      "expires_on": "2026-12-27",
       "name": "jsonschema",
       "owner": "brianluby",
-      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-decisions.md.",
-      "review_by": "2026-11-20",
+      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the jsonschema 0.57.0 -> 0.60.2 Dependabot upgrade (PR #262). It replaces the owner-approved 0.57.0 exception, which is retired because the lock no longer contains that identity. Agent-assisted differential review only (PR #267 review packet); no accepted source audit, safety certification or release acceptance is asserted.",
+      "review_by": "2026-11-27",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "0.57.0"
+      "version": "0.60.2"
     },
     {
-      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
-      "checksum": "48d2120d8466ffcdc1b3be4b88ff0e9191bf5b6b09b1b1af1eef9aff8f465ea3",
-      "created_on": "2026-10-06",
+      "approval_reference": "https://github.com/policy-forge/forge/pull/262",
+      "checksum": "107aeb6ff14b8deb5610096a8ce5c554ec89806b521147eaeb3cae05b07edb7a",
+      "created_on": "2026-11-13",
       "criteria": [
         "safe-to-deploy"
       ],
-      "expires_on": "2026-11-23",
+      "expires_on": "2026-12-27",
       "name": "jsonschema-regex",
       "owner": "brianluby",
-      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-decisions.md.",
-      "review_by": "2026-11-20",
+      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the jsonschema-regex 0.57.0 -> 0.60.2 Dependabot upgrade (PR #262). It replaces the owner-approved 0.57.0 exception, which is retired because the lock no longer contains that identity. Agent-assisted differential review only (PR #267 review packet); no accepted source audit, safety certification or release acceptance is asserted.",
+      "review_by": "2026-11-27",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "0.57.0"
+      "version": "0.60.2"
     },
     {
-      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
-      "checksum": "3fbfa40a42415369d940b3848f3ce08099f1f1ac04d73e8580f4d652617c4f44",
-      "created_on": "2026-10-06",
+      "approval_reference": "https://github.com/policy-forge/forge/pull/262",
+      "checksum": "e281d6b177bb4834f2ffd6f92aa0443cffe29c996b251c8d94eb6f456186feba",
+      "created_on": "2026-11-13",
       "criteria": [
         "safe-to-deploy"
       ],
-      "expires_on": "2026-11-23",
+      "expires_on": "2026-12-27",
       "name": "jsonschema-value",
       "owner": "brianluby",
-      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-decisions.md.",
-      "review_by": "2026-11-20",
+      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the jsonschema-value 0.57.0 -> 0.60.2 Dependabot upgrade (PR #262). It replaces the owner-approved 0.57.0 exception, which is retired because the lock no longer contains that identity. Agent-assisted differential review only (PR #267 review packet); no accepted source audit, safety certification or release acceptance is asserted.",
+      "review_by": "2026-11-27",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "0.57.0"
+      "version": "0.60.2"
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
@@ -392,19 +407,19 @@
       "version": "1.12.0"
     },
     {
-      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
-      "checksum": "b06f6798be4fed305e74df8b1fb90cf59c6b8cc17aa3febeb1830c0c6b627b3e",
-      "created_on": "2026-10-06",
+      "approval_reference": "https://github.com/policy-forge/forge/pull/262",
+      "checksum": "f42818036d3b37cda6bd4c494543158a36e431cb717015ef7c93acc6ba214d3b",
+      "created_on": "2026-11-13",
       "criteria": [
         "safe-to-deploy"
       ],
-      "expires_on": "2026-11-23",
+      "expires_on": "2026-12-27",
       "name": "referencing",
       "owner": "brianluby",
-      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-decisions.md.",
-      "review_by": "2026-11-20",
+      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the referencing 0.57.0 -> 0.60.2 Dependabot upgrade (PR #262). It replaces the owner-approved 0.57.0 exception, which is retired because the lock no longer contains that identity. Agent-assisted differential review only (PR #267 review packet); no accepted source audit, safety certification or release acceptance is asserted.",
+      "review_by": "2026-11-27",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "0.57.0"
+      "version": "0.60.2"
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
@@ -513,19 +528,19 @@
       "version": "1.0.229"
     },
     {
-      "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
-      "checksum": "c841b55ecdae098c80dcae9cf767f6f8a0c2cdb3416bbef72181df4d0fe73f14",
-      "created_on": "2026-10-06",
+      "approval_reference": "https://github.com/policy-forge/forge/pull/263",
+      "checksum": "e7e9cc8b1b85264074fbcc02a88680c4096b1e47df8f739dceb03bf482f04bd6",
+      "created_on": "2026-11-13",
       "criteria": [
         "safe-to-deploy"
       ],
-      "expires_on": "2026-11-23",
+      "expires_on": "2026-12-27",
       "name": "serde_json",
       "owner": "brianluby",
-      "rationale": "Temporary integration exception for an existing locked dependency lacking an accepted audit. Configured import refresh still provides no accepted path. Source audit remains required; this is not audit credit, safety certification or release acceptance. Renewed by the owner on 2026-10-24 without change of identity; original approval in docs/plans/2026-10-06-merge-dependency-decisions.md.",
-      "review_by": "2026-11-20",
+      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the serde_json 1.0.151 -> 1.0.154 Dependabot upgrade (PR #263). It replaces the owner-approved 1.0.151 exception, which is retired because the lock no longer contains that identity. Agent-assisted differential review only (PR #267 review packet); no accepted source audit, safety certification or release acceptance is asserted.",
+      "review_by": "2026-11-27",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
-      "version": "1.0.151"
+      "version": "1.0.154"
     },
     {
       "approval_reference": "docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md",
