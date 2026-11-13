@@ -69,6 +69,9 @@ jobs:
       - name: Test staged source client controls
         run: python -B scripts/test_workspace_staged_source_client.py
 
+      - name: Test staged capacity fixture controls
+        run: python -B scripts/test_workspace_staged_capacity_controls.py
+
       - name: Test metadata workflow version controls
         run: python -B scripts/test_workspace_bundle_workflow_controls.py
 
@@ -100,6 +103,22 @@ jobs:
           FORGE_TEST_BINARY: target/release/forge
         shell: bash
         run: python -B scripts/test_workspace_staged_source_workflow.py --forge "$FORGE_TEST_BINARY" --out workspace-staged-source-flow
+
+      - name: Verify native Unix staged larger-capacity qualification
+        if: runner.os != 'Windows'
+        env:
+          FORGE_TEST_BINARY: target/release/forge
+        shell: bash
+        run: python -B scripts/test_workspace_staged_capacity_workflow.py --forge "$FORGE_TEST_BINARY" --out workspace-staged-capacity-flow
+
+      - name: Retain native Unix staged capacity flow outcome
+        if: ${{ always() && runner.os != 'Windows' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: workspace-staged-capacity-flow-${{ matrix.os }}-${{ github.sha }}
+          path: workspace-staged-capacity-flow/receipt.json
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Retain native Unix staged source flow outcome
         if: ${{ always() && runner.os != 'Windows' }}

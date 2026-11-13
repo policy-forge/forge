@@ -6,6 +6,8 @@ pub mod diff;
 /// Drift subcommand: content-safe, canonical artifact comparison for CI.
 pub mod drift;
 pub mod export;
+/// Integration subcommand: connector-neutral change sets and fake adapter (PRD 065 Phase 1).
+pub mod integration;
 pub mod migrate;
 pub mod output;
 pub mod profile;
@@ -299,6 +301,12 @@ pub enum Commands {
     Lifecycle {
         #[command(subcommand)]
         command: LifecycleCommand,
+    },
+
+    /// Export connector-neutral change sets and run the fake-server plan/apply/reconcile contract
+    Integration {
+        #[command(subcommand)]
+        command: integration::IntegrationCommand,
     },
 
     /// Declare framework applicability and analyze policy-mapping gaps
@@ -2790,6 +2798,7 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
             };
             if action_required { Err(ForgeError::LinkageActionRequired) } else { Ok(()) }
         }
+        Commands::Integration { command } => integration::execute(command),
         Commands::Lifecycle { command } => match command {
             LifecycleCommand::Init {
                 source,

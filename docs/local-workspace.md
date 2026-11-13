@@ -45,6 +45,65 @@ page loses its capability and unsaved forms; unlock again. Restarting the
 process requires a new passphrase. The workspace never recovers a password or
 persists a verifier. Machine sessions cannot unlock the browser.
 
+## Field help markers
+
+Every editable field — unlock passphrase, filters, registrations, uploads,
+conversions, decision and mapping forms, exports, bundle panels, restore
+acknowledgments and dynamically shown inputs — carries a small ⓘ info marker
+beside its label plus one concise inline hint below it. The hint states
+required/optional status and the essential constraint, so mandatory guidance
+never depends on opening the marker.
+
+Activating a marker (click, touch, Enter or Space when focused) expands a panel
+with plain-language documentation: what the field means, why it is needed,
+accepted format and constraints, defaults, the effect of the value, one
+realistic valid example, and the guide section with more detail. Escape closes
+the panel and returns focus to the marker. Markers are real buttons named
+“About: <field label>” with `aria-expanded`/`aria-controls`; the field keeps its
+exact label as its accessible name and references the inline hint through
+`aria-describedby`. Panels wrap long text and stay within narrow viewports;
+they never fetch anything — references are repository document paths.
+
+The copy lives in one shared table (`fieldHelp` in `ui/workspace.js`) keyed by
+the exact rendered label; `addFieldHelp` refuses to render a field without an
+entry, so new fields cannot silently miss documentation. The Node suite
+`ui/tests/workspace-navigation.cjs` asserts marker presence and content for
+every rendered field on each surface, both API majors, and the reported
+**New decision manifest path within project** field: destination JSON relative
+to the opened project, `applicability.json` (or `scope/applicability.json` only
+when `scope/` already exists), portable-path restrictions, conflict on an
+occupied destination, and the preview → confirm → register flow.
+
+Before/after captures of the reported field (installed Chrome, including the
+open marker panel at 1280px and 320px with no global overflow) are kept in
+[evidence/field-info-markers](evidence/field-info-markers/).
+
+Coverage inventory (label → surface): Workspace passphrase (unlock); Reason
+(Review Queue); Classification (Framework Scope inventory); Side (Mappings);
+Explicit lifecycle review date, Lifecycle owner key, Stored lifecycle state,
+Impact change class, Impact framework group, Impact prior decision state,
+Impact policy source identity, Impact finding priority, Impact owner key
+(Lifecycle & Impact); Resource role, Project-relative file path, Stable
+resource key, Index version for this registration, Choose a file, Uploaded
+resource role, Destination path within project, Policy source, Output model,
+Output project-relative path (Policies & Artifacts); Decision manifest (JSON),
+Control to review, Explicit decision, Decision reviewer key/name/time/rationale,
+Deferred revisit date, Reviewed mapping collection (Framework Scope);
+Relationship to review, New explicit relationship, Mapping reviewer/time/
+rationale, New relationship key/policy subject/framework subject/type/reviewer/
+time/rationale (Mappings); Framework Catalog, New decision manifest path within
+project, Policy Catalog, Mapping review scope, Stable collection key, Mapping
+collection title, Document version, Review time, Reviewer key, Asserted
+reviewer name, Intended use and limitations, Review matching rationale,
+Reviewed policy subject, Reviewed framework subject, Stable relationship key,
+Reviewed relationship, Relationship rationale
+(initialization forms); Report, Report destination within project, metadata
+bundle preview/compare/export/replacement fields and acknowledgments, exact
+source export/restore fields, three restore acknowledgments, Source transfer
+profile, Source restore outcome operation ID, Unconfirmed source transfer
+stage ID, and the final restore confirmation acknowledgment (Trace & Reports
+panels and the restore preview dialog).
+
 ## Register explicit resources
 
 The workspace reads `forge.workspace.json`, if present, and only its registered

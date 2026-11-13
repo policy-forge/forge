@@ -95,7 +95,7 @@ let outcomePublished=false;
    });
    // These measured colors qualify only this fixture's input boundary, not full AA acceptance.
    failureTracker.setStage("input-style-binding");
-   const inputColors=await page.getByLabel("Workspace passphrase").evaluate(input=>{
+   const inputColors=await page.getByLabel("Workspace passphrase",{exact:true}).evaluate(input=>{
      const style=getComputedStyle(input);
      let ancestor=input.parentElement;let background="rgb(255, 255, 255)";
      while(ancestor){
@@ -124,11 +124,45 @@ let outcomePublished=false;
    const activate=async locator=>{await locator.focus();await locator.press("Enter");};
    /** Observe exact focus after async work without assigning a target to satisfy the assertion. */
    const focused=async locator=>{await page.waitForFunction(node=>node===document.activeElement,await locator.elementHandle());assert(await locator.evaluate(node=>node===document.activeElement));focusChecks++;};
+   /** Verify one info marker in installed Chrome: exact naming, hint association, keyboard toggle, Escape return and docs+example content. */
+   const markerChecks=[];
+   const checkMarker=async(label,{example,touch=false}={})=>{
+     const field=page.getByLabel(label,{exact:true});
+     const marker=page.getByRole("button",{name:`About: ${label}`,exact:true});
+     assert.equal(await marker.count(),1,`one marker for ${label}`);
+     assert.equal(await marker.getAttribute("aria-expanded"),"false");
+     const panelId=await marker.getAttribute("aria-controls");
+     const panel=page.locator(`[id="${panelId}"]`);
+     assert.equal(await panel.isVisible(),false);
+     const described=(await field.getAttribute("aria-describedby")||"").split(" ");
+     const hint=page.locator(`[id="${await field.getAttribute("id")}-hint"]`);
+     assert(described.includes(await hint.getAttribute("id")),`hint association for ${label}`);
+     assert.match(await hint.textContent(),/^(Required|Optional|Check|Defaults)/);
+     if(touch){await marker.tap();}else{await activate(marker);}
+     await focused(marker);
+     assert.equal(await marker.getAttribute("aria-expanded"),"true");
+     assert.equal(await panel.isVisible(),true);
+     const text=await panel.textContent();
+     assert.match(text,/Example: /);assert.match(text,/Guide: docs\//);
+     if(example)assert(text.includes(example),`example for ${label}`);
+     // Space toggles closed again; Escape from the open panel returns focus to the marker.
+     await marker.press("Space");
+     assert.equal(await panel.isVisible(),false);
+     assert.equal(await marker.getAttribute("aria-expanded"),"false");
+     await activate(marker);
+     await marker.press("Escape");
+     assert.equal(await panel.isVisible(),false);
+     assert.equal(await marker.getAttribute("aria-expanded"),"false");
+     await focused(marker);
+     markerChecks.push(label);
+   };
    failureTracker.setStage("unlock");
-   const credential=page.getByLabel("Workspace passphrase");
+   const credential=page.getByLabel("Workspace passphrase",{exact:true});
    await focused(credential);
    assert.equal(await page.locator("#status").textContent(),"Workspace locked — passphrase required.");
-   assert.equal(await credential.getAttribute("aria-describedby"),"status");
+   assert.equal(await credential.getAttribute("aria-describedby"),"status passphrase-hint");
+   await checkMarker("Workspace passphrase",{example:"autumn-river-lantern"});
+   await credential.focus();await focused(credential);
    // This documented429 is a delayed synthetic UI fault, not authentic server timing evidence.
    const throttleMessage="Too many attempts — retry available in 2 seconds. Wait, then retry. If repeated, stop and relaunch the workspace from the terminal.";
    let releaseThrottle;
@@ -239,6 +273,7 @@ let outcomePublished=false;
    await navigate("Policies & Artifacts");
    if(readOnly){assert.equal(await page.getByRole("button",{name:"Preview registration"}).count(),0);}
    else {
+     for(const label of ["Resource role","Project-relative file path","Stable resource key"])await checkMarker(label);
      const register=async(file,role,key)=>{await page.getByLabel("Resource role",{exact:true}).selectOption(role);await page.getByLabel("Project-relative file path",{exact:true}).fill(file);await page.getByLabel("Stable resource key",{exact:true}).fill(key);await page.getByRole("button",{name:"Preview registration",exact:true}).click();await confirm();};
      await register("policy.md","policy-source","policy");
      // Inspect must preserve registration values and invoker focus for Keep editing/Escape.
@@ -265,8 +300,8 @@ let outcomePublished=false;
      await page.getByRole("dialog").getByRole("button",{name:"Keep editing",exact:true}).click();assert.equal(await page.getByLabel("Project-relative file path",{exact:true}).inputValue(),"framework.json");
      await page.getByRole("button",{name:"Preview registration",exact:true}).click();await page.getByRole("dialog").waitFor();assert.equal(await page.getByRole("dialog").getByRole("alert").count(),0,"a new preview must not retain the previous confirmation error");
      await page.route("**/api/v1/resources?*",route=>route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic refresh failure.",retryable:true})}),{times:1});
-     await confirm("Synthetic refresh failure.");await page.locator("#error").waitFor({state:"visible"});assert.match(await page.locator("#error").textContent(),/write was saved.*Synthetic refresh failure/);assert(await page.locator("#error").evaluate(node=>node===document.activeElement));await page.getByRole("button",{name:"Refresh",exact:true}).click();await page.getByLabel("Output model").waitFor();
-     await page.getByLabel("Output model").selectOption("oscal-catalog");await page.getByLabel("Output project-relative path").fill("converted.json");
+     await confirm("Synthetic refresh failure.");await page.locator("#error").waitFor({state:"visible"});assert.match(await page.locator("#error").textContent(),/write was saved.*Synthetic refresh failure/);assert(await page.locator("#error").evaluate(node=>node===document.activeElement));await page.getByRole("button",{name:"Refresh",exact:true}).click();await page.getByLabel("Output model",{exact:true}).waitFor();
+     await page.getByLabel("Output model",{exact:true}).selectOption("oscal-catalog");await page.getByLabel("Output project-relative path",{exact:true}).fill("converted.json");
      failureTracker.setStage("conversion-recovery");
      // Use a real preparation and real known ID; only its first status read is fault injected.
      const preparationsBefore=conversionRequests;
@@ -289,7 +324,7 @@ let outcomePublished=false;
      assert.match(await operation.locator("[data-operation-error]").textContent(),/Synthetic operation read failure/);
      assert.equal(await operationStatus.getAttribute("role"),"status");assert.equal(await operationStatus.getAttribute("aria-live"),"polite");assert.equal(await operationStatus.getAttribute("aria-atomic"),"true");
      assert.equal(await page.locator("#view-title").textContent(),"Policies & Artifacts");
-     assert.equal(await page.getByLabel("Output project-relative path").inputValue(),"converted.json");
+     assert.equal(await page.getByLabel("Output project-relative path",{exact:true}).inputValue(),"converted.json");
      assert.equal(await page.getByRole("dialog").count(),0);
      const operationHandle=await operation.elementHandle();
      await activate(page.getByRole("navigation").getByRole("button",{name:"Trace & Reports",exact:true}));
@@ -315,7 +350,10 @@ let outcomePublished=false;
      await navigate("Policies & Artifacts");
      await register("converted.json","oscal-catalog-artifact","converted");
      failureTracker.setStage("framework-workflow");
-     await navigate("Framework Scope","Register one valid applicability manifest and its dependencies.");await page.getByLabel("Framework Catalog",{exact:true}).selectOption({label:"framework · framework.json"});await page.getByLabel("New decision manifest path within project").fill("scope.json");await page.getByRole("button",{name:"Preview initial scope manifest"}).click();await confirm("Register one valid applicability manifest and its dependencies.");
+     await navigate("Framework Scope","Register one valid applicability manifest and its dependencies.");
+     await checkMarker("Framework Catalog");
+     await checkMarker("New decision manifest path within project",{example:"applicability.json (or scope/applicability.json when scope/ already exists)"});
+     await page.getByLabel("Framework Catalog",{exact:true}).selectOption({label:"framework · framework.json"});await page.getByLabel("New decision manifest path within project",{exact:true}).fill("scope.json");await page.getByRole("button",{name:"Preview initial scope manifest"}).click();await confirm("Register one valid applicability manifest and its dependencies.");
      await navigate("Policies & Artifacts");await register("scope.json","applicability-manifest","scope");
      await navigate("Framework Scope");
      // The launcher supplies 53 authored controls; ordinary navigation retains heading focus.
@@ -373,20 +411,20 @@ let outcomePublished=false;
      await activate(inspectScope);await page.getByRole("dialog").waitFor();await page.keyboard.press("Escape");await page.getByRole("dialog").waitFor({state:"hidden"});
      assert.equal(await scopeDocument.inputValue(),unsavedScope);await focused(inspectScope);assert.equal(provenanceReads,beforeScopeInspect);
      failureTracker.setStage("decision-authoring");
-     await page.getByLabel("Control to review").selectOption("framework-a");await page.getByLabel("Explicit decision").selectOption("applicable");await page.getByLabel("Decision reviewer key").fill("reviewer");await page.getByLabel("Decision reviewer name").fill("Synthetic reviewer <script>" );await page.getByLabel("Decision review time (RFC3339)").fill("2026-09-10T00:00:00Z");await page.getByLabel("Decision rationale").fill("Explicit synthetic scope review");
+     await page.getByLabel("Control to review",{exact:true}).selectOption("framework-a");await page.getByLabel("Explicit decision",{exact:true}).selectOption("applicable");await page.getByLabel("Decision reviewer key",{exact:true}).fill("reviewer");await page.getByLabel("Decision reviewer name",{exact:true}).fill("Synthetic reviewer <script>" );await page.getByLabel("Decision review time (RFC3339)",{exact:true}).fill("2026-09-10T00:00:00Z");await page.getByLabel("Decision rationale",{exact:true}).fill("Explicit synthetic scope review");
      await page.getByRole("button",{name:"Apply decision to unsaved manifest"}).click();await page.getByRole("button",{name:"Preview decision changes"}).click();await confirm();
      // One real committed decision changes the matching count without changing total scope.
      await filterControls("under-review",52,53);
      await filterControls("",53,53);
      await page.getByRole("button",{name:"Analyze committed scope decisions"}).click();await confirm();
      await navigate("Mappings","The selected domain inputs are missing, ambiguous, invalid, or stale.");
-     await page.getByLabel("Framework Catalog",{exact:true}).selectOption({label:"framework · framework.json"});await page.getByLabel("Policy Catalog",{exact:true}).selectOption({label:"converted · converted.json"});await page.getByLabel("New decision manifest path within project").fill("mapping-manifest.json");await page.getByLabel("Mapping review scope").selectOption("control-only");
+     await page.getByLabel("Framework Catalog",{exact:true}).selectOption({label:"framework · framework.json"});await page.getByLabel("Policy Catalog",{exact:true}).selectOption({label:"converted · converted.json"});await page.getByLabel("New decision manifest path within project",{exact:true}).fill("mapping-manifest.json");await page.getByLabel("Mapping review scope",{exact:true}).selectOption("control-only");
      for(const [label,value] of [["Stable collection key","mapping"],["Mapping collection title","Synthetic mapping"],["Document version","1"],["Review time (RFC3339, including timezone)","2026-09-10T00:00:00Z"],["Reviewer key","reviewer"],["Asserted reviewer name","Synthetic mapping reviewer"],["Intended use and limitations","Synthetic explicit review only"],["Stable relationship key","reviewed-none"],["Relationship rationale","Explicit absence of a positive relationship"]])await page.getByLabel(label,{exact:true}).fill(value);
-     await page.getByLabel("Review matching rationale").selectOption("semantic");await page.getByRole("button",{name:"Load selected Catalog subjects"}).click();
-     await page.getByLabel("Reviewed policy subject").selectOption({index:1});await page.getByLabel("Reviewed framework subject").selectOption({label:"Control: framework-a"});await page.getByLabel("Reviewed relationship",{exact:true}).selectOption("no-relationship");
+     await page.getByLabel("Review matching rationale",{exact:true}).selectOption("semantic");await page.getByRole("button",{name:"Load selected Catalog subjects"}).click();
+     await page.getByLabel("Reviewed policy subject",{exact:true}).selectOption({index:1});await page.getByLabel("Reviewed framework subject",{exact:true}).selectOption({label:"Control: framework-a"});await page.getByLabel("Reviewed relationship",{exact:true}).selectOption("no-relationship");
      await page.getByRole("button",{name:"Preview initial mapping manifest"}).click();await confirm("The selected domain inputs are missing, ambiguous, invalid, or stale.");
      await navigate("Policies & Artifacts");await register("mapping-manifest.json","mapping-collection","mapping");await navigate("Mappings");
-     await page.getByLabel("Relationship to review").selectOption("reviewed-none");await page.getByLabel("Mapping review rationale").fill("Explicit updated rationale");await page.getByRole("button",{name:"Apply relationship to unsaved manifest"}).click();await page.getByRole("button",{name:"Validate decisions"}).click();await page.getByRole("button",{name:"Preview decision changes"}).click();await confirm();
+     await page.getByLabel("Relationship to review",{exact:true}).selectOption("reviewed-none");await page.getByLabel("Mapping review rationale",{exact:true}).fill("Explicit updated rationale");await page.getByRole("button",{name:"Apply relationship to unsaved manifest"}).click();await page.getByRole("button",{name:"Validate decisions"}).click();await page.getByRole("button",{name:"Preview decision changes"}).click();await confirm();
      await page.getByLabel("New relationship key",{exact:true}).fill("reviewed-additional");await page.getByLabel("New relationship policy subject",{exact:true}).selectOption({index:1});await page.getByLabel("New relationship framework subject",{exact:true}).selectOption({label:"framework-b"});await page.getByLabel("New relationship type",{exact:true}).selectOption("equivalent-to");await page.getByLabel("New relationship reviewer",{exact:true}).selectOption("reviewer");await page.getByLabel("New relationship review time (RFC3339)",{exact:true}).fill("2026-09-10T00:00:00Z");await page.getByLabel("New relationship rationale",{exact:true}).fill("Explicit additional synthetic review");await page.getByRole("button",{name:"Add relationship to unsaved manifest",exact:true}).click();await page.getByRole("button",{name:"Preview decision changes"}).click();await confirm();
      await page.getByRole("button",{name:"Rebuild committed mapping collection"}).click();await confirm();
      await navigate("Policies & Artifacts");await register("mapping-collection.json","mapping-collection","built-mapping");
@@ -394,12 +432,12 @@ let outcomePublished=false;
      assert(await page.getByRole("cell",{name:"applicable-reviewed-no-relationship",exact:true}).count()>0);
      await navigate("Trace & Reports");
      failureTracker.setStage("trace-export");
-     const reportTarget=page.getByLabel("Report destination within project");const traceConverted=page.getByRole("button",{name:"Trace converted",exact:true});
+     const reportTarget=page.getByLabel("Report destination within project",{exact:true});const traceConverted=page.getByRole("button",{name:"Trace converted",exact:true});
      await reportTarget.fill("unconfirmed-report.html");const beforeTrace=provenanceReads;
      await activate(traceConverted);await page.getByRole("dialog").waitFor();await activate(page.getByRole("dialog").getByRole("button",{name:"Keep editing",exact:true}));await page.getByRole("dialog").waitFor({state:"hidden"});
      assert.equal(await reportTarget.inputValue(),"unconfirmed-report.html");await focused(traceConverted);assert.equal(provenanceReads,beforeTrace);
      await activate(traceConverted);await discard();await page.getByRole("heading",{name:"Provenance references",exact:true}).waitFor();await focused(page.locator("#view-title"));
-     await navigate("Trace & Reports");await page.getByLabel("Report",{exact:true}).selectOption("trace");await page.getByLabel("Report destination within project").fill("trace.html");await page.getByRole("button",{name:"Prepare export"}).click();await confirm();
+     await navigate("Trace & Reports");await page.getByLabel("Report",{exact:true}).selectOption("trace");await page.getByLabel("Report destination within project",{exact:true}).fill("trace.html");await page.getByRole("button",{name:"Prepare export"}).click();await confirm();
      // Continue from post-close heading using native Tab; do not reset focus for this assertion.
      await page.keyboard.press("Tab");await focused(page.getByRole("button",{name:"Refresh",exact:true}));
      await page.keyboard.press("Tab");await focused(page.getByRole("button",{name:"Download committed redacted report",exact:true}));
@@ -470,6 +508,7 @@ let outcomePublished=false;
       failureTracker.setStage("metadata-download");
       // Observe native Tab order after the asynchronous preview, without assigning these targets.
       await page.keyboard.press("Tab");await focused(panel.getByRole("region",{name:"Complete registered bundle metadata",exact:true}));
+      await page.keyboard.press("Tab");await focused(page.getByRole("button",{name:"About: I understand that labels, resource keys, paths and hashes can reveal project information.",exact:true}));
       await page.keyboard.press("Tab");await focused(acknowledgment);await page.keyboard.press("Space");
       assert.equal(await acknowledgment.isChecked(),true);assert.equal(await downloadButton.getAttribute("aria-disabled"),"false");
       await page.keyboard.press("Tab");await focused(downloadButton);
@@ -479,6 +518,7 @@ let outcomePublished=false;
       assert.deepEqual(bytes,Buffer.from(JSON.stringify(observed.bundle)),"Local download must contain the complete observed bundle alone");
       assert(bytes.length<=1024*1024);await focused(downloadButton);
       failureTracker.setStage("metadata-file-selection");
+      await page.keyboard.press("Tab");await focused(page.getByRole("button",{name:"About: Choose a metadata bundle JSON file",exact:true}));
       await page.keyboard.press("Tab");await focused(file);
       // setInputFiles supplies an external synthetic File through the native input; no OS chooser claim.
       const chosenName=longMetadata?"N".repeat(180)+".json":"observed-metadata.json";
@@ -581,7 +621,7 @@ let outcomePublished=false;
      qualification:renderedCaptureFacts.length?"actual_api_and_rendered_counter_correlation_only":"no_transient_capture_counter_render_observed"};
    failureTracker.setStage("request-page-errors");
    assert.deepEqual(violations,[]);assert.deepEqual(errors,[]);
-   observation={mode:readOnly?"read-only":"writable",browserVersion:browser.version(),embeddedAssetSha256,embeddedStyleSha256,inputBorderContrast,focusChecks,reflowChecks,syntheticFaults,captureConsumerObservation,metadataConsumerObservation,unlockRequests,documentedRequests:[...calls].sort(),nonLoopbackRequests:0,pageErrors:0};
+   observation={mode:readOnly?"read-only":"writable",browserVersion:browser.version(),embeddedAssetSha256,embeddedStyleSha256,inputBorderContrast,focusChecks,markerChecks,reflowChecks,syntheticFaults,captureConsumerObservation,metadataConsumerObservation,unlockRequests,documentedRequests:[...calls].sort(),nonLoopbackRequests:0,pageErrors:0};
  } catch(error){
    failureTracker.capture(error);process.exitCode=1;
    try {
