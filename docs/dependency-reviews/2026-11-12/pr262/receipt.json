@@ -1,0 +1,13 @@
+{
+  "pr": 262,
+  "url": "https://github.com/policy-forge/forge/pull/262",
+  "head_oid": "335bb6a1414172fbf0b8e4d58d55f2ad2c413afb",
+  "base_oid": "b4226bb35d796222c30f93235ac22118dd26a344",
+  "state_at_review": "OPEN",
+  "ci_run_id": 41067147939,
+  "ci_run_url": "https://github.com/policy-forge/forge/actions/runs/41067147939",
+  "version_scope": "jsonschema/jsonschema-regex/jsonschema-value/referencing 0.57.0 -> 0.60.2 (root lock + Cargo.toml); regex-syntax unchanged at 0.8.11",
+  "accepted_audit": false,
+  "human_signoff": null,
+  "scope": "Bounded agent-assisted differential source review; no merge permission, no audit approval."
+}

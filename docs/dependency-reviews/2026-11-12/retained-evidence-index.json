@@ -1,0 +1,375 @@
+{
+  "format": "forge.dependency-review-retained-evidence/1",
+  "prepared_at_utc": "2026-11-12T17:39:48.704546+00:00",
+  "base_oid": "b4226bb35d796222c30f93235ac22118dd26a344",
+  "accepted_audit": false,
+  "human_signoff": null,
+  "index_self_excluded": true,
+  "retained_files": [
+    {
+      "path": "docs/dependency-reviews/2026-11-12/README.md",
+      "bytes": 7023,
+      "sha256": "8ee4c034342a0be19db9efb477ce3889b7532cfe4c4343f1a856b727f9726472"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/audit-base.json",
+      "bytes": 10141,
+      "sha256": "4b8547242f95766ef6bf610d269656342a96728d485d2de56b484ea52c03f4a1"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/Cargo.lock",
+      "bytes": 70787,
+      "sha256": "1fb25ca19af1cc00bba84484716e59ea98714d898546e814bc47bf4ece6189b5"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/Cargo.lock.diff",
+      "bytes": 906,
+      "sha256": "a94812aa6800d1853ffbf673582c76a98d6e876b4bce00f4ae6777a310bb3e52"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/README.md",
+      "bytes": 4659,
+      "sha256": "a2811a0a5885ec0629ee49d4dd9338ab992bafd7b98ff88ffbc0fbfc2f480935"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/audit/cargo-audit.json",
+      "bytes": 10141,
+      "sha256": "d86e6e92f39cb50e482e262843f71b69be65da59a8b92579d73662bb9a38684a"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/checks/cargo-check-lib.txt",
+      "bytes": 7293,
+      "sha256": "36a02590b84a83e445cc1fbdfb6abfea8ae5f013fc43cb663f37101c6af0786c"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/ci/dependency-graph-check.json",
+      "bytes": 470,
+      "sha256": "f3415498204e7fc124023476636135832377f9d305138a5f990925d44c190a31"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/ci/inventory-gate-full.txt",
+      "bytes": 101654,
+      "sha256": "5e59f10d0f134bb580ee299ee7c0ee0e329e38955d415c8309398435f9b781bb"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/ci/jobs.jsonl",
+      "bytes": 1273,
+      "sha256": "e3029a158dfbbf7fa7ce4c6a3adf748a77edd57b65636429fa5db23ec7742125"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/ci/run.json",
+      "bytes": 236,
+      "sha256": "f3d97a5073d5a75ca0e30cabdbe1108ead950175afdcc427cf85aafffdef1526"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/ci/supply-chain-excerpt.txt",
+      "bytes": 6780,
+      "sha256": "8acecaefa23422192f28c69f565f45df4ebc724c148ad9fa202adceb8d1839e0"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/ci/supply-chain-full.txt",
+      "bytes": 83435,
+      "sha256": "cf7d70e155705d55d5a43f7cac74d4ae6964e341271f709465a6a2215f04ca69"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/deltas/hyper-source.diff",
+      "bytes": 89607,
+      "sha256": "4bc15cab0718f278666aa3f5ef6a48f661f78ca14fd7fc6380aa0ca10c2e6301"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/lock-transitions.json",
+      "bytes": 642,
+      "sha256": "a568a117a8843576ebbd4e4ddd70758bf9a58e3726490a7c5fc6bf6962dc8e9f"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr261/receipt.json",
+      "bytes": 576,
+      "sha256": "88caa2ac58d845117b68228ec3ad7894b564a618fba2e414af19193269706a5d"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/Cargo.lock",
+      "bytes": 71054,
+      "sha256": "a6cbea3f50af12bed05fa3eeb6529fd2ec2034bbb5a04adaf4d4036f9374f4d5"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/Cargo.lock.diff",
+      "bytes": 2256,
+      "sha256": "7bbe88d91848491b09b2adb4424650e0c47fe7ece78d936619e69b26ada820a5"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/README.md",
+      "bytes": 5494,
+      "sha256": "f112cc59233581aeebf99bff3a780c8cf0afd4dde376d44558482adf3a1c2576"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/audit/cargo-audit.json",
+      "bytes": 10141,
+      "sha256": "4b8547242f95766ef6bf610d269656342a96728d485d2de56b484ea52c03f4a1"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/ci/jobs.jsonl",
+      "bytes": 1273,
+      "sha256": "7f1326e5c3a4ed3ad177de1ccb34e3a6584bf0ec04cfc4bc87a6acccecd4f26c"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/ci/run.json",
+      "bytes": 241,
+      "sha256": "234741f1bbb05ad8869b0de4b1acd9d5bd48ba44fad36b166b0ddf57633b9a59"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/ci/supply-chain-excerpt.txt",
+      "bytes": 6780,
+      "sha256": "4a11ee56a182ec12af0a4db90bb89df1f6aa9345fea73e2f29f5d931af65b5ea"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/ci/supply-chain-full.txt",
+      "bytes": 83426,
+      "sha256": "7da58b360b7fb53921e0d4f21670003b8646117a13a148bc9283effc5d584388"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/deltas/jsonschema-regex-source.diff",
+      "bytes": 19569,
+      "sha256": "3460ee2d2a00dc2d588e90b9a12f4d45d0f2ffb7ed468d0b63d306527244c372"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/deltas/jsonschema-source.diff",
+      "bytes": 791968,
+      "sha256": "b4404c76ab7263df0b72d460e60bdb2e398d992280e283a53a830fa1cf514971"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/deltas/jsonschema-value-source.diff",
+      "bytes": 94269,
+      "sha256": "79f58c93d49cb4047da174b584c5508f12437b1287cdcdb81cd294c4678f1ad2"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/deltas/referencing-source.diff",
+      "bytes": 14690,
+      "sha256": "1670b7dc6fbdfc60603871321fee95bb8df9bfc6a8eb4b6ba13360a23cf9a83e"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/lock-transitions.json",
+      "bytes": 1325,
+      "sha256": "5bcfb7321aa5b69066e7c8a578e3a94a852b634ad92ddecfa332d050f78e9c35"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/receipt.json",
+      "bytes": 642,
+      "sha256": "342b67a4d2415fd806a61c91d90e28799257469b91dc7bae1906b90199b4e1db"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr262/tests/cargo-test-validate.txt",
+      "bytes": 15713,
+      "sha256": "67252cda442b2dca9c6ff22a4f572d369c2e5dd3dda08e14fa2a6dabd8c2380a"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/Cargo.lock",
+      "bytes": 71043,
+      "sha256": "48c709fedb9f94b5b65bdabc34e7e9e63d1f46f603b619ddb90cf760e5bd2459"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/Cargo.lock.diff",
+      "bytes": 482,
+      "sha256": "7ba99db166ab4283bb30887838986594719f81df26f1439a2b852c74ab1be27b"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/README.md",
+      "bytes": 4399,
+      "sha256": "7a1901b47404619df690262c9e6c896feb9ab82d9baa9029c5a4043ed82ebae1"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/audit/cargo-audit.json",
+      "bytes": 10141,
+      "sha256": "4b8547242f95766ef6bf610d269656342a96728d485d2de56b484ea52c03f4a1"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/checks/cargo-check-lib.txt",
+      "bytes": 7330,
+      "sha256": "687e1a8662649063a3d052a7c826cab324305c6e83951188780af0bf6da25e82"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/ci/jobs.jsonl",
+      "bytes": 1273,
+      "sha256": "5c2e770e16830c00be7ebd86dfc83c5f4ea53a25b3a83011524c58d8d71d2457"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/ci/run.json",
+      "bytes": 243,
+      "sha256": "baa92dab86a9c6db54892179a8e8bc0e4cd16053b263368dd9db2156d104e453"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/ci/supply-chain-excerpt.txt",
+      "bytes": 6780,
+      "sha256": "eae79991050a0780ae330aa3c991e8fa5f857c77db90e98a4e84fb6795a04170"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/ci/supply-chain-full.txt",
+      "bytes": 83309,
+      "sha256": "299fd06d2519e675528eef06a5aa108849bc9cca5c1e4330bc67f50d25a66f6b"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/deltas/serde_json-source.diff",
+      "bytes": 27388,
+      "sha256": "b36e8cfffe6bc7c9767aa9650c5afb35b3ef534759a3121ab3364202b4258ad8"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/lock-transitions.json",
+      "bytes": 459,
+      "sha256": "c524ebfd56a557cb1a752f4f87946accdf056859d72985adda9f029466535b14"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/receipt.json",
+      "bytes": 551,
+      "sha256": "d2117807fde275f8102b2f077ff818536284f8eddb5fb0d43028ec18635794b6"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr263/tests/cargo-test-golden.txt",
+      "bytes": 11680,
+      "sha256": "07b9a5fcfeab96d6b5eac23c02b06169dfaff9ec894b1be831ae6924d933a6ca"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr264/Cargo.lock",
+      "bytes": 71043,
+      "sha256": "fef43c2526977143d0dade6179c48a69861a582476b7212d5b316fc91ac5e74d"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr264/Cargo.lock.diff",
+      "bytes": 1110,
+      "sha256": "2b0ce3ff3f424cfc7baf27cd200a3984edb59c34a8b88ba3516bd6e158cf11cb"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr264/README.md",
+      "bytes": 5491,
+      "sha256": "b0c0dd04b417e80d1a24a3798deb59a296d57f3d297c10cccc01bfba14dd3ce2"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr264/audit/cargo-audit.json",
+      "bytes": 10141,
+      "sha256": "4b8547242f95766ef6bf610d269656342a96728d485d2de56b484ea52c03f4a1"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr264/ci/jobs.jsonl",
+      "bytes": 1273,
+      "sha256": "32cacbfe5adf07e221de52b283e5cdfaaaf2b74b844703d9db72858814be7e4d"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr264/ci/run.json",
+      "bytes": 240,
+      "sha256": "6eaa063d0f0b84e2080732ae350cb6a4cb3cddb27ea6e58cef823ef79515a0f5"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr264/ci/supply-chain-excerpt.txt",
+      "bytes": 6780,
+      "sha256": "b4141eda9f0bfe48f12b2cca0c0283ac4581ad47338986d485bca70907ee584f"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr264/ci/supply-chain-full.txt",
+      "bytes": 83422,
+      "sha256": "ccf56c37f1e308902306737cb5a3a4d073e3ea528d32b0c4802f61d34a8e1e89"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr264/deltas/quick-xml-source.diff",
+      "bytes": 2769760,
+      "sha256": "0cb59a027878958b7b56afcc7d381b2691a7f83284d8c36d22d17ea8fba8389e"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr264/lock-transitions.json",
+      "bytes": 456,
+      "sha256": "667b14598b173e13850f6b33e4cafe3b2744ec6b52bd030f7c47ae17927823fe"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr264/receipt.json",
+      "bytes": 561,
+      "sha256": "a13bd23b9dd3d2fa9c562e72443db0b12ecad4979c210cf66df4efda64343627"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr264/tests/cargo-test-xml.txt",
+      "bytes": 22652,
+      "sha256": "619d60fbb2436e77676cdab4a83e9dae36696b0119e2da63737aa7b47bf68eab"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/Cargo.lock",
+      "bytes": 71043,
+      "sha256": "656288612f31a500266664e0bfa115e61d3e0c86a8459cac60b1124a7e5ed00c"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/Cargo.lock.diff",
+      "bytes": 4568,
+      "sha256": "e2c1b02f6a38f5bd85f698e4b5dfcebd86945fd5de210e953545f1f6f63b1af7"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/README.md",
+      "bytes": 5135,
+      "sha256": "c213daad9620c1fb1900dc018c65d39a36b56b816d1eb7856a81853fa3683b61"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/audit/cargo-audit.json",
+      "bytes": 10141,
+      "sha256": "4b8547242f95766ef6bf610d269656342a96728d485d2de56b484ea52c03f4a1"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/audit-evidence/pr162-cargo-audit.json",
+      "bytes": 15638,
+      "sha256": "d624978b4829c11cf1c7f395dc8db70331ca55ad25c02e42fb19be6ebe861eef"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/audit-evidence/pr163-cargo-audit.json",
+      "bytes": 13492,
+      "sha256": "4668cf9a4b7339a4e5f50958431dd1ecd3cedf6efa1f2950e52b90a237743f0d"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/audit-evidence/pr164-cargo-audit.json",
+      "bytes": 13492,
+      "sha256": "d2f2a656db7075d6e7035e167ac860bf73ae6f9972ba2d4e34d66e9579c6e3c5"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/ci/dependency-graph-check.json",
+      "bytes": 474,
+      "sha256": "e879b22b56cbd47c1257cebb83474af3e5e9ebaf78cdb1b5e3ccbbe4fea464f2"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/ci/inventory-gate-full.txt",
+      "bytes": 101636,
+      "sha256": "6213508d699283997a4f5167b7ec97828e97f4b3cbe648b8832a0e4b5a453f6b"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/ci/inventory-gate-summary.json",
+      "bytes": 5406,
+      "sha256": "bc59e67d02e54ef25446c0e1431b7a30e66ae6946ed9c5f8df4ea12cea1897ff"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/ci/jobs.jsonl",
+      "bytes": 1273,
+      "sha256": "ebe6dfc175361ca8a4603c56644f5627feb9e57dedfabd7a3dc01e7704f3793f"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/ci/run.json",
+      "bytes": 259,
+      "sha256": "73f452cdb13683d73dcd6c8dcb996151052a91a137c8b2e7feea514db181c23f"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/ci/supply-chain-excerpt.txt",
+      "bytes": 7836,
+      "sha256": "df6a9085051953d54502d9637f779c7cfd87935c89a8b9a196873ace8d3c0a42"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/ci/supply-chain-full.txt",
+      "bytes": 118929,
+      "sha256": "84c236bd1e3b5bc61392f967091f0244a6d7bed9a5b6d23c9ca0b5c57a947126"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/deltas/uuid-source.diff",
+      "bytes": 60925,
+      "sha256": "167b824450a0c9cd63afa9f9fe1f1c3371599a2e0efc52b95e1faff4656ab957"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/lock-transitions.json",
+      "bytes": 1242,
+      "sha256": "6973bb9fa66ab00407184f97b1fa681c339d140e671dd12425f98a773e87f300"
+    },
+    {
+      "path": "docs/dependency-reviews/2026-11-12/pr265/receipt.json",
+      "bytes": 593,
+      "sha256": "1d78b6b67634e063087361093d373c5ae23474d7e564fdd368852b0ceb3a0795"
+    }
+  ]
+}

@@ -1,0 +1,732 @@
+Supply-chain audits	UNKNOWN STEP	﻿2026-10-30T14:05:47.6032649Z Current runner version: '2.338.0'
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6057255Z ##[group]Runner Image Provisioner
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6058500Z Hosted Compute Agent
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6059107Z Version: 20261021.618
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6059828Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6060896Z Build Date: 2026-10-21T00:45:21Z
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6062205Z Worker ID: {b53ad909-5333-4b26-9b7a-ca234c873b7d}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6063380Z Region: eastus
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6064223Z Cloud: Azure
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6064999Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6066592Z ##[group]Operating System
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6067274Z Ubuntu
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6068274Z 24.04.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6068813Z LTS
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6069409Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6069993Z ##[group]Runner Image
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6070657Z Image: ubuntu-24.04
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6071324Z Version: 20261025.353.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6072561Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261025.353/images/ubuntu/Ubuntu2404-Readme.md
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6074330Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261025.353
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6075324Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6076487Z ##[group]GITHUB_TOKEN Permissions
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6078986Z Contents: read
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6079756Z Metadata: read
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6080369Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6082543Z Secret source: Dependabot
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6083577Z Cache mode: write
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6084318Z Prepare workflow directory
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6488053Z Prepare all required actions
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.6536447Z Getting action download info
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:47.8899237Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.0249507Z Download action repository 'dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c' (SHA:4360b52568e2003a75bf9bc1d59f33a8e3fc893c)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.1188142Z Download action repository 'actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9' (SHA:55cc8345863c7cc4c66a329aec7e433d2d1c52a9)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.3547981Z Complete job name: Supply-chain audits
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4444855Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4445936Z with:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4446379Z   persist-credentials: false
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4446914Z   repository: policy-forge/forge
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4451025Z   token: ***
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4451474Z   ssh-strict: true
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4451909Z   ssh-user: git
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4452330Z   clean: true
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4452771Z   sparse-checkout-cone-mode: true
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4453286Z   fetch-depth: 1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4453708Z   fetch-tags: false
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4454147Z   show-progress: true
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4454585Z   lfs: false
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4454987Z   submodules: false
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4455429Z   set-safe-directory: true
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4455926Z   allow-unsafe-pr-checkout: false
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4456742Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4457165Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.4457838Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7768147Z Syncing repository: policy-forge/forge
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7770484Z ##[group]Getting Git version info
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7771302Z Working directory is '/home/runner/work/forge/forge'
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7772740Z [command]/usr/bin/git version
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7860535Z git version 2.56.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7887052Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7899943Z Temporarily overriding HOME='/home/runner/work/_temp/64cc524c-c9e9-4644-9235-6b402acd0ed3' before making global git config changes
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7902771Z Adding repository directory to the temporary git global config as a safe directory
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7908765Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/forge/forge
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7962384Z Deleting the contents of '/home/runner/work/forge/forge'
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7966640Z ##[group]Determining repository object format
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7969385Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7970894Z ##[group]Initializing the repository
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.7973883Z [command]/usr/bin/git init /home/runner/work/forge/forge
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8117790Z hint: Using 'master' as the name for the initial branch. This default branch name
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8119687Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8121432Z hint: to use in all of your new repositories, which will suppress this warning,
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8122336Z hint: call:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8122856Z hint:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8123461Z hint: 	git config --global init.defaultBranch <name>
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8124184Z hint:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8124871Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8125957Z hint: 'development'. The just-created branch can be renamed via this command:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8126833Z hint:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8127604Z hint: 	git branch -m <name>
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8128208Z hint:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8128944Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8148285Z Initialized empty Git repository in /home/runner/work/forge/forge/.git/
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8161097Z [command]/usr/bin/git remote add origin https://github.com/policy-forge/forge
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8373405Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8374907Z ##[group]Disabling automatic garbage collection
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8385085Z [command]/usr/bin/git config --local gc.auto 0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8432643Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8433471Z ##[group]Setting up auth
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8434301Z Removing SSH command configuration
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8438762Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8492199Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8913859Z Removing HTTP extra header
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8921000Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.8967689Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.9206244Z Removing includeIf entries pointing to credentials config files
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.9213316Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.9259747Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.9509193Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-58fee2ef-8574-4949-9be2-62beb7883064.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.9558716Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/forge/forge/.git.path /home/runner/work/_temp/git-credentials-58fee2ef-8574-4949-9be2-62beb7883064.config
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.9601326Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/forge/forge/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-58fee2ef-8574-4949-9be2-62beb7883064.config
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.9643458Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-58fee2ef-8574-4949-9be2-62beb7883064.config
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.9685983Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-58fee2ef-8574-4949-9be2-62beb7883064.config
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.9726388Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.9727245Z ##[group]Fetching the repository
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:48.9733600Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +645845bea151554015c9484b0127f51f1565bd62:refs/remotes/pull/263/merge
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:50.7654156Z From https://github.com/policy-forge/forge
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:50.7656111Z  * [new ref]         645845bea151554015c9484b0127f51f1565bd62 -> pull/263/merge
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:50.7660606Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:50.7661791Z ##[group]Determining the checkout info
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:50.7663322Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:50.7664363Z [command]/usr/bin/git sparse-checkout disable
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:50.7731539Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:50.7775602Z ##[group]Checking out the ref
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:50.7779828Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/263/merge
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1823805Z Note: switching to 'refs/remotes/pull/263/merge'.
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1825294Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1826190Z You are in 'detached HEAD' state. You can look around, make experimental
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1827615Z changes and commit them, and you can discard any commits you make in this
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1828753Z state without impacting any branches by switching back to a branch.
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1829335Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1829768Z If you want to create a new branch to retain commits you create, you may
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1830687Z do so (now or later) by using -c with the switch command. Example:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1831205Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1831468Z   git switch -c <new-branch-name>
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1831850Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1832125Z Or undo this operation with:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1832472Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1832691Z   git switch -
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1833036Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1833536Z Turn off this advice by setting config variable advice.detachedHead to false
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1834135Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1834803Z HEAD is now at 645845b Merge df3c748424452f2e948e97c5830cd0605169b6de into b4226bb35d796222c30f93235ac22118dd26a344
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1857054Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1916985Z [command]/usr/bin/git log -1 --format=%H
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1955985Z 645845bea151554015c9484b0127f51f1565bd62
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1965998Z ##[group]Removing auth
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1966515Z Removing SSH command configuration
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.1969977Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2014258Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2263597Z Removing HTTP extra header
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2267153Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2313638Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2560506Z Removing includeIf entries pointing to credentials config files
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2563103Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2605363Z includeif.gitdir:/home/runner/work/forge/forge/.git.path
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2606424Z includeif.gitdir:/home/runner/work/forge/forge/.git/worktrees/*.path
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2607229Z includeif.gitdir:/github/workspace/.git.path
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2608625Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2615728Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/forge/forge/.git.path
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2650347Z /home/runner/work/_temp/git-credentials-58fee2ef-8574-4949-9be2-62beb7883064.config
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2661691Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/forge/forge/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-58fee2ef\-8574\-4949\-9be2\-62beb7883064\.config
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2712763Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/forge/forge/.git/worktrees/*.path
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2754798Z /home/runner/work/_temp/git-credentials-58fee2ef-8574-4949-9be2-62beb7883064.config
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2764098Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/forge/forge/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-58fee2ef\-8574\-4949\-9be2\-62beb7883064\.config
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2810158Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2847615Z /github/runner_temp/git-credentials-58fee2ef-8574-4949-9be2-62beb7883064.config
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2858010Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-58fee2ef\-8574\-4949\-9be2\-62beb7883064\.config
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2904450Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2939616Z /github/runner_temp/git-credentials-58fee2ef-8574-4949-9be2-62beb7883064.config
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2948196Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-58fee2ef\-8574\-4949\-9be2\-62beb7883064\.config
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.2992028Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3234552Z Removing credentials config '/home/runner/work/_temp/git-credentials-58fee2ef-8574-4949-9be2-62beb7883064.config'
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3243933Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3623773Z ##[group]Run dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3624430Z with:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3624810Z   toolchain: stable
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3625195Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3625558Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3625998Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3696863Z ##[start-action display=Parse toolchain version;id=__dtolnay_rust-toolchain.parse]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3764856Z ##[group]Run if [[ -z $toolchain ]]; then
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3765495Z ^[[36;1mif [[ -z $toolchain ]]; then^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3766272Z ^[[36;1m  # GitHub does not enforce `required: true` inputs itself. https://github.com/actions/runner/issues/1070^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3767078Z ^[[36;1m  echo "'toolchain' is a required input" >&2^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3767794Z ^[[36;1m  exit 1^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3768355Z ^[[36;1melif [[ $toolchain =~ ^stable' '[0-9]+' '(year|month|week|day)s?' 'ago$ ]]; then^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3769052Z ^[[36;1m  if [[ Linux == macOS ]]; then^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3769846Z ^[[36;1m    echo "toolchain=1.$((($(date -v-$(sed 's/stable \([0-9]*\) \(.\).*/\1\2/' <<< $toolchain) +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3770604Z ^[[36;1m  else^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3771226Z ^[[36;1m    echo "toolchain=1.$((($(date --date "${toolchain#stable }" +%s)/60/60/24-16569)/7/6))" >> $GITHUB_OUTPUT^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3771926Z ^[[36;1m  fi^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3772440Z ^[[36;1melif [[ $toolchain =~ ^stable' 'minus' '[0-9]+' 'releases?$ ]]; then^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3773216Z ^[[36;1m  echo "toolchain=1.$((($(date +%s)/60/60/24-16569)/7/6-${toolchain//[^0-9]/}))" >> $GITHUB_OUTPUT^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3773903Z ^[[36;1melif [[ $toolchain =~ ^1\.[0-9]+$ ]]; then^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3774674Z ^[[36;1m  echo "toolchain=1.$((i=${toolchain#1.}, c=($(date +%s)/60/60/24-16569)/7/6, i+9*i*(10*i<=c)+90*i*(100*i<=c)))" >> $GITHUB_OUTPUT^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3775391Z ^[[36;1melse^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3775850Z ^[[36;1m  echo "toolchain=$toolchain" >> $GITHUB_OUTPUT^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3776354Z ^[[36;1mfi^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3801052Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3801645Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3802041Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3802692Z   toolchain: stable
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3803098Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3902583Z ##[end-action id=__dtolnay_rust-toolchain.parse;outcome=success;conclusion=success;duration_ms=20]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.3916210Z ##[start-action display=Construct rustup command line;id=__dtolnay_rust-toolchain.flags]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4011156Z ##[group]Run echo "targets=$(for t in ${targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4012109Z ^[[36;1mecho "targets=$(for t in ${targets//,/ }; do echo -n ' --target' $t; done)" >> $GITHUB_OUTPUT^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4013027Z ^[[36;1mecho "components=$(for c in ${components//,/ }; do echo -n ' --component' $c; done)" >> $GITHUB_OUTPUT^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4013760Z ^[[36;1mecho "downgrade=" >> $GITHUB_OUTPUT^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4033322Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4033894Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4034290Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4034725Z   targets: 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4035126Z   components: 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4035522Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4098139Z ##[end-action id=__dtolnay_rust-toolchain.flags;outcome=success;conclusion=success;duration_ms=18]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4102026Z ##[start-action display=Set $CARGO_HOME;id=__dtolnay_rust-toolchain.__run]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4134348Z ##[group]Run echo CARGO_HOME=${CARGO_HOME:-"$HOME/.cargo"} >> $GITHUB_ENV
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4135074Z ^[[36;1mecho CARGO_HOME=${CARGO_HOME:-"$HOME/.cargo"} >> $GITHUB_ENV^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4153720Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4154291Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4154691Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4155395Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4208642Z ##[end-action id=__dtolnay_rust-toolchain.__run;outcome=success;conclusion=success;duration_ms=10]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4212038Z ##[start-action display=Install rustup if needed;id=__dtolnay_rust-toolchain.__run_2]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4251011Z ##[group]Run if ! command -v rustup &>/dev/null; then
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4251596Z ^[[36;1mif ! command -v rustup &>/dev/null; then^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4252605Z ^[[36;1m  curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://sh.rustup.rs | sh -s -- --default-toolchain none -y^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4253573Z ^[[36;1m  echo "$CARGO_HOME/bin" >> $GITHUB_PATH^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4254040Z ^[[36;1mfi^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4272582Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4273127Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4273494Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4273932Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4274377Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4322698Z ##[end-action id=__dtolnay_rust-toolchain.__run_2;outcome=success;conclusion=success;duration_ms=10]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4325887Z ##[start-action display=Install rustup if needed on windows;id=__dtolnay_rust-toolchain.__run_3]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4335124Z ##[end-action id=__dtolnay_rust-toolchain.__run_3;outcome=skipped;conclusion=skipped;duration_ms=0]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4347926Z ##[start-action display=rustup toolchain install stable;id=__dtolnay_rust-toolchain.__run_4]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4380616Z ##[group]Run rustup toolchain install stable --profile minimal --no-self-update
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4381402Z ^[[36;1mrustup toolchain install stable --profile minimal --no-self-update^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4400160Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4400705Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4423222Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4423793Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4424289Z   RUSTUP_PERMIT_COPY_RENAME: 1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.4424728Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.6556129Z info: syncing channel updates for stable-x86_64-unknown-linux-gnu
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7434590Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7520282Z   stable-x86_64-unknown-linux-gnu unchanged - rustc 1.99.1 (58cf8f9c3 2026-10-13)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7521166Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7565559Z ##[end-action id=__dtolnay_rust-toolchain.__run_4;outcome=success;conclusion=success;duration_ms=321]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7572202Z ##[start-action display=rustup default stable;id=__dtolnay_rust-toolchain.__run_5]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7600813Z ##[group]Run rustup default stable
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7601196Z ^[[36;1mrustup default stable^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7621117Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7621545Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7621808Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7622129Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7622434Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7707996Z info: using existing install for stable-x86_64-unknown-linux-gnu
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7716975Z info: default toolchain set to stable-x86_64-unknown-linux-gnu
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7717794Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7797157Z   stable-x86_64-unknown-linux-gnu unchanged - rustc 1.99.1 (58cf8f9c3 2026-10-13)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7798106Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7815700Z ##[end-action id=__dtolnay_rust-toolchain.__run_5;outcome=success;conclusion=success;duration_ms=24]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7819138Z ##[start-action display=Create cachekey;id=__dtolnay_rust-toolchain.rustc-version]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7848536Z ##[group]Run DATE=$(rustc +stable --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7849489Z ^[[36;1mDATE=$(rustc +stable --version --verbose | sed -ne 's/^commit-date: \(20[0-9][0-9]\)-\([01][0-9]\)-\([0-3][0-9]\)$/\1\2\3/p')^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7850222Z ^[[36;1mHASH=$(rustc +stable --version --verbose | sed -ne 's/^commit-hash: //p')^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7851010Z ^[[36;1mecho "cachekey=$(echo $DATE$HASH | head -c12)" >> $GITHUB_OUTPUT^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7870445Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7870854Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7871117Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7871437Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.7871757Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8248287Z ##[end-action id=__dtolnay_rust-toolchain.rustc-version;outcome=success;conclusion=success;duration_ms=42]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8251883Z ##[start-action display=Disable incremental compilation;id=__dtolnay_rust-toolchain.__run_6]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8278872Z ##[group]Run if [ -z "${CARGO_INCREMENTAL+set}" ]; then
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8279311Z ^[[36;1mif [ -z "${CARGO_INCREMENTAL+set}" ]; then^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8279663Z ^[[36;1m  echo CARGO_INCREMENTAL=0 >> $GITHUB_ENV^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8279964Z ^[[36;1mfi^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8299995Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8300369Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8300590Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8300839Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8301087Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8352184Z ##[end-action id=__dtolnay_rust-toolchain.__run_6;outcome=success;conclusion=success;duration_ms=9]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8354957Z ##[start-action display=Enable colors in Cargo output;id=__dtolnay_rust-toolchain.__run_7]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8382287Z ##[group]Run if [ -z "${CARGO_TERM_COLOR+set}" ]; then
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8382688Z ^[[36;1mif [ -z "${CARGO_TERM_COLOR+set}" ]; then^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8383079Z ^[[36;1m  echo CARGO_TERM_COLOR=always >> $GITHUB_ENV^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8383390Z ^[[36;1mfi^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8401811Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8402189Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8402408Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8402659Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8402908Z   CARGO_INCREMENTAL: 0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8403137Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8450177Z ##[end-action id=__dtolnay_rust-toolchain.__run_7;outcome=success;conclusion=success;duration_ms=9]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8453401Z ##[start-action display=Enable Cargo sparse registry;id=__dtolnay_rust-toolchain.__run_8]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8481257Z ##[group]Run # implemented in 1.66, stabilized in 1.68, made default in 1.70
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8481988Z ^[[36;1m# implemented in 1.66, stabilized in 1.68, made default in 1.70^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8482722Z ^[[36;1mif [ -z "${CARGO_REGISTRIES_CRATES_IO_PROTOCOL+set}" -o -f "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol ]; then^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8483475Z ^[[36;1m  if rustc +stable --version --verbose | grep -q '^release: 1\.6[89]\.'; then^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8484056Z ^[[36;1m    touch "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8484626Z ^[[36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse >> $GITHUB_ENV^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8485171Z ^[[36;1m  elif rustc +stable --version --verbose | grep -q '^release: 1\.6[67]\.'; then^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8485766Z ^[[36;1m    touch "/home/runner/work/_temp"/.implicit_cargo_registries_crates_io_protocol || true^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8486302Z ^[[36;1m    echo CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git >> $GITHUB_ENV^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8486668Z ^[[36;1m  fi^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8486866Z ^[[36;1mfi^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8504469Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8504826Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8505026Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8505278Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8505541Z   CARGO_INCREMENTAL: 0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8505755Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8819416Z ##[end-action id=__dtolnay_rust-toolchain.__run_8;outcome=success;conclusion=success;duration_ms=36]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8822558Z ##[start-action display=Work around spurious network errors in curl 8.0;id=__dtolnay_rust-toolchain.__run_9]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8850891Z ##[group]Run # https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/timeout.20investigation
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8851710Z ^[[36;1m# https://rust-lang.zulipchat.com/#narrow/stream/246057-t-cargo/topic/timeout.20investigation^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8852360Z ^[[36;1mif rustc +stable --version --verbose | grep -q '^release: 1\.7[01]\.'; then^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8852838Z ^[[36;1m  echo CARGO_HTTP_MULTIPLEXING=false >> $GITHUB_ENV^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8853157Z ^[[36;1mfi^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8872961Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8873318Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8873519Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8873766Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8874014Z   CARGO_INCREMENTAL: 0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.8874228Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9053736Z ##[end-action id=__dtolnay_rust-toolchain.__run_9;outcome=success;conclusion=success;duration_ms=23]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9058567Z ##[start-action display=rustc +stable --version --verbose;id=__dtolnay_rust-toolchain.__run_10]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9085985Z ##[group]Run rustc +stable --version --verbose
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9086356Z ^[[36;1mrustc +stable --version --verbose^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9105884Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9106274Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9106487Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9106746Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9107005Z   CARGO_INCREMENTAL: 0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9107221Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9259179Z rustc 1.99.1 (58cf8f9c3 2026-10-13)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9259893Z binary: rustc
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9260535Z commit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9261330Z commit-date: 2026-10-13
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9261704Z host: x86_64-unknown-linux-gnu
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9262329Z release: 1.99.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9263006Z LLVM version: 23.1.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:51.9284454Z ##[end-action id=__dtolnay_rust-toolchain.__run_10;outcome=success;conclusion=success;duration_ms=22]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0058256Z ##[group]Run actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0058786Z with:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0059101Z   path: ~/.cargo/bin
+Supply-chain audits	UNKNOWN STEP	~/.cargo/registry
+Supply-chain audits	UNKNOWN STEP	~/.cargo/git
+Supply-chain audits	UNKNOWN STEP	
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0059948Z   key: Linux-audit-tools-9f63c5c60c54c4591593f9e82b00e0dfec168497182c3cc34674f67e50a434df
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0060575Z   enableCrossOsArchive: false
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0060900Z   fail-on-cache-miss: false
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0061200Z   lookup-only: false
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0061470Z   save-always: false
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0061719Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0061955Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0062257Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0062582Z   CARGO_INCREMENTAL: 0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.0063004Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:52.2199181Z Cache hit for: Linux-audit-tools-9f63c5c60c54c4591593f9e82b00e0dfec168497182c3cc34674f67e50a434df
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:53.2814476Z Received 197931094 of 197931094 (100.0%), 189.5 MBs/sec
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:53.2817641Z Cache Size: ~189 MB (197931094 B)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:53.2979636Z [command]/usr/bin/tar -xf /home/runner/work/_temp/6f2ccef0-fd87-4351-80c1-2fcae529d865/cache.tzst -P -C /home/runner/work/forge/forge --use-compress-program unzstd
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:55.7735816Z Cache restored successfully
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:55.8023075Z Cache restored from key: Linux-audit-tools-9f63c5c60c54c4591593f9e82b00e0dfec168497182c3cc34674f67e50a434df
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:55.8195519Z ##[group]Run cargo install cargo-audit --locked --force
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:55.8196018Z ^[[36;1mcargo install cargo-audit --locked --force^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:55.8218767Z shell: /usr/bin/bash -e {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:55.8219083Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:55.8219335Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:55.8219645Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:55.8219955Z   CARGO_INCREMENTAL: 0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:55.8220218Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:55.9108645Z ^[[1m^[[92m    Updating^[[0m crates.io index
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:56.0372601Z ^[[1m^[[92m  Installing^[[0m cargo-audit v0.22.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:56.0460634Z ^[[1m^[[92m    Updating^[[0m crates.io index
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:56.4978425Z ^[[1m^[[92m    Updating^[[0m crates.io index
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:56.7702089Z ^[[1m^[[92m   Compiling^[[0m proc-macro2 v1.0.106
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:56.7703158Z ^[[1m^[[92m   Compiling^[[0m quote v1.0.45
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:56.7704141Z ^[[1m^[[92m   Compiling^[[0m unicode-ident v1.0.24
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:56.7727141Z ^[[1m^[[92m   Compiling^[[0m libc v0.2.186
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:57.1061897Z ^[[1m^[[92m   Compiling^[[0m memchr v2.8.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:57.3478098Z ^[[1m^[[92m   Compiling^[[0m cfg-if v1.0.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:57.3930096Z ^[[1m^[[92m   Compiling^[[0m regex-syntax v0.8.10
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:58.3519121Z ^[[1m^[[92m   Compiling^[[0m syn v2.0.117
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:58.4079239Z ^[[1m^[[92m   Compiling^[[0m aho-corasick v1.1.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:58.6329001Z ^[[1m^[[92m   Compiling^[[0m smallvec v1.15.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:58.8362318Z ^[[1m^[[92m   Compiling^[[0m once_cell v1.21.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:05:59.0549114Z ^[[1m^[[92m   Compiling^[[0m bytes v1.11.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:00.0000192Z ^[[1m^[[92m   Compiling^[[0m regex-automata v0.4.14
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:03.8159501Z ^[[1m^[[92m   Compiling^[[0m bstr v1.12.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:05.0749131Z ^[[1m^[[92m   Compiling^[[0m stable_deref_trait v1.2.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:05.1129018Z ^[[1m^[[92m   Compiling^[[0m thiserror v2.0.18
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:05.3519135Z ^[[1m^[[92m   Compiling^[[0m thiserror-impl v2.0.18
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:05.4359133Z ^[[1m^[[92m   Compiling^[[0m crc32fast v1.5.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:05.5799073Z ^[[1m^[[92m   Compiling^[[0m crossbeam-utils v0.8.21
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:05.7800399Z ^[[1m^[[92m   Compiling^[[0m gix-trace v0.1.20
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:05.7838398Z ^[[1m^[[92m   Compiling^[[0m tinyvec_macros v0.1.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:05.8159055Z ^[[1m^[[92m   Compiling^[[0m tinyvec v1.11.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:06.2870673Z ^[[1m^[[92m   Compiling^[[0m gix-validate v0.11.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:06.6679588Z ^[[1m^[[92m   Compiling^[[0m fastrand v2.4.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:06.6929357Z ^[[1m^[[92m   Compiling^[[0m bitflags v2.11.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:06.7819447Z ^[[1m^[[92m   Compiling^[[0m parking_lot_core v0.9.12
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:06.9159957Z ^[[1m^[[92m   Compiling^[[0m gix-path v0.12.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:06.9259327Z ^[[1m^[[92m   Compiling^[[0m unicode-normalization v0.1.25
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:07.0478953Z ^[[1m^[[92m   Compiling^[[0m scopeguard v1.2.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:07.0968903Z ^[[1m^[[92m   Compiling^[[0m itoa v1.0.18
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:07.3188770Z ^[[1m^[[92m   Compiling^[[0m gix-utils v0.3.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:07.4548854Z ^[[1m^[[92m   Compiling^[[0m lock_api v0.4.14
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:07.6749028Z ^[[1m^[[92m   Compiling^[[0m crossbeam-channel v0.5.15
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:07.8928912Z ^[[1m^[[92m   Compiling^[[0m parking_lot v0.12.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:08.3900471Z ^[[1m^[[92m   Compiling^[[0m allocator-api2 v0.2.21
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:08.4708951Z ^[[1m^[[92m   Compiling^[[0m foldhash v0.2.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:08.6399213Z ^[[1m^[[92m   Compiling^[[0m equivalent v1.0.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:08.6898916Z ^[[1m^[[92m   Compiling^[[0m same-file v1.0.6
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:08.7969100Z ^[[1m^[[92m   Compiling^[[0m walkdir v2.5.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:08.8248865Z ^[[1m^[[92m   Compiling^[[0m prodash v31.0.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:08.8378715Z ^[[1m^[[92m   Compiling^[[0m zlib-rs v0.6.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:09.4848866Z ^[[1m^[[92m   Compiling^[[0m gix-error v0.2.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:09.8875318Z ^[[1m^[[92m   Compiling^[[0m version_check v0.9.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:10.1128843Z ^[[1m^[[92m   Compiling^[[0m generic-array v0.14.7
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:10.2128953Z ^[[1m^[[92m   Compiling^[[0m hashbrown v0.17.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:10.7659993Z ^[[1m^[[92m   Compiling^[[0m typenum v1.20.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:11.0179331Z ^[[1m^[[92m   Compiling^[[0m heapless v0.8.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:11.1659505Z ^[[1m^[[92m   Compiling^[[0m serde_core v1.0.228
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:11.3349319Z ^[[1m^[[92m   Compiling^[[0m byteorder v1.5.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:11.4849334Z ^[[1m^[[92m   Compiling^[[0m hash32 v0.3.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:12.0869045Z ^[[1m^[[92m   Compiling^[[0m gix-features v0.48.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:12.4021396Z ^[[1m^[[92m   Compiling^[[0m crypto-common v0.1.7
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:12.4764883Z ^[[1m^[[92m   Compiling^[[0m block-buffer v0.10.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:13.3548814Z ^[[1m^[[92m   Compiling^[[0m digest v0.10.7
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:13.4951369Z ^[[1m^[[92m   Compiling^[[0m faster-hex v0.10.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:13.9627891Z ^[[1m^[[92m   Compiling^[[0m synstructure v0.13.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:14.4979216Z ^[[1m^[[92m   Compiling^[[0m cpufeatures v0.2.17
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:14.5278790Z ^[[1m^[[92m   Compiling^[[0m sha1 v0.10.6
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:14.5389003Z ^[[1m^[[92m   Compiling^[[0m jiff v0.2.28
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:15.0075807Z ^[[1m^[[92m   Compiling^[[0m sha1-checked v0.10.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:15.2689518Z ^[[1m^[[92m   Compiling^[[0m gix-hash v0.25.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:15.8669370Z ^[[1m^[[92m   Compiling^[[0m zerofrom-derive v0.1.7
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:15.8970099Z ^[[1m^[[92m   Compiling^[[0m yoke-derive v0.8.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:16.9059154Z ^[[1m^[[92m   Compiling^[[0m pin-project-lite v0.2.17
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:16.9733540Z ^[[1m^[[92m   Compiling^[[0m rustix v1.1.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:16.9848681Z ^[[1m^[[92m   Compiling^[[0m zerofrom v0.1.7
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:17.0669407Z ^[[1m^[[92m   Compiling^[[0m yoke v0.8.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:17.2968998Z ^[[1m^[[92m   Compiling^[[0m gix-hashtable v0.15.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:17.3799003Z ^[[1m^[[92m   Compiling^[[0m linux-raw-sys v0.12.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:18.0748874Z ^[[1m^[[92m   Compiling^[[0m zerovec-derive v0.11.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:18.2899090Z ^[[1m^[[92m   Compiling^[[0m jobserver v0.1.34
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:18.6128917Z ^[[1m^[[92m   Compiling^[[0m find-msvc-tools v0.1.9
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:18.7789071Z ^[[1m^[[92m   Compiling^[[0m gix-date v0.15.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:19.0569013Z ^[[1m^[[92m   Compiling^[[0m shlex v1.3.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:19.1879020Z ^[[1m^[[92m   Compiling^[[0m gix-actor v0.41.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:19.5768987Z ^[[1m^[[92m   Compiling^[[0m gix-object v0.61.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:21.3138760Z ^[[1m^[[92m   Compiling^[[0m cc v1.2.62
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:21.6128971Z ^[[1m^[[92m   Compiling^[[0m zerovec v0.11.6
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:22.2958892Z ^[[1m^[[92m   Compiling^[[0m displaydoc v0.2.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:22.6621018Z ^[[1m^[[92m   Compiling^[[0m memmap2 v0.9.10
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:22.9619254Z ^[[1m^[[92m   Compiling^[[0m serde v1.0.228
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:22.9708629Z ^[[1m^[[92m   Compiling^[[0m getrandom v0.4.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:22.9798420Z ^[[1m^[[92m   Compiling^[[0m cmake v0.1.58
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:23.1143972Z ^[[1m^[[92m   Compiling^[[0m serde_derive v1.0.228
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:23.1609536Z ^[[1m^[[92m   Compiling^[[0m futures-core v0.3.32
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:23.2588969Z ^[[1m^[[92m   Compiling^[[0m dunce v1.0.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:23.3239313Z ^[[1m^[[92m   Compiling^[[0m fs_extra v1.3.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:23.5489167Z ^[[1m^[[92m   Compiling^[[0m mio v1.2.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:23.5891105Z ^[[1m^[[92m   Compiling^[[0m aws-lc-sys v0.40.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:24.3509269Z ^[[1m^[[92m   Compiling^[[0m socket2 v0.6.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:24.5284275Z ^[[1m^[[92m   Compiling^[[0m zeroize v1.8.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:25.3154431Z ^[[1m^[[92m   Compiling^[[0m tokio v1.52.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:26.7028617Z ^[[1m^[[92m   Compiling^[[0m tempfile v3.27.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:27.5202482Z ^[[1m^[[92m   Compiling^[[0m tinystr v0.8.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:27.6349530Z ^[[1m^[[92m   Compiling^[[0m gix-fs v0.21.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:27.6508421Z ^[[1m^[[92m   Compiling^[[0m gix-chunk v0.7.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:27.8289595Z ^[[1m^[[92m   Compiling^[[0m futures-sink v0.3.32
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:27.8886895Z ^[[1m^[[92m   Compiling^[[0m simd-adler32 v0.3.9
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:28.2338659Z ^[[1m^[[92m   Compiling^[[0m percent-encoding v2.3.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:28.4243821Z ^[[1m^[[92m   Compiling^[[0m litemap v0.8.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:28.5778218Z ^[[1m^[[92m   Compiling^[[0m writeable v0.6.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:28.7630044Z ^[[1m^[[92m   Compiling^[[0m adler2 v2.0.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:28.7748983Z ^[[1m^[[92m   Compiling^[[0m icu_locale_core v2.1.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:28.8454602Z ^[[1m^[[92m   Compiling^[[0m miniz_oxide v0.8.9
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:30.2188767Z ^[[1m^[[92m   Compiling^[[0m gix-tempfile v23.0.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:30.8579533Z ^[[1m^[[92m   Compiling^[[0m zerotrie v0.2.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:31.0792543Z ^[[1m^[[92m   Compiling^[[0m potential_utf v0.1.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:31.1534688Z ^[[1m^[[92m   Compiling^[[0m gix-quote v0.7.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:31.2659623Z ^[[1m^[[92m   Compiling^[[0m tracing-core v0.1.36
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:31.3899471Z ^[[1m^[[92m   Compiling^[[0m aws-lc-rs v1.16.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:31.5175856Z ^[[1m^[[92m   Compiling^[[0m nonempty v0.12.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:31.6509586Z ^[[1m^[[92m   Compiling^[[0m icu_properties_data v2.1.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:31.7250223Z ^[[1m^[[92m   Compiling^[[0m icu_normalizer_data v2.1.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:31.8269151Z ^[[1m^[[92m   Compiling^[[0m icu_collections v2.1.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:32.1738880Z ^[[1m^[[92m   Compiling^[[0m icu_provider v2.1.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:32.4374537Z ^[[1m^[[92m   Compiling^[[0m http v1.4.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:32.5309108Z ^[[1m^[[92m   Compiling^[[0m tracing-attributes v0.1.31
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:33.5201150Z ^[[1m^[[92m   Compiling^[[0m slab v0.4.12
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:33.6729308Z ^[[1m^[[92m   Compiling^[[0m fnv v1.0.7
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:33.7057129Z ^[[1m^[[92m   Compiling^[[0m tracing v0.1.44
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:34.1639230Z ^[[1m^[[92m   Compiling^[[0m gix-commitgraph v0.37.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:34.5480662Z ^[[1m^[[92m   Compiling^[[0m rustls-pki-types v1.14.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:35.0175700Z ^[[1m^[[92m   Compiling^[[0m gix-glob v0.26.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:35.1659052Z ^[[1m^[[92m   Compiling^[[0m indexmap v2.14.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:35.4528952Z ^[[1m^[[92m   Compiling^[[0m gix-revwalk v0.32.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:35.7019173Z ^[[1m^[[92m   Compiling^[[0m icu_normalizer v2.1.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:35.7061094Z ^[[1m^[[92m   Compiling^[[0m icu_properties v2.1.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:35.9371010Z ^[[1m^[[92m   Compiling^[[0m http-body v1.0.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:36.0158820Z ^[[1m^[[92m   Compiling^[[0m gix-lock v23.0.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:36.5152998Z ^[[1m^[[92m   Compiling^[[0m tokio-util v0.7.18
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:36.9649355Z ^[[1m^[[92m   Compiling^[[0m rustls v0.23.40
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.0489081Z ^[[1m^[[92m   Compiling^[[0m futures-io v0.3.32
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.1732185Z ^[[1m^[[92m   Compiling^[[0m httparse v1.10.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.2596574Z ^[[1m^[[92m   Compiling^[[0m untrusted v0.9.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.3236642Z ^[[1m^[[92m   Compiling^[[0m futures-task v0.3.32
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.3729174Z ^[[1m^[[92m   Compiling^[[0m idna_adapter v1.2.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.4359461Z ^[[1m^[[92m   Compiling^[[0m futures-util v0.3.32
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.4522901Z ^[[1m^[[92m   Compiling^[[0m unicode-bom v2.0.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.5768961Z ^[[1m^[[92m   Compiling^[[0m subtle v2.6.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.6839055Z ^[[1m^[[92m   Compiling^[[0m log v0.4.29
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.6941139Z ^[[1m^[[92m   Compiling^[[0m atomic-waker v1.1.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.7585678Z ^[[1m^[[92m   Compiling^[[0m tower-service v0.3.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.8019868Z ^[[1m^[[92m   Compiling^[[0m utf8_iter v1.0.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.8437813Z ^[[1m^[[92m   Compiling^[[0m try-lock v0.2.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.8864780Z ^[[1m^[[92m   Compiling^[[0m want v0.3.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.8919649Z ^[[1m^[[92m   Compiling^[[0m idna v1.1.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:37.9948831Z ^[[1m^[[92m   Compiling^[[0m h2 v0.4.14
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:40.3577062Z ^[[1m^[[92m   Compiling^[[0m flate2 v1.1.9
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:40.6507710Z ^[[1m^[[92m   Compiling^[[0m form_urlencoded v1.2.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:40.8299166Z ^[[1m^[[92m   Compiling^[[0m futures-channel v0.3.32
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:40.8819041Z ^[[1m^[[92m   Compiling^[[0m gix-config-value v0.18.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:40.9842135Z ^[[1m^[[92m   Compiling^[[0m static_assertions v1.1.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:41.0129156Z ^[[1m^[[92m   Compiling^[[0m shell-words v1.1.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:41.1994195Z ^[[1m^[[92m   Compiling^[[0m compression-core v0.4.32
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:41.2946470Z ^[[1m^[[92m   Compiling^[[0m compression-codecs v0.4.38
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:41.5739257Z ^[[1m^[[92m   Compiling^[[0m gix-command v0.9.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:41.6202902Z ^[[1m^[[92m   Compiling^[[0m kstring v2.0.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:41.7949667Z ^[[1m^[[92m   Compiling^[[0m hyper v1.9.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:42.1228825Z ^[[1m^[[92m   Compiling^[[0m url v2.5.8
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:44.3229175Z ^[[1m^[[92m   Compiling^[[0m sync_wrapper v1.0.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:44.3618832Z ^[[1m^[[92m   Compiling^[[0m gix-sec v0.14.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:44.6307694Z ^[[1m^[[92m   Compiling^[[0m encoding_rs v0.8.35
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:44.8199154Z ^[[1m^[[92m   Compiling^[[0m base64 v0.22.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:45.3068922Z ^[[1m^[[92m   Compiling^[[0m openssl-probe v0.2.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:45.4924400Z ^[[1m^[[92m   Compiling^[[0m tower-layer v0.3.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:45.5349378Z ^[[1m^[[92m   Compiling^[[0m ipnet v2.12.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:45.6719288Z ^[[1m^[[92m   Compiling^[[0m tower v0.5.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:46.1482818Z ^[[1m^[[92m   Compiling^[[0m hyper-util v0.1.20
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:46.7231203Z ^[[1m^[[92m   Compiling^[[0m rustls-native-certs v0.8.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:47.3906964Z ^[[1m^[[92m   Compiling^[[0m gix-attributes v0.33.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:48.8531828Z ^[[1m^[[92m   Compiling^[[0m async-compression v0.4.42
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:49.2574322Z ^[[1m^[[92m   Compiling^[[0m http-body-util v0.1.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:49.4719698Z ^[[1m^[[92m   Compiling^[[0m semver v1.0.28
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:49.6849983Z ^[[1m^[[92m   Compiling^[[0m zmij v1.0.21
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:49.8093745Z ^[[1m^[[92m   Compiling^[[0m rustversion v1.0.22
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:49.8319046Z ^[[1m^[[92m   Compiling^[[0m tower-http v0.6.10
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:50.0061078Z ^[[1m^[[92m   Compiling^[[0m gix-ref v0.64.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:50.0908951Z ^[[1m^[[92m   Compiling^[[0m gix-url v0.36.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:50.5588207Z ^[[1m^[[92m   Compiling^[[0m gix-packetline v0.21.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:50.9098869Z ^[[1m^[[92m   Compiling^[[0m winnow v1.0.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:51.2851119Z ^[[1m^[[92m   Compiling^[[0m serde_json v1.0.149
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:51.3478882Z ^[[1m^[[92m   Compiling^[[0m mime v0.3.17
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:51.3878882Z ^[[1m^[[92m   Compiling^[[0m toml_parser v1.1.2+spec-1.1.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:52.5250665Z ^[[1m^[[92m   Compiling^[[0m gix-prompt v0.15.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:52.7606210Z ^[[1m^[[92m   Compiling^[[0m gix-traverse v0.58.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:52.8821026Z ^[[1m^[[92m   Compiling^[[0m gix-revision v0.46.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:53.6499178Z ^[[1m^[[92m   Compiling^[[0m serde_spanned v1.1.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:53.7280821Z ^[[1m^[[92m   Compiling^[[0m gix-bitmap v0.3.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:53.9815952Z ^[[1m^[[92m   Compiling^[[0m hashbrown v0.16.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:54.7583777Z ^[[1m^[[92m   Compiling^[[0m crossbeam-epoch v0.9.18
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.0969547Z ^[[1m^[[92m   Compiling^[[0m filetime v0.2.28
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.1253885Z ^[[1m^[[92m   Compiling^[[0m autocfg v1.5.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.1718912Z ^[[1m^[[92m   Compiling^[[0m arrayvec v0.7.6
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.2419047Z ^[[1m^[[92m   Compiling^[[0m toml_writer v1.1.1+spec-1.1.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.3639350Z ^[[1m^[[92m   Compiling^[[0m rayon-core v1.13.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.4393034Z ^[[1m^[[92m   Compiling^[[0m utf8parse v0.2.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.4429554Z ^[[1m^[[92m   Compiling^[[0m object v0.37.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.4608841Z ^[[1m^[[92m   Compiling^[[0m fs-err v3.3.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.4968739Z ^[[1m^[[92m   Compiling^[[0m anstyle-parse v1.0.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.5449237Z ^[[1m^[[92m   Compiling^[[0m uluru v3.1.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.5984471Z ^[[1m^[[92m   Compiling^[[0m gix-index v0.52.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.6219915Z ^[[1m^[[92m   Compiling^[[0m crossbeam-deque v0.8.6
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.6489413Z ^[[1m^[[92m   Compiling^[[0m clru v0.6.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.7958849Z ^[[1m^[[92m   Compiling^[[0m gix-refspec v0.42.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:55.8827878Z ^[[1m^[[92m   Compiling^[[0m gix-credentials v0.38.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:57.7748423Z ^[[1m^[[92m   Compiling^[[0m arc-swap v1.9.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:58.0145453Z ^[[1m^[[92m   Compiling^[[0m gix-ignore v0.21.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:58.3408884Z ^[[1m^[[92m   Compiling^[[0m toml_datetime v0.7.5+spec-1.1.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:58.7100130Z ^[[1m^[[92m   Compiling^[[0m eyre v0.6.12
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:58.8698793Z ^[[1m^[[92m   Compiling^[[0m foldhash v0.1.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:59.0432436Z ^[[1m^[[92m   Compiling^[[0m is_terminal_polyfill v1.70.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:59.0832926Z ^[[1m^[[92m   Compiling^[[0m colorchoice v1.0.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:59.1393637Z ^[[1m^[[92m   Compiling^[[0m anstyle v1.0.14
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:59.3696775Z ^[[1m^[[92m   Compiling^[[0m camino v1.2.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:59.6358506Z ^[[1m^[[92m   Compiling^[[0m gimli v0.32.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:06:59.6783035Z ^[[1m^[[92m   Compiling^[[0m winnow v0.7.15
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:01.1161008Z ^[[1m^[[92m   Compiling^[[0m anstyle-query v1.1.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:01.1498510Z ^[[1m^[[92m   Compiling^[[0m owo-colors v4.3.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:01.2719507Z ^[[1m^[[92m   Compiling^[[0m anstream v1.0.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:01.6218890Z ^[[1m^[[92m   Compiling^[[0m toml v0.9.12+spec-1.1.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:01.7833198Z ^[[1m^[[92m   Compiling^[[0m hashbrown v0.15.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:02.4923803Z ^[[1m^[[92m   Compiling^[[0m addr2line v0.25.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:02.9521695Z ^[[1m^[[92m   Compiling^[[0m gix-worktree v0.53.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:03.1189515Z ^[[1m^[[92m   Compiling^[[0m gix-pack v0.71.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:06.4878987Z ^[[1m^[[92m   Compiling^[[0m gix-config v0.57.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:07.9010191Z ^[[1m^[[92m   Compiling^[[0m gix-filter v0.31.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:10.0118897Z ^[[1m^[[92m   Compiling^[[0m gix-pathspec v0.18.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:11.7229076Z ^[[1m^[[92m   Compiling^[[0m gix-shallow v0.12.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:12.0339014Z ^[[1m^[[92m   Compiling^[[0m gix-negotiate v0.32.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:12.3618816Z ^[[1m^[[92m   Compiling^[[0m wasmparser v0.207.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:12.7304057Z ^[[1m^[[92m   Compiling^[[0m maybe-async v0.2.10
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:13.0274294Z ^[[1m^[[92m   Compiling^[[0m regex v1.12.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:13.2498964Z ^[[1m^[[92m   Compiling^[[0m io-close v0.3.7
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:13.3789163Z ^[[1m^[[92m   Compiling^[[0m indenter v0.3.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:13.4618899Z ^[[1m^[[92m   Compiling^[[0m lazy_static v1.5.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:13.5639016Z ^[[1m^[[92m   Compiling^[[0m rustc-demangle v0.1.27
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:14.7328887Z ^[[1m^[[92m   Compiling^[[0m strsim v0.11.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:14.9379409Z ^[[1m^[[92m   Compiling^[[0m fixedbitset v0.5.7
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:15.4089061Z ^[[1m^[[92m   Compiling^[[0m heck v0.5.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:15.5529345Z ^[[1m^[[92m   Compiling^[[0m powerfmt v0.2.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:15.7589042Z ^[[1m^[[92m   Compiling^[[0m topological-sort v0.2.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:15.7828777Z ^[[1m^[[92m   Compiling^[[0m binfarce v0.2.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:15.8629379Z ^[[1m^[[92m   Compiling^[[0m clap_lex v1.1.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:16.1519329Z ^[[1m^[[92m   Compiling^[[0m either v1.15.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:16.4771453Z ^[[1m^[[92m   Compiling^[[0m rayon v1.12.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:17.9719325Z ^[[1m^[[92m   Compiling^[[0m auditable-extract v0.3.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:18.1308984Z ^[[1m^[[92m   Compiling^[[0m clap_builder v4.6.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:18.9110230Z ^[[1m^[[92m   Compiling^[[0m auditable-serde v0.9.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:20.3089520Z ^[[1m^[[92m   Compiling^[[0m deranged v0.5.8
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:21.6665710Z ^[[1m^[[92m   Compiling^[[0m clap_derive v4.6.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:21.8348807Z ^[[1m^[[92m   Compiling^[[0m petgraph v0.8.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:23.3299451Z ^[[1m^[[92m   Compiling^[[0m backtrace v0.3.76
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:24.8398940Z ^[[1m^[[92m   Compiling^[[0m sharded-slab v0.1.7
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:25.8005928Z ^[[1m^[[92m   Compiling^[[0m gix-worktree-state v0.31.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:26.3748979Z ^[[1m^[[92m   Compiling^[[0m gix-submodule v0.31.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:28.7538995Z ^[[1m^[[92m   Compiling^[[0m gix-odb v0.81.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:30.0981324Z ^[[1m^[[92m   Compiling^[[0m gix-discover v0.52.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:30.3721766Z ^[[1m^[[92m   Compiling^[[0m tracing-log v0.2.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:30.6578921Z ^[[1m^[[92m   Compiling^[[0m smol_str v0.3.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:30.8693079Z ^[[1m^[[92m   Compiling^[[0m gix-diff v0.64.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:31.0918510Z ^[[1m^[[92m   Compiling^[[0m toml_datetime v1.1.1+spec-1.1.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:31.3269005Z ^[[1m^[[92m   Compiling^[[0m matchers v0.2.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:31.4114817Z ^[[1m^[[92m   Compiling^[[0m toml-span v0.7.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:31.4353419Z ^[[1m^[[92m   Compiling^[[0m thread_local v1.1.9
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:31.6679489Z ^[[1m^[[92m   Compiling^[[0m twox-hash v2.1.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:31.7607198Z ^[[1m^[[92m   Compiling^[[0m nu-ansi-term v0.50.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:32.2499970Z ^[[1m^[[92m   Compiling^[[0m time-core v0.1.8
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:32.3544803Z ^[[1m^[[92m   Compiling^[[0m num-conv v0.2.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:32.4769224Z ^[[1m^[[92m   Compiling^[[0m rustc-stable-hash v0.1.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:32.6092154Z ^[[1m^[[92m   Compiling^[[0m object v0.39.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:32.7349603Z ^[[1m^[[92m   Compiling^[[0m ident_case v1.0.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:32.7939548Z ^[[1m^[[92m   Compiling^[[0m abscissa_derive v0.9.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:33.1099203Z ^[[1m^[[92m   Compiling^[[0m time v0.3.47
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:34.7000934Z ^[[1m^[[92m   Compiling^[[0m tracing-subscriber v0.3.23
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:34.9108913Z ^[[1m^[[92m   Compiling^[[0m toml v1.1.2+spec-1.1.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:36.5728920Z ^[[1m^[[92m   Compiling^[[0m color-eyre v0.6.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:37.9710577Z ^[[1m^[[92m   Compiling^[[0m cargo-lock v11.0.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:39.6998958Z ^[[1m^[[92m   Compiling^[[0m clap v4.6.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:40.3179430Z ^[[1m^[[92m   Compiling^[[0m auditable-info v0.10.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:40.9209026Z ^[[1m^[[92m   Compiling^[[0m quitters v0.1.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:41.2467776Z ^[[1m^[[92m   Compiling^[[0m platforms v3.10.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:41.6229568Z ^[[1m^[[92m   Compiling^[[0m secrecy v0.10.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:41.7118153Z ^[[1m^[[92m   Compiling^[[0m cvss v2.2.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:41.7248591Z ^[[1m^[[92m   Compiling^[[0m wasmparser v0.247.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:43.4218855Z ^[[1m^[[92m   Compiling^[[0m wait-timeout v0.2.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:43.8342730Z ^[[1m^[[92m   Compiling^[[0m home v0.5.12
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:43.9314448Z ^[[1m^[[92m   Compiling^[[0m canonical-path v2.0.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:44.0178954Z ^[[1m^[[92m   Compiling^[[0m termcolor v1.4.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:44.4409906Z ^[[1m^[[92m   Compiling^[[0m abscissa_core v0.9.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:07:48.5228533Z ^[[1m^[[92m   Compiling^[[0m display-error-chain v0.2.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:01.1404157Z ^[[1m^[[92m   Compiling^[[0m rustls-webpki v0.103.13
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:04.8449787Z ^[[1m^[[92m   Compiling^[[0m tokio-rustls v0.26.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:04.8451369Z ^[[1m^[[92m   Compiling^[[0m rustls-platform-verifier v0.7.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:05.0994837Z ^[[1m^[[92m   Compiling^[[0m hyper-rustls v0.27.9
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:05.4080670Z ^[[1m^[[92m   Compiling^[[0m reqwest v0.13.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:10.9609025Z ^[[1m^[[92m   Compiling^[[0m gix-transport v0.57.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:11.3821970Z ^[[1m^[[92m   Compiling^[[0m tame-index v0.26.3
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:13.0918929Z ^[[1m^[[92m   Compiling^[[0m gix-protocol v0.62.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:16.9599287Z ^[[1m^[[92m   Compiling^[[0m gix v0.84.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:21.6958714Z ^[[1m^[[92m   Compiling^[[0m rustsec v0.33.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:24.0158981Z ^[[1m^[[92m   Compiling^[[0m cargo-audit v0.22.2
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.3611416Z ^[[1m^[[92m    Finished^[[0m `release` profile [optimized] target(s) in 2m 48s
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.3863468Z ^[[1m^[[92m   Replacing^[[0m /home/runner/.cargo/bin/cargo-audit
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.3978680Z ^[[1m^[[92m    Replaced^[[0m package `unknown` with `cargo-audit v0.22.2` (executable `cargo-audit`)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7351700Z ##[group]Run cargo audit
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7352019Z ^[[36;1mcargo audit^[[0m
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7372280Z shell: /usr/bin/bash -e {0}
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7372566Z env:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7372781Z   CARGO_TERM_COLOR: always
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7373059Z   CARGO_HOME: /home/runner/.cargo
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7373347Z   CARGO_INCREMENTAL: 0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7373594Z ##[endgroup]
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:44.7598214Z ^[[0m^[[0m^[[1m^[[32m    Fetching^[[0m advisory database from `https://github.com/RustSec/advisory-db.git`
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.4046987Z ^[[0m^[[0m^[[1m^[[32m      Loaded^[[0m 1395 security advisories (from /home/runner/.cargo/advisory-db)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.4048355Z ^[[0m^[[0m^[[1m^[[32m    Updating^[[0m crates.io index
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.4210229Z ^[[0m^[[0m^[[1m^[[32m    Scanning^[[0m Cargo.lock for vulnerabilities (300 crate dependencies)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6248703Z ^[[0m^[[0m^[[1m^[[31merror:^[[0m 1 vulnerability found!
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6249555Z ^[[0m^[[0m^[[1m^[[33mwarning:^[[0m 2 allowed warnings found
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6250152Z ^[[0m^[[0m^[[1m^[[31mCrate:    ^[[0m pulldown-cmark
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6250705Z ^[[0m^[[0m^[[1m^[[31mVersion:  ^[[0m 0.13.4
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6251621Z ^[[0m^[[0m^[[1m^[[31mTitle:    ^[[0m Exponential event growth with `ENABLE_WIKILINKS`
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6252698Z ^[[0m^[[0m^[[1m^[[31mDate:     ^[[0m 2026-10-18
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6253504Z ^[[0m^[[0m^[[1m^[[31mID:       ^[[0m RUSTSEC-2026-0414
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6254626Z ^[[0m^[[0m^[[1m^[[31mURL:      ^[[0m https://rustsec.org/advisories/RUSTSEC-2026-0414
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6255667Z ^[[0m^[[0m^[[1m^[[31mSeverity: ^[[0m 7.5 (high)
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6256492Z ^[[0m^[[0m^[[1m^[[31mSolution: ^[[0m Upgrade to >=0.13.5
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6257012Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6257341Z ^[[0m^[[0m^[[1m^[[33mCrate:    ^[[0m ttf-parser
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6258302Z ^[[0m^[[0m^[[1m^[[33mVersion:  ^[[0m 0.25.1
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6259047Z ^[[0m^[[0m^[[1m^[[33mWarning:  ^[[0m unmaintained
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6259961Z ^[[0m^[[0m^[[1m^[[33mTitle:    ^[[0m `ttf-parser` is unmaintained
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6260836Z ^[[0m^[[0m^[[1m^[[33mDate:     ^[[0m 2026-06-28
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6261620Z ^[[0m^[[0m^[[1m^[[33mID:       ^[[0m RUSTSEC-2026-0192
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6262695Z ^[[0m^[[0m^[[1m^[[33mURL:      ^[[0m https://rustsec.org/advisories/RUSTSEC-2026-0192
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6263399Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6263739Z ^[[0m^[[0m^[[1m^[[33mCrate:    ^[[0m unsafe-libyaml
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6264285Z ^[[0m^[[0m^[[1m^[[33mVersion:  ^[[0m 0.2.11
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6264762Z ^[[0m^[[0m^[[1m^[[33mWarning:  ^[[0m unmaintained
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6265347Z ^[[0m^[[0m^[[1m^[[33mTitle:    ^[[0m unsafe-libyaml is unmaintained
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6265908Z ^[[0m^[[0m^[[1m^[[33mDate:     ^[[0m 2024-03-25
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6266412Z ^[[0m^[[0m^[[1m^[[33mID:       ^[[0m RUSTSEC-2024-0449
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6267095Z ^[[0m^[[0m^[[1m^[[33mURL:      ^[[0m https://rustsec.org/advisories/RUSTSEC-2024-0449
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6267744Z 
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6361990Z ##[error]Process completed with exit code 1.
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.6518744Z Post job cleanup.
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7429910Z [command]/usr/bin/git version
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7478970Z git version 2.56.0
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7522297Z Temporarily overriding HOME='/home/runner/work/_temp/03a19620-3377-42b6-8003-fd4156b9b6a2' before making global git config changes
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7523393Z Adding repository directory to the temporary git global config as a safe directory
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7528158Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/forge/forge
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7566177Z Removing SSH command configuration
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7573790Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7616513Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7895769Z Removing HTTP extra header
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7902260Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.7962762Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.8249354Z Removing includeIf entries pointing to credentials config files
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.8259578Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.8314446Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Supply-chain audits	UNKNOWN STEP	2026-10-30T14:08:47.8796034Z Cleaning up orphan processes
