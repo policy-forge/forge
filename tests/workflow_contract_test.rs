@@ -371,6 +371,19 @@ fn plan_gates_refuse_expiry_drift_and_tampering() {
 
 /// M-5/M-14: credential-shaped content is refused at the change-set boundary
 /// and never reaches the transport.
+/// The idempotency key is the duplicate-prevention anchor, so a plan whose key is not
+/// the canonical value for its (target, work item) is refused at parse time.
+#[test]
+fn tampered_idempotency_key_is_refused_at_parse() {
+    let fixture = Fixture::new(&["ac-1"]);
+    let document = fixture.plan(&ConnectorState::empty());
+    let mut value = serde_json::to_value(&document).unwrap();
+    // Untouched plan still parses.
+    assert!(plan::Plan::parse(&serde_json::to_vec(&value).unwrap()).is_ok());
+    value["operations"][0]["idempotency_key"] = json!("not-the-canonical-key");
+    assert!(plan::Plan::parse(&serde_json::to_vec(&value).unwrap()).is_err());
+}
+
 #[test]
 fn credential_shaped_payloads_are_refused() {
     for secret in ["ghp_0123456789abcdef", "-----BEGIN PRIVATE KEY-----", "Authorization: Bearer x"]

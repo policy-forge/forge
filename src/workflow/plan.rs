@@ -263,6 +263,13 @@ fn verify_operation(operation: &PlannedOperation) -> Result<(), ForgeError> {
             operation.work_item_id
         )));
     }
+    // The key anchors duplicate prevention on retry (M-8); only the canonical value is valid.
+    if operation.idempotency_key != idempotency_key(&operation.target, &operation.work_item_id) {
+        return Err(error(format!(
+            "idempotency key mismatch for work item '{}'; plan was tampered with",
+            operation.work_item_id
+        )));
+    }
     reject_secret_text(&operation.payload.title, "plan payload")?;
     reject_secret_text(&operation.payload.body, "plan payload")?;
     match operation.kind {
