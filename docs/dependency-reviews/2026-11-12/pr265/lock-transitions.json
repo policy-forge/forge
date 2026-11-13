@@ -1,0 +1,30 @@
+{
+  "format": "forge.dependency-review-lock-transitions/1",
+  "pr": 265,
+  "head_oid": "24616651b0f72a81d6d23682f8370139301ef516",
+  "transitions": [
+    {
+      "package": "zip",
+      "old_version": "8.6.0",
+      "new_version": "9.0.0",
+      "old_checksum": "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b",
+      "new_checksum": "711e8c9646791c49b7eb799a19c4ae70a9b8372ddc6a1fa4778defd1e2aa5d5e"
+    },
+    {
+      "package": "zip",
+      "old_version": "8.6.0",
+      "new_version": "9.0.0",
+      "old_checksum": "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b",
+      "new_checksum": "711e8c9646791c49b7eb799a19c4ae70a9b8372ddc6a1fa4778defd1e2aa5d5e"
+    },
+    {
+      "package": "zip",
+      "old_version": "8.6.0",
+      "new_version": "9.0.0",
+      "old_checksum": "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b",
+      "new_checksum": "711e8c9646791c49b7eb799a19c4ae70a9b8372ddc6a1fa4778defd1e2aa5d5e"
+    }
+  ],
+  "removed": [],
+  "note": "Transitions apply to the retained evidence manifests docs/dependency-reviews/2026-10-02/pr16{2,3,4}/Cargo.lock, NOT the root Cargo.lock (which is byte-identical to base). The retained pr265/Cargo.lock is the unchanged root lock."
+}

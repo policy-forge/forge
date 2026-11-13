@@ -61,7 +61,7 @@ fn assert_component_structure(value: &Value) {
     );
 }
 
-fn assert_xml_structure(content: &str, root: &[u8], nested: &[u8]) {
+fn assert_xml_structure(content: &str, root: &str, nested: &str) {
     let mut reader = quick_xml::Reader::from_str(content);
     let mut buffer = Vec::new();
     let (mut opened_root, mut closed_root, mut saw_nested) = (false, false, false);
@@ -92,7 +92,7 @@ fn assert_exported_structure(model: Model, format: OutputFormat, content: &str) 
             assert_catalog_structure(&value);
         }
         (Model::Catalog, OutputFormat::Xml) => {
-            assert_xml_structure(content, b"catalog", b"control");
+            assert_xml_structure(content, "catalog", "control");
         }
         (Model::Catalog, OutputFormat::Yaml) => {
             let value: Value =
@@ -105,7 +105,7 @@ fn assert_exported_structure(model: Model, format: OutputFormat, content: &str) 
             assert_component_structure(&value);
         }
         (Model::ComponentDefinition, OutputFormat::Xml) => {
-            assert_xml_structure(content, b"component-definition", b"component");
+            assert_xml_structure(content, "component-definition", "component");
         }
         (Model::ComponentDefinition, OutputFormat::Yaml) => {
             let value: Value =
