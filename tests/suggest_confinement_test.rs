@@ -244,16 +244,31 @@ fn a_confined_child_cannot_create_a_socket() {
     let Some(python) = which_python() else {
         return;
     };
-    let script = format!(
-        "{python} -c 'import socket; socket.socket(); print(\"NET-ESCAPED\")' 2>&1 || true"
-    );
-    let adapter = sh_adapter(&script);
-    let output = adapter.invoke(b"", Duration::from_secs(10)).unwrap();
+    // Minimal child: the probe arrives on stdin (argv rejects control
+    // characters) and every socket-creation attempt is guarded, so no
+    // uncaught exception can print a traceback echoing this source — the
+    // old false escape marker — or trigger Ubuntu's apport/apt hook. `-S`
+    // skips site-packages. The verdict is an exact stdout match, so stderr
+    // startup noise can never fake it.
+    let probe = r#"import errno, socket, sys
+for attempt in (socket.socket, lambda: socket.socket(socket.AF_INET6), lambda: socket.socket(socket.AF_UNIX), socket.socketpair):
+    try:
+        attempt()
+    except OSError as e:
+        if e.errno != errno.EPERM:
+            sys.stdout.write("WRONG-ERRNO-%d" % e.errno)
+            sys.exit(0)
+    else:
+        sys.stdout.write("NET-ESCAPED")
+        sys.exit(0)
+sys.stdout.write("SOCKET-DENIED")"#;
+    let adapter = sh_adapter(&format!("{python} -S -"));
+    let output = adapter.invoke(probe.as_bytes(), Duration::from_secs(10)).unwrap();
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(!stdout.contains("NET-ESCAPED"), "the child created a socket: {stdout}");
-    assert!(
-        stdout.contains("Operation not permitted") || stdout.contains("Permission denied"),
-        "expected a seccomp EPERM, got: {stdout}"
+    assert_eq!(
+        stdout, "SOCKET-DENIED",
+        "socket creation was not denied with EPERM; stderr: {}",
+        output.stderr
     );
 }
 

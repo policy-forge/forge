@@ -54,7 +54,8 @@ Before `exec`, the child installs (via `libc`, no new dependency):
   private scratch directory. All other filesystem access is denied. On a
   kernel without Landlock the adapter refuses with a clear error.
 - a **seccomp-BPF** filter that returns `EPERM` for every socket-creating
-  syscall (`socket`, the `io_uring_*` family, and `socketcall` on i386),
+  syscall (`socket`, `socketpair`, the `io_uring_*` family, and `socketcall`
+  on i386),
   kills the process on a foreign ABI or the x32 syscall range, and allows the
   rest. This blocks network egress including the `io_uring` bypass. The filter
   is inherited across `fork`/`exec`.

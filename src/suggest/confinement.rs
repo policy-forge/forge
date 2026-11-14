@@ -14,7 +14,9 @@
 //! guarantees and how to verify them.
 
 use std::path::Path;
-use std::process::{Child, Command, Stdio};
+use std::process::Child;
+#[cfg(unix)]
+use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
 use crate::ForgeError;
@@ -641,6 +643,7 @@ fn denied_syscalls() -> Vec<u32> {
     #[cfg_attr(not(target_arch = "x86"), allow(unused_mut))]
     let mut numbers = vec![
         libc::SYS_socket as u32,
+        libc::SYS_socketpair as u32,
         libc::SYS_io_uring_setup as u32,
         libc::SYS_io_uring_enter as u32,
         libc::SYS_io_uring_register as u32,
