@@ -12,6 +12,7 @@
 
 pub mod adapter;
 pub mod bundle;
+mod confinement;
 pub mod consent;
 pub mod disposition;
 pub mod eval;
