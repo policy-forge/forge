@@ -506,6 +506,54 @@ pub(crate) fn trace_counts(snapshot: &Snapshot) -> Result<serde_json::Value> {
     )
 }
 
+/// Bounded source line length for opt-in excerpts; longer lines are truncated.
+const EXCERPT_LINE_MAX: usize = 500;
+/// Complete opt-in excerpt ceiling; further resolved locations are omitted.
+const EXCERPT_MAX: usize = 100;
+
+/// M-13 opt-in source excerpts for resolved trace locations. Only an explicit
+/// sensitive export calls this; the conservative default exports IDs/hashes only.
+/// Each excerpt is one bounded source line, labeled untrusted, never approval proof.
+pub(crate) fn trace_excerpts(snapshot: &Snapshot) -> Result<Vec<serde_json::Value>> {
+    let mut excerpts = Vec::new();
+    for item in snapshot.items.iter().filter(|item| {
+        matches!(item.registration.role, Role::OscalCatalogArtifact | Role::OscalComponentArtifact)
+    }) {
+        for entry in trace_entries(item)? {
+            let Some(trace) = entry.trace else { continue };
+            let Some(source) = trace_source(snapshot, &trace) else { continue };
+            let text = std::str::from_utf8(&source.captured.bytes).map_err(|_| invalid())?;
+            let lines: Vec<&str> = text.lines().collect();
+            if !crate::trace::resolver::validate_line_reference(trace.source_line, lines.len()) {
+                continue;
+            }
+            let Some(line) = trace.source_line else { continue };
+            if excerpts.len() >= EXCERPT_MAX {
+                return Ok(excerpts);
+            }
+            let raw = lines[line - 1];
+            let truncated = raw.len() > EXCERPT_LINE_MAX;
+            let text = if truncated {
+                let mut end = EXCERPT_LINE_MAX;
+                while !raw.is_char_boundary(end) {
+                    end -= 1;
+                }
+                &raw[..end]
+            } else {
+                raw
+            };
+            excerpts.push(serde_json::json!({
+                "element_id": entry.element_id,
+                "source_file": trace.source_file,
+                "source_line": line,
+                "text": text,
+                "truncated": truncated,
+            }));
+        }
+    }
+    Ok(excerpts)
+}
+
 /// Convert one captured policy source using the existing deterministic domain
 /// pipeline and suppressed source-bearing logger. Temporary copies and pipeline
 /// calls are cooperative boundaries; no parser preemption or publication occurs.

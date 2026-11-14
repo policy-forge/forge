@@ -153,6 +153,7 @@ The current draft contract declares eight staged-source operations (65 total) an
 | CM-50 | Discard an unconfirmed source stage | cross-cutting | US-7, US-9, US-10, US-13 | `discardProjectSourceTransferStage` | browser-write |
 | CM-51 | Prepare and confirm an exact staged-profile source export | cross-cutting | US-7, US-9, US-10, US-13 | `prepareProjectSourceStreamExport`, `getOperation`, `getEffectPreview`, `commitEffectPreview` | browser-write |
 | CM-52 | Read manifest and exact parts of a committed staged-source export | cross-cutting | US-7, US-9, US-10, US-13 | `getProjectSourceStreamExportManifest`, `getProjectSourceStreamExportChunk` | browser-read |
+| CM-53 | Write one portable review response file from the interactive client | cross-cutting | US-4, US-13 | `writeReviewResponse` | browser-write |
 
 **CM-48:** API2.4-only staged transport and complete off-Store preview. Whole declaration is reserved; exact part/full hashes, complete native proposed closure and100paths precede confirmation. Source bytes are sensitive; no prefix, native freshness or source approval from transport.
 

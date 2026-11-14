@@ -24,6 +24,9 @@ use super::session::{Mode, Session};
 #[path = "http_source.rs"]
 mod source;
 
+#[path = "http_review.rs"]
+mod review;
+
 #[path = "http_staged.rs"]
 mod staged;
 
@@ -960,6 +963,13 @@ fn dispatch(
     if method == "POST" && path == "/api/v1/session/shutdown" {
         state.stopped.store(true, Ordering::Release);
         return json_response(json!({"state":"shutting-down"}), "ShutdownResponse");
+    }
+    if method == "POST" && path == "/api/v1/review-queue/responses" {
+        return review::write_response(
+            state,
+            payload.as_ref().ok_or_else(Error::invalid)?,
+            read_deadline,
+        );
     }
     if state.api_major == ApiMajor::V2
         && method == "GET"
