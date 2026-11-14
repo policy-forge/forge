@@ -1,4 +1,4 @@
-//! A-authored ordinary /3 binding and complete raw-original relation.
+//! A-authored ordinary /4 binding and complete raw-original relation.
 //! These declarations/correlations authenticate no reviewer or native currentness.
 use super::decode::{ContractError, ContractLedger, OriginalRelation};
 use super::decode_v2::phase;
@@ -95,7 +95,7 @@ fn eligible(
     Ok(membership && !author && assigned)
 }
 /// Maximum bounded proposed patch text, in UTF-8 bytes (PRD 068 M-10 envelope).
-const MAX_PATCH_BYTES: usize = 64 * 1024;
+pub(crate) const MAX_PATCH_BYTES: usize = 64 * 1024;
 
 /// Structural edit-envelope syntax: bounded nonempty patch, exact digest grammar and
 /// exact patch-byte integrity. Deliberately does NOT check the target binding, so a

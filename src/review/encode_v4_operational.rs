@@ -1,6 +1,7 @@
 //! Finite separately closed plain Response/4 and Dispositions/4 output/readback.
 use crate::review::decode::{ContractError, ContractLedger};
 use crate::review::decode_v2::{checkpoint, phase};
+use crate::review::edit_response_binding::MAX_PATCH_BYTES;
 use crate::review::encode_v3::{fixed, optional, pin, strings, text};
 use crate::review::wire_v4::{
     DispositionCounts, DispositionsDocumentV4, ItemDisposition, MetSeat, RecordedResponse,
@@ -66,6 +67,9 @@ pub(crate) fn response_operands(
             text(&edit.patch, ledger)?;
             text(&edit.patch_sha256, ledger)?;
             fixed(1, ledger)?;
+            if edit.patch.is_empty() || edit.patch.len() > MAX_PATCH_BYTES {
+                return Err(ContractError::Invalid);
+            }
         }
         if let Some(value) = supersedes {
             text(&value.response_id, ledger)?;

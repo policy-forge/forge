@@ -123,6 +123,31 @@ fn valid_response_passes_typed_validator() {
         .expect("valid edit-capable response");
 }
 
+/// A multibyte patch under the character-based schema maxLength but over the 64 KiB
+/// UTF-8 byte bound is refused by the typed validator and by raw decode admission.
+#[test]
+fn multibyte_patch_over_byte_bound_is_refused() {
+    let patch = "é".repeat(32 * 1024 + 1);
+    assert!(patch.chars().count() < 65_536);
+    assert!(patch.len() > 64 * 1024);
+    let mut document = document();
+    document.proposed_edit = Some(ProposedEdit {
+        target_subject_sha256: "b".repeat(64),
+        patch_format: PatchFormat::FullText,
+        patch_sha256: sha256_hex(patch.as_bytes()),
+        patch,
+    });
+    assert!(matches!(
+        refusal(response(&document, &mut ContractLedger::default(), &mut NoopControl)),
+        ContractError::Invalid
+    ));
+    let bytes = raw(&document);
+    assert!(matches!(
+        refusal(decode_response(&bytes, &mut ContractLedger::default(), &mut NoopControl)),
+        ContractError::Invalid
+    ));
+}
+
 /// The closed schema refuses an unknown edit field before Serde admits the document.
 #[test]
 fn unknown_edit_field_is_refused_by_schema() {

@@ -1,4 +1,4 @@
-//! Ordinary Authoring Response/3 from complete held Queue and private rationale.
+//! Ordinary Authoring Response/4 from complete held Queue and private rationale.
 //! Assertions preserve recorded bindings and never issue native currentness.
 use super::{command_phase, publish};
 use crate::evidence_capture::CaptureRole;
@@ -158,7 +158,7 @@ fn build_response(
         let proposed_edit = match options.proposed_patch {
             None => None,
             Some(patch) => {
-                if patch.len() > 64 * 1024 {
+                if patch.len() > edit_response_binding::MAX_PATCH_BYTES {
                     return Err(ledger.capacity());
                 }
                 ledger.bytes(patch.len())?;
@@ -170,7 +170,7 @@ fn build_response(
                 Some(ProposedEdit {
                     target_subject_sha256: copied(&item.subject_sha256, 64, ledger, control)?,
                     patch_format: PatchFormat::FullText,
-                    patch: copied(patch, 64 * 1024, ledger, control)?,
+                    patch: copied(patch, edit_response_binding::MAX_PATCH_BYTES, ledger, control)?,
                     patch_sha256,
                 })
             }

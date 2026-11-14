@@ -167,7 +167,7 @@ pub(crate) fn dispositions(
         counters(document, ledger)
     })
 }
-/// Decode actual borrowed original Response/3 bytes, preserving preflight registration/edit order.
+/// Decode actual borrowed original Response/4 bytes, preserving preflight registration/edit order.
 pub(crate) fn decode_response<'a>(
     raw: &'a [u8],
     ledger: &mut ContractLedger,
@@ -186,7 +186,7 @@ pub(crate) fn decode_response<'a>(
         Ok(DecodedV3::from_admitted(raw, raw_sha256, document))
     })
 }
-/// Decode complete recorded Dispositions/3 claims, without issuing currentness or approval.
+/// Decode complete recorded Dispositions/4 claims, without issuing currentness or approval.
 pub(crate) fn decode_dispositions<'a>(
     raw: &'a [u8],
     ledger: &mut ContractLedger,

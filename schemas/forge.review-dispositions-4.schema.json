@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "forge.review-dispositions/4",
   "title": "forge.review-dispositions/4",
-  "description": "Proposed separately closed whole authoring-plan /3 exchange. Inert asserted declarations only; structural shape does not supply native preparation, alias/currentness/capture, authenticated identity or approval. Complete UTF-8 byte limits and all semantic correlations require the typed contract.",
+  "description": "Proposed separately closed whole authoring-plan /4 exchange. Inert asserted declarations only; structural shape does not supply native preparation, alias/currentness/capture, authenticated identity or approval. Complete UTF-8 byte limits and all semantic correlations require the typed contract.",
   "$ref": "#/$defs/DispositionsDocument",
   "$defs": {
     "key": {

@@ -3358,7 +3358,7 @@ pub struct EditReviewRespondArgs {
     /// Explicit canonical response UUID
     #[arg(long)]
     pub response_id: String,
-    /// Confined UTF-8 private rationale file, at most8 KiB
+    /// Confined UTF-8 private rationale file, at most 8 KiB
     #[arg(long)]
     pub rationale_file: PathBuf,
     /// Explicit policy-defined reason permitting an empty abstention rationale
@@ -3370,7 +3370,7 @@ pub struct EditReviewRespondArgs {
     /// Exact SHA-256 of the previous response original; requires its UUID
     #[arg(long, requires = "supersedes_id")]
     pub supersedes_sha256: Option<String>,
-    /// Confined UTF-8 proposed replacement patch file, at most64 KiB; inert until promoted
+    /// Confined UTF-8 proposed replacement patch file, at most 64 KiB; inert until promoted
     #[arg(long)]
     pub proposed_patch: Option<PathBuf>,
     /// Confined new response file; existing destinations are refused
