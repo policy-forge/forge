@@ -39,6 +39,9 @@ two disjoint confined roots. No fixture grants real approval authority.
 The driver honors the documented worker contract: stdin stays open while
 awaiting responses; one request is paced per response (real-client behavior);
 a separate burst mode exercises the bounded queue; EOF only at the end.
+The harness is Unix-gated (`#![cfg(unix)]`): its symlinked-ancestry check
+uses `std::os::unix::fs::symlink`, and Windows worker qualification is a
+separate concern.
 
 ## 2. Conformance checks established (both roles, offline)
 

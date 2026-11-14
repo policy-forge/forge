@@ -20,6 +20,8 @@
 //! grant no real approval authority. Deterministic: fixed bytes, no clock, no
 //! network, isolated temp roots, EOF-terminated workers.
 
+#![cfg(unix)] // Symlinked-ancestry confinement needs std::os::unix::fs; Windows qualification is separate.
+
 mod common;
 
 use std::fs;

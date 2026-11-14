@@ -42,6 +42,7 @@
     ],
     "fixture": "synthetic declared-owner originals via public APIs; two disjoint confined roots; exact raw SHA-256 pins; no real approval authority",
     "driver_contract": "stdin held open while awaiting responses; paced one-request-per-response; burst mode for queue limits; EOF only at end",
+    "platform_scope": "unix-only (#![cfg(unix)]); Windows worker qualification separate",
     "new_dependencies": []
   },
   "conformance_checks": {
