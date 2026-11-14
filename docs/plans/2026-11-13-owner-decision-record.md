@@ -59,5 +59,17 @@ four M-3 adapters with no sealed native approval closure — 057 impact,
 review-adapter pattern borrows only from genuine seals; building these
 requires a domain-approval design decision (what seal/receipt constitutes
 approval in each domain). 2.0.0 ships the buildable adapters: M-10
-proposed edits, clause-level 061, Mapping/applicability, plus S-1/S-4/M-13.
+proposed edits, clause-level 061, Mapping/applicability, plus S-1/M-13.
 The four are tracked follow-ons needing domain-approval design.
+
+**S-4 supersession for Lifecycle /2 + Authoring /3 (decided 2026-11-14,
+follow-up prompt):** **deferred to post-2.0.0.** Compiler-verified
+(E0308): the supersession stack is hard-typed to V1; /2//3 queues are
+deliberately closed non-castable types (`DecodedV2<QueueDocumentV2>` vs
+`Decoded<QueueDocument>`). Functional /2//3 supersession requires a
+family-generic queue representation (or triplicating ~3,750 lines),
+new native supersession seams on the Lifecycle/Authoring closures
+(currently zero seam), and new Lifecycle/Authoring impact-finding
+vocabulary. A gate-only extension is inert and would weaken /1
+validation — correctly rejected. 2.0.0 ships /1 supersession (delivered).
+Tracked follow-on needing the full generalization.
