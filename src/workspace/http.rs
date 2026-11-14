@@ -964,13 +964,6 @@ fn dispatch(
         state.stopped.store(true, Ordering::Release);
         return json_response(json!({"state":"shutting-down"}), "ShutdownResponse");
     }
-    if method == "POST" && path == "/api/v1/review-queue/responses" {
-        return review::write_response(
-            state,
-            payload.as_ref().ok_or_else(Error::invalid)?,
-            read_deadline,
-        );
-    }
     if state.api_major == ApiMajor::V2
         && method == "GET"
         && let Some(route) = ReadQuery::route(path)
@@ -986,6 +979,16 @@ fn dispatch(
             idempotency.ok_or_else(Error::invalid)?,
             wire_path,
             raw_query,
+            payload.as_ref().ok_or_else(Error::invalid)?,
+            read_deadline,
+        );
+    }
+    if state.api_major == ApiMajor::V2
+        && method == "POST"
+        && wire_path == "/api/v2/review-queue/responses"
+    {
+        return review::write_response(
+            state,
             payload.as_ref().ok_or_else(Error::invalid)?,
             read_deadline,
         );
