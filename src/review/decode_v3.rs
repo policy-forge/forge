@@ -27,9 +27,14 @@ impl<'a, T> DecodedV3<'a, T> {
     pub(crate) fn raw_sha256(&self) -> &str {
         &self.raw_sha256
     }
+    /// Wrap already-admitted declarations with their exact original bytes and digest.
+    /// Only the separately closed sibling codecs call this; it confers no native proof.
+    pub(crate) fn from_admitted(raw: &'a [u8], raw_sha256: String, document: T) -> Self {
+        Self { raw, raw_sha256, document }
+    }
 }
 /// Admit complete compared strings before any repeated exact scan/equality.
-fn compared(values: &[&str], ledger: &mut ContractLedger) -> Result<(), ContractError> {
+pub(crate) fn compared(values: &[&str], ledger: &mut ContractLedger) -> Result<(), ContractError> {
     ledger.visits(values.len())?;
     for value in values {
         ledger.bytes(value.len())?;
@@ -37,12 +42,12 @@ fn compared(values: &[&str], ledger: &mut ContractLedger) -> Result<(), Contract
     Ok(())
 }
 /// Exact ASCII token grammar under the declared UTF-8 byte bound.
-fn key(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
+pub(crate) fn key(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
     compared(&[value], ledger)?;
     super::validate::token(value, 128)
 }
 /// Exact lowercase full digest syntax without coercion or native truth.
-fn hash(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
+pub(crate) fn hash(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
     compared(&[value], ledger)?;
     if value.len() != 64 || !value.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
     {
@@ -51,14 +56,14 @@ fn hash(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
     Ok(())
 }
 /// Preserve canonical nonnil review UUID text and its original spelling.
-fn uuid(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
+pub(crate) fn uuid(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
     let bytes = value.len().checked_mul(3).ok_or_else(|| ledger.capacity())?;
     ledger.bytes(bytes)?;
     ledger.derived(128)?;
     super::validate::uuid(value)
 }
 /// Exact real UTC calendar seconds; no offset or wall-clock normalization.
-fn time(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
+pub(crate) fn time(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
     let bytes = value.len().checked_mul(3).ok_or_else(|| ledger.capacity())?;
     ledger.bytes(bytes)?;
     ledger.derived(128)?;

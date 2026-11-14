@@ -404,6 +404,7 @@ fn classification(value: ResponseClassification) -> &'static str {
         ResponseClassification::Unassigned => "unassigned",
         ResponseClassification::Superseded => "superseded",
         ResponseClassification::Conflicted => "conflicted",
+        ResponseClassification::InvalidEdit => "invalid-edit",
     }
 }
 

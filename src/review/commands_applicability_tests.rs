@@ -114,6 +114,7 @@ fn response(fixture: &Fixture, ordinal: usize, disposition: Disposition) -> Path
             response_id: RESPONSE_IDS[ordinal],
             abstention_reason: None,
             supersedes: None,
+            proposed_patch: None,
             output: &output,
         },
         &mut NoopControl,
@@ -562,6 +563,7 @@ fn actual_queue_response_and_merge_outputs_preserve_existing_bytes() {
                 response_id: RESPONSE_IDS[0],
                 abstention_reason: None,
                 supersedes: None,
+                proposed_patch: None,
                 output: &first,
             },
             &mut NoopControl

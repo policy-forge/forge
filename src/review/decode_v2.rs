@@ -1579,13 +1579,25 @@ pub(crate) mod structural {
 pub(crate) mod operational_raw {
     use super::{ContractError, ContractLedger, DeserializeOwned, WorkControl, phase};
 
+    /// Closed response-intake policy: the zero-edit families refuse a non-null proposed
+    /// edit, while the edit-capable /4 family admits it as inert per-response evidence.
+    #[derive(Clone, Copy)]
+    pub(crate) enum ResponseIntake {
+        /// Zero-edit response family (/1 /2 /3): a non-null proposed edit is refused.
+        ZeroEdit,
+        /// Edit-capable response family (/4): the proposed edit is admitted as inert data.
+        EditCapable,
+        /// Recorded dispositions bundle: no response accounting or edit slot.
+        Recorded,
+    }
+
     /// Preserve cap/empty/BOM preflight, response accounting and edit-before-schema order.
     /// Return only owned inert data and an actual original-byte digest, without a /2 cast.
     pub(crate) fn admitted_document<T: DeserializeOwned>(
         raw: &[u8],
         cap: usize,
         schema_text: &str,
-        response: bool,
+        intake: ResponseIntake,
         ledger: &mut ContractLedger,
         control: &mut dyn WorkControl,
     ) -> Result<(T, String), ContractError> {
@@ -1600,13 +1612,15 @@ pub(crate) mod operational_raw {
             if raw.is_empty() || raw.starts_with(&[0xef, 0xbb, 0xbf]) {
                 return Err(ContractError::Invalid);
             }
-            if response {
+            if matches!(intake, ResponseIntake::ZeroEdit | ResponseIntake::EditCapable) {
                 ledger.response_registration(raw.len())?;
             }
             let value = super::value(raw, ledger, control)?;
             ledger.bytes(raw.len())?;
             ledger.visits(1)?;
-            if response && value.get("proposed_edit").is_some_and(|edit| !edit.is_null()) {
+            if matches!(intake, ResponseIntake::ZeroEdit)
+                && value.get("proposed_edit").is_some_and(|edit| !edit.is_null())
+            {
                 return Err(ContractError::UnsupportedEdit);
             }
             super::schema(&value, raw.len(), schema_text, ledger, control)?;
