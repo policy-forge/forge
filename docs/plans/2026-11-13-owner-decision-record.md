@@ -25,7 +25,7 @@ Implementation, human gates, and publication authorization remain separate.
 | D4 / D068 — F12/F13 split + quorum | **Confirm** recorded split + quorum_v3 by evidence; relabel plan "D069"→"D068 scope split" | reconcile, no re-decision |
 | D4 / S-2 — signed envelopes | **Won't for 2.0.0** — record as deferred Should | removed from 2.0.0 scope |
 | D5 — F15 Phase 2 (live GitHub HTTPS) | **Defer to post-2.0.0** | Phase 1 (#276) ships; Phase 2 out of 2.0.0 scope |
-| D6 — F06 authentic evaluation | **Delegate**: draft proposed G0 values for owner review first, then approve; recruit participants in parallel | G0 draft requested (see below) |
+| D6 — F06 authentic evaluation | **G0 values APPROVED as proposed** (2026-11-13, "lets move forward with G0"); see [G0 approval record](2026-11-13-f06-g0-approval.md). Authentic evaluation with real participants still required | G0 preparation unblocked; sessions remain human-only |
 | D7 — MSRV verification | **Add an MSRV CI job** enforcing 1.88 | unblocks MSRV gate |
 | D7 — F22 support policy | **Approve as drafted** (latest minor only; 1.x security-only 90 days; triage 7d/48h; no release with expired/unreviewed runtime exception) | support policy in force on approval record |
 | D7b — private disclosure channel | **Defer to post-2.0.0** — tracked Should | out of 2.0.0 scope |

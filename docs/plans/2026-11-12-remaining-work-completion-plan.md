@@ -281,14 +281,16 @@ pre-approved.
 
 ### P5 — Suggestion track (F06 → F16 → F17 → F18) — longest chain
 - F16/F17/F18 child tickets created 2026-11-12 (#72, #74, #75).
-- F06 (#8): protocol DELIVERED — draft PR #271 (head `1677243`,
-  session script S0–S7, 9 forms, recording sheets, threshold procedure,
-  corpus hashes verified). Human-only remainder: recruitment, consent,
-  sessions, adjudication, threshold approval, task selection; G0 owner
-  dispositions must be recorded before sessions can start.
-- F16: confinement design packet (decision 8) → approval → implement
-  filesystem/network confinement, verified bytes, limits/timeouts,
-  descendant cleanup per platform; keep recorded-response operation.
+- F06 (#8): protocol DELIVERED (PR #271); **G0 values OWNER-APPROVED
+  2026-11-13** (PR #284 proposal, approval record
+  `2026-11-13-f06-g0-approval.md`). G0 preparation unblocked; authentic
+  sessions remain human-only (recruitment, consent, facilitation,
+  adjudication, evidence). Drafting-first; mapping execution deferred to
+  F17. Live-model latency gate blocked on F16.
+- F16 (#72): owner approved Unix-first 2026-11-13; implementation
+  DISPATCHED (feat/f16-unix-confinement) — macOS sandbox-exec/Seatbelt +
+  Linux Landlock+seccomp-BPF, no new deps, fail-closed, recorded-response
+  intact; Windows refused pending separate approval.
 - F17: both versioned task contracts (mapping context/preparation/
   destination/promotion; policy drafting), citations/assumptions,
   quarantine, proposed unapproved patches; regression gates.
