@@ -251,10 +251,14 @@ pre-approved.
 - F10 (#19, #68, #69, #70): Q1–Q7 reconciliation; expected outcome is
   evidence closure, not new code; #66 dispositions record merged via
   #259 — verify and move to close-ready.
-- F11 (#56 → #55): after D067, audit the merged v1 worker against the
-  approved threat model; build the two-independent-client conformance
-  harness against MCP 2026-07-28 (`server/discover`, namespaced
-  metadata, complete result typing); F20 `/2` checkpoint gates.
+- F11 (#56 → #55): **DELIVERED 2026-11-13** — draft PR #287 (head
+  `b6c45b7`). Two-independent-client stdio conformance harness for MCP
+  2026-07-28 (inspector-style + claude-code-style roles); 19/19 tests
+  independently re-run green; real Claude Code 2.1.220 connected
+  offline. server/discover, all 7 tools, exact-ID trace, deterministic
+  search, null-content rules, bounded input/work/output, cancellation,
+  confined-root refusal all verified. MCP Inspector browser campaign
+  remains an online/human gate. F20 `/2` checkpoint gates separate.
 - F12/F13 (#21, #59): per the recorded D068 split + M-10 approval,
   remaining M-3 adapters, S-4
   supersession for Lifecycle `/2` and Authoring `/3`, M-13/M-15 per
