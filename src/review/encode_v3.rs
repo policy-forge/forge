@@ -12,18 +12,21 @@ use crate::workspace::preparation::WorkControl;
 pub(crate) const MAX_QUEUE_BYTES: usize = 10_485_760;
 
 /// Admit a complete repeated string operand before serialization or equality.
-fn text(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
+pub(crate) fn text(value: &str, ledger: &mut ContractLedger) -> Result<(), ContractError> {
     ledger.visits(1)?;
     ledger.bytes(value.len())
 }
 /// Admit bounded tags, list cardinalities and exact scalar comparisons.
-fn fixed(count: usize, ledger: &mut ContractLedger) -> Result<(), ContractError> {
+pub(crate) fn fixed(count: usize, ledger: &mut ContractLedger) -> Result<(), ContractError> {
     ledger.visits(count)?;
     let bytes = count.checked_mul(64).ok_or_else(|| ledger.capacity())?;
     ledger.bytes(bytes)
 }
 /// Preserve an explicit optional tag and full present value, including present-empty.
-fn optional(value: Option<&str>, ledger: &mut ContractLedger) -> Result<(), ContractError> {
+pub(crate) fn optional(
+    value: Option<&str>,
+    ledger: &mut ContractLedger,
+) -> Result<(), ContractError> {
     fixed(1, ledger)?;
     if let Some(value) = value {
         text(value, ledger)?;
@@ -31,7 +34,7 @@ fn optional(value: Option<&str>, ledger: &mut ContractLedger) -> Result<(), Cont
     Ok(())
 }
 /// Admit every complete string in its actual order without sorting or omission.
-fn strings(values: &[String], ledger: &mut ContractLedger) -> Result<(), ContractError> {
+pub(crate) fn strings(values: &[String], ledger: &mut ContractLedger) -> Result<(), ContractError> {
     fixed(1, ledger)?;
     for value in values {
         text(value, ledger)?;
@@ -39,7 +42,7 @@ fn strings(values: &[String], ledger: &mut ContractLedger) -> Result<(), Contrac
     Ok(())
 }
 /// Exhaustive eight-field pin operands; no native model/root/schema is discarded.
-fn pin(value: &SourcePinV3, ledger: &mut ContractLedger) -> Result<(), ContractError> {
+pub(crate) fn pin(value: &SourcePinV3, ledger: &mut ContractLedger) -> Result<(), ContractError> {
     let SourcePinV3 {
         artifact_key,
         kind: _,

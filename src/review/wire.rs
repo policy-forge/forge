@@ -110,6 +110,8 @@ pub(crate) enum ResponseClassification {
     Superseded,
     /// Exact `conflicted` wire value.
     Conflicted,
+    /// Exact `invalid-edit` wire value; only the edit-capable /4 family emits it.
+    InvalidEdit,
 }
 
 /// PRD presentation states; quorum-met is review policy only.
