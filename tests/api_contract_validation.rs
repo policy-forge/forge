@@ -1020,7 +1020,7 @@ mod s3_api2_contracts {
         let first = operations(&one);
         let second = operations(&two);
         assert_eq!(first.len(), 39);
-        assert_eq!(second.len(), 65);
+        assert_eq!(second.len(), 66);
         let mut left: Vec<_> = first
             .iter()
             .map(|operation| {
@@ -1625,7 +1625,7 @@ fn release_inventory_contains_both_current_api_families() {
         let document = load_yaml_as_json(&repo_path(document_path));
         assert_eq!(document["info"]["version"], version);
         let declared_operations = operations(&document);
-        assert_eq!(declared_operations.len(), if major == 1 { 39 } else { 65 });
+        assert_eq!(declared_operations.len(), if major == 1 { 39 } else { 66 });
         assert!(
             declared_operations
                 .iter()

@@ -804,7 +804,7 @@
       },
       "Error": {
         "additionalProperties": false,
-        "description": "Closed safe error envelope for the advertised contract revision. Existing code meanings are preserved. API2.1 adds typed cooperative read interruption errors; no capability, absolute path, source excerpt or debug text is retained. API2.2 additionally declares matching pending bundle preparation (409) and direct import deadline/interruption (503). Shutdown retains the existing shutdown-in-progress status; no public import cancellation endpoint. API2.3 adds the four source-restore availability, progress, budget and recovery codes. The separate batch operation distinguishes committed bytes, rollback outcome and cleanup proof; a timeout or not-found lookup is never proof of no write.",
+        "description": "Closed safe error envelope for the advertised contract revision. Existing code meanings are preserved. API2.1 adds typed cooperative read interruption errors; no capability, absolute path, source excerpt or debug text is retained. API2.2 additionally declares matching pending bundle preparation (409) and direct import deadline/interruption (503). Shutdown retains the existing shutdown-in-progress status; no public import cancellation endpoint. API2.3 adds the four source-restore availability, progress, budget and recovery codes. The separate batch operation distinguishes committed bytes, rollback outcome and cleanup proof; a timeout or not-found lookup is never proof of no write. The S-1 response-file client adds review-response-refused (400) for closed review-contract refusals; no parser prose, private rationale or path escapes.",
         "examples": [
           {
             "code": "version-conflict",
@@ -844,7 +844,8 @@
               "bundle-restore-unavailable",
               "bundle-restore-in-progress",
               "bundle-restore-budget-exceeded",
-              "bundle-restore-recovery-required"
+              "bundle-restore-recovery-required",
+              "review-response-refused"
             ],
             "type": "string"
           },
@@ -914,6 +915,11 @@
           },
           "target_path": {
             "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "include_source_excerpts": {
+            "default": false,
+            "description": "M-13 explicit opt-in to include bounded source excerpts for resolved trace locations. Only a trace report may set this true; the conservative default (false) exports IDs, hashes and counts only and is byte-identical to the prior envelope. Excerpts are untrusted source content and inherit the source policy's sensitivity.",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2764,6 +2770,23 @@
                 }
               }
             }
+          },
+          {
+            "if": {
+              "properties": {
+                "excerpts": {}
+              },
+              "required": [
+                "excerpts"
+              ]
+            },
+            "then": {
+              "properties": {
+                "report_kind": {
+                  "const": "trace"
+                }
+              }
+            }
           }
         ],
         "description": "Closed JSON envelope escaped inside canonical workspace static HTML. Runtime also verifies canonical HTML bytes, sorted unique input IDs, and reconciled count invariants. Existing domain report contracts are unchanged.",
@@ -2798,7 +2821,47 @@
           "schema_version": {
             "const": "forge.workspace-report/1"
           },
-          "summary": {}
+          "summary": {},
+          "excerpts": {
+            "description": "M-13 opt-in source excerpts; present only when include_source_excerpts was true on a trace export. Absent in the conservative default envelope.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "element_id": {
+                  "maxLength": 200,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "source_file": {
+                  "maxLength": 512,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "source_line": {
+                  "maximum": 1000000,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "text": {
+                  "maxLength": 500,
+                  "type": "string"
+                },
+                "truncated": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "element_id",
+                "source_file",
+                "source_line",
+                "text",
+                "truncated"
+              ],
+              "type": "object"
+            },
+            "maxItems": 100,
+            "type": "array"
+          }
         },
         "required": [
           "schema_version",
@@ -6512,6 +6575,122 @@
         "type": "integer",
         "minimum": 0,
         "maximum": 319
+      },
+      "ReviewResponseWriteRequest": {
+        "additionalProperties": false,
+        "description": "Closed S-1 response-file declaration reusing the shared review respond() path. All paths are confined project-relative originals; asserted identities never grant domain approval. The portable review response wire contract is unchanged.",
+        "properties": {
+          "abstention_reason": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "disposition": {
+            "enum": [
+              "approve",
+              "reject",
+              "request-changes",
+              "abstain",
+              "superseded"
+            ],
+            "type": "string"
+          },
+          "family": {
+            "description": "Closed exchange family selector mirroring the explicit CLI subcommands; the selected family's decoder refuses a mismatched queue original.",
+            "enum": [
+              "review",
+              "lifecycle",
+              "authoring",
+              "edit"
+            ],
+            "type": "string"
+          },
+          "item_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "output": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "queue": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "rationale_file": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "responded_at": {
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+            "type": "string"
+          },
+          "response_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          },
+          "reviewer_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "reviewer_role": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+          },
+          "supersedes": {
+            "additionalProperties": false,
+            "description": "Explicit self-supersession pair; omission never guesses a predecessor.",
+            "properties": {
+              "raw_sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              "response_id": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+              }
+            },
+            "required": [
+              "response_id",
+              "raw_sha256"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "family",
+          "queue",
+          "rationale_file",
+          "item_key",
+          "reviewer_key",
+          "reviewer_role",
+          "disposition",
+          "responded_at",
+          "response_id",
+          "output"
+        ],
+        "type": "object"
+      },
+      "ReviewResponseWriteResponse": {
+        "additionalProperties": false,
+        "description": "Confined publication receipt for one immutable review response file. Publication is native no-replace; an existing destination is refused. Quorum and domain approval remain separate.",
+        "properties": {
+          "output": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
+          "response_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+          }
+        },
+        "required": [
+          "output",
+          "response_id"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -10471,6 +10650,72 @@
           {
             "$ref": "#/components/parameters/SourceTransferChunkOrdinalPath"
           }
+        ]
+      }
+    },
+    "/api/v2/review-queue/responses": {
+      "post": {
+        "description": "S-1 interactive response-file client. Writes one immutable portable review response through the same shared respond()/RespondOptions path as `forge review respond`, selecting the closed /1 review, /2 lifecycle, /3 authoring or /4 edit family. Requires a write-scoped capability; loopback transport, exact-Host pin, project confinement and the review contract's own capture/no-replace publication fences apply. Existing destinations are refused; asserted keys/roles and quorum never grant domain approval. No new review-family wire contract.",
+        "operationId": "writeReviewResponse",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewResponseWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResponseWriteResponse"
+                }
+              }
+            },
+            "description": "The confined response file was published; the receipt names the exact destination and asserted response id."
+          },
+          "400": {
+            "description": "Malformed request or closed review-contract refusal (review-response-refused); no private prose or path escapes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "413": {
+            "$ref": "#/components/responses/PayloadTooLarge"
+          },
+          "415": {
+            "description": "The request body is not application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Write one confined review response file (S-1)",
+        "tags": [
+          "Review Queue"
         ]
       }
     }

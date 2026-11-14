@@ -457,6 +457,18 @@ pub(crate) fn prepare_with_control_for_api(
             let target = text(request, "target_path")?;
             output_target(snapshot, target, None)?;
             let kind = text(request, "report_kind")?;
+            // M-13 explicit opt-in; v1 never carries the field, so its default
+            // export stays byte-identical. Only a trace report may carry excerpts.
+            let include_excerpts = match request.get("include_source_excerpts") {
+                None => false,
+                Some(value) if api_major == ApiMajor::V2 => {
+                    value.as_bool().ok_or_else(Error::invalid)?
+                }
+                Some(_) => return Err(Error::invalid().into()),
+            };
+            if include_excerpts && kind != "trace" {
+                return Err(Error::invalid().into());
+            }
             control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
             let summary = match kind {
                 "applicability-gap" => snapshot.classification_counts()?,
@@ -468,12 +480,22 @@ pub(crate) fn prepare_with_control_for_api(
                 _ => return Err(Error::invalid().into()),
             };
             control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
-            let bytes = super::reports::render(snapshot, kind, summary)?;
+            let excerpts = if include_excerpts {
+                Some(super::domain::trace_excerpts(snapshot)?)
+            } else {
+                None
+            };
+            let bytes = super::reports::render_with_excerpts(snapshot, kind, summary, excerpts)?;
             control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
             let inputs = super::reports::inputs(snapshot, kind)?;
             control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
             let preview = store.preview(root, snapshot, target, "report-export", bytes, &inputs)?;
-            Ok(operation_reply(store.completed("export",json!({"operation_id":"op_000000000000","preview":preview,"redaction_summary":{"removed_categories":["reviewer-names","absolute-paths","source-excerpts","secrets"]}}))?))
+            let removed = if include_excerpts {
+                json!(["reviewer-names", "absolute-paths", "secrets"])
+            } else {
+                json!(["reviewer-names", "absolute-paths", "source-excerpts", "secrets"])
+            };
+            Ok(operation_reply(store.completed("export",json!({"operation_id":"op_000000000000","preview":preview,"redaction_summary":{"removed_categories":removed}}))?))
         }
         _ => {
             Err(Error::new("not-found", "The requested effect operation was not found.", false)

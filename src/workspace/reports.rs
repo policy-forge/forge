@@ -16,6 +16,10 @@ pub(crate) struct Report {
     pub(crate) kind: String,
     pub(crate) inputs: Vec<Pin>,
     summary: Value,
+    /// M-13 opt-in source excerpts; absent unless explicitly requested. The
+    /// conservative default envelope omits this field and stays byte-identical.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    excerpts: Option<Vec<Value>>,
 }
 #[derive(Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -79,22 +83,37 @@ fn pins(snapshot: &Snapshot, kind: &str) -> Result<Vec<Pin>> {
     Ok(pins)
 }
 
+#[cfg(test)]
 pub(crate) fn render(snapshot: &Snapshot, kind: &str, summary: Value) -> Result<Vec<u8>> {
+    render_with_excerpts(snapshot, kind, summary, None)
+}
+
+/// Render with optional M-13 opt-in source excerpts. Only an explicit sensitive
+/// export passes `Some`; the default `None` envelope is byte-identical to today.
+pub(crate) fn render_with_excerpts(
+    snapshot: &Snapshot,
+    kind: &str,
+    summary: Value,
+    excerpts: Option<Vec<Value>>,
+) -> Result<Vec<u8>> {
     let report = Report {
         schema_version: "forge.workspace-report/1".into(),
         kind: kind.into(),
         inputs: pins(snapshot, kind)?,
         summary,
+        excerpts,
     };
     report.validate()?;
     report.bytes()
 }
 impl Report {
     fn validate(&self) -> Result<()> {
-        contract::validate(
-            "WorkspaceReportEnvelope",
-            &serde_json::to_value(self).map_err(|_| Error::invalid())?,
-        )?;
+        let value = serde_json::to_value(self).map_err(|_| Error::invalid())?;
+        // The conservative default envelope stays on the frozen v1 contract;
+        // only an explicit M-13 opt-in carries excerpts, admitted by v2 alone.
+        let major =
+            if self.excerpts.is_some() { contract::ApiMajor::V2 } else { contract::ApiMajor::V1 };
+        contract::validate_for(major, "WorkspaceReportEnvelope", &value)?;
         if self.schema_version != "forge.workspace-report/1" || self.inputs.len() > 100 {
             return Err(Error::invalid());
         }
@@ -106,6 +125,23 @@ impl Report {
                 return Err(Error::invalid());
             }
             last = &pin.resource_id;
+        }
+        if let Some(excerpts) = &self.excerpts {
+            if self.kind != "trace" || excerpts.len() > 100 {
+                return Err(Error::invalid());
+            }
+            for excerpt in excerpts {
+                let object = excerpt.as_object().ok_or_else(Error::invalid)?;
+                if object.len() != 5
+                    || object["element_id"].as_str().is_none_or(|s| s.is_empty() || s.len() > 200)
+                    || object["source_file"].as_str().is_none_or(|s| s.is_empty() || s.len() > 512)
+                    || object["source_line"].as_u64().is_none_or(|n| n == 0 || n > 1_000_000)
+                    || object["text"].as_str().is_none_or(|s| s.len() > 500)
+                    || object["truncated"].as_bool().is_none()
+                {
+                    return Err(Error::invalid());
+                }
+            }
         }
         let keys: &[&str] = match self.kind.as_str() {
             "trace" => &[
@@ -171,9 +207,14 @@ impl Report {
         Ok(format!("{PREFIX}{escaped}{SUFFIX}").into_bytes())
     }
     pub(crate) fn matches(&self, snapshot: &Snapshot) -> Result<bool> {
+        let excerpts_match = match &self.excerpts {
+            None => true,
+            Some(excerpts) => *excerpts == super::domain::trace_excerpts(snapshot)?,
+        };
         Ok(self.inputs == pins(snapshot, &self.kind)?
             && self.kind == "trace"
-            && self.summary == super::domain::trace_counts(snapshot)?)
+            && self.summary == super::domain::trace_counts(snapshot)?
+            && excerpts_match)
     }
 }
 pub(crate) fn parse(bytes: &[u8]) -> Result<Report> {
@@ -225,5 +266,90 @@ mod tests {
         assert!(render(&snapshot, "trace", wrong).is_err());
         let changed = String::from_utf8(bytes).unwrap().replace("</pre>", "</pre><img src=x>");
         assert!(parse(changed.as_bytes()).is_err());
+    }
+
+    /// Build a snapshot with one traced catalog control resolving to a source line.
+    fn traced_snapshot() -> (tempfile::TempDir, Snapshot) {
+        let dir = tempfile::tempdir().unwrap();
+        let ns = crate::oscal::trace_embedding::FORGE_TRACE_NS;
+        std::fs::write(
+            dir.path().join("policy.md"),
+            "# Policy\n\nStaff must review proposed changes.\n",
+        )
+        .unwrap();
+        let catalog = json!({"catalog":{
+            "uuid":"11111111-1111-4111-8111-111111111111",
+            "metadata":{"title":"Synthetic catalog","last-modified":"2026-09-10T00:00:00Z","version":"1","oscal-version":"1.2.3"},
+            "controls":[{"id":"control-a","title":"Synthetic control","props":[
+                {"name":"source-file","ns":ns,"value":"policy.md"},
+                {"name":"source-section","ns":ns,"value":"Policy"},
+                {"name":"source-line","ns":ns,"value":"3"}
+            ]}]
+        }});
+        std::fs::write(dir.path().join("catalog.json"), serde_json::to_vec(&catalog).unwrap())
+            .unwrap();
+        std::fs::write(
+            dir.path().join(super::super::index::INDEX_PATH),
+            serde_json::to_vec(
+                &json!({"schema_version":"forge.workspace/1","label":"M-13 fixture","resources":[
+                    {"key":"policy","role":"policy-source","path":"policy.md"},
+                    {"key":"catalog","role":"oscal-catalog-artifact","path":"catalog.json"}
+                ]}),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        let root = super::super::root::Root::open(dir.path()).unwrap();
+        let snapshot = Snapshot::capture(&root).unwrap();
+        (dir, snapshot)
+    }
+
+    /// M-13 default exports no sensitive content; the envelope is byte-identical
+    /// to the conservative render and carries no excerpts field.
+    #[test]
+    fn default_trace_export_has_no_excerpts_and_is_byte_identical() {
+        let (_dir, snapshot) = traced_snapshot();
+        let summary = super::super::domain::trace_counts(&snapshot).unwrap();
+        let default = render(&snapshot, "trace", summary.clone()).unwrap();
+        let explicit_none = render_with_excerpts(&snapshot, "trace", summary, None).unwrap();
+        assert_eq!(default, explicit_none);
+        let text = String::from_utf8(default).unwrap();
+        assert!(!text.contains("excerpts"));
+        assert!(!text.contains("Staff must review proposed changes."));
+        assert!(parse(&explicit_none).unwrap().matches(&snapshot).unwrap());
+    }
+
+    /// M-13 opt-in includes bounded source excerpts and still round-trips.
+    #[test]
+    fn opt_in_trace_export_includes_bounded_excerpts() {
+        let (_dir, snapshot) = traced_snapshot();
+        let summary = super::super::domain::trace_counts(&snapshot).unwrap();
+        let excerpts = super::super::domain::trace_excerpts(&snapshot).unwrap();
+        assert_eq!(excerpts.len(), 1);
+        assert_eq!(excerpts[0]["text"], "Staff must review proposed changes.");
+        assert_eq!(excerpts[0]["source_line"], 3);
+        assert_eq!(excerpts[0]["truncated"], false);
+        let bytes = render_with_excerpts(&snapshot, "trace", summary, Some(excerpts)).unwrap();
+        let text = String::from_utf8(bytes.clone()).unwrap();
+        assert!(text.contains("Staff must review proposed changes."));
+        let report = parse(&bytes).unwrap();
+        assert!(report.matches(&snapshot).unwrap());
+        // A default envelope must not match an opt-in snapshot's excerpt binding.
+        let default =
+            render(&snapshot, "trace", super::super::domain::trace_counts(&snapshot).unwrap())
+                .unwrap();
+        assert_ne!(default, bytes);
+    }
+
+    /// Excerpts are trace-only and bounded; a non-trace report refuses them.
+    #[test]
+    fn excerpts_are_refused_for_non_trace_reports() {
+        let (_dir, snapshot) = traced_snapshot();
+        let excerpt = json!({"element_id":"control-a","source_file":"policy.md","source_line":3,"text":"x","truncated":false});
+        let summary = json!({"eligible_controls":0,"referenced_controls":0});
+        assert!(
+            render_with_excerpts(&snapshot, "mapping-collection", summary, Some(vec![excerpt]))
+                .is_err()
+        );
     }
 }
