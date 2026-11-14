@@ -35,7 +35,7 @@ fn options(fixture: &Fixture) -> RespondOptions<'_> {
         rationale_file: Path::new("rationale.txt"), item_key: "item-1", reviewer_key: "asserted-reviewer",
         reviewer_role: "review", disposition: Disposition::Approve, responded_at: "2026-10-05T00:00:01Z",
         response_id: "20000000-0000-4000-8000-000000000002", abstention_reason: None,
-        supersedes: None, output: Path::new("result.json") }
+        supersedes: None, proposed_patch: None, output: Path::new("result.json") }
 }
 
 /// Compare a precise safe contract cause without changing production error derives.
