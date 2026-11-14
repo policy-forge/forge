@@ -25,7 +25,10 @@ On both supported platforms the adapter child:
 - has **bounded stdout/stderr** (8 MiB / 64 KiB); an over-bound stream is a
   refusal, never a silent truncation;
 - must finish within the requested `--timeout`; descendants holding the pipes
-  open cannot extend it.
+  open cannot extend it. After a kill, pipe draining is bounded by a short
+  grace period: a reader still blocked by an escaped descendant is detached
+  (not joined forever), and the scratch directory is kept rather than recycled
+  so a surviving descendant cannot write into a reused path.
 
 ### macOS — Seatbelt via `sandbox-exec`
 

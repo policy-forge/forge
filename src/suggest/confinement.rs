@@ -29,6 +29,8 @@ use super::shared;
 const MAX_STDERR_BYTES: usize = 64 * 1024;
 /// Poll interval while waiting for the child to exit.
 const POLL: Duration = Duration::from_millis(5);
+/// Grace period to drain the pipes after a kill before detaching readers.
+const DRAIN_GRACE: Duration = Duration::from_secs(2);
 
 /// Run the verified executable under OS confinement and return its output.
 ///
@@ -62,10 +64,17 @@ pub(super) fn invoke_confined(
     })?;
     let started = Instant::now();
     let mut child = spawn(&resolved, argv, &scratch_path)?;
-    let result = supervise(&mut child, payload, timeout, started);
-    // Drop the scratch directory only after the pipe readers are joined, so
-    // no surviving descendant can write into a recycled path.
-    drop(scratch);
+    let (result, drained) = supervise(&mut child, payload, timeout, started);
+    if drained {
+        // All pipe threads are joined: no descendant can still write, so the
+        // scratch directory can be removed safely.
+        drop(scratch);
+    } else {
+        // Readers were detached: an escaped descendant may still write into
+        // the scratch directory. Keep it (never recycle the path) instead of
+        // deleting it under a live writer.
+        let _ = scratch.keep();
+    }
     result
 }
 
@@ -98,11 +107,11 @@ fn supervise(
     payload: &[u8],
     timeout: Duration,
     started: Instant,
-) -> Result<AdapterOutput, ForgeError> {
+) -> (Result<AdapterOutput, ForgeError>, bool) {
     let missing_pipe = || shared::error("the confined adapter lost a standard stream");
-    let stdout = child.stdout.take().ok_or_else(missing_pipe)?;
-    let stderr = child.stderr.take().ok_or_else(missing_pipe)?;
-    let mut stdin = child.stdin.take().ok_or_else(missing_pipe)?;
+    let Some(stdout) = child.stdout.take() else { return (Err(missing_pipe()), true) };
+    let Some(stderr) = child.stderr.take() else { return (Err(missing_pipe()), true) };
+    let Some(mut stdin) = child.stdin.take() else { return (Err(missing_pipe()), true) };
     let stdout_cap = usize::try_from(MAX_RESPONSE_BYTES).unwrap_or(usize::MAX);
     let stdout_reader = std::thread::spawn(move || read_capped(stdout, stdout_cap));
     let stderr_reader = std::thread::spawn(move || read_capped(stderr, MAX_STDERR_BYTES));
@@ -157,11 +166,36 @@ fn supervise(
             std::thread::sleep(POLL);
         }
     }
-    let stdout = stdout_reader.join().map_err(|_| shared::error("the stdout reader failed"))?;
-    let stderr = stderr_reader.join().map_err(|_| shared::error("the stderr reader failed"))?;
-    let _ = stdin_writer.join();
+    // An escaped descendant can survive killpg holding a pipe open. Bound the
+    // post-kill drain and detach any thread still blocked at the grace deadline
+    // so the invocation always returns within a bounded time.
+    let drain_deadline = Instant::now() + DRAIN_GRACE;
+    let drained = finished_by(&stdout_reader, drain_deadline)
+        && finished_by(&stderr_reader, drain_deadline)
+        && finished_by(&stdin_writer, drain_deadline);
+    if !drained {
+        return (Err(failure.unwrap_or_else(timeout_error)), false);
+    }
+    collect_output(child, stdout_reader, stderr_reader, failure, started)
+}
+
+/// Join the drained readers and assemble the output. Reached only once every
+/// pipe thread has finished, so the joins cannot block.
+fn collect_output(
+    child: &mut Child,
+    stdout_reader: std::thread::JoinHandle<Result<Vec<u8>, ForgeError>>,
+    stderr_reader: std::thread::JoinHandle<Result<Vec<u8>, ForgeError>>,
+    failure: Option<ForgeError>,
+    started: Instant,
+) -> (Result<AdapterOutput, ForgeError>, bool) {
+    let Ok(stdout) = stdout_reader.join() else {
+        return (Err(shared::error("the stdout reader failed")), true);
+    };
+    let Ok(stderr) = stderr_reader.join() else {
+        return (Err(shared::error("the stderr reader failed")), true);
+    };
     if let Some(cause) = failure {
-        return Err(cause);
+        return (Err(cause), true);
     }
     // An over-bound or failed drain is a refusal too: the child may still be
     // running, so kill its group before returning the error.
@@ -169,29 +203,50 @@ fn supervise(
         Ok(bytes) => bytes,
         Err(cause) => {
             kill_group(child);
-            return Err(cause);
+            return (Err(cause), true);
         }
     };
     let stderr = match stderr {
         Ok(bytes) => bytes,
         Err(cause) => {
             kill_group(child);
-            return Err(cause);
+            return (Err(cause), true);
         }
     };
-    let status = child
-        .wait()
-        .map_err(|cause| shared::error(format!("cannot reap the confined adapter: {cause}")))?;
-    Ok(AdapterOutput {
-        stdout,
-        stderr: crate::sanitize::strip_control_chars(&String::from_utf8_lossy(&stderr)),
-        elapsed: started.elapsed(),
-        exit_code: status.code(),
-    })
+    let status = match child.wait() {
+        Ok(status) => status,
+        Err(cause) => {
+            return (
+                Err(shared::error(format!("cannot reap the confined adapter: {cause}"))),
+                true,
+            );
+        }
+    };
+    (
+        Ok(AdapterOutput {
+            stdout,
+            stderr: crate::sanitize::strip_control_chars(&String::from_utf8_lossy(&stderr)),
+            elapsed: started.elapsed(),
+            exit_code: status.code(),
+        }),
+        true,
+    )
 }
 
 fn timeout_error() -> ForgeError {
     shared::error("the confined adapter exceeded its timeout")
+}
+
+/// Poll a thread until it finishes or the deadline passes; false means it is
+/// still blocked and must be detached rather than joined.
+fn finished_by<T>(handle: &std::thread::JoinHandle<T>, deadline: Instant) -> bool {
+    while !handle.is_finished() {
+        if Instant::now() >= deadline {
+            return false;
+        }
+        std::thread::sleep(POLL);
+    }
+    true
 }
 
 /// Kill the child's whole process group (Unix) or the child itself.
@@ -316,23 +371,20 @@ fn platform_command(
     {
         // Probe Landlock before spawning so an unsupported kernel fails closed
         // with a clear error instead of a killed child.
-        landlock_abi_version()?;
+        let abi = landlock_abi_version()?;
+        // Precompute every allocation before fork: after fork in a
+        // multi-threaded parent only async-signal-safe syscalls may run, so
+        // the closure below installs this plan without allocating.
+        let mut plan = linux_confinement(executable, scratch, abi)?;
         let mut command = Command::new(executable);
         command.args(argv);
-        let exe = executable.to_path_buf();
-        let scratch = scratch.to_path_buf();
-        // SAFETY: the closure only installs Landlock and seccomp on the child
-        // between fork and exec; on any failure it returns an error and the child
+        // SAFETY: the closure installs the precomputed Landlock ruleset and
+        // seccomp filter between fork and exec using only async-signal-safe
+        // syscalls; on any failure it returns the raw errno and the child
         // exits without executing the adapter.
         #[allow(unsafe_code)]
         unsafe {
-            command.pre_exec(move || {
-                // no_new_privs must precede both Landlock and seccomp.
-                set_no_new_privs().map_err(std::io::Error::other)?;
-                apply_landlock(&exe, &scratch).map_err(std::io::Error::other)?;
-                apply_seccomp().map_err(std::io::Error::other)?;
-                Ok(())
-            });
+            command.pre_exec(move || plan.install());
         }
         Ok(command)
     }
@@ -414,13 +466,30 @@ struct LandlockPathBeneathAttr {
     parent_fd: i32,
 }
 
-/// Restrict the child to the executable (read/execute) and scratch (read/write).
+/// Everything the child needs to install confinement, precomputed before
+/// fork so the post-fork closure performs no allocation.
 #[cfg(target_os = "linux")]
-#[allow(unsafe_code)]
-fn apply_landlock(executable: &Path, scratch: &Path) -> Result<(), String> {
+struct LinuxConfinement {
+    attr: LandlockRulesetAttr,
+    exe_c: std::ffi::CString,
+    scratch_c: std::ffi::CString,
+    scratch_access: u64,
+    /// Runtime paths (loader directories, linker cache, devices) and the
+    /// access each is granted; a missing path is skipped at install time.
+    runtime_rules: Vec<(std::ffi::CString, u64)>,
+    filter: Vec<libc::sock_filter>,
+    filter_len: u16,
+}
+
+/// Precompute the Landlock ruleset and seccomp filter before fork.
+#[cfg(target_os = "linux")]
+fn linux_confinement(
+    executable: &Path,
+    scratch: &Path,
+    abi: i32,
+) -> Result<LinuxConfinement, ForgeError> {
     use std::os::unix::ffi::OsStrExt as _;
 
-    let abi = landlock_abi_version().map_err(|e| e.to_string())?;
     let mut handled = landlock_access::V1;
     if abi >= 2 {
         handled |= landlock_access::REFER;
@@ -428,165 +497,159 @@ fn apply_landlock(executable: &Path, scratch: &Path) -> Result<(), String> {
     if abi >= 3 {
         handled |= landlock_access::TRUNCATE;
     }
-    let attr = LandlockRulesetAttr { handled_access_fs: handled };
-    // SAFETY: attr is a valid ruleset attribute for the queried ABI.
-    let ruleset = unsafe {
-        libc::syscall(
-            libc::SYS_landlock_create_ruleset,
-            &raw const attr,
-            std::mem::size_of::<LandlockRulesetAttr>(),
-            0_u32,
-        )
-    };
-    if ruleset < 0 {
-        return Err(format!("landlock_create_ruleset failed: {}", std::io::Error::last_os_error()));
+    let exe_c = std::ffi::CString::new(executable.as_os_str().as_bytes())
+        .map_err(|_| shared::error("the executable path contains a NUL"))?;
+    let scratch_c = std::ffi::CString::new(scratch.as_os_str().as_bytes())
+        .map_err(|_| shared::error("the scratch path contains a NUL"))?;
+    let read = landlock_access::READ_FILE | landlock_access::READ_DIR;
+    let mut runtime_rules = Vec::new();
+    // The dynamic loader needs the runtime directories, the linker cache and
+    // null/zero/random devices. Missing paths (merged-usr layouts) are skipped
+    // at install; a present path that cannot be ruled fails closed.
+    for path in ["/usr/lib", "/lib", "/usr/bin", "/bin", "/usr/sbin", "/sbin"] {
+        runtime_rules.push((runtime_c(path)?, read | landlock_access::EXECUTE));
     }
-    let ruleset = ruleset as i32;
-
-    let result = (|| {
-        let exe_c = std::ffi::CString::new(executable.as_os_str().as_bytes())
-            .map_err(|_| "executable path contains a NUL".to_string())?;
-        let scratch_c = std::ffi::CString::new(scratch.as_os_str().as_bytes())
-            .map_err(|_| "scratch path contains a NUL".to_string())?;
-        // O_PATH opens without reading the file; the rules bind the inode.
-        let exe_fd = unsafe { libc::open(exe_c.as_ptr(), libc::O_PATH | libc::O_CLOEXEC) };
-        if exe_fd < 0 {
-            return Err(format!(
-                "cannot open the executable for Landlock: {}",
-                std::io::Error::last_os_error()
-            ));
-        }
-        let scratch_fd = unsafe { libc::open(scratch_c.as_ptr(), libc::O_PATH | libc::O_CLOEXEC) };
-        if scratch_fd < 0 {
-            unsafe { libc::close(exe_fd) };
-            return Err(format!(
-                "cannot open the scratch directory for Landlock: {}",
-                std::io::Error::last_os_error()
-            ));
-        }
-        let read_exec = landlock_access::READ_FILE | landlock_access::EXECUTE;
-        let read = landlock_access::READ_FILE | landlock_access::READ_DIR;
-        let scratch_access = handled
+    runtime_rules.push((runtime_c("/etc/ld.so.cache")?, landlock_access::READ_FILE));
+    for path in ["/dev/null", "/dev/zero", "/dev/random", "/dev/urandom"] {
+        runtime_rules
+            .push((runtime_c(path)?, landlock_access::READ_FILE | landlock_access::WRITE_FILE));
+    }
+    let filter = seccomp_filter();
+    let filter_len = u16::try_from(filter.len())
+        .map_err(|_| shared::error("the seccomp filter is too large"))?;
+    Ok(LinuxConfinement {
+        attr: LandlockRulesetAttr { handled_access_fs: handled },
+        exe_c,
+        scratch_c,
+        scratch_access: handled
             & !(landlock_access::EXECUTE
                 | landlock_access::MAKE_SOCK
                 | landlock_access::MAKE_CHAR
-                | landlock_access::MAKE_BLOCK);
-        let outcome = unsafe {
-            add_path_rule(ruleset, exe_fd, read_exec)
-                .and_then(|()| add_path_rule(ruleset, scratch_fd, scratch_access))
-                .and_then(|()| {
-                    // The dynamic loader needs the runtime directories, the
-                    // linker cache and null/zero/random devices. Missing
-                    // paths (merged-usr layouts) are skipped; a present path
-                    // that cannot be ruled fails closed.
-                    for path in ["/usr/lib", "/lib", "/usr/bin", "/bin", "/usr/sbin", "/sbin"] {
-                        add_runtime_rule(ruleset, path, read | landlock_access::EXECUTE)?;
-                    }
-                    add_runtime_rule(ruleset, "/etc/ld.so.cache", landlock_access::READ_FILE)?;
-                    for path in ["/dev/null", "/dev/zero", "/dev/random", "/dev/urandom"] {
-                        add_runtime_rule(
-                            ruleset,
-                            path,
-                            landlock_access::READ_FILE | landlock_access::WRITE_FILE,
-                        )?;
-                    }
-                    Ok(())
-                })
-                .and_then(|()| {
-                    let rc = libc::syscall(libc::SYS_landlock_restrict_self, ruleset, 0_u32);
-                    if rc < 0 {
-                        Err(format!(
-                            "landlock_restrict_self failed: {}",
-                            std::io::Error::last_os_error()
-                        ))
-                    } else {
-                        Ok(())
-                    }
-                })
-        };
+                | landlock_access::MAKE_BLOCK),
+        runtime_rules,
+        filter,
+        filter_len,
+    })
+}
+
+/// A constant runtime path as a `CString` (validated before fork).
+#[cfg(target_os = "linux")]
+fn runtime_c(path: &str) -> Result<std::ffi::CString, ForgeError> {
+    std::ffi::CString::new(path).map_err(|_| shared::error("a runtime path contains a NUL"))
+}
+
+#[cfg(target_os = "linux")]
+#[allow(unsafe_code)]
+impl LinuxConfinement {
+    /// Install Landlock then seccomp between fork and exec. Only
+    /// async-signal-safe syscalls run here; errors carry the raw errno, which
+    /// std reports to the parent without allocating. Any failure leaves the
+    /// child un-exec'd (fail closed).
+    fn install(&mut self) -> std::io::Result<()> {
+        // SAFETY: all arguments are precomputed and live in `self`; the calls
+        // below are plain syscalls on the child between fork and exec.
         unsafe {
+            // no_new_privs must precede both Landlock and seccomp.
+            if libc::prctl(libc::PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) != 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            let ruleset = libc::syscall(
+                libc::SYS_landlock_create_ruleset,
+                &raw const self.attr,
+                std::mem::size_of::<LandlockRulesetAttr>(),
+                0_u32,
+            );
+            if ruleset < 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            let ruleset = ruleset as i32;
+            let result = self.install_rules(ruleset);
+            libc::close(ruleset);
+            result?;
+            let program =
+                libc::sock_fprog { len: self.filter_len, filter: self.filter.as_mut_ptr() };
+            if libc::prctl(
+                libc::PR_SET_SECCOMP,
+                libc::SECCOMP_MODE_FILTER,
+                &raw const program,
+                0,
+                0,
+            ) != 0
+            {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(())
+        }
+    }
+
+    unsafe fn install_rules(&self, ruleset: i32) -> std::io::Result<()> {
+        // SAFETY: ruleset is live and all paths are pre-built CStrings; only
+        // async-signal-safe syscalls run here.
+        unsafe {
+            // O_PATH opens without reading the file; the rules bind the inode.
+            let exe_fd = libc::open(self.exe_c.as_ptr(), libc::O_PATH | libc::O_CLOEXEC);
+            if exe_fd < 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            let scratch_fd = libc::open(self.scratch_c.as_ptr(), libc::O_PATH | libc::O_CLOEXEC);
+            if scratch_fd < 0 {
+                let err = std::io::Error::last_os_error();
+                libc::close(exe_fd);
+                return Err(err);
+            }
+            let result = Self::add_rule(
+                ruleset,
+                exe_fd,
+                landlock_access::READ_FILE | landlock_access::EXECUTE,
+            )
+            .and_then(|()| Self::add_rule(ruleset, scratch_fd, self.scratch_access))
+            .and_then(|()| {
+                for (path, access) in &self.runtime_rules {
+                    let fd = libc::open(path.as_ptr(), libc::O_PATH | libc::O_CLOEXEC);
+                    if fd < 0 {
+                        let err = std::io::Error::last_os_error();
+                        if err.raw_os_error() == Some(libc::ENOENT) {
+                            continue;
+                        }
+                        return Err(err);
+                    }
+                    let added = Self::add_rule(ruleset, fd, *access);
+                    libc::close(fd);
+                    added?;
+                }
+                Ok(())
+            })
+            .and_then(|()| {
+                if libc::syscall(libc::SYS_landlock_restrict_self, ruleset, 0_u32) < 0 {
+                    Err(std::io::Error::last_os_error())
+                } else {
+                    Ok(())
+                }
+            });
             libc::close(exe_fd);
             libc::close(scratch_fd);
+            result
         }
-        outcome
-    })();
-    unsafe { libc::close(ruleset) };
-    result
-}
-
-/// SAFETY: `fd` is an open O_PATH descriptor and `ruleset` a live ruleset fd.
-#[cfg(target_os = "linux")]
-#[allow(unsafe_code)]
-unsafe fn add_path_rule(ruleset: i32, fd: i32, access: u64) -> Result<(), String> {
-    let rule = LandlockPathBeneathAttr { allowed_access: access, parent_fd: fd };
-    let rc = unsafe {
-        libc::syscall(
-            libc::SYS_landlock_add_rule,
-            ruleset,
-            LANDLOCK_RULE_PATH_BENEATH,
-            &raw const rule,
-            0_u32,
-        )
-    };
-    if rc < 0 {
-        return Err(format!("landlock_add_rule failed: {}", std::io::Error::last_os_error()));
     }
-    Ok(())
-}
 
-/// Add a rule for a fixed runtime path; a missing path is skipped, any other
-/// open failure fails closed. SAFETY: opens a constant path with O_PATH only.
-#[cfg(target_os = "linux")]
-#[allow(unsafe_code)]
-unsafe fn add_runtime_rule(ruleset: i32, path: &str, access: u64) -> Result<(), String> {
-    let c = std::ffi::CString::new(path).map_err(|_| "runtime path contains a NUL".to_string())?;
-    let fd = unsafe { libc::open(c.as_ptr(), libc::O_PATH | libc::O_CLOEXEC) };
-    if fd < 0 {
-        let err = std::io::Error::last_os_error();
-        if err.kind() == std::io::ErrorKind::NotFound {
-            return Ok(());
+    /// SAFETY: `fd` is an open `O_PATH` descriptor and `ruleset` a live ruleset fd.
+    unsafe fn add_rule(ruleset: i32, fd: i32, access: u64) -> std::io::Result<()> {
+        let rule = LandlockPathBeneathAttr { allowed_access: access, parent_fd: fd };
+        // SAFETY: rule is a valid path-beneath attribute for the live ruleset.
+        let rc = unsafe {
+            libc::syscall(
+                libc::SYS_landlock_add_rule,
+                ruleset,
+                LANDLOCK_RULE_PATH_BENEATH,
+                &raw const rule,
+                0_u32,
+            )
+        };
+        if rc < 0 {
+            return Err(std::io::Error::last_os_error());
         }
-        return Err(format!("cannot open {path} for Landlock: {err}"));
+        Ok(())
     }
-    let result = unsafe { add_path_rule(ruleset, fd, access) };
-    unsafe { libc::close(fd) };
-    result
-}
-
-/// `no_new_privs` is required before Landlock and seccomp can be installed
-/// without privileges.
-#[cfg(target_os = "linux")]
-#[allow(unsafe_code)]
-fn set_no_new_privs() -> Result<(), String> {
-    // SAFETY: a plain prctl with constant arguments.
-    let rc = unsafe { libc::prctl(libc::PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0) };
-    if rc != 0 {
-        return Err(format!("prctl(NO_NEW_PRIVS) failed: {}", std::io::Error::last_os_error()));
-    }
-    Ok(())
-}
-
-/// seccomp-BPF: deny every socket-creating syscall (including the io_uring
-/// bypass), allow the rest. Inherited across fork and exec.
-#[cfg(target_os = "linux")]
-#[allow(unsafe_code)]
-fn apply_seccomp() -> Result<(), String> {
-    let mut filter = seccomp_filter();
-    let program = libc::sock_fprog {
-        len: u16::try_from(filter.len()).map_err(|_| "seccomp filter too large".to_string())?,
-        filter: filter.as_mut_ptr(),
-    };
-    // SAFETY: program points at a live, correctly sized BPF program.
-    let rc = unsafe {
-        libc::prctl(libc::PR_SET_SECCOMP, libc::SECCOMP_MODE_FILTER, &raw const program, 0, 0)
-    };
-    if rc != 0 {
-        return Err(format!(
-            "prctl(SECCOMP_MODE_FILTER) failed: {}",
-            std::io::Error::last_os_error()
-        ));
-    }
-    Ok(())
 }
 
 /// Build the deny-list filter for the running architecture.
@@ -668,4 +731,23 @@ fn platform_command(
     Err(shared::error(
         "no OS confinement mechanism is approved for this platform; refusing to run the adapter unconfined",
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn finished_by_detaches_a_thread_that_outlives_the_deadline() {
+        // A reader blocked on a pipe an escaped descendant holds open never
+        // finishes; finished_by must report false at the deadline so supervise
+        // detaches it instead of joining forever.
+        let blocked = std::thread::spawn(|| std::thread::sleep(Duration::from_secs(30)));
+        let start = Instant::now();
+        assert!(!finished_by(&blocked, start + Duration::from_millis(50)));
+        assert!(start.elapsed() < Duration::from_secs(1), "the wait was not bounded");
+        // A finished thread is reported immediately.
+        let done = std::thread::spawn(|| {});
+        assert!(finished_by(&done, Instant::now() + Duration::from_secs(5)));
+    }
 }

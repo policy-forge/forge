@@ -105,14 +105,15 @@ fn a_confined_child_receives_the_exact_payload() {
 
 #[test]
 fn a_timeout_kills_every_descendant() {
-    let adapter = sh_adapter("sleep 30 & sleep 30 & echo started; sleep 30");
+    let adapter = sh_adapter("sleep 31.4159 & sleep 31.4159 & echo started; sleep 31.4159");
     let started = Instant::now();
     let result = adapter.invoke(b"", Duration::from_millis(300));
     assert!(result.is_err(), "a hanging adapter must time out");
     assert!(started.elapsed() < Duration::from_secs(5), "timeout was not honored");
     // The whole process group must be dead, not just the leader.
     std::thread::sleep(Duration::from_millis(200));
-    let survivors = std::process::Command::new("pgrep").args(["-f", "sleep 30"]).output().unwrap();
+    let survivors =
+        std::process::Command::new("pgrep").args(["-f", "sleep 31.4159"]).output().unwrap();
     assert!(
         survivors.stdout.is_empty(),
         "descendants survived the timeout: {}",
