@@ -12,6 +12,14 @@ inventory of all post-v1.1.0 changes.
 
 ### Added
 
+- Confined local model execution (#72, F16): `forge suggest run` now executes
+  the consented adapter under OS confinement on macOS (deny-default Seatbelt
+  via `sandbox-exec`) and Linux (Landlock filesystem ruleset + seccomp-BPF
+  network deny), with verified-byte execution, cleared environment, bounded
+  output, and process-group cleanup on timeout or refusal. Execution fails
+  closed where no approved mechanism exists; Windows stays refused. Recorded-
+  response mode is unchanged. See `docs/local-model-confinement.md`. No new
+  dependencies.
 - Local container packaging (#63): multi-stage Dockerfile with digest-pinned
   bases and a non-root runtime, Docker Compose loopback workspace setup, and
   container usage documentation (`docs/container.md`). No conversion or

@@ -185,16 +185,12 @@ fn process_refusal_cannot_wait_on_descendant_pipes() {
 }
 
 #[test]
-fn bare_adapter_name_cannot_bypass_the_process_execution_refusal() {
+fn a_bare_adapter_name_still_enforces_the_verified_byte_binding() {
     use std::os::unix::fs::PermissionsExt;
     let (_temp, root) = project();
     let local = root.join("review-adapter");
     std::fs::write(&local, b"#!/bin/sh\nprintf verified-adapter\n").unwrap();
     std::fs::set_permissions(&local, std::fs::Permissions::from_mode(0o755)).unwrap();
-    std::fs::create_dir(root.join("bin")).unwrap();
-    let different = root.join("bin/review-adapter");
-    std::fs::write(&different, b"#!/bin/sh\nprintf unverified-path-adapter\n").unwrap();
-    std::fs::set_permissions(&different, std::fs::Permissions::from_mode(0o755)).unwrap();
     let output = run(
         &root,
         &[
@@ -214,10 +210,12 @@ fn bare_adapter_name_cannot_bypass_the_process_execution_refusal() {
         ],
     );
     assert_exit(&output, 0);
-    let output = std::process::Command::new(env!("CARGO_BIN_EXE_forge"))
-        .current_dir(&root)
-        .env("PATH", root.join("bin"))
-        .args([
+    // Replace the consented bytes after prepare: the bare name resolves to the
+    // same path, but the run must refuse it as a contract violation.
+    std::fs::write(&local, b"#!/bin/sh\nprintf unverified-path-adapter\n").unwrap();
+    let output = run(
+        &root,
+        &[
             "suggest",
             "run",
             "--request",
@@ -226,13 +224,10 @@ fn bare_adapter_name_cannot_bypass_the_process_execution_refusal() {
             "prepared/consent.json",
             "--output-dir",
             "run-1",
-        ])
-        .output()
-        .unwrap();
-    assert_exit(&output, 1);
-    assert!(
-        String::from_utf8_lossy(&output.stderr).contains("process adapter execution is disabled")
+        ],
     );
+    assert_exit(&output, 2);
+    assert!(String::from_utf8_lossy(&output.stderr).contains("changed since consent"));
     assert!(!root.join("prepared/run-1").exists());
 }
 
