@@ -183,7 +183,7 @@ pub(crate) fn prepare<'native>(
     })
 }
 
-/// Borrow every captured human-clause key in exact native order for per-clause re-review.
+/// Borrow every captured human-clause key in lexicographic `BTreeMap` key order for per-clause re-review.
 fn clause_subjects<'native>(
     closure: &'native CurrentAuthoringPlanClosure,
     ledger: &mut ContractLedger,

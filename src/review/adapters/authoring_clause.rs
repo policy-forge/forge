@@ -93,27 +93,21 @@ impl<'a> PreparedAuthoringClauseReview<'a> {
         }
         // Clause pins carry gap-free declaration ordinals from the native project's
         // human_clauses order; bind each subject to its own exact original pin.
-        let declared: Vec<&str> = self
-            .closure()
-            .facts()
-            .loaded
-            .project
-            .human_clauses
-            .iter()
-            .map(|clause| clause.key.as_str())
-            .collect();
+        let mut declared: BTreeMap<&str, usize> = BTreeMap::new();
+        for (ordinal, clause) in
+            self.closure().facts().loaded.project.human_clauses.iter().enumerate()
+        {
+            declared.entry(clause.key.as_str()).or_insert(ordinal);
+        }
         ledger.derived(
             declared
                 .len()
-                .checked_mul(std::mem::size_of::<&str>())
+                .checked_mul(std::mem::size_of::<(&str, usize)>())
                 .ok_or(ContractError::Capacity)?,
         )?;
         for fact in self.facts() {
             ledger.visits(1)?;
-            let ordinal = declared
-                .iter()
-                .position(|key| *key == fact.subject_id())
-                .ok_or(ContractError::Binding)?;
+            let ordinal = declared.get(fact.subject_id()).ok_or(ContractError::Binding)?;
             let expected = format!("authoring:clause:{ordinal}");
             ledger.derived(expected.len())?;
             let pin = pins
@@ -123,7 +117,13 @@ impl<'a> PreparedAuthoringClauseReview<'a> {
             if pin.raw_sha256 != fact.raw_sha256() || pin.byte_length != fact.byte_length() {
                 return Err(ContractError::Binding);
             }
-            crate::review::chain::compare(&pin.raw_sha256, fact.subject_sha256(), ledger)?;
+            // Charge inspection of both complete digest extents for this binding.
+            ledger.bytes(
+                pin.raw_sha256
+                    .len()
+                    .checked_add(fact.subject_sha256().len())
+                    .ok_or(ContractError::Capacity)?,
+            )?;
         }
         Ok(())
     }
