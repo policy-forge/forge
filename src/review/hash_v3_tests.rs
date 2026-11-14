@@ -917,3 +917,44 @@ fn strict_hash_operand_refusal_never_coerces_spelling() {
         ));
     }
 }
+
+/// Profile8 per-clause subject has an independent byte oracle; key/digest/extent all bind.
+#[test]
+fn clause_subject_profile_matches_independent_oracle() {
+    let mut ledger = ContractLedger::default();
+    let actual =
+        clause_subject("operations-clause", H1, 128, &mut ledger, &mut NoopControl).unwrap();
+    let mut expected = b"forge.authoring-clause-review-subject/1\0".to_vec();
+    s(&mut expected, "forge.authoring-clause-review/1");
+    s(&mut expected, "operations-clause");
+    h(&mut expected, 0x11);
+    u(&mut expected, 128);
+    assert_eq!(actual, digest(&expected));
+    // A different clause key, digest or extent yields a distinct subject fingerprint.
+    let other_key =
+        clause_subject("access-clause", H1, 128, &mut ledger, &mut NoopControl).unwrap();
+    let other_hash =
+        clause_subject("operations-clause", H2, 128, &mut ledger, &mut NoopControl).unwrap();
+    let other_len =
+        clause_subject("operations-clause", H1, 129, &mut ledger, &mut NoopControl).unwrap();
+    assert_ne!(actual, other_key);
+    assert_ne!(actual, other_hash);
+    assert_ne!(actual, other_len);
+    // Zero and over-cap extents are refused; malformed digest/key never coerce.
+    for bad_len in [0, 1_048_577] {
+        assert!(matches!(
+            clause_subject("operations-clause", H1, bad_len, &mut ledger, &mut NoopControl),
+            Err(ContractError::Invalid)
+        ));
+    }
+    assert!(matches!(
+        clause_subject(
+            "operations-clause",
+            "A".repeat(64).as_str(),
+            128,
+            &mut ledger,
+            &mut NoopControl
+        ),
+        Err(ContractError::Invalid)
+    ));
+}

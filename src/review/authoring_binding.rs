@@ -1,5 +1,6 @@
 //! A-authored genuine Authoring Queue/3 binding over one complete native owner.
 //! Every actual Queue/Response allocation stays borrowed; loaded labels confer no proof.
+use super::adapters::authoring_clause;
 use super::authoring_capture::CurrentAuthoringPlanClosure;
 use super::authoring_response_binding::compared_pins;
 use super::capture::authoring::RegisteredAuthoringOriginals;
@@ -23,6 +24,8 @@ pub(crate) struct PendingAuthoringBinding<'native> {
     queue: DecodedV3<'native, QueueDocumentV3>,
     /// Every actual Response holder in original order, including duplicate occurrences.
     responses: Vec<DecodedV3<'native, ResponseDocumentV3>>,
+    /// Per-clause reviewable subjects bound to their exact sealed originals.
+    clauses: authoring_clause::PreparedAuthoringClauseReview<'native>,
 }
 impl<'native> PendingAuthoringBinding<'native> {
     /// Borrow the genuine native owner without detaching physical lifetime.
@@ -40,6 +43,10 @@ impl<'native> PendingAuthoringBinding<'native> {
     /// Borrow every decoded actual Response occurrence; never a selected subset.
     pub(crate) fn responses(&self) -> &[DecodedV3<'native, ResponseDocumentV3>] {
         &self.responses
+    }
+    /// Borrow the per-clause reviewable subjects bound to their exact sealed originals.
+    pub(crate) fn clauses(&self) -> &authoring_clause::PreparedAuthoringClauseReview<'native> {
+        &self.clauses
     }
     /// Repeat exact original registrations and complete physical U with ordinary postfences.
     pub(crate) fn verify_inputs(
@@ -157,6 +164,10 @@ pub(crate) fn prepare<'native>(
         let raw = originals.queue_raw().ok_or(ContractError::Binding)?;
         let queue = decode_v3::decode_queue(raw, ledger, control)?;
         native_queue(closure, &queue, ledger, control)?;
+        // Re-verify every captured human clause as its own reviewable subject bound to its
+        // exact original; a tampered clause original refuses before any response is admitted.
+        let clauses = clause_subjects(closure, ledger)?;
+        let clause_review = authoring_clause::prepare(closure, &clauses, ledger, control)?;
         let actual = originals.responses();
         let mut responses = reserved(actual.len(), ledger)?;
         for raw in actual {
@@ -168,6 +179,20 @@ pub(crate) fn prepare<'native>(
         originals.verify_review_originals(ledger, control)?;
         closure.verify_inputs(ledger, control)?;
         ledger.derived(std::mem::size_of::<PendingAuthoringBinding<'_>>())?;
-        Ok(PendingAuthoringBinding { closure, originals, queue, responses })
+        Ok(PendingAuthoringBinding { closure, originals, queue, responses, clauses: clause_review })
     })
+}
+
+/// Borrow every captured human-clause key in exact native order for per-clause re-review.
+fn clause_subjects<'native>(
+    closure: &'native CurrentAuthoringPlanClosure,
+    ledger: &mut ContractLedger,
+) -> Result<Vec<&'native str>, ContractError> {
+    let keys = &closure.facts().loaded.clauses;
+    let mut selected = reserved(keys.len(), ledger)?;
+    for key in keys.keys() {
+        ledger.bytes(std::mem::size_of::<&str>())?;
+        selected.push(key.as_str());
+    }
+    Ok(selected)
 }
