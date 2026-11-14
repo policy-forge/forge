@@ -295,4 +295,41 @@ mod tests {
         assert_eq!(error.code, "unauthorized");
         assert!(!fixture.root().join("response.json").exists());
     }
+
+    /// The documented v2 wire path reaches the shared handler through dispatch;
+    /// the frozen v1 namespace never admits the additive S-1 operation.
+    #[test]
+    fn response_write_dispatches_on_the_v2_wire_path_only() {
+        let fixture = Fixture::new(false);
+        initialized_queue(&fixture);
+        let state = Arc::new(machine_state(Root::open(fixture.root()).unwrap(), false));
+        let bytes = serde_json::to_vec(&request_body("response.json")).unwrap();
+        let response = super::super::dispatch(
+            &state,
+            "POST",
+            "/api/v2/review-queue/responses",
+            "",
+            None,
+            &bytes,
+            budget(),
+        )
+        .unwrap();
+        assert_eq!(response.status(), 200);
+        let raw = std::fs::read(fixture.root().join("response.json")).unwrap();
+        let closed =
+            decode::decode_response(&raw, &mut ContractLedger::default(), &mut NoopControl)
+                .unwrap();
+        assert_eq!(closed.document().response_id, RESPONSE_ID);
+        let error = super::super::dispatch(
+            &state,
+            "POST",
+            "/api/v1/review-queue/responses",
+            "",
+            None,
+            &bytes,
+            budget(),
+        )
+        .unwrap_err();
+        assert_eq!(error.code, "not-found");
+    }
 }
