@@ -36,8 +36,8 @@ pub const MAX_UNIT_SPAN_BYTES: u64 = 1024 * 1024;
 
 /// Fixed notice written into every prepared preview.
 pub const DATA_HANDLING_NOTICE: &str = "The payload below is the exact prepared byte sequence. \
-    Process adapter execution is disabled until OS filesystem/network confinement is available. \
-    Use --recorded-response to import a separately reviewed response. FORGE starts no adapter and transmits nothing. \
+    On macOS and Linux, process adapter execution is confined to this executable and a private scratch directory, with no network access. \
+    Use --recorded-response to import a separately reviewed response instead. FORGE transmits nothing. \
     The adapter fingerprint and model identifier record the operator's prospective selection, not evidence of execution. \
     Review this payload and the recorded response before sharing either artifact.";
 

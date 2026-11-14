@@ -1,7 +1,8 @@
-//! Crate-level `forge suggest run`: publish one bounded recorded response.
+//! Crate-level `forge suggest run`: publish one bounded adapter response.
 //!
 //! Consent binds the frozen payload and prospective adapter identity. Process
-//! execution fails closed until the required OS confinement exists.
+//! execution runs under OS confinement on macOS and Linux and fails closed
+//! everywhere else.
 
 use std::path::Path;
 

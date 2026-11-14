@@ -1,8 +1,10 @@
-//! Recorded-response adapters and a fail-closed process boundary.
+//! Recorded-response adapters and a confined process boundary.
 //!
-//! Process execution is unavailable until FORGE can enforce filesystem and
-//! network confinement, bind execution to verified bytes, and own descendants
-//! on every supported platform. A local executable is not itself a sandbox.
+//! On macOS and Linux a process adapter runs under OS filesystem/network
+//! confinement (Seatbelt or Landlock+seccomp), bound to verified bytes, with
+//! every descendant owned by FORGE. Where no approved mechanism exists the
+//! adapter fails closed; a local executable is not itself a sandbox. See
+//! `docs/local-model-confinement.md` for the exact boundary.
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -13,8 +15,9 @@ use super::request::MAX_ARG_BYTES;
 use super::response::MAX_RESPONSE_BYTES;
 use super::shared;
 
-/// Why the process adapter cannot execute, shared by CLI and library callers.
-pub const PROCESS_EXECUTION_UNAVAILABLE: &str = "process adapter execution is disabled until OS filesystem/network confinement, verified-byte execution and process-tree cleanup are available; use --recorded-response with a separately reviewed response file";
+/// Why the process adapter cannot execute on platforms without an approved
+/// confinement mechanism, shared by CLI and library callers.
+pub const PROCESS_EXECUTION_UNAVAILABLE: &str = "process adapter execution is disabled on this platform: no approved OS filesystem/network confinement mechanism exists; use --recorded-response with a separately reviewed response file";
 
 /// Read a local executable the operator named, following symlinks to the file.
 ///
@@ -31,8 +34,8 @@ pub(in crate::suggest) fn read_executable(
     path: &Path,
     max: u64,
 ) -> Result<Vec<u8>, crate::ForgeError> {
-    // Resolve shims for fingerprinting only. This digest does not authorize
-    // execution: invoke always refuses, including if this path is replaced.
+    // Resolve shims for fingerprinting. invoke re-reads the resolved bytes
+    // immediately before spawn and refuses any replacement.
     let resolved = std::fs::canonicalize(path)?;
     crate::io::read_bounded(&resolved, max)
 }
@@ -68,11 +71,17 @@ pub trait LocalModelInvoke {
     }
 }
 
-/// A fingerprinted local executable whose invocation currently fails closed.
+/// A fingerprinted local executable executed under OS confinement.
+///
+/// Invocation re-verifies the executable bytes, clears the environment, runs
+/// the child under a deny-default filesystem/network sandbox in its own
+/// process group, and kills the whole group on timeout or refusal. See
+/// the `confinement` module and `docs/local-model-confinement.md`.
 #[derive(Debug)]
 pub struct ProcessModelAdapter {
     executable: PathBuf,
     executable_sha256: String,
+    argv: Vec<String>,
 }
 
 impl ProcessModelAdapter {
@@ -94,6 +103,7 @@ impl ProcessModelAdapter {
         Ok(Self {
             executable: executable.to_path_buf(),
             executable_sha256: crate::hashing::sha256_hex(&bytes),
+            argv: argv.to_vec(),
         })
     }
 
@@ -105,10 +115,14 @@ impl ProcessModelAdapter {
 }
 
 impl LocalModelInvoke for ProcessModelAdapter {
-    fn invoke(&self, _payload: &[u8], _timeout: Duration) -> Result<AdapterOutput, ForgeError> {
-        // There is deliberately no spawn path or opt-out: env_clear and a
-        // pathname digest cannot enforce the promised isolation boundary.
-        Err(shared::error(PROCESS_EXECUTION_UNAVAILABLE))
+    fn invoke(&self, payload: &[u8], timeout: Duration) -> Result<AdapterOutput, ForgeError> {
+        super::confinement::invoke_confined(
+            &self.executable,
+            &self.executable_sha256,
+            &self.argv,
+            payload,
+            timeout,
+        )
     }
 
     fn executable_sha256(&self) -> Option<&str> {
@@ -178,15 +192,25 @@ mod tests {
     }
 
     #[test]
-    fn process_invocation_is_unavailable_on_every_platform_even_after_replacement() {
+    fn a_replaced_executable_is_refused_before_spawn() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("adapter");
+        std::fs::write(&path, b"#!/bin/sh\ncat\n").unwrap();
+        let adapter = ProcessModelAdapter::new(&path, &[]).unwrap();
+        assert_eq!(adapter.executable(), path);
+        assert!(adapter.executable_sha256().is_some());
+        std::fs::write(&path, b"#!/bin/sh\nprintf replaced\n").unwrap();
+        let error = adapter.invoke(b"private payload", Duration::from_secs(5)).unwrap_err();
+        assert!(error.to_string().contains("changed since it was fingerprinted"));
+    }
+
+    #[cfg(not(unix))]
+    #[test]
+    fn process_invocation_is_unavailable_without_an_approved_mechanism() {
         let temp = tempfile::tempdir().unwrap();
         let path = temp.path().join("adapter");
         std::fs::write(&path, b"placeholder executable").unwrap();
         let adapter = ProcessModelAdapter::new(&path, &[]).unwrap();
-        assert_eq!(adapter.executable(), path);
-        assert!(adapter.executable_sha256().is_some());
-        std::fs::remove_file(&path).unwrap();
-        // Even direct library callers cannot spawn or reopen a changed path.
         let error = adapter.invoke(b"private payload", Duration::ZERO).unwrap_err();
         assert!(error.to_string().contains(PROCESS_EXECUTION_UNAVAILABLE));
     }

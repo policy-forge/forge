@@ -225,18 +225,21 @@ fn a_missing_adapter_is_action_required_and_writes_nothing() {
 }
 
 #[test]
-fn process_execution_is_refused_without_side_effects_or_json_contamination() {
+fn confined_execution_cannot_escape_or_contaminate_json() {
     let (_temp, root) = project();
-    // If spawned, this adapter would create a descendant and an unrelated file.
-    prepared(&root, "#!/bin/sh\n(sleep 30) & printf leaked > escaped.txt; printf response\n");
-    let output = invoke(&root, &["--format", "json"]);
-    assert_exit(&output, 1);
-    assert_eq!(output.stdout, [] as [u8; 0]);
-    assert!(
-        String::from_utf8_lossy(&output.stderr).contains("process adapter execution is disabled")
+    // If confinement failed, this adapter would create a descendant and an
+    // unrelated file beside the project. The descendant exits immediately so
+    // it does not hold the output pipe (that case has its own test).
+    prepared(
+        &root,
+        "#!/bin/sh\n(printf descendant >/dev/null 2>&1) & printf leaked > escaped.txt; printf response\n",
     );
+    let output = invoke(&root, &["--format", "json", "--timeout", "5"]);
+    assert_exit(&output, 0);
+    let record: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(record["mode"], json!("process"));
+    assert_eq!(std::fs::read(root.join(RUN_DIR).join("response.raw")).unwrap(), b"response");
     assert!(!root.join("escaped.txt").exists());
-    assert!(!root.join(RUN_DIR).exists());
 }
 
 #[test]
