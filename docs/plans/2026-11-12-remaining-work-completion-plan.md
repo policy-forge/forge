@@ -263,9 +263,12 @@ pre-approved.
   (head `0e9b429`): edit-capable /4 family (ProposedEdit +
   target_subject_sha256, AC-5 wrong-hash→stale, invalid-edit class,
   G-4 never-applied, zero-edit /1//2//3 preserved), `review edit` CLI,
-  19 regression tests. DEFERRED on budget (remain open): clause-level
-  061 adapter, S-4 /2//3 supersession, S-1 client, M-13 opt-in. Four
-  seal-less adapters (057/063/064/066) deferred to post-2.0.0 (owner).
+  19 regression tests. Deferred-items pickup: **clause-061 DELIVERED**
+  (PR #289, head `0b99d02`, per-clause subjects bound to sealed
+  originals, 598 review tests green). S-1 client + M-13 opt-in in
+  progress (workspace branch). S-4 /2//3 supersession deferred again —
+  ~5k-line change (V1-coupled supersession stack), needs dedicated pass.
+  Four seal-less adapters (057/063/064/066) deferred to post-2.0.0 (owner).
 - Status 2026-11-13: owner decisions recorded (PR #283). DELIVERED:
   F16 Unix confinement (PR #286), F11 MCP conformance (PR #287),
   MSRV CI job + F03 evidence note (PR #285). F12/F13 M-10 edit-capable
