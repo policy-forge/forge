@@ -840,6 +840,31 @@ pub(crate) fn subject(
         stream.finish_hex()
     })
 }
+/// Profile8: per-clause subject binding over one sealed human-clause original.
+/// Each clause is a separate reviewable subject bound to its exact original raw
+/// identity; reproducing this digest grants no native approval or currentness.
+pub(crate) fn clause_subject(
+    clause_key: &str,
+    raw_sha256: &str,
+    byte_length: u64,
+    ledger: &mut ContractLedger,
+    control: &mut dyn WorkControl,
+) -> Result<String, ContractError> {
+    phase(ledger, control, |ledger, control| {
+        key(clause_key, ledger)?;
+        hash_operand(raw_sha256, ledger)?;
+        if byte_length == 0 || byte_length > 1_048_576 {
+            return Err(ContractError::Invalid);
+        }
+        let mut stream =
+            Stream::new(b"forge.authoring-clause-review-subject/1\0", SMALL_CAP, ledger, control)?;
+        stream.string("forge.authoring-clause-review/1")?;
+        stream.string(clause_key)?;
+        stream.hash(raw_sha256)?;
+        stream.u64(byte_length)?;
+        stream.finish_hex()
+    })
+}
 /// Profile4: exact minimized complete context/pins; native prose never enters this stream.
 pub(crate) fn context(
     pins: &[SourcePinV3],

@@ -592,3 +592,8 @@ mod command_tests {
 mod edit_merge_tests {
     include!("edit_merge_tests.rs");
 }
+
+/// Genuine per-clause 061 adapter controls over the sealed plan closure.
+mod clause_adapter_tests {
+    include!("adapters/authoring_clause_tests.rs");
+}
