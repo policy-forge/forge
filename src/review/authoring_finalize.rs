@@ -57,6 +57,8 @@ pub(crate) fn finalize<'a, 'native>(
         phase(ledger, control, |ledger, control| {
             bind_originals(binding, pending, ledger, control)
         })?;
+        // Bind every per-clause subject to its exact sealed queue source pin before issuance.
+        binding.clauses().bind_queue(binding.queue().document(), ledger, control)?;
         let generation = generation(binding, pending, ledger, control)?;
         let document =
             document(pending, binding.closure().source_pins(), generation, ledger, control)?;
