@@ -308,7 +308,8 @@ pre-approved.
   `2026-11-13-f06-g0-approval.md`). G0 preparation unblocked; authentic
   sessions remain human-only (recruitment, consent, facilitation,
   adjudication, evidence). Drafting-first; mapping execution deferred to
-  F17. Live-model latency gate unblocked (F16 delivered).
+  F17. Live-model latency gate no longer blocked by F16 (delivered);
+  latency measurement + owner approval still pending.
 - F16 (#72): **DELIVERED 2026-11-13** — draft PR #286 (head `40eef8c`).
   macOS sandbox-exec/Seatbelt + Linux Landlock+seccomp-BPF, no new deps,
   fail-closed, verified-byte execution, process-group cleanup, recorded-
@@ -316,7 +317,8 @@ pre-approved.
   2 Linux-only) independently re-run green incl. network isolation +
   descendant cleanup. Linux Landlock requires a Landlock-capable kernel
   without a blocking seccomp profile (Docker default blocks it —
-  documented). Live-model latency gate now unblocked for F06.
+  documented). F16 delivery removes the latency-gate blocker; F06 latency
+  measurement + approval remain pending.
 - F17: both versioned task contracts (mapping context/preparation/
   destination/promotion; policy drafting), citations/assumptions,
   quarantine, proposed unapproved patches; regression gates.
