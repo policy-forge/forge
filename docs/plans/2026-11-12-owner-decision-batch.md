@@ -1,8 +1,10 @@
 # Owner decision batch — 2026-11-12
 
-Status: **Awaiting owner decisions.** Prepared by the coordinator from
-verified evidence; nothing here is approved. Answer inline or in the
-linked tickets; each decision unblocks named work.
+Status: **DECIDED 2026-11-13.** All items answered by the owner; see
+[the 2026-11-13 owner decision record](2026-11-13-owner-decision-record.md)
+for the dispositions and what each unblocks. D2 executed (13 alerts
+dismissed); D1/D1b approved on the P0 branch. The checkboxes below are
+retained as the original proposal for reference.
 
 ## D1. Approve four supply-chain exceptions (PRs #266 + #268) — unblocks F03 merge path
 
