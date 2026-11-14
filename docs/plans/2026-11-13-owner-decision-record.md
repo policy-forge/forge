@@ -52,3 +52,12 @@ Implementation, human gates, and publication authorization remain separate.
 
 F15 Phase 2 (live GitHub adapter), S-2 signed envelopes, private disclosure
 channel, Windows confinement (`windows-sys` approval).
+
+**Seal-less domain adapters (decided 2026-11-13, follow-up prompt):** the
+four M-3 adapters with no sealed native approval closure — 057 impact,
+063 assessment, 064 POA&M, 066 AI — are **deferred to post-2.0.0**. The
+review-adapter pattern borrows only from genuine seals; building these
+requires a domain-approval design decision (what seal/receipt constitutes
+approval in each domain). 2.0.0 ships the buildable adapters: M-10
+proposed edits, clause-level 061, Mapping/applicability, plus S-1/S-4/M-13.
+The four are tracked follow-ons needing domain-approval design.
