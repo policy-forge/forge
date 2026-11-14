@@ -251,15 +251,37 @@ pre-approved.
 - F10 (#19, #68, #69, #70): Q1–Q7 reconciliation; expected outcome is
   evidence closure, not new code; #66 dispositions record merged via
   #259 — verify and move to close-ready.
-- F11 (#56 → #55): after D067, audit the merged v1 worker against the
-  approved threat model; build the two-independent-client conformance
-  harness against MCP 2026-07-28 (`server/discover`, namespaced
-  metadata, complete result typing); F20 `/2` checkpoint gates.
-- F12/F13 (#21, #59): per the recorded D068 split + M-10 approval,
-  remaining M-3 adapters, S-4
-  supersession for Lifecycle `/2` and Authoring `/3`, M-13/M-15 per
-  decisions; S-1 interactive client reuses workspace APIs; F21 `/3`
-  quorum qualification.
+- F11 (#56 → #55): **DELIVERED 2026-11-13** — draft PR #287 (head
+  `b6c45b7`). Two-independent-client stdio conformance harness for MCP
+  2026-07-28 (inspector-style + claude-code-style roles); 19/19 tests
+  independently re-run green; real Claude Code 2.1.220 connected
+  offline. server/discover, all 7 tools, exact-ID trace, deterministic
+  search, null-content rules, bounded input/work/output, cancellation,
+  confined-root refusal all verified. MCP Inspector browser campaign
+  remains an online/human gate. F20 `/2` checkpoint gates separate.
+- F12/F13 (#21, #59): **M-10 DELIVERED 2026-11-13** — draft PR #288
+  (head `0e9b429`): edit-capable /4 family (ProposedEdit +
+  target_subject_sha256, AC-5 wrong-hash→stale, invalid-edit class,
+  G-4 never-applied, zero-edit /1//2//3 preserved), `review edit` CLI,
+  19 regression tests. Deferred-items pickup: **clause-061 DELIVERED**
+  (PR #289, head `0b99d02`, per-clause subjects bound to sealed
+  originals, 598 review tests green). **S-1 + M-13 DELIVERED** (PR #290,
+  head `c464b36`): S-1 response-file client (CM-53, shared respond()
+  path, all 4 families, security preserved); M-13 opt-in bounded
+  excerpts (default byte-identical), 10 tests green. **S-4 /2//3
+  supersession DEFERRED to post-2.0.0** (owner 2026-11-14): compiler-
+  verified type-level wall (E0308) — needs family-generic queue rep +
+  new native seams + finding vocabulary; gate-only is inert. /1
+  supersession ships.
+  Four seal-less adapters (057/063/064/066) deferred to post-2.0.0 (owner).
+- Status 2026-11-13: owner decisions recorded (PR #283). DELIVERED:
+  F16 Unix confinement (PR #286), F11 MCP conformance (PR #287),
+  MSRV CI job + F03 evidence note (PR #285). F12/F13 M-10 edit-capable
+  /4 family in final verification (19 M-10 tests + 566 review tests
+  pass); four seal-less adapters (057/063/064/066) DEFERRED to
+  post-2.0.0 per owner decision (need domain-approval design). CI
+  fixes in progress: F16 Windows imports + Ubuntu socket-test false
+  positive; F11 Windows cfg(unix) gate.
 - Exit: tickets In Review with exact-head evidence; human exercises
   booked into P7.
 
@@ -281,14 +303,20 @@ pre-approved.
 
 ### P5 — Suggestion track (F06 → F16 → F17 → F18) — longest chain
 - F16/F17/F18 child tickets created 2026-11-12 (#72, #74, #75).
-- F06 (#8): protocol DELIVERED — draft PR #271 (head `1677243`,
-  session script S0–S7, 9 forms, recording sheets, threshold procedure,
-  corpus hashes verified). Human-only remainder: recruitment, consent,
-  sessions, adjudication, threshold approval, task selection; G0 owner
-  dispositions must be recorded before sessions can start.
-- F16: confinement design packet (decision 8) → approval → implement
-  filesystem/network confinement, verified bytes, limits/timeouts,
-  descendant cleanup per platform; keep recorded-response operation.
+- F06 (#8): protocol DELIVERED (PR #271); **G0 values OWNER-APPROVED
+  2026-11-13** (PR #284 proposal, approval record
+  `2026-11-13-f06-g0-approval.md`). G0 preparation unblocked; authentic
+  sessions remain human-only (recruitment, consent, facilitation,
+  adjudication, evidence). Drafting-first; mapping execution deferred to
+  F17. Live-model latency gate unblocked (F16 delivered).
+- F16 (#72): **DELIVERED 2026-11-13** — draft PR #286 (head `40eef8c`).
+  macOS sandbox-exec/Seatbelt + Linux Landlock+seccomp-BPF, no new deps,
+  fail-closed, verified-byte execution, process-group cleanup, recorded-
+  response intact; Windows refused. 13 confinement tests (11 pass macOS,
+  2 Linux-only) independently re-run green incl. network isolation +
+  descendant cleanup. Linux Landlock requires a Landlock-capable kernel
+  without a blocking seccomp profile (Docker default blocks it —
+  documented). Live-model latency gate now unblocked for F06.
 - F17: both versioned task contracts (mapping context/preparation/
   destination/promotion; policy drafting), citations/assumptions,
   quarantine, proposed unapproved patches; regression gates.
