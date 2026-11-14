@@ -1,0 +1,102 @@
+{
+  "schema_version": "forge.f11-mcp-conformance-verification/1",
+  "scope": "tickets-55-56-f11-mcp-2026-07-28-two-client-conformance",
+  "date": "2026-11-13",
+  "truth_state": "development-conformance-verification-not-release-acceptance",
+  "base_commit": "41aa68b4ef9a856375b6c0efa7ac72e3495ff685",
+  "decision_basis": {
+    "item": "D067",
+    "recorded": "docs/plans/2026-11-13-owner-decision-record.md",
+    "ratified_model": "implemented confined-roots model + re-pin proposal",
+    "proposal_sha256": "a15bac363ad97c25b1f283f7a7b2a529043e5128995aec961fc8ef46ef6967d9",
+    "named_pair": ["MCP Inspector (modern era)", "Claude Code (v2 runtime)"],
+    "protocol_revision": "2026-07-28"
+  },
+  "environment": {
+    "host_os": "macOS (darwin arm64)",
+    "rustc": "1.99.1 (58cf8f9c3 2026-10-13) (Homebrew)",
+    "node": "v22.22.3",
+    "claude_code": "2.1.323 (Claude Code), /opt/homebrew/bin/claude",
+    "mcp_inspector": "not installed; absent from ~/.npm/_npx cache; fetch requires network",
+    "cached_mcp_sdk": ["1.30.0", "1.32.1"],
+    "cached_sdk_latest_protocol": "2025-11-25 (initialize-first era; cannot establish 2026-07-28 conformance)"
+  },
+  "harness": {
+    "file": "tests/mcp_conformance_test.rs",
+    "worker": "forge mcp serve (CARGO_BIN_EXE_forge), real subprocess over stdio",
+    "client_roles": [
+      {
+        "role": "A",
+        "style": "inspector-style stand-in",
+        "ids": "integer",
+        "meta": "protocolVersion + clientCapabilities + clientInfo + inert org.example/trace extension",
+        "assertions": "independent jsonschema re-validation of every structuredContent against shipped output schemas"
+      },
+      {
+        "role": "B",
+        "style": "claude-code-style stand-in",
+        "ids": "string req-N",
+        "meta": "bare mandatory protocolVersion + clientCapabilities",
+        "assertions": "envelope-level complete-result typing"
+      }
+    ],
+    "fixture": "synthetic declared-owner originals via public APIs; two disjoint confined roots; exact raw SHA-256 pins; no real approval authority",
+    "driver_contract": "stdin held open while awaiting responses; paced one-request-per-response; burst mode for queue limits; EOF only at end",
+    "new_dependencies": []
+  },
+  "conformance_checks": {
+    "server_discover_mandatory_complete_typing": "pass-both-roles",
+    "tools_list_seven_closed_schemas_readonly_annotations": "pass-both-roles",
+    "initialize_not_part_of_revision_minus_32601": "pass-both-roles",
+    "tools_list_cursor_refused_minus_32602": "pass-both-roles",
+    "request_specific_namespaced_meta_not_cached": "pass-both-roles",
+    "wrong_revision_minus_32022_with_supported_requested": "pass-both-roles",
+    "complete_result_typing_all_seven_tools": "pass-both-roles",
+    "seven_tools_exact_recorded_results": "pass-both-roles",
+    "exact_id_trace_and_search_ranking": "pass-both-roles",
+    "deterministic_search_and_generation_cursors": "pass-both-roles",
+    "null_content_unavailable_ambiguous_rules": "pass-both-roles",
+    "bounded_input_64k_frame_and_argument_limits": "pass-both-roles",
+    "bounded_work_one_active_two_queued_minus_32000": "pass-both-roles",
+    "duplicate_accepted_id_retires_transport_zero_publications": "pass-both-roles",
+    "cancellation_suppresses_response_worker_survives": "pass-both-roles",
+    "confined_roots_overlap_and_symlink_refused": "pass-both-roles",
+    "wrong_raw_pin_fails_closed_no_private_diagnostics": "pass-both-roles",
+    "no_private_prose_paths_or_owner_keys_in_responses": "pass-both-roles"
+  },
+  "real_client_evidence": {
+    "claude_code": {
+      "version": "2.1.323",
+      "offline": true,
+      "commands": [
+        "claude mcp add-json forge-f11 '{\"type\":\"stdio\",\"command\":\"<worktree>/target/debug/forge\",\"args\":[\"mcp\",\"serve\",\"--project\",\"/tmp/f11-cc-project\"]}' -s user",
+        "claude mcp get forge-f11",
+        "claude mcp list"
+      ],
+      "result": "Status: Connected (health check performs the real stdio connection handshake; binary contains the 2026-07-28 server/discover probe path)",
+      "cleanup": "claude mcp remove forge-f11 -s user (executed)",
+      "not_established": "authenticated agent session exercising tools/call, inert-content handling and cancellation under a production model (online gate)"
+    },
+    "mcp_inspector": {
+      "run": false,
+      "reason": "not installed locally; npx fetch requires network",
+      "gate": "human/online: npx @modelcontextprotocol/inspector --cli <worker command> with a modern-era Inspector build supporting 2026-07-28"
+    }
+  },
+  "remaining_human_online_gates": [
+    "Real MCP Inspector (modern era) run against the worker with the same fixtures",
+    "Authenticated Claude Code agent session: tools/call, inert-content handling, cancellation under a production model",
+    "Six project-specific owner-record rows (D067-P1/P2, S1/S2, E1) for real disclosure",
+    "Historical initialize-first checklists do not establish current conformance and were not reused"
+  ],
+  "verification_commands": {
+    "conformance": "cargo test --test mcp_conformance_test",
+    "conformance_result": "19 passed; 0 failed (15 conformance tests + 4 inherited common-module tests)",
+    "format": "cargo fmt --check",
+    "format_result": "clean",
+    "lint": "cargo clippy --all-targets -- -D warnings",
+    "lint_result": "clean",
+    "full_suite": "CARGO_PROFILE_TEST_DEBUG=0 CARGO_PROFILE_DEV_DEBUG=0 cargo test",
+    "full_suite_result": "79 test binaries, all ok, 0 failures (debug-info stripped due to host disk at capacity; no test behavior change)"
+  }
+}
