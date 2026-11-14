@@ -40,7 +40,7 @@
       "expires_on": "2026-12-28",
       "name": "bit-set",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the bit-set 0.11.1 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the bit-set 0.11.1 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.11.1"
@@ -55,7 +55,7 @@
       "expires_on": "2026-12-28",
       "name": "bit-vec",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the bit-vec 0.10.2 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the bit-vec 0.10.2 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.10.2"
@@ -85,7 +85,7 @@
       "expires_on": "2026-12-28",
       "name": "borsh",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the borsh 1.8.1 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the borsh 1.8.1 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.8.1"
@@ -100,7 +100,7 @@
       "expires_on": "2026-12-28",
       "name": "borsh-derive",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the borsh-derive 1.8.1 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the borsh-derive 1.8.1 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.8.1"
@@ -191,7 +191,7 @@
       "expires_on": "2026-12-28",
       "name": "core_detect",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the core_detect 1.0.0 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the core_detect 1.0.0 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.0.0"
@@ -221,7 +221,7 @@
       "expires_on": "2026-12-28",
       "name": "fancy-regex",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the fancy-regex 0.20.2 Dependabot upgrade (PRs #280/#281/#282), runtime (jsonschema 0.61 validation stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the fancy-regex 0.20.2 Dependabot upgrade (PRs #280/#281/#282), runtime (jsonschema 0.61 validation stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.20.2"
@@ -311,7 +311,7 @@
       "expires_on": "2026-12-28",
       "name": "jsonschema",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the jsonschema 0.61.1 Dependabot upgrade (PRs #280/#281/#282), runtime (jsonschema 0.61 validation stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the jsonschema 0.61.1 Dependabot upgrade (PRs #280/#281/#282), runtime (jsonschema 0.61 validation stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.61.1"
@@ -326,7 +326,7 @@
       "expires_on": "2026-12-28",
       "name": "jsonschema-regex",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the jsonschema-regex 0.61.2 Dependabot upgrade (PRs #280/#281/#282), runtime (jsonschema 0.61 validation stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the jsonschema-regex 0.61.2 Dependabot upgrade (PRs #280/#281/#282), runtime (jsonschema 0.61 validation stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.61.2"
@@ -341,7 +341,7 @@
       "expires_on": "2026-12-28",
       "name": "jsonschema-value",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the jsonschema-value 0.61.2 Dependabot upgrade (PRs #280/#281/#282), runtime (jsonschema 0.61 validation stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the jsonschema-value 0.61.2 Dependabot upgrade (PRs #280/#281/#282), runtime (jsonschema 0.61 validation stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.61.2"
@@ -461,7 +461,7 @@
       "expires_on": "2026-12-28",
       "name": "proc-macro-crate",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the proc-macro-crate 3.5.0 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the proc-macro-crate 3.5.0 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "3.5.0"
@@ -476,7 +476,7 @@
       "expires_on": "2026-12-28",
       "name": "proptest",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the proptest 1.12.0 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the proptest 1.12.0 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.12.0"
@@ -521,7 +521,7 @@
       "expires_on": "2026-12-28",
       "name": "rand_xorshift",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the rand_xorshift 0.5.0 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the rand_xorshift 0.5.0 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.5.0"
@@ -551,7 +551,7 @@
       "expires_on": "2026-12-28",
       "name": "referencing",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the referencing 0.61.2 Dependabot upgrade (PRs #280/#281/#282), runtime (jsonschema 0.61 validation stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the referencing 0.61.2 Dependabot upgrade (PRs #280/#281/#282), runtime (jsonschema 0.61 validation stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.61.2"
@@ -822,7 +822,7 @@
       "expires_on": "2026-12-28",
       "name": "toml_edit",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the toml_edit 0.25.18+spec-1.1.0 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
+      "rationale": "OWNER-APPROVED 2026-11-14 (PR #291): exact-identity temporary exception for the toml_edit 0.25.18+spec-1.1.0 Dependabot upgrade (PRs #280/#281/#282), dev-only (proptest 1.12 test stack). Replaces the retired prior-version exception where applicable. Agent-assisted differential review only; no accepted source audit, safety certification or release acceptance is asserted. jsonschema 0.61 passes all 128 validate + 30 api_contract tests.",
       "review_by": "2026-11-28",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.25.18+spec-1.1.0"
