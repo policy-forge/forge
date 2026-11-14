@@ -260,6 +260,11 @@ pre-approved.
   supersession for Lifecycle `/2` and Authoring `/3`, M-13/M-15 per
   decisions; S-1 interactive client reuses workspace APIs; F21 `/3`
   quorum qualification.
+- Status 2026-11-13: owner decisions recorded (PR #283); implementation
+  batch DISPATCHED — F16 Unix confinement (feat/f16-unix-confinement),
+  F12/F13 M-10+adapters (feat/f12-f13-m10-adapters), F11 conformance
+  (feat/f11-conformance). MSRV CI job + F03 evidence note DELIVERED
+  (PR #285, head `8390cad`, 1.88 proven locally, index re-pinned).
 - Exit: tickets In Review with exact-head evidence; human exercises
   booked into P7.
 
