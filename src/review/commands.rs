@@ -90,6 +90,9 @@ pub(crate) struct RespondOptions<'a> {
     pub(crate) abstention_reason: Option<&'a str>,
     /// Complete explicit prior ID/hash pair or explicit absence.
     pub(crate) supersedes: Option<Supersedes<'a>>,
+    /// Optional bounded proposed replacement patch bytes; only the edit-capable /4
+    /// family consumes this. The zero-edit /1 /2 /3 families always ignore it.
+    pub(crate) proposed_patch: Option<&'a [u8]>,
     /// Confined new response file; actual native no-replace publication only.
     pub(crate) output: &'a Path,
 }

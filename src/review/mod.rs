@@ -144,3 +144,26 @@ pub(crate) mod authoring_queue_export;
 
 /// Whole native Authoring review command lifetime through actual output sinks.
 pub(crate) mod authoring_commands;
+
+/// Complete plain /4 original identity and withdrawal chain, without native authority.
+pub(crate) mod chain_v4;
+/// Strict plain edit-capable Response/4 and Dispositions/4 codec; no native owner.
+#[path = "decode_v4.rs"]
+pub(crate) mod decode_v4;
+/// Genuine Authoring Queue and every actual /4 Response original over one native owner.
+pub(crate) mod edit_binding;
+/// Whole native edit-capable review command lifetime through actual output sinks.
+pub(crate) mod edit_commands;
+/// Actual private edit-capable current-output issuer over a genuine complete binding.
+pub(crate) mod edit_finalize;
+/// Ordinary separately typed /4 Response/recorded-output assertion binding and edit syntax.
+pub(crate) mod edit_response_binding;
+/// Finite plain edit-capable Response/4 and Dispositions/4 serializer with readback.
+#[path = "encode_v4.rs"]
+pub(crate) mod encode_v4;
+/// Pending /4 classification (incl. per-response edit validation) and policy facts.
+pub(crate) mod merge_v4;
+/// Independently typed asserted /4 distinct-key maximum matching.
+pub(crate) mod quorum_v4;
+/// Separately closed inert edit-capable /4 response declarations; queues stay /3.
+pub(crate) mod wire_v4;

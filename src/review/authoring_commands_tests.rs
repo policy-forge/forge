@@ -87,6 +87,7 @@ fn respond(
                 None
             },
             supersedes: None,
+            proposed_patch: None,
             output: Path::new(output),
         },
         caller,

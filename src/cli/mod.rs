@@ -432,6 +432,13 @@ pub enum ReviewCommand {
         #[command(subcommand)]
         command: AuthoringReviewCommand,
     },
+    /// Review one complete current Authoring plan with the edit-capable closed /4 exchange
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Edit {
+        /// Explicit native-derived init, respond (optionally with a proposed edit) or merge/status.
+        #[command(subcommand)]
+        command: EditReviewCommand,
+    },
     /// Review one recorded Lifecycle policy/version with a separate closed /2 exchange
     #[command(after_help = REVIEW_IDENTITY_HELP)]
     Lifecycle {
@@ -752,6 +759,7 @@ fn run_review(command: &ReviewCommand) -> Result<(), ForgeError> {
     let result = match command {
         ReviewCommand::Lifecycle { command } => return run_lifecycle_review(command),
         ReviewCommand::Authoring { command } => return run_authoring_review(command),
+        ReviewCommand::Edit { command } => return run_edit_review(command),
         ReviewCommand::Init(args) => commands::init(
             &commands::InitOptions {
                 project_root: &args.project_root,
@@ -793,6 +801,7 @@ fn run_review(command: &ReviewCommand) -> Result<(), ForgeError> {
                     response_id: &args.response_id,
                     abstention_reason: args.abstention_reason.as_deref(),
                     supersedes,
+                    proposed_patch: None,
                     output: &args.output,
                 },
                 &mut control,
@@ -886,6 +895,7 @@ fn run_lifecycle_review(command: &LifecycleReviewCommand) -> Result<(), ForgeErr
                     response_id: &args.response_id,
                     abstention_reason: args.abstention_reason.as_deref(),
                     supersedes,
+                    proposed_patch: None,
                     output: &args.output,
                 },
                 &mut control,
@@ -3288,6 +3298,157 @@ pub struct AuthoringReviewInitArgs {
     pub output: PathBuf,
 }
 
+/// Edit-capable /4 family: init produces the unchanged /3 queue; respond may carry an
+/// inert proposed edit; merge/status validate each edit per response and never apply it.
+#[derive(Subcommand)]
+#[deny(missing_docs)]
+#[command(after_help = REVIEW_IDENTITY_HELP)]
+pub enum EditReviewCommand {
+    /// Create one queue from a complete current native plan and private asserted review policy
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Init(
+        /// Complete private native locator, asserted policy, identities and new destination.
+        Box<AuthoringReviewInitArgs>,
+    ),
+    /// Write an immutable private assertion, optionally with an inert proposed edit
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Respond(
+        /// Explicit reviewer, disposition, time, private rationale, optional patch and destination.
+        Box<EditReviewRespondArgs>,
+    ),
+    /// Merge every response occurrence against the complete current native plan
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Merge(
+        /// Whole native, queue and response originals, evaluation time and new destination.
+        Box<ReviewMergeArgs>,
+    ),
+    /// Compute the current recorded bundle without publishing a new file
+    #[command(after_help = REVIEW_IDENTITY_HELP)]
+    Status(
+        /// Whole native, queue and response originals and explicit evaluation time.
+        Box<ReviewCurrentArgs>,
+    ),
+}
+
+/// Explicit immutable edit-capable response arguments; the proposed patch is inert data.
+#[derive(clap::Args)]
+#[deny(missing_docs)]
+pub struct EditReviewRespondArgs {
+    /// Actual normalized root for the queue, rationale, patch and destination
+    #[arg(long)]
+    pub project_root: PathBuf,
+    /// Exact immutable queue original
+    #[arg(long)]
+    pub queue: PathBuf,
+    /// Selected queue-local item key
+    #[arg(long)]
+    pub item_key: String,
+    /// Asserted reviewer key, with no identity lookup or authentication
+    #[arg(long)]
+    pub reviewer_key: String,
+    /// Asserted reviewer role, checked against the explicit assignment
+    #[arg(long)]
+    pub reviewer_role: String,
+    /// Independent disposition to retain
+    #[arg(long, value_enum)]
+    pub disposition: ReviewDisposition,
+    /// Asserted response time in canonical UTC seconds
+    #[arg(long)]
+    pub responded_at: String,
+    /// Explicit canonical response UUID
+    #[arg(long)]
+    pub response_id: String,
+    /// Confined UTF-8 private rationale file, at most8 KiB
+    #[arg(long)]
+    pub rationale_file: PathBuf,
+    /// Explicit policy-defined reason permitting an empty abstention rationale
+    #[arg(long)]
+    pub abstention_reason: Option<String>,
+    /// Explicit previous response UUID; requires its exact original hash
+    #[arg(long, requires = "supersedes_sha256")]
+    pub supersedes_id: Option<String>,
+    /// Exact SHA-256 of the previous response original; requires its UUID
+    #[arg(long, requires = "supersedes_id")]
+    pub supersedes_sha256: Option<String>,
+    /// Confined UTF-8 proposed replacement patch file, at most64 KiB; inert until promoted
+    #[arg(long)]
+    pub proposed_patch: Option<PathBuf>,
+    /// Confined new response file; existing destinations are refused
+    #[arg(long)]
+    pub output: PathBuf,
+}
+
+/// Dispatch the edit-capable /4 family through complete actual operation owners.
+fn run_edit_review(command: &EditReviewCommand) -> Result<(), ForgeError> {
+    use crate::review::{commands, edit_commands};
+    let mut control = crate::workspace::preparation::NoopControl;
+    let result = match command {
+        EditReviewCommand::Init(args) => edit_commands::init(
+            &commands::InitOptions {
+                project_root: &args.project_root,
+                sources: &args.sources,
+                policy: &args.policy,
+                queue_id: &args.queue_id,
+                created_at: &args.created_at,
+                output: &args.output,
+            },
+            &mut control,
+        ),
+        EditReviewCommand::Respond(args) => {
+            let disposition = match args.disposition {
+                ReviewDisposition::Approve => crate::review::wire::Disposition::Approve,
+                ReviewDisposition::Reject => crate::review::wire::Disposition::Reject,
+                ReviewDisposition::RequestChanges => {
+                    crate::review::wire::Disposition::RequestChanges
+                }
+                ReviewDisposition::Abstain => crate::review::wire::Disposition::Abstain,
+                ReviewDisposition::Superseded => crate::review::wire::Disposition::Superseded,
+            };
+            let supersedes = match (&args.supersedes_id, &args.supersedes_sha256) {
+                (None, None) => None,
+                (Some(response_id), Some(raw_sha256)) => {
+                    Some(commands::Supersedes { response_id, raw_sha256 })
+                }
+                _ => return Err(ForgeError::Validation("invalid review response chain".into())),
+            };
+            let patch = match &args.proposed_patch {
+                None => None,
+                Some(path) => Some(
+                    std::fs::read(path)
+                        .map_err(|_| ForgeError::Validation("cannot read proposed patch".into()))?,
+                ),
+            };
+            edit_commands::respond(
+                &commands::RespondOptions {
+                    project_root: &args.project_root,
+                    queue: &args.queue,
+                    rationale_file: &args.rationale_file,
+                    item_key: &args.item_key,
+                    reviewer_key: &args.reviewer_key,
+                    reviewer_role: &args.reviewer_role,
+                    disposition,
+                    responded_at: &args.responded_at,
+                    response_id: &args.response_id,
+                    abstention_reason: args.abstention_reason.as_deref(),
+                    supersedes,
+                    proposed_patch: patch.as_deref(),
+                    output: &args.output,
+                },
+                &mut control,
+            )
+        }
+        EditReviewCommand::Merge(args) => {
+            edit_commands::merge(&review_current_options(&args.current), &args.output, &mut control)
+        }
+        EditReviewCommand::Status(args) => edit_commands::status(
+            &review_current_options(args),
+            &mut std::io::stdout().lock(),
+            &mut control,
+        ),
+    };
+    result.map_err(review_error)
+}
+
 /// Dispatch the separate Authoring /3 family through complete actual operation owners.
 fn run_authoring_review(command: &AuthoringReviewCommand) -> Result<(), ForgeError> {
     use crate::review::{authoring_commands, commands};
@@ -3334,6 +3495,7 @@ fn run_authoring_review(command: &AuthoringReviewCommand) -> Result<(), ForgeErr
                     response_id: &args.response_id,
                     abstention_reason: args.abstention_reason.as_deref(),
                     supersedes,
+                    proposed_patch: None,
                     output: &args.output,
                 },
                 &mut control,

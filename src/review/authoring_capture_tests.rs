@@ -587,3 +587,8 @@ mod init_export_tests {
 mod command_tests {
     include!("authoring_commands_tests.rs");
 }
+
+/// Genuine edit-capable /4 merge controls: AC-5, invalid-edit, never-applied, round-trip.
+mod edit_merge_tests {
+    include!("edit_merge_tests.rs");
+}

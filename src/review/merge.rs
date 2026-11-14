@@ -420,7 +420,9 @@ fn evidence(
             ResponseClassification::Late => facts.late = Presence::Present,
             ResponseClassification::Unassigned => facts.unassigned = Presence::Present,
             ResponseClassification::Superseded => facts.superseded = Presence::Present,
-            ResponseClassification::Foreign => {}
+            // InvalidEdit is emitted only by the edit-capable /4 family; the
+            // zero-edit families treat it as inert non-approving evidence.
+            ResponseClassification::Foreign | ResponseClassification::InvalidEdit => {}
         }
     }
     Ok((facts, ids, dissent))

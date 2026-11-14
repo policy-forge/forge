@@ -178,7 +178,7 @@ pub(crate) fn decode_response<'a>(
             raw,
             MAX_RESPONSE_BYTES,
             include_str!("../../schemas/forge.review-response-3.schema.json"),
-            true,
+            operational_raw::ResponseIntake::ZeroEdit,
             ledger,
             control,
         )?;
@@ -197,7 +197,7 @@ pub(crate) fn decode_dispositions<'a>(
             raw,
             MAX_RECORDED_BYTES,
             include_str!("../../schemas/forge.review-dispositions-3.schema.json"),
-            false,
+            operational_raw::ResponseIntake::Recorded,
             ledger,
             control,
         )?;
