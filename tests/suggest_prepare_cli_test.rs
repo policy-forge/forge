@@ -160,7 +160,7 @@ fn the_preview_states_what_forge_does_and_does_not_control() {
         prepare_json(&root, &["--corpus", "corpus.json", "--include-document", "prior-access"]);
     let preview = std::fs::read_to_string(root.join("prepared/preview.txt")).unwrap();
     assert!(
-        preview.contains("Process adapter execution is disabled"),
+        preview.contains("process adapter execution is confined"),
         "the notice must name the adapter boundary"
     );
     assert!(preview.contains(payload.as_str()));
