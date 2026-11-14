@@ -259,11 +259,13 @@ pre-approved.
   search, null-content rules, bounded input/work/output, cancellation,
   confined-root refusal all verified. MCP Inspector browser campaign
   remains an online/human gate. F20 `/2` checkpoint gates separate.
-- F12/F13 (#21, #59): per the recorded D068 split + M-10 approval,
-  remaining M-3 adapters, S-4
-  supersession for Lifecycle `/2` and Authoring `/3`, M-13/M-15 per
-  decisions; S-1 interactive client reuses workspace APIs; F21 `/3`
-  quorum qualification.
+- F12/F13 (#21, #59): **M-10 DELIVERED 2026-11-13** — draft PR #288
+  (head `0e9b429`): edit-capable /4 family (ProposedEdit +
+  target_subject_sha256, AC-5 wrong-hash→stale, invalid-edit class,
+  G-4 never-applied, zero-edit /1//2//3 preserved), `review edit` CLI,
+  19 regression tests. DEFERRED on budget (remain open): clause-level
+  061 adapter, S-4 /2//3 supersession, S-1 client, M-13 opt-in. Four
+  seal-less adapters (057/063/064/066) deferred to post-2.0.0 (owner).
 - Status 2026-11-13: owner decisions recorded (PR #283). DELIVERED:
   F16 Unix confinement (PR #286), F11 MCP conformance (PR #287),
   MSRV CI job + F03 evidence note (PR #285). F12/F13 M-10 edit-capable
