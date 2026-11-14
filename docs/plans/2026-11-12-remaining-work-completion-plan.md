@@ -268,9 +268,11 @@ pre-approved.
   originals, 598 review tests green). **S-1 + M-13 DELIVERED** (PR #290,
   head `c464b36`): S-1 response-file client (CM-53, shared respond()
   path, all 4 families, security preserved); M-13 opt-in bounded
-  excerpts (default byte-identical), 10 tests green. S-4 /2//3
-  supersession in progress (dedicated agent; QueueSchema V2/V3
-  extension — the V1 gate is distributed across wire/decode/bind).
+  excerpts (default byte-identical), 10 tests green. **S-4 /2//3
+  supersession DEFERRED to post-2.0.0** (owner 2026-11-14): compiler-
+  verified type-level wall (E0308) — needs family-generic queue rep +
+  new native seams + finding vocabulary; gate-only is inert. /1
+  supersession ships.
   Four seal-less adapters (057/063/064/066) deferred to post-2.0.0 (owner).
 - Status 2026-11-13: owner decisions recorded (PR #283). DELIVERED:
   F16 Unix confinement (PR #286), F11 MCP conformance (PR #287),
