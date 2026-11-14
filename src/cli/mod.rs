@@ -217,6 +217,12 @@ pub enum Commands {
         /// Composition provenance map used to resolve assembled lines to component instances
         #[arg(long)]
         composition_provenance: Option<PathBuf>,
+
+        /// M-13 opt-in: include bounded source excerpts for resolved trace
+        /// locations. Off by default; the conservative report exports IDs and
+        /// hashes only. The output inherits the source policy's sensitivity.
+        #[arg(long)]
+        include_source_excerpts: bool,
     },
 
     /// Compare two OSCAL artifacts and show differences
@@ -3220,14 +3226,19 @@ pub fn execute(cli: &Cli) -> Result<(), ForgeError> {
         Commands::Drift { committed_artifact, generated_artifact, format } => {
             run_drift(committed_artifact, generated_artifact, format)
         }
-        Commands::Trace { artifact, source, output, composition_provenance } => {
-            trace::execute_with_composition_provenance(
-                artifact,
-                source,
-                output.as_deref(),
-                composition_provenance.as_deref(),
-            )
-        }
+        Commands::Trace {
+            artifact,
+            source,
+            output,
+            composition_provenance,
+            include_source_excerpts,
+        } => trace::execute_with_composition_provenance(
+            artifact,
+            source,
+            output.as_deref(),
+            composition_provenance.as_deref(),
+            *include_source_excerpts,
+        ),
         Commands::Profile { catalog, include, exclude, format, output, set_params, timestamp } => {
             let timestamp = timestamp.as_ref().map(chrono::DateTime::to_rfc3339);
             profile::execute(
