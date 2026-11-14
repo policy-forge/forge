@@ -265,9 +265,12 @@ pre-approved.
   G-4 never-applied, zero-edit /1//2//3 preserved), `review edit` CLI,
   19 regression tests. Deferred-items pickup: **clause-061 DELIVERED**
   (PR #289, head `0b99d02`, per-clause subjects bound to sealed
-  originals, 598 review tests green). S-1 client + M-13 opt-in in
-  progress (workspace branch). S-4 /2//3 supersession deferred again —
-  ~5k-line change (V1-coupled supersession stack), needs dedicated pass.
+  originals, 598 review tests green). **S-1 + M-13 DELIVERED** (PR #290,
+  head `c464b36`): S-1 response-file client (CM-53, shared respond()
+  path, all 4 families, security preserved); M-13 opt-in bounded
+  excerpts (default byte-identical), 10 tests green. S-4 /2//3
+  supersession in progress (dedicated agent; QueueSchema V2/V3
+  extension — the V1 gate is distributed across wire/decode/bind).
   Four seal-less adapters (057/063/064/066) deferred to post-2.0.0 (owner).
 - Status 2026-11-13: owner decisions recorded (PR #283). DELIVERED:
   F16 Unix confinement (PR #286), F11 MCP conformance (PR #287),
