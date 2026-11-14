@@ -104,3 +104,13 @@ MSRV verification; direct PDF font-map regression evidence; qualification of
 baseline parser/memory observations and existing maintenance dispositions.
 The user-required full documentation review/update after completed roadmap
 integration remains open. This is an F03 evidence slice, not F03 closure.
+
+## 2026-11-13 authorized evidence alteration
+
+PR #265 (merged 2026-11-13) changed the retained zip version (8.6.0 → 9.0.0)
+in the pr162/pr163/pr164 `Cargo.lock` and `Cargo.toml` snapshots. Owner
+decision D3b authorized keeping it merged; the resulting SHA-256 index
+discrepancy is authorized, not tampering. See the dated
+[evidence-alteration note](../2026-11-13-evidence-alteration-note.md) for the
+disposition and re-pinned hashes. The retained receipts themselves are not
+edited by that note.

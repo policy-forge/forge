@@ -8,8 +8,8 @@
   "retained_files": [
     {
       "path": "docs/dependency-reviews/2026-10-02/README.md",
-      "bytes": 6940,
-      "sha256": "a7e4d2953b42db933164471f9c6859731396d0f02148b7e602739a6a07b7b1c1"
+      "bytes": 7439,
+      "sha256": "24e6f9420b6011efcf5a65273f0f78c6bf53c0f0fe590207e73ad76a43444cfc"
     },
     {
       "path": "docs/dependency-reviews/2026-10-02/omitted-source-files.json",
@@ -144,7 +144,7 @@
     {
       "path": "docs/dependency-reviews/2026-10-02/pr162/Cargo.lock",
       "bytes": 74787,
-      "sha256": "26163aa672bbe2d54448bac821ebe4246003c917b98a0f48dbe20bcd8af71e3f"
+      "sha256": "7d33c63c56ddb11e9efc034aaa1f4e3b850f6209eb59760b4a45154bf4f9dff9"
     },
     {
       "path": "docs/dependency-reviews/2026-10-02/pr162/Cargo.lock.diff",
@@ -154,7 +154,7 @@
     {
       "path": "docs/dependency-reviews/2026-10-02/pr162/Cargo.toml",
       "bytes": 2344,
-      "sha256": "e97a2d27d6718ed1eb60c6506781875ebf902f92d81fefd22d9253f298a84c95"
+      "sha256": "b70fe2143086e33d7186837f8bb32da22750bfdf70d3c6b1bf1697da5d9801dc"
     },
     {
       "path": "docs/dependency-reviews/2026-10-02/pr162/Cargo.toml.diff",
@@ -304,7 +304,7 @@
     {
       "path": "docs/dependency-reviews/2026-10-02/pr163/Cargo.lock",
       "bytes": 74338,
-      "sha256": "fd483e330e292cd81131d59b30b3f89771206365470d3da03e713610ab561703"
+      "sha256": "2e44746103e673e726611b2aeee5b1e60934522fedd0d7922adaabb2e5e1a6fe"
     },
     {
       "path": "docs/dependency-reviews/2026-10-02/pr163/Cargo.lock.diff",
@@ -314,7 +314,7 @@
     {
       "path": "docs/dependency-reviews/2026-10-02/pr163/Cargo.toml",
       "bytes": 2344,
-      "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+      "sha256": "eec5af9a829aeeb3240eab5e5e7ef0eb2cf104a2709116deed243129b4a63199"
     },
     {
       "path": "docs/dependency-reviews/2026-10-02/pr163/Cargo.toml.diff",
@@ -464,7 +464,7 @@
     {
       "path": "docs/dependency-reviews/2026-10-02/pr164/Cargo.lock",
       "bytes": 70103,
-      "sha256": "ed61f9997164f0b6a1a75525a61f3e1bd1a3ba594f8219b7441f5ac8c871674d"
+      "sha256": "a182758923a9275294dff0d0cc4b01689c9417273ab2dd7d9c9e37d4372af933"
     },
     {
       "path": "docs/dependency-reviews/2026-10-02/pr164/Cargo.lock.diff",
@@ -474,7 +474,7 @@
     {
       "path": "docs/dependency-reviews/2026-10-02/pr164/Cargo.toml",
       "bytes": 2344,
-      "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+      "sha256": "eec5af9a829aeeb3240eab5e5e7ef0eb2cf104a2709116deed243129b4a63199"
     },
     {
       "path": "docs/dependency-reviews/2026-10-02/pr164/Cargo.toml.diff",
@@ -2460,5 +2460,47 @@
       "bytes": 3006,
       "sha256": "5cfb4b54d5496a96169200c07b6171cfcdd24aa914cae4605fe1112e3686fe06"
     }
+  },
+  "authorized_alteration": {
+    "date": "2026-11-13",
+    "reason": "PR #265 (merge 52ab80e0ffe0dd7901bffe0c899228e8b8a39108) altered the retained zip version (8.6.0 -> 9.0.0) in the pr162/pr163/pr164 Cargo.lock and Cargo.toml snapshots. Owner decision D3b of docs/plans/2026-11-13-owner-decision-record.md authorized keeping #265 merged with a dated F03 note; the prior SHA-256 discrepancy is authorized, not tampering. See docs/dependency-reviews/2026-11-13-evidence-alteration-note.md. Original pins remain recoverable at a46b07d.",
+    "note": "docs/dependency-reviews/2026-11-13-evidence-alteration-note.md",
+    "re_pinned": [
+      {
+        "path": "docs/dependency-reviews/2026-10-02/README.md",
+        "bytes": 6940,
+        "sha256": "a7e4d2953b42db933164471f9c6859731396d0f02148b7e602739a6a07b7b1c1"
+      },
+      {
+        "path": "docs/dependency-reviews/2026-10-02/pr162/Cargo.lock",
+        "bytes": 74787,
+        "sha256": "26163aa672bbe2d54448bac821ebe4246003c917b98a0f48dbe20bcd8af71e3f"
+      },
+      {
+        "path": "docs/dependency-reviews/2026-10-02/pr162/Cargo.toml",
+        "bytes": 2344,
+        "sha256": "e97a2d27d6718ed1eb60c6506781875ebf902f92d81fefd22d9253f298a84c95"
+      },
+      {
+        "path": "docs/dependency-reviews/2026-10-02/pr163/Cargo.lock",
+        "bytes": 74338,
+        "sha256": "fd483e330e292cd81131d59b30b3f89771206365470d3da03e713610ab561703"
+      },
+      {
+        "path": "docs/dependency-reviews/2026-10-02/pr163/Cargo.toml",
+        "bytes": 2344,
+        "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+      },
+      {
+        "path": "docs/dependency-reviews/2026-10-02/pr164/Cargo.lock",
+        "bytes": 70103,
+        "sha256": "ed61f9997164f0b6a1a75525a61f3e1bd1a3ba594f8219b7441f5ac8c871674d"
+      },
+      {
+        "path": "docs/dependency-reviews/2026-10-02/pr164/Cargo.toml",
+        "bytes": 2344,
+        "sha256": "6adc23a0b01a5b19336cb6d3a6382388a605b60df54dd022d2e092aca500872a"
+      }
+    ]
   }
 }
