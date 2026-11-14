@@ -145,6 +145,18 @@ impl CurrentAuthoringPlanClosure {
     pub(crate) fn locator_raw(&self) -> &[u8] {
         self.locator_lease.bytes()
     }
+    /// Borrow each sealed human-clause member's exact native key and complete original
+    /// raw digest, in maintained member order. The key is derived from the actual
+    /// `human-clause-<key>` role; this projection issues no currentness or approval proof.
+    pub(crate) fn clause_members(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.members.iter().filter_map(|member| {
+            member
+                .native_role
+                .as_deref()?
+                .strip_prefix("human-clause-")
+                .map(|key| (key, member.raw_sha256.as_str()))
+        })
+    }
     /// Borrow only internally issued complete operation registrations, preserving duplicates.
     pub(crate) fn originals(&self) -> Result<RegisteredAuthoringOriginals<'_>, ContractError> {
         self.held.authoring_originals()
