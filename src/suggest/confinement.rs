@@ -62,6 +62,21 @@ pub(super) fn invoke_confined(
     let scratch_path = scratch.path().canonicalize().map_err(|cause| {
         shared::error(format!("cannot resolve the adapter scratch directory: {cause}"))
     })?;
+    // Re-verify identity immediately before spawn: a replacement between the
+    // hash check and exec must not slip past the fingerprint (hash-then-exec
+    // TOCTOU). Copying signed platform binaries breaks macOS code signatures,
+    // so the executable stays in place and its inode identity is pinned.
+    let identity = file_identity(&resolved)?;
+    if file_identity(&resolved)? != identity
+        || crate::hashing::sha256_hex(&crate::io::read_bounded(
+            &resolved,
+            crate::suggest::prepare::MAX_ADAPTER_BYTES,
+        )?) != expected_sha
+    {
+        return Err(shared::error(
+            "the adapter executable changed since it was fingerprinted; re-run prepare and consent again",
+        ));
+    }
     let started = Instant::now();
     let mut child = spawn(&resolved, argv, &scratch_path)?;
     let (result, drained) = supervise(&mut child, payload, timeout, started);
@@ -80,6 +95,14 @@ pub(super) fn invoke_confined(
 
 /// Spawn the confined child in its own process group with piped output.
 #[cfg(unix)]
+/// Device/inode identity of the executable; a path replacement changes it.
+#[cfg(unix)]
+fn file_identity(path: &Path) -> Result<(u64, u64), ForgeError> {
+    use std::os::unix::fs::MetadataExt;
+    let metadata = std::fs::metadata(path)?;
+    Ok((metadata.dev(), metadata.ino()))
+}
+
 fn spawn(executable: &Path, argv: &[String], scratch: &Path) -> Result<Child, ForgeError> {
     use std::os::unix::process::CommandExt as _;
 
@@ -710,6 +733,11 @@ fn denied_syscalls() -> Vec<u32> {
         libc::SYS_io_uring_setup as u32,
         libc::SYS_io_uring_enter as u32,
         libc::SYS_io_uring_register as u32,
+        // Same-uid cross-process escape hatches: attaching to or reading and
+        // writing an unconfined operator process escapes every boundary here.
+        libc::SYS_ptrace as u32,
+        libc::SYS_process_vm_readv as u32,
+        libc::SYS_process_vm_writev as u32,
     ];
     // i386 routes socket calls through one multiplexer; 64-bit architectures
     // have no socketcall.
@@ -736,6 +764,34 @@ fn platform_command(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn deny_list_closes_same_uid_cross_process_escape_hatches() {
+        let denied = denied_syscalls();
+        for syscall in [
+            libc::SYS_ptrace as u32,
+            libc::SYS_process_vm_readv as u32,
+            libc::SYS_process_vm_writev as u32,
+        ] {
+            assert!(denied.contains(&syscall), "syscall {syscall} must be denied");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn file_identity_changes_when_the_path_is_replaced() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("adapter");
+        std::fs::write(&path, b"verified").unwrap();
+        let before = file_identity(&path).unwrap();
+        assert_eq!(file_identity(&path).unwrap(), before, "in-place reads keep identity");
+        // Atomic replacement (rename over the path) swaps the inode.
+        let replacement = dir.path().join("replacement");
+        std::fs::write(&replacement, b"attacker").unwrap();
+        std::fs::rename(&replacement, &path).unwrap();
+        assert_ne!(file_identity(&path).unwrap(), before, "replacement must be detectable");
+    }
 
     #[test]
     fn finished_by_detaches_a_thread_that_outlives_the_deadline() {

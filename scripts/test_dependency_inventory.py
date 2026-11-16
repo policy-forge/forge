@@ -272,7 +272,10 @@ class DependencyGateTests(unittest.TestCase):
     def test_invalid_exception_metadata(self):
         for changes in ({"owner": ""}, {"created_on": "2026-10-03"},
                         {"review_by": "2026-08-31"}, {"expires_on": "2027-01-01"},
-                        {"checksum": "f" * 64}, {"created_on": "2026-9-1"}):
+                        {"checksum": "f" * 64}, {"created_on": "2026-9-1"},
+                        # A proposal is not an approval: the gate must never
+                        # count it as owned evidence.
+                        {"rationale": "PROPOSED pending owner approval; see PR #1"}):
             with self.subTest(changes=changes):
                 self.fixture.exceptions["entries"] = []
                 self.fixture.exception(**changes)
@@ -569,7 +572,11 @@ class CommonSafetyTests(unittest.TestCase):
                 common.load_json(raw)
         with self.assertRaises(common.InputError):
             common.load_toml(b"x=" + b"1" * 5000)
+        for raw in (b"x=inf", b"x=-inf", b"x=nan", b"x=1e400", b"a=[nan]"):
+            with self.subTest(raw=raw), self.assertRaises(common.InputError):
+                common.load_toml(raw)
         self.assertEqual(common.load_json(b'{"n":1.5}'), {"n": 1.5})
+        self.assertEqual(common.load_toml(b"x=1.5"), {"x": 1.5})
 
     def test_raw_crlf_bytes_preserve_locked_digest(self):
         with tempfile.TemporaryDirectory() as root:

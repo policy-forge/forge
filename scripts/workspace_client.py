@@ -152,7 +152,15 @@ class Workspace:
             if len(payload) > response_bound:
                 raise RuntimeError("Response exceeds the supported bound")
             if not 200 <= response.status < 300:
-                raise WorkspaceError(json.loads(payload))
+                # A non-JSON or non-object error body must not mask the HTTP
+                # status (JSONDecodeError) or crash .get (AttributeError).
+                try:
+                    envelope = json.loads(payload)
+                except ValueError:
+                    envelope = None
+                if not isinstance(envelope, dict):
+                    envelope = {"code": "http-error", "message": f"HTTP {response.status}"}
+                raise WorkspaceError(envelope)
             if expected_media_type and response.getheader("Content-Type", "").split(";", 1)[0].strip().lower() != expected_media_type:
                 raise RuntimeError("The committed metadata has an unsupported media type")
             return payload if raw else json.loads(payload)
@@ -1121,8 +1129,13 @@ class Workspace:
         while operation["state"] in ("pending", "running"):
             if time.monotonic() >= deadline:
                 raise TimeoutError("Query the retained operation before retrying its effect")
+            # Server-supplied ID goes into a route: same shape gate as every
+            # other ID-consuming method (no '..', '?', '%2F' escapes).
+            operation_id = operation["operation_id"]
+            if not isinstance(operation_id, str) or not re.fullmatch(r"op_[0-9a-z]{12,80}", operation_id):
+                raise ValueError("The retained operation identity is malformed")
             time.sleep(0.1)
-            operation = self.request("GET", self.api_path("/operations/" + operation["operation_id"]))
+            operation = self.request("GET", self.api_path("/operations/" + operation_id))
         return operation
 
     def commit(self, preview, *, confirmed, idempotency_key):
@@ -1135,20 +1148,24 @@ class Workspace:
 
     def close(self):
         """Request selected-major shutdown, then retain the existing owned process cleanup."""
-        if getattr(self, "_capability", "") and self.process.poll() is None:
-            try:
-                self.request("POST", self.api_path("/session/shutdown"), {})
-            except (OSError, RuntimeError, ValueError):
-                pass
-        self._capability = ""
-        if self.process.poll() is None:
-            try:
-                self.process.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                self.process.kill()
-                self.process.wait()
-        if self.process.stdout:
-            self.process.stdout.close()
+        # finally: any shutdown-reply failure (including http.client's
+        # HTTPException, not an OSError) must not orphan the owned process.
+        try:
+            if getattr(self, "_capability", "") and self.process.poll() is None:
+                try:
+                    self.request("POST", self.api_path("/session/shutdown"), {})
+                except Exception:
+                    pass
+        finally:
+            self._capability = ""
+            if self.process.poll() is None:
+                try:
+                    self.process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait()
+            if self.process.stdout:
+                self.process.stdout.close()
 
     def __enter__(self):
         """Return this already-negotiated owned session to a context manager."""

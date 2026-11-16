@@ -75,6 +75,11 @@ fn collect_controls(controls: &[Value], map: &mut HashMap<String, ControlSnapsho
                 parts_prose,
             },
         );
+        // Control enhancements (nested controls, e.g. ac-2.1) are part of the
+        // snapshot too; skipping them hides enhancement changes from the diff.
+        if let Some(nested) = control.get("controls").and_then(Value::as_array) {
+            collect_controls(nested, map);
+        }
     }
 }
 
@@ -199,6 +204,17 @@ mod tests {
                 "groups": [{"id": "test", "title": "Test", "controls": controls_json}]
             }
         })
+    }
+
+    #[test]
+    fn extract_catalog_includes_control_enhancements() {
+        let mut json = make_catalog_json(&[("ac-2", "Account Management", "Manage accounts.")]);
+        json["catalog"]["groups"][0]["controls"][0]["controls"] = serde_json::json!([{
+            "id": "ac-2.1", "title": "Account Notifications",
+            "parts": [{"name": "statement", "id": "ac-2.1_smt", "prose": "Notify on changes."}]
+        }]);
+        let result = extract_controls(&json, &ArtifactType::Catalog);
+        assert!(result.contains_key("ac-2.1"), "enhancements must not be silently dropped");
     }
 
     #[test]

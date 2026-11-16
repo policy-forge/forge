@@ -169,12 +169,23 @@ check "Generate catalog (XML)" \
 
 # --- 1c: Profile (JSON) — must be generated before component (used as --source-profile) ---
 # forge profile requires --include or --exclude. Extract control IDs from the catalog.
-CONTROL_IDS=$( { grep -o '"id" *: *"[A-Za-z0-9_-]*"' "${CATALOG_JSON}" \
-    | sed 's/"id" *: *"//;s/"//' \
-    | { grep -v '_smt$\|_gdn$\|_obj$\|title-' || true; } \
-    | sed -n '1,20p' \
-    | tr '\n' ',' \
-    | sed 's/,$//'; } || true )
+# Exact control IDs from the JSON tree: greps matched part/group ids too,
+# missed compact JSON, and the BRE filter was a no-op on BSD grep.
+CONTROL_IDS=$(python3 - "${CATALOG_JSON}" <<'PY'
+import json, sys
+
+def controls(node):
+    for control in node.get("controls", []):
+        yield control["id"]
+        yield from controls(control)
+    for group in node.get("groups", []):
+        yield from controls(group)
+
+with open(sys.argv[1]) as f:
+    catalog = json.load(f)["catalog"]
+print(",".join(dict.fromkeys(controls(catalog))))
+PY
+) || CONTROL_IDS=""
 
 if [[ -z "${CONTROL_IDS}" ]]; then
     record_fail "Generate profile (JSON) — no control IDs found in catalog"

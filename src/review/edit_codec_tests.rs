@@ -280,6 +280,25 @@ fn invalid_edit_classification_round_trips() {
     assert_eq!(value["responses"][0]["classification"], "invalid-edit");
 }
 
+/// An oversized rationale is a content refusal (Invalid), not a latching
+/// capacity stop: one bad document must not wedge later decodes on the same
+/// ledger. Schema maxLength counts code points; the byte cap is reachable
+/// with multi-byte text that passes the schema gate.
+#[test]
+fn oversized_rationale_does_not_latch_the_ledger() {
+    let mut document = response(None);
+    document.rationale = "\u{e9}".repeat(5000); // 5000 chars pass schema, 10000 bytes > 8192
+    let bytes = raw(&document);
+    let mut ledger = ContractLedger::default();
+    assert!(matches!(
+        refusal(decode_response(&bytes, &mut ledger, &mut NoopControl)),
+        ContractError::Invalid
+    ));
+    // The ledger must still admit a valid document afterwards.
+    let good = raw(&response(None));
+    assert!(decode_response(&good, &mut ledger, &mut NoopControl).is_ok());
+}
+
 /// The /4 response decoder refuses a /3 version token; the families stay separately closed.
 #[test]
 fn response_version_is_separately_closed() {

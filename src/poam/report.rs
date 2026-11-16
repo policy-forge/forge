@@ -139,7 +139,7 @@ fn render_text_bounded(inventory: &SourceInventory, limit: usize) -> Result<Stri
                 "{} {}: uuid={}, state={}, controls=",
                 object.kind.as_str(),
                 Escaped(&object.key),
-                object.uuid,
+                Escaped(&object.uuid),
                 Escaped(&object.state)
             )?;
             for (index, control) in object.control_ids.iter().enumerate() {
@@ -148,7 +148,7 @@ fn render_text_bounded(inventory: &SourceInventory, limit: usize) -> Result<Stri
                 }
                 write!(output, "{}", Escaped(control))?;
             }
-            writeln!(output, ", sha256={}", object.sha256)?;
+            writeln!(output, ", sha256={}", Escaped(&object.sha256))?;
         }
         writeln!(output, "Source integrity only; no review or remediation eligibility judgment.")
     })();
@@ -210,9 +210,9 @@ mod tests {
             objects: vec![SourceObject {
                 kind: SourceKind::Finding,
                 key: "finding\ninjected\u{1b}[31m".to_string(),
-                uuid: "22222222-2222-4222-8222-222222222222".to_string(),
+                uuid: "22222222-2222-4222-8222-222222222222\u{1b}[31m".to_string(),
                 result_uuid: "11111111-1111-4111-8111-111111111111".to_string(),
-                sha256: "b".repeat(64),
+                sha256: format!("{}\nforged", "b".repeat(64)),
                 state: "state\rforged".to_string(),
                 control_ids: vec!["AC-1".to_string(), "AC-2\tforged".to_string()],
                 declared_content_sha256: Some("c".repeat(64)),
@@ -225,6 +225,8 @@ mod tests {
         assert!(text.contains("finding\\ninjected\\u{1b}[31m"));
         assert!(text.contains("state\\rforged"));
         assert!(text.contains("controls=AC-1,AC-2\\tforged"));
+        assert!(text.contains("uuid=22222222-2222-4222-8222-222222222222\\u{1b}[31m"));
+        assert!(text.contains("\\nforged"));
         assert!(!text.contains('\u{1b}'));
         assert!(!text.contains('\r'));
         assert!(!text.contains('\t'));

@@ -196,12 +196,12 @@ impl FakeTransport {
         }
         let token = self.credentials.token()?;
         let mut stream = TcpStream::connect(self.addr)
-            .map_err(|_| TransportError::Protocol("connect failed".to_string()))?;
+            .map_err(|_| TransportError::Protocol("connect failed"))?;
         let timeout = Duration::from_millis(policy.timeout_ms);
         stream
             .set_read_timeout(Some(timeout))
             .and_then(|()| stream.set_write_timeout(Some(timeout)))
-            .map_err(|_| TransportError::Protocol("socket timeout setup failed".to_string()))?;
+            .map_err(|_| TransportError::Protocol("socket timeout setup failed"))?;
         let body = body.unwrap_or(&[]);
         let request = format!(
             "{method} {path} HTTP/1.1\r\nHost: {}\r\nAuthorization: Bearer {token}\r\n\
@@ -213,7 +213,7 @@ impl FakeTransport {
         stream
             .write_all(request.as_bytes())
             .and_then(|()| stream.write_all(body))
-            .map_err(|_| TransportError::Protocol("request write failed".to_string()))?;
+            .map_err(|_| TransportError::Protocol("request write failed"))?;
         read_response(&mut stream, policy.max_response_bytes)
     }
 }
@@ -226,16 +226,14 @@ impl Transport for FakeTransport {
     ) -> Result<RemoteObject, TransportError> {
         reject_secret_text(&request.payload.title, "payload")
             .and_then(|()| reject_secret_text(&request.payload.body, "payload"))
-            .map_err(|_| {
-                TransportError::Protocol("payload contains credential-shaped content".into())
-            })?;
+            .map_err(|_| TransportError::Protocol("payload contains credential-shaped content"))?;
         let (method, path) = match request.kind {
             OperationKind::Create => ("POST", format!("/repos/{}/issues", request.target)),
             OperationKind::Update | OperationKind::CloseRequest => {
                 let precondition = request
                     .precondition
                     .as_ref()
-                    .ok_or_else(|| TransportError::Protocol("missing precondition".into()))?;
+                    .ok_or(TransportError::Protocol("missing precondition"))?;
                 ("PATCH", format!("/repos/{}/issues/{}", request.target, precondition.remote_id))
             }
         };
@@ -248,7 +246,7 @@ impl Transport for FakeTransport {
             payload["expected_version"] = json!(precondition.remote_version);
         }
         let body = serde_json::to_vec(&payload)
-            .map_err(|_| TransportError::Protocol("payload encode failed".into()))?;
+            .map_err(|_| TransportError::Protocol("payload encode failed"))?;
         let (status, headers, bytes) =
             self.round_trip(policy, method, &path, &request.idempotency_key, Some(&body))?;
         classify(status, &headers, &bytes)
@@ -278,21 +276,33 @@ fn classify(
     match status {
         200 | 201 => {
             let value: Value = serde_json::from_slice(bytes)
-                .map_err(|_| TransportError::Protocol("malformed provider response".into()))?;
+                .map_err(|_| TransportError::Protocol("malformed provider response"))?;
+            // Contract fidelity: missing/mistyped fields must refuse, never
+            // default into a fabricated successful remote object.
+            let (Some(remote_id), Some(remote_version), Some(state)) = (
+                value["remote_id"].as_str().filter(|id| !id.is_empty()),
+                value["remote_version"].as_u64(),
+                value["state"].as_str().filter(|state| !state.is_empty()),
+            ) else {
+                return Err(TransportError::Protocol("malformed provider response"));
+            };
             Ok(RemoteObject {
-                remote_id: value["remote_id"].as_str().unwrap_or_default().to_string(),
-                remote_version: value["remote_version"].as_u64().unwrap_or_default(),
-                state: value["state"].as_str().unwrap_or_default().to_string(),
+                remote_id: remote_id.to_string(),
+                remote_version,
+                state: state.to_string(),
             })
         }
         301 | 302 | 303 | 307 | 308 => Err(TransportError::RedirectRefused),
         404 => Err(TransportError::NotFound),
         409 => {
-            let value: Value = serde_json::from_slice(bytes).unwrap_or(Value::Null);
-            Err(TransportError::Conflict {
-                expected: value["expected"].as_u64().unwrap_or_default(),
-                observed: value["observed"].as_u64().unwrap_or_default(),
-            })
+            let value: Value = serde_json::from_slice(bytes)
+                .map_err(|_| TransportError::Protocol("malformed provider response"))?;
+            let (Some(expected), Some(observed)) =
+                (value["expected"].as_u64(), value["observed"].as_u64())
+            else {
+                return Err(TransportError::Protocol("malformed provider response"));
+            };
+            Err(TransportError::Conflict { expected, observed })
         }
         429 => {
             let retry = headers
@@ -308,21 +318,47 @@ fn classify(
     }
 }
 
+/// Generous HTTP header-line ceiling (common servers cap at 8 KiB).
+const MAX_HEADER_LINE: usize = 8192;
+
+/// Only WouldBlock/TimedOut are timeouts; EOF/resets are connection failures.
+/// Retry semantics in the state machine depend on the distinction.
+fn map_io(error: &std::io::Error) -> TransportError {
+    if matches!(error.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut) {
+        TransportError::Timeout
+    } else {
+        TransportError::Protocol("connection failure")
+    }
+}
+
+/// One complete header line, capped so a hostile peer cannot grow it without
+/// bound. `take` on the `BufReader` keeps read-ahead bytes buffered for the body.
+fn read_header_line<R: BufRead>(reader: &mut R) -> Result<String, TransportError> {
+    let mut line = String::new();
+    reader
+        .by_ref()
+        .take(u64::try_from(MAX_HEADER_LINE + 1).unwrap_or(u64::MAX))
+        .read_line(&mut line)
+        .map_err(|error| map_io(&error))?;
+    if line.len() > MAX_HEADER_LINE || !line.ends_with('\n') {
+        return Err(TransportError::Protocol("oversized or unterminated header line"));
+    }
+    Ok(line)
+}
+
 /// Read one bounded HTTP response, refusing oversized bodies (M-13).
 fn read_response(stream: &mut TcpStream, max_bytes: usize) -> Result<FakeResponse, TransportError> {
     let mut reader = BufReader::new(stream);
-    let mut status_line = String::new();
-    reader.read_line(&mut status_line).map_err(|_| TransportError::Timeout)?;
+    let status_line = read_header_line(&mut reader)?;
     let status = status_line
         .split_whitespace()
         .nth(1)
         .and_then(|code| code.parse::<u16>().ok())
-        .ok_or_else(|| TransportError::Protocol("malformed status line".into()))?;
+        .ok_or(TransportError::Protocol("malformed status line"))?;
     let mut headers = Vec::new();
     let mut content_length = 0_usize;
     loop {
-        let mut line = String::new();
-        reader.read_line(&mut line).map_err(|_| TransportError::Timeout)?;
+        let line = read_header_line(&mut reader)?;
         let trimmed = line.trim_end();
         if trimmed.is_empty() {
             break;
@@ -332,7 +368,7 @@ fn read_response(stream: &mut TcpStream, max_bytes: usize) -> Result<FakeRespons
             let value = value.trim().to_string();
             if name.eq_ignore_ascii_case("content-length") {
                 content_length =
-                    value.parse().map_err(|_| TransportError::Protocol("bad length".into()))?;
+                    value.parse().map_err(|_| TransportError::Protocol("bad length"))?;
             }
             headers.push((name, value));
         }
@@ -341,7 +377,7 @@ fn read_response(stream: &mut TcpStream, max_bytes: usize) -> Result<FakeRespons
         return Err(TransportError::ResponseTooLarge);
     }
     let mut body = vec![0_u8; content_length];
-    reader.read_exact(&mut body).map_err(|_| TransportError::Timeout)?;
+    reader.read_exact(&mut body).map_err(|error| map_io(&error))?;
     Ok((status, headers, body))
 }
 
@@ -377,11 +413,19 @@ fn serve_connection(stream: TcpStream, state: &Arc<Mutex<State>>) -> std::io::Re
     let mut body = vec![0_u8; content_length];
     reader.read_exact(&mut body)?;
 
-    let (status, extra_headers, response) = {
+    let (status, extra_headers, response, delay_ms) = {
         let mut state = state.lock().map_err(|_| std::io::Error::other("poisoned"))?;
         state.requests.push((method.clone(), path.clone(), idempotency_key.clone()));
-        handle_request(&mut state, &method, &path, &idempotency_key, &body)
+        let delay_ms = state.injections.delay_ms;
+        let (status, headers, response) =
+            handle_request(&mut state, &method, &path, &idempotency_key, &body);
+        (status, headers, response, delay_ms)
     };
+    // Injected latency delays only this response; sleeping under the global
+    // mutex would block every other connection and the control APIs.
+    if delay_ms > 0 {
+        std::thread::sleep(Duration::from_millis(delay_ms));
+    }
 
     let mut stream = stream;
     let mut header_text = String::new();
@@ -422,9 +466,6 @@ fn handle_request(
     idempotency_key: &str,
     body: &[u8],
 ) -> FakeResponse {
-    if state.injections.delay_ms > 0 {
-        std::thread::sleep(Duration::from_millis(state.injections.delay_ms));
-    }
     if state.injections.rate_limit_next > 0 {
         state.injections.rate_limit_next -= 1;
         return (
@@ -559,6 +600,62 @@ mod tests {
             payload: Payload { title: "t".to_string(), body: "b".to_string() },
             precondition: None,
         }
+    }
+
+    #[test]
+    fn read_response_distinguishes_eof_and_caps_header_lines() {
+        use std::io::Write as _;
+        use std::net::TcpListener;
+        // EOF before a status line is a connection failure, not a timeout:
+        // retry semantics in the state machine depend on the distinction.
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            // One header line past the cap (small enough to fit the socket
+            // buffer, so the server never blocks after the client refuses).
+            let _ = stream.write_all(b"HTTP/1.1 200 OK\r\nX: ");
+            let _ = stream.write_all(&vec![b'a'; MAX_HEADER_LINE * 2]);
+            drop(stream);
+        });
+        let mut client = TcpStream::connect(addr).unwrap();
+        let error = read_response(&mut client, 1024 * 1024).unwrap_err();
+        assert!(matches!(error, TransportError::Protocol(_)), "got {error:?}");
+        server.join().unwrap();
+
+        let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            let (stream, _) = listener.accept().unwrap();
+            drop(stream); // immediate EOF
+        });
+        let mut client = TcpStream::connect(addr).unwrap();
+        let error = read_response(&mut client, 1024).unwrap_err();
+        assert!(matches!(error, TransportError::Protocol(_)), "EOF got {error:?}");
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn success_body_with_missing_fields_is_refused_not_defaulted() {
+        // The fake exists to contract-test the adapter: empty remote_id /
+        // version 0 must never be recorded as a successful remote object.
+        for body in [
+            br"{}".as_slice(),
+            br#"{"remote_id":"x","remote_version":"1","state":"open"}"#,
+            br#"{"remote_id":"","remote_version":1,"state":"open"}"#,
+        ] {
+            assert!(
+                matches!(classify(200, &[], body), Err(TransportError::Protocol(_))),
+                "{}",
+                String::from_utf8_lossy(body)
+            );
+        }
+        // A 409 must carry real versions, not fabricated zeros.
+        assert!(matches!(classify(409, &[], b"{}"), Err(TransportError::Protocol(_))));
+        assert_eq!(
+            classify(409, &[], br#"{"expected":1,"observed":2}"#).unwrap_err(),
+            TransportError::Conflict { expected: 1, observed: 2 }
+        );
     }
 
     #[test]

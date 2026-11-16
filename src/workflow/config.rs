@@ -150,8 +150,8 @@ impl ConnectorConfig {
     pub fn validate(&self) -> Result<(), ForgeError> {
         if self.schema_version != CONFIG_SCHEMA_VERSION {
             return Err(error(format!(
-                "unsupported schema_version '{}'; expected {CONFIG_SCHEMA_VERSION}",
-                self.schema_version
+                // No raw echo: the field is user-controlled and may hold a secret.
+                "unsupported schema_version; expected {CONFIG_SCHEMA_VERSION}"
             )));
         }
         if self.targets.is_empty() || self.targets.len() > MAX_TARGETS {
@@ -165,7 +165,8 @@ impl ConnectorConfig {
                     "invalid allowlist target '{target}'; expected owner/repo"
                 )));
             }
-            if !seen.insert(target.as_str()) {
+            // GitHub owner/repo is case-insensitive: A/b and a/b are one repo.
+            if !seen.insert(target.to_ascii_lowercase()) {
                 return Err(error(format!("duplicate allowlist target '{target}'")));
             }
         }
@@ -175,7 +176,9 @@ impl ConnectorConfig {
     /// Whether `target` is explicitly allowlisted (M-4).
     #[must_use]
     pub fn allows(&self, target: &str) -> bool {
-        self.targets.iter().any(|allowed| allowed == target)
+        // Case-folded like GitHub; redirects are refused, so a case-mismatch
+        // 301 must not turn an allowlisted target into a hard failure.
+        self.targets.iter().any(|allowed| allowed.eq_ignore_ascii_case(target))
     }
 
     /// Render deterministic JSON bytes with one trailing newline.
@@ -215,6 +218,17 @@ mod tests {
         config().validate().unwrap();
         assert!(config().allows("policy-forge/forge"));
         assert!(!config().allows("other/repo"));
+    }
+
+    #[test]
+    fn repo_targets_are_case_insensitive_like_github() {
+        // GitHub owner/repo is case-insensitive: A/b and a/b are one repo.
+        let mut c = config();
+        c.targets.push("Policy-Forge/Forge".to_string());
+        assert!(c.validate().is_err(), "case-variant duplicate must be refused");
+        // Casing differences must not refuse an allowlisted target: redirects
+        // are refused, so GitHub's case-mismatch 301 would hard-fail.
+        assert!(config().allows("Policy-Forge/Forge"));
     }
 
     #[test]

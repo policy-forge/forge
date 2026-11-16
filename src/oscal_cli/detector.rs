@@ -84,6 +84,11 @@ fn search_path_for_oscal_cli() -> Option<PathBuf> {
 /// Inner search logic, separated for testability (avoids mutating process-global env).
 fn search_path_with(path_var: &std::ffi::OsStr, extensions: &[String]) -> Option<PathBuf> {
     for dir_path in std::env::split_paths(path_var) {
+        // Empty and relative PATH entries resolve against the cwd, letting a
+        // planted ./oscal-cli win discovery (CWE-426); only absolute dirs count.
+        if !dir_path.is_absolute() {
+            continue;
+        }
         if cfg!(windows) {
             for ext in extensions.iter().filter(|extension| extension.eq_ignore_ascii_case(".exe"))
             {
@@ -139,28 +144,46 @@ fn run_version_check(exe_path: &Path) -> Result<String, String> {
         .spawn()
         .map_err(|error| format!("Failed to execute oscal-cli: {error}"))?;
 
+    // Drain both pipes while polling: a child writing more than the OS pipe
+    // buffer blocks on write and would otherwise be falsely killed as a
+    // timeout. Threads send the complete bytes over channels so collection
+    // stays bounded even if a descendant keeps a pipe open after kill.
+    let (out_tx, out_rx) = std::sync::mpsc::channel();
+    let (err_tx, err_rx) = std::sync::mpsc::channel();
+    let mut stdout_pipe = child.stdout.take();
+    let mut stderr_pipe = child.stderr.take();
+    std::thread::spawn(move || {
+        let mut bytes = Vec::new();
+        if let Some(pipe) = &mut stdout_pipe {
+            let _ = std::io::Read::read_to_end(pipe, &mut bytes);
+        }
+        let _ = out_tx.send(bytes);
+    });
+    std::thread::spawn(move || {
+        let mut bytes = Vec::new();
+        if let Some(pipe) = &mut stderr_pipe {
+            let _ = std::io::Read::read_to_end(pipe, &mut bytes);
+        }
+        let _ = err_tx.send(bytes);
+    });
+
     let start = Instant::now();
+    let mut timed_out = false;
+    let mut status = None;
     loop {
         match child.try_wait() {
-            Ok(Some(_)) => break,
+            Ok(Some(exit)) => {
+                status = Some(exit);
+                break;
+            }
             Ok(None) if start.elapsed() < VERSION_CHECK_TIMEOUT => {
                 std::thread::sleep(Duration::from_millis(25));
             }
             Ok(None) => {
+                timed_out = true;
                 let _ = child.kill();
-                let output = child
-                    .wait_with_output()
-                    .map_err(|error| format!("Failed to reap timed out oscal-cli: {error}"))?;
-                let stderr =
-                    crate::sanitize::strip_control_chars(&String::from_utf8_lossy(&output.stderr));
-                let detail = if stderr.is_empty() {
-                    format!("oscal-cli --version timed out after {VERSION_CHECK_TIMEOUT:?}")
-                } else {
-                    format!(
-                        "oscal-cli --version timed out after {VERSION_CHECK_TIMEOUT:?}: {stderr}"
-                    )
-                };
-                return Err(detail);
+                let _ = child.wait();
+                break;
             }
             Err(error) => {
                 let _ = child.kill();
@@ -170,19 +193,28 @@ fn run_version_check(exe_path: &Path) -> Result<String, String> {
         }
     }
 
-    let output = child
-        .wait_with_output()
-        .map_err(|error| format!("Failed to collect oscal-cli --version output: {error}"))?;
-    if !output.status.success() {
-        let stderr = crate::sanitize::strip_control_chars(&String::from_utf8_lossy(&output.stderr));
+    let grace = Duration::from_secs(1);
+    let stdout = out_rx.recv_timeout(grace).unwrap_or_default();
+    let stderr = crate::sanitize::strip_control_chars(&String::from_utf8_lossy(
+        &err_rx.recv_timeout(grace).unwrap_or_default(),
+    ));
+    if timed_out {
         return Err(if stderr.is_empty() {
-            format!("oscal-cli --version exited with {}", output.status)
+            format!("oscal-cli --version timed out after {VERSION_CHECK_TIMEOUT:?}")
         } else {
-            format!("oscal-cli --version exited with {}: {stderr}", output.status)
+            format!("oscal-cli --version timed out after {VERSION_CHECK_TIMEOUT:?}: {stderr}")
+        });
+    }
+    let status = status.ok_or_else(|| "oscal-cli --version exit status lost".to_string())?;
+    if !status.success() {
+        return Err(if stderr.is_empty() {
+            format!("oscal-cli --version exited with {status}")
+        } else {
+            format!("oscal-cli --version exited with {status}: {stderr}")
         });
     }
 
-    parse_version_from_output(&String::from_utf8_lossy(&output.stdout))
+    parse_version_from_output(&String::from_utf8_lossy(&stdout))
         .ok_or_else(|| "oscal-cli --version produced no semver-shaped version token".to_string())
 }
 
@@ -228,6 +260,24 @@ mod tests {
     // --- T021: PathDetector found and functional ---
     // Note: This test uses mock detection since we can't guarantee oscal-cli on PATH.
     // We test the version parser and struct construction directly.
+
+    #[cfg(unix)]
+    #[test]
+    fn version_check_drains_pipes_so_chatty_children_do_not_false_timeout() {
+        use std::os::unix::fs::PermissionsExt;
+        let tmp = tempfile::tempdir().unwrap();
+        let exe = tmp.path().join("oscal-cli");
+        // >64 KiB of stderr fills the OS pipe buffer; without concurrent
+        // draining the child blocks on write and is falsely killed.
+        std::fs::write(
+            &exe,
+            "#!/bin/sh\ni=0; while [ $i -lt 2000 ]; do echo 'banner warning line padding padding padding padding' >&2; i=$((i+1)); done\necho 'oscal-cli 1.2.3'\n",
+        )
+        .unwrap();
+        std::fs::set_permissions(&exe, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let version = run_version_check(&exe).expect("chatty child must still be detected");
+        assert_eq!(version, "1.2.3");
+    }
 
     #[test]
     fn parse_version_from_standard_output() {
@@ -331,6 +381,27 @@ mod tests {
     #[test]
     fn parse_pathext_custom_extensions() {
         assert_eq!(parse_pathext(".PS1;.VBS"), vec![".exe"]);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn search_path_skips_empty_and_relative_entries() {
+        use std::ffi::OsStr;
+        use std::os::unix::fs::PermissionsExt;
+
+        // A relative PATH entry resolves against the attacker-chosen cwd;
+        // a planted ./oscal-cli must never be discovered.
+        let tmp = tempfile::Builder::new().prefix("path-rel-").tempdir_in(".").unwrap();
+        let relative = tmp.path().file_name().unwrap().to_owned();
+        let bin_path = tmp.path().join("oscal-cli");
+        std::fs::write(&bin_path, "#!/bin/sh\necho test").unwrap();
+        std::fs::set_permissions(&bin_path, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+        let joined = std::env::join_paths([std::path::PathBuf::new(), relative.into()]).unwrap();
+        assert!(
+            search_path_with(OsStr::new(&joined), &[]).is_none(),
+            "empty and relative PATH entries must be skipped"
+        );
     }
 
     #[cfg(unix)]

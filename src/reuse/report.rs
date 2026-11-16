@@ -175,6 +175,9 @@ impl ReuseReport {
     /// # Errors
     /// Returns an authoring error when serialization fails or exceeds the bound.
     pub fn render_json(&self) -> Result<Vec<u8>, ForgeError> {
+        // Refuse what parse would refuse: NaN/Infinity scores serialize as
+        // null and inverted spans must never reach a published document.
+        self.validate()?;
         let mut destination = BoundedJson(Vec::new(), MAX_REPORT_BYTES);
         serde_json::to_writer_pretty(&mut destination, self)
             .map_err(|cause| error(format!("cannot serialize reuse report: {cause}")))?;
@@ -271,9 +274,15 @@ impl ReuseReport {
         if self.inputs.is_empty() {
             return Err(error("reuse report declares no inputs"));
         }
+        let mut input_identities = std::collections::BTreeSet::new();
         for input in &self.inputs {
             single_line("input role", &input.role)?;
             single_line("input path", &input.path)?;
+            // .find binds the first match: duplicates with different
+            // byte_length would make span validation order-dependent.
+            if !input_identities.insert((&input.role, &input.path, &input.sha256)) {
+                return Err(error("reuse report inputs must be unique by role/path/sha256"));
+            }
             crate::authoring::manifest::validate_local_path(
                 "input path",
                 std::path::Path::new(&input.path),
@@ -550,6 +559,25 @@ mod tests {
         .unwrap();
         drafted["sections"][0]["state"] = json!("human-draft-present");
         assert!(ReuseReport::parse(&serde_json::to_vec(&drafted).unwrap()).is_err());
+    }
+
+    #[test]
+    fn duplicate_inputs_are_rejected_regardless_of_order() {
+        // .find binds the first (role,path,sha256) match; duplicates with
+        // different byte_length make span validation order-dependent.
+        let mut bad = report(vec![section(DraftState::SkeletonReady, vec![candidate(2.5)])]);
+        let mut dup = bad.inputs[1].clone();
+        dup.byte_length = 1;
+        bad.inputs.push(dup);
+        assert!(bad.render_json().is_err(), "duplicate input identity must be refused");
+    }
+
+    #[test]
+    fn render_refuses_documents_parse_would_reject() {
+        // NaN serializes as null; render must run validate() so it cannot
+        // emit a document its own parse refuses.
+        let bad = report(vec![section(DraftState::SkeletonReady, vec![candidate(f64::NAN)])]);
+        assert!(bad.render_json().is_err(), "NaN score must not render as null");
     }
 
     #[test]

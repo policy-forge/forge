@@ -185,6 +185,9 @@ pub fn execute_analyze(
     let as_of = parse_gate_date(fail_on, as_of)?;
     let prepared = prepare_analysis(manifest_path, filters)?;
     validate_destination(&prepared.input_paths, output)?;
+    // Fail closed if any input changed since preparation, like the framework
+    // consumer: the emitted report and gate decision must match on-disk bytes.
+    prepared.verify_input_fingerprints()?;
     let rendered = render_report(&prepared.report, format)?;
     crate::cli::output::write_output(&rendered, output)?;
     Ok(review_required(&prepared.report, &prepared.manifest, fail_on, as_of))

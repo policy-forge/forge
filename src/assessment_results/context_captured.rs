@@ -794,7 +794,7 @@ mod tests {
                 .expect("SSP");
         let ssp_value = serde_json::to_value(ssp).expect("SSP JSON");
         let mut plan_value = serde_json::to_value(
-            build_assessment_plan(&["AC-1".to_owned()], "ssp.json", "Fixture").expect("AP"),
+            build_assessment_plan(&["AC-1".to_owned()], "ssp.json", "Fixture", None).expect("AP"),
         )
         .expect("AP JSON");
         let component_uuid = ssp_value

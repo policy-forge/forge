@@ -135,7 +135,7 @@ fn admit_effect_paths(index: &Index, present: bool, incoming: Option<&Index>) ->
         index.resources.iter().chain(incoming.into_iter().flat_map(|incoming| &incoming.resources))
     {
         let path = registration.path.as_str();
-        if paths.iter().any(|old| *old != path && old.eq_ignore_ascii_case(path)) {
+        if paths.iter().any(|old| *old != path && old.to_lowercase() == path.to_lowercase()) {
             return Err(Error::containment());
         }
         if !paths.contains(&path) {
@@ -172,7 +172,7 @@ fn admit_source_restore_paths(
         index.resources.iter().chain(incoming.into_iter().flat_map(|incoming| &incoming.resources))
     {
         let path = registration.path.as_str();
-        if paths.iter().any(|old| *old != path && old.eq_ignore_ascii_case(path)) {
+        if paths.iter().any(|old| *old != path && old.to_lowercase() == path.to_lowercase()) {
             return Err(Error::containment());
         }
         if !paths.contains(&path) {

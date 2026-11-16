@@ -202,6 +202,25 @@ fn value() -> Value {
     serde_json::to_value(fixture()).unwrap()
 }
 
+/// A seats-total overage is content validation (schema allows 32 seats x
+/// count<=100), not resource exhaustion: Invalid, and the ledger must still
+/// admit a valid queue afterwards on the same command-wide ledger.
+#[test]
+fn seats_total_overage_does_not_latch_the_ledger() {
+    let mut bad = value();
+    bad["policies"][0]["seats"] = json!([
+        {"role_key": "approver", "count": 60},
+        {"role_key": "owner", "count": 60}
+    ]);
+    let mut ledger = ContractLedger::default();
+    assert_eq!(
+        error(decode_queue(&raw(&bad), &mut ledger, &mut NoopControl)),
+        ContractError::Invalid
+    );
+    let good = raw(&value());
+    assert!(decode_queue(&good, &mut ledger, &mut NoopControl).is_ok());
+}
+
 /// Actual finite emission retains exact field order, explicit nulls, original UUID text and LF.
 #[test]
 fn finite_queue_roundtrip_has_literal_order_nulls_and_one_lf() {

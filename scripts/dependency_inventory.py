@@ -562,6 +562,10 @@ def validate_exceptions(value, packages, policy, as_of):
         crit = criteria(raw["criteria"], "exception.criteria")
         for field in ("owner", "rationale", "approval_reference"):
             string(raw[field], "exception." + field, multiline=field == "rationale")
+        # A self-declared proposal is not owner approval; it must never be
+        # admitted as gate evidence (recorded approval must come from the owner).
+        if "PROPOSED" in raw["rationale"] or "pending owner approval" in raw["rationale"]:
+            raise InputError(f"exception: rationale is a proposal, not owner approval {package_id(raw)}")
         created = day(raw["created_on"], "exception.created_on")
         review = day(raw["review_by"], "exception.review_by")
         expiry = day(raw["expires_on"], "exception.expires_on")

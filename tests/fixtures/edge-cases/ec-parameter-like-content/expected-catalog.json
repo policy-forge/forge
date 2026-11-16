@@ -15,7 +15,7 @@
               {
                 "constraints": [
                   {
-                    "description": "minimum: 30 days"
+                    "description": "maximum: 30 days"
                   }
                 ],
                 "id": "a84fa2db-65a8-52ac-8eba-2acaaa579e56_prm_0",

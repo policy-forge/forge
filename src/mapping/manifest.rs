@@ -129,7 +129,8 @@ pub struct ResourceInventorySnapshot {
     pub oscal_version: String,
     pub control_ids: Vec<String>,
     pub statement_ids: Vec<String>,
-    /// Stable digest of the eligible subject type, identifier, and fingerprint tuples.
+    /// Stable digest of the eligible subject tuples plus group hierarchy,
+    /// group-id ambiguity and ineligible-part names (whole-snapshot staleness).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fingerprint_digest: Option<String>,
 }

@@ -4,19 +4,19 @@
   "project_root": ".",
   "baseline": {
     "framework_sha256": "bd2f4399bee74f92cbd5fe0b7c6c87c0b0f3b404f4b78390c061a7b80c78c48e",
-    "report_sha256": "66db11cfbf9f7479f10627c9e8b1d2636e7bbf39fe2d082afd4e767440339f2d"
+    "report_sha256": "c1c4cbcc07f1f675dd82ef5dbd529f3b2eea267720f03a20871d835f94c86f4f"
   },
   "applicability_manifest": {
     "path": "applicability.json",
-    "expected_sha256": "76adb8656a5356f67aa4e7bd9487ebd8c0be6e1c1ae4302c7d64f8d9dd9d4aaa"
+    "expected_sha256": "b10a944c4f1deb298e35f9043a5bdc3035c83c1c0382b7e17e1f32811f0df1b9"
   },
   "gap_report": {
     "path": "gap-report.json",
-    "expected_sha256": "66db11cfbf9f7479f10627c9e8b1d2636e7bbf39fe2d082afd4e767440339f2d"
+    "expected_sha256": "c1c4cbcc07f1f675dd82ef5dbd529f3b2eea267720f03a20871d835f94c86f4f"
   },
   "authoring_pack": {
     "path": "pack.json",
-    "expected_sha256": "e6dacd5683bf8175c91348ef6f5b4b085229dc776a6c1103c38ec3f8e507c82e"
+    "expected_sha256": "217d66e607484d2a171001097ef01265a3036ef4873e0883831929b8f782851c"
   },
   "as_of": "2026-09-08T00:00:00Z",
   "reviewers": [
@@ -42,7 +42,7 @@
       "key": "sample-answer",
       "question_key": "sample-question",
       "question_sha256": "0315325fffa6aff850b6c81bbaccc030a4ac369144662a8e3d1134b60f5a573c",
-      "authoring_pack_sha256": "e6dacd5683bf8175c91348ef6f5b4b085229dc776a6c1103c38ec3f8e507c82e",
+      "authoring_pack_sha256": "217d66e607484d2a171001097ef01265a3036ef4873e0883831929b8f782851c",
       "owner": "sample-owner",
       "source_label": "Synthetic questionnaire",
       "sensitivity": "internal",
@@ -62,12 +62,12 @@
       "policy_key": "sample-policy",
       "topic_key": "sample-topic",
       "gap_ids": [
-        "a7c92203655ad70a787ffd2bd682111a845fdff84e73ee5f974c935f53944605"
+        "528036f064d0144f6fed369abbebf5c2bfa1fe1a29fbf0a4167a4734b17083de"
       ],
       "answer_refs": [
         {
           "answer_key": "sample-answer",
-          "expected_sha256": "390631cd0391e5240b4256d1e886859c2be21e752e18770781d9fc6937414a97"
+          "expected_sha256": "400ecfdc3bd49c0e45019b0a8005b4494aeb752024aa5e47bd2ccf601d910806"
         }
       ],
       "source": {

@@ -126,6 +126,24 @@ fn entry<'a>(report: &'a plan::AuditReport, work_item_id: &str) -> &'a plan::Aud
 /// G-3: repeating an accepted change set creates zero duplicate remote objects,
 /// both through server-side idempotency keys and local reconcile-before-create.
 #[test]
+fn duplicate_create_in_one_plan_executes_once() {
+    let fixture = Fixture::new(&["ac-1"]);
+    let server = FakeServer::start().unwrap();
+    let mut client = transport(&server);
+    let mut document = fixture.plan(&ConnectorState::empty());
+    // Plan::parse accepts duplicate work-item IDs; the second Create in the
+    // same run must see the binding the first one inserted.
+    document.operations.push(document.operations[0].clone());
+    let bytes = document.render().unwrap();
+    let document = plan::Plan::parse(bytes.as_bytes()).unwrap();
+    let (state, report) = fixture.apply(&document, &ConnectorState::empty(), &mut client);
+    assert_eq!(report.entries[0].status, "applied");
+    assert_eq!(report.entries[1].status, "skipped-duplicate");
+    assert_eq!(server.issue_count().unwrap(), 1);
+    assert_eq!(state.bindings.len(), 1);
+}
+
+#[test]
 fn repeated_apply_creates_zero_duplicates() {
     let fixture = Fixture::new(&["ac-1", "ac-2"]);
     let server = FakeServer::start().unwrap();

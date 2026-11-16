@@ -624,17 +624,19 @@ impl CaptureProof {
     }
 }
 
-/// Compare lossless component spellings using ASCII folding without lossy Unicode/path normalization.
+/// Compare component spellings with full Unicode case folding: NTFS and
+/// default APFS fold non-ASCII case too (ä/Ä alias). Lossy folding may
+/// over-match distinct non-UTF-8 bytes; over-rejection is the safe direction
+/// for an alias guard.
+/// shortcut: NFC/NFD variants still alias on APFS; needs an approved unicode-normalization dep.
 fn folded_prefix(prefix: &Path, full: &Path) -> bool {
     let mut complete = full.components();
     for component in prefix.components() {
         let Some(other) = complete.next() else {
             return false;
         };
-        let left = component.as_os_str().as_encoded_bytes();
-        let right = other.as_os_str().as_encoded_bytes();
-        if left.len() != right.len()
-            || !left.iter().zip(right).all(|(a, b)| a.eq_ignore_ascii_case(b))
+        if component.as_os_str().to_string_lossy().to_lowercase()
+            != other.as_os_str().to_string_lossy().to_lowercase()
         {
             return false;
         }
@@ -1107,8 +1109,11 @@ mod tests {
         validate_output_namespaces(&[Path::new("out/native.json"), Path::new("out/report.json")])
             .unwrap();
         validate_output_namespaces(&[Path::new("out/a.json"), Path::new("out/ab.json")]).unwrap();
-        validate_output_namespaces(&[Path::new("unicode/ä.json"), Path::new("unicode/Ä.json")])
-            .unwrap();
+        // NTFS/APFS fold Unicode case: ä/Ä alias and would overwrite a held input.
+        assert!(
+            validate_output_namespaces(&[Path::new("unicode/ä.json"), Path::new("unicode/Ä.json")])
+                .is_err()
+        );
     }
 
     /// A malformed second target or collided complete pair leaves every reservation and counter untouched.

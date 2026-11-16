@@ -362,6 +362,45 @@ fn baseline_check_reports_subject_change_and_new_gap_with_exit_1() {
 }
 
 #[test]
+fn baseline_stripped_of_resource_hash_evidence_is_refused() {
+    let (dir, manifest_path) = setup();
+    let baseline_path = dir.path().join("baseline.json");
+    let build = run(&[
+        "mapping",
+        "build",
+        "--manifest",
+        manifest_path.to_str().unwrap(),
+        "--output",
+        baseline_path.to_str().unwrap(),
+    ]);
+    assert!(build.status.success(), "{}", String::from_utf8_lossy(&build.stderr));
+
+    // Strip raw-sha256 from both resource references: None==None must not
+    // silently read as "unchanged" — the evidence prop is mandatory.
+    let mut baseline: Value =
+        serde_json::from_slice(&std::fs::read(&baseline_path).unwrap()).unwrap();
+    for mapping in baseline["mapping-collection"]["mappings"].as_array_mut().unwrap() {
+        for side in ["source-resource", "target-resource"] {
+            mapping[side]["props"] = json!([]);
+        }
+    }
+    write_json(&baseline_path, &baseline);
+
+    let check = run(&[
+        "mapping",
+        "check",
+        "--manifest",
+        manifest_path.to_str().unwrap(),
+        "--baseline",
+        baseline_path.to_str().unwrap(),
+        "--report-format",
+        "json",
+    ]);
+    // Refusal is the contract; the CLI redacts internal error prose.
+    assert_eq!(check.status.code(), Some(2), "{}", String::from_utf8_lossy(&check.stderr));
+}
+
+#[test]
 fn baseline_check_reports_changed_map_review_evidence() {
     let (dir, manifest_path) = setup();
     let baseline_path = dir.path().join("baseline.json");

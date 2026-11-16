@@ -161,8 +161,44 @@ class GenerateSbomTests(unittest.TestCase):
                                             if p["name"] != "forge:as-of"]
         self.assertEqual(first, second)
 
+    def test_dual_license_emits_spdx_expression(self):
+        self.fixture.write_manifest()
+        raw = (self.fixture.root / "Cargo.toml").read_text(encoding="utf-8")
+        self.fixture.write("Cargo.toml", raw.replace('license = "MIT"',
+                                                       'license = "MIT OR Apache-2.0"'))
+        self.fixture.sync()
+        licenses = self.fixture.build()["metadata"]["licenses"]
+        self.assertEqual(licenses, [{"expression": "MIT OR Apache-2.0"}])
+
+    def test_plain_license_still_uses_id(self):
+        self.assertEqual(self.fixture.build()["metadata"]["licenses"],
+                         [{"license": {"id": "MIT"}}])
+
+    def test_serial_tracks_graph_content_not_only_lock(self):
+        first = self.fixture.build()["serialNumber"]
+        # Same lock + date, but a proc-macro flag flips the emitted document.
+        for pkg in self.fixture.packages:
+            if pkg["name"] == "alpha":
+                pkg["proc_macro"] = True
+        self.fixture.sync()
+        second = self.fixture.build()["serialNumber"]
+        self.assertNotEqual(first, second)
+
     def test_lock_drift_refused(self):
         (self.fixture.root / "Cargo.lock").write_text("version = 4\n", encoding="utf-8")
+        with self.assertRaises(common.InputError):
+            self.fixture.build()
+
+    def test_stale_forge_lock_row_refused_despite_matching_counts(self):
+        # The lock's forge row is the one extra row the population check
+        # tolerates; at an older version it must not pass on counts alone.
+        lock = (self.fixture.root / "Cargo.lock").read_text(encoding="utf-8")
+        lock = lock.replace('name="forge"\nversion="9.9.9"', 'name="forge"\nversion="9.9.8"')
+        (self.fixture.root / "Cargo.lock").write_text(lock, encoding="utf-8")
+        # Keep the graph's lock binding valid so the drift guard cannot mask
+        # the population check; only the forge row itself is stale.
+        self.fixture.graph["inputs"]["lock_sha256"] = self.fixture.hash("Cargo.lock")
+        self.fixture.write("supply-chain/dependency-graph.json", json.dumps(self.fixture.graph))
         with self.assertRaises(common.InputError):
             self.fixture.build()
 

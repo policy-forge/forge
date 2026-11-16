@@ -1,6 +1,6 @@
 {
   "schema_version": "forge.applicability-report/1",
-  "manifest_sha256": "76adb8656a5356f67aa4e7bd9487ebd8c0be6e1c1ae4302c7d64f8d9dd9d4aaa",
+  "manifest_sha256": "b10a944c4f1deb298e35f9043a5bdc3035c83c1c0382b7e17e1f32811f0df1b9",
   "framework": {
     "resource_type": "catalog",
     "href": "framework.json",

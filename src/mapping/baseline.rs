@@ -90,6 +90,17 @@ fn verify_integrity(baseline: &MappingCollectionEnvelope) -> Result<(), ForgeErr
     require_prop(&baseline.mapping_collection.metadata.props, "collection-key", "metadata")?;
     for (mapping_index, mapping) in baseline.mapping_collection.mappings.iter().enumerate() {
         require_prop(&mapping.props, "mapping-key", &format!("mappings[{mapping_index}]"))?;
+        // Resource hash evidence is mandatory: a stripped baseline would
+        // compare None==None as "unchanged" (silent pass) or misreport drift.
+        for (side, resource) in
+            [("source", &mapping.source_resource), ("target", &mapping.target_resource)]
+        {
+            require_prop(
+                &resource.props,
+                "raw-sha256",
+                &format!("mappings[{mapping_index}].{side}-resource"),
+            )?;
+        }
         for (map_index, map) in mapping.maps.iter().enumerate() {
             require_prop(
                 &map.props,
@@ -375,6 +386,11 @@ fn push_finding(
     findings: &mut Vec<ImpactFinding>,
     finding: ImpactFinding,
 ) -> Result<(), ForgeError> {
+    // N maps referencing one changed subject yield N identical findings;
+    // dedup here so the cap counts unique findings, not repetitions.
+    if findings.contains(&finding) {
+        return Ok(());
+    }
     if findings.len() >= MAX_BASELINE_FINDINGS {
         return Err(mapping_error(format!(
             "baseline impact exceeds the {MAX_BASELINE_FINDINGS} finding limit"
@@ -462,6 +478,25 @@ fn mapping_error(message: impl Into<String>) -> ForgeError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn identical_findings_dedup_and_do_not_consume_the_cap() {
+        // N maps referencing one changed subject produce N identical findings;
+        // duplicates must not spam the report or exhaust MAX_BASELINE_FINDINGS.
+        let finding = ImpactFinding {
+            severity: FindingSeverity::Review,
+            code: "subject-changed".to_string(),
+            path: "$.sources[0]".to_string(),
+            message: "content changed".to_string(),
+            old_fingerprint: Some("a".repeat(64)),
+            new_fingerprint: Some("b".repeat(64)),
+        };
+        let mut findings = Vec::new();
+        for _ in 0..(MAX_BASELINE_FINDINGS + 10) {
+            push_finding(&mut findings, finding.clone()).unwrap();
+        }
+        assert_eq!(findings.len(), 1);
+    }
 
     #[test]
     fn duplicate_forge_property_is_rejected() {

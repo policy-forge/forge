@@ -154,13 +154,41 @@ impl LoadedResource {
 
     fn inventory_fingerprint_digest(inventory: &Inventory) -> String {
         let mut hasher = Sha256::new();
+        let mut field = |value: &str| {
+            hasher.update((value.len() as u64).to_be_bytes());
+            hasher.update(value.as_bytes());
+        };
         for (subject_type, subjects) in &inventory.subjects {
             for (id, fingerprint) in subjects {
                 for value in [subject_type.as_str(), id, fingerprint] {
-                    hasher.update((value.len() as u64).to_be_bytes());
-                    hasher.update(value.as_bytes());
+                    field(value);
                 }
             }
+        }
+        // Staleness consumers compare whole snapshots: group hierarchy,
+        // group-id ambiguity and ineligible-part names all change model
+        // output, so they must change the digest too. Domain tags keep the
+        // sections unambiguous.
+        field("control-groups");
+        for (id, groups) in &inventory.control_groups {
+            field(id);
+            field(&groups.len().to_string());
+            for group in groups {
+                field(group);
+            }
+        }
+        field("group-ids");
+        for id in &inventory.group_ids {
+            field(id);
+        }
+        field("ambiguous-group-ids");
+        for id in &inventory.ambiguous_group_ids {
+            field(id);
+        }
+        field("ineligible-parts");
+        for (id, name) in &inventory.ineligible_parts {
+            field(id);
+            field(name);
         }
         lower_hex(&hasher.finalize())
     }
@@ -419,6 +447,13 @@ fn inventory_parts(
         } else if let (Some(id), Some(name)) =
             (part.get("id").and_then(Value::as_str), part.get("name").and_then(Value::as_str))
         {
+            // Same integrity contract as eligible subjects: no silent
+            // last-wins duplicates, no ID shared with a control/statement.
+            if inventory.ids.contains_key(id) || inventory.ineligible_parts.contains_key(id) {
+                return Err(mapping_error(format!(
+                    "{path_label} contains a duplicate or type-ambiguous part id '{id}'"
+                )));
+            }
             inventory.ineligible_parts.insert(id.to_string(), name.to_string());
         }
         if let Some(children) = part.get("parts").and_then(Value::as_array) {
@@ -716,10 +751,9 @@ pub(crate) fn load_captured_admitted<E>(
     let mut evidence = extract_evidence(path_label, resource, &json, raw_sha256)?;
 
     let inventory = if resource.resource_type == ResourceType::Profile {
-        let companion = resource.resolved_catalog.as_ref().ok_or_else(|| {
+        resource.resolved_catalog.as_ref().ok_or_else(|| {
             mapping_error(format!("{path_label}.resolved_catalog is required for a Profile"))
         })?;
-        let _companion_path = manifest_dir.join(companion);
         let companion_bytes = captured_companion
             .ok_or_else(|| mapping_error("captured Profile companion is required"))?;
         if companion_bytes.len() as u64 > io::MAX_FILE_SIZE {
@@ -921,5 +955,30 @@ mod tests {
             .insert("ac-1".to_string(), "b".repeat(64));
 
         assert_ne!(original, LoadedResource::inventory_fingerprint_digest(&inventory));
+    }
+
+    #[test]
+    fn inventory_snapshot_digest_covers_group_hierarchy_and_ineligible_parts() {
+        // Staleness consumers compare whole snapshots: group hierarchy and
+        // ineligible-part names change model output, so the digest must too.
+        let mut inventory = Inventory {
+            subjects: BTreeMap::from([(
+                SubjectType::Control,
+                BTreeMap::from([("ac-1".to_string(), "a".repeat(64))]),
+            )]),
+            ids: BTreeMap::from([("ac-1".to_string(), SubjectType::Control)]),
+            ineligible_parts: BTreeMap::new(),
+            excerpts: BTreeMap::new(),
+            control_groups: BTreeMap::new(),
+            group_ids: BTreeSet::new(),
+            ambiguous_group_ids: BTreeSet::new(),
+        };
+        let base = LoadedResource::inventory_fingerprint_digest(&inventory);
+        inventory.control_groups.insert("ac-1".to_string(), vec!["family-a".to_string()]);
+        let regrouped = LoadedResource::inventory_fingerprint_digest(&inventory);
+        assert_ne!(base, regrouped, "group hierarchy change must be detected");
+        inventory.ineligible_parts.insert("ac-1_gdn".to_string(), "guidance".to_string());
+        let renamed = LoadedResource::inventory_fingerprint_digest(&inventory);
+        assert_ne!(regrouped, renamed, "ineligible part name change must be detected");
     }
 }

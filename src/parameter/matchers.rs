@@ -47,7 +47,7 @@ pub(crate) trait ParameterMatcher {
 
 /// Pattern: qualifier + digit + time unit.
 /// Bounded quantifiers only (SEC-3). `(?i)` for case-insensitive matching.
-/// "within"/"after" → Minimum; "every" → Exact.
+/// "within" → Maximum (deadline, interval <= N); "after" → Minimum; "every" → Exact.
 static TIME_WINDOW: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r"(?i)(?P<qualifier>within|after|every)\s+(?P<value>\d+)\s+(?P<unit>days?|weeks?|months?|years?)",
@@ -73,10 +73,12 @@ impl ParameterMatcher for TimeWindowMatcher {
                 };
                 let value = format!("{} {}", value.as_str(), unit.as_str());
                 let label = format!("{} {}", qualifier.as_str().to_lowercase(), value);
-                let constraint_type = if qualifier.as_str().eq_ignore_ascii_case("every") {
-                    ConstraintType::Exact
-                } else {
-                    ConstraintType::Minimum
+                let constraint_type = match qualifier.as_str().to_ascii_lowercase().as_str() {
+                    "every" => ConstraintType::Exact,
+                    // A deadline bounds the interval above; Minimum would
+                    // permit never acting (compliance inversion).
+                    "within" => ConstraintType::Maximum,
+                    _ => ConstraintType::Minimum,
                 };
                 Some(ParameterMatch {
                     start: full_match.start(),
@@ -114,7 +116,9 @@ pub(crate) struct ThresholdMatcher;
 /// Whether a numeric capture ends at a token boundary rather than a date or identifier.
 fn has_numeric_value_boundary(text: &str, end: usize) -> bool {
     text[end..].chars().next().is_none_or(|character| {
-        !character.is_alphanumeric() && character != '_' && !matches!(character, '-' | '/' | '.')
+        // A trailing '.' ends a sentence; decimals like 12.5 are already
+        // consumed by the regex capture, so '.' here is never mid-number.
+        !character.is_alphanumeric() && character != '_' && !matches!(character, '-' | '/')
     })
 }
 impl ParameterMatcher for ThresholdMatcher {
@@ -297,6 +301,15 @@ mod tests {
         m.constraint.as_ref().map(|c| &c.constraint_type).expect("constraint present")
     }
 
+    #[test]
+    fn threshold_matches_sentence_final_values() {
+        // A trailing period ends the sentence, not an identifier like "12.5";
+        // the digit before '.' already guards decimals via the regex capture.
+        let results = ThresholdMatcher.find_parameters("Allow no more than 5.");
+        assert_eq!(results.len(), 1, "sentence-final threshold dropped");
+        assert_eq!(results[0].value, "5");
+    }
+
     // ── T008: TimeWindowMatcher positive tests ───────────────────────────
 
     #[test]
@@ -307,7 +320,9 @@ mod tests {
         assert_eq!(results[0].parameter_type, ParameterType::TimeWindow);
         assert_eq!(results[0].value, "30 days");
         assert_eq!(results[0].label, "within 30 days");
-        assert_eq!(*constraint_type(&results[0]), ConstraintType::Minimum);
+        // "within 30 days" bounds the interval ABOVE (<=30): a deadline is a
+        // Maximum. Minimum would permit never changing the password.
+        assert_eq!(*constraint_type(&results[0]), ConstraintType::Maximum);
         assert!(results[0].start < results[0].end);
     }
 
@@ -337,7 +352,7 @@ mod tests {
         let results = m.find_parameters("Records must be retained within 2 years");
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].value, "2 years");
-        assert_eq!(*constraint_type(&results[0]), ConstraintType::Minimum);
+        assert_eq!(*constraint_type(&results[0]), ConstraintType::Maximum);
     }
 
     #[test]

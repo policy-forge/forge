@@ -984,7 +984,8 @@ fn add_bound(total: usize, count: usize, maximum: usize) -> Result<usize, ForgeE
 fn evidence_href(value: &str) -> Result<(), ForgeError> {
     if value.is_empty()
         || value.len() > 4096
-        || value.contains(['\\', ':', '?', '#'])
+        // '%' would let percent-decoding consumers resolve '..' or controls.
+        || value.contains(['\\', ':', '?', '#', '%'])
         || value.starts_with('/')
         || value.split('/').any(|part| part.is_empty() || matches!(part, "." | ".."))
         || value.chars().any(char::is_control)
@@ -1003,6 +1004,13 @@ fn error(message: &'static str) -> ForgeError {
 mod tests {
     use super::*;
     use serde_json::{Value, json};
+
+    #[test]
+    fn evidence_href_refuses_percent_encoded_traversal() {
+        assert!(evidence_href("evidence/%2e%2e/secret").is_err());
+        assert!(evidence_href("evidence/%00ctl").is_err());
+        assert!(evidence_href("evidence/ok.json").is_ok());
+    }
 
     /// Syntactic artifact pin; these unit declarations are not native capture proof.
     fn pin(name: &str) -> Value {

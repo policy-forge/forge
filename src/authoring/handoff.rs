@@ -41,8 +41,41 @@ pub struct HandoffPolicy {
     pub title: String,
     pub owner_keys: Vec<String>,
     pub parties: Vec<Party>,
-    pub approval_policy: ApprovalPolicy,
+    pub approval_policy: HandoffApprovalPolicy,
     pub review: ReviewSchedule,
+}
+
+/// Handoff-local approval policy: every separation field is required on every
+/// deserialization/construction path, unlike `SeparationRules` whose legacy
+/// `#[serde(default)]` shape would silently disable governance.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct HandoffApprovalPolicy {
+    pub schema_version: String,
+    pub required_roles: Vec<record::RoleRequirement>,
+    pub separation: HandoffSeparation,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct HandoffSeparation {
+    pub author_reviewer: bool,
+    pub author_approver: bool,
+    pub reviewer_approver: bool,
+}
+
+impl From<&HandoffApprovalPolicy> for ApprovalPolicy {
+    fn from(policy: &HandoffApprovalPolicy) -> Self {
+        Self {
+            schema_version: policy.schema_version.clone(),
+            required_roles: policy.required_roles.clone(),
+            separation: record::SeparationRules {
+                author_reviewer: policy.separation.author_reviewer,
+                author_approver: policy.separation.author_approver,
+                reviewer_approver: policy.separation.reviewer_approver,
+            },
+        }
+    }
 }
 
 /// Parse a closed, bounded handoff request with explicit governance configuration.
@@ -194,7 +227,7 @@ fn draft_record(policy: &HandoffPolicy, source_path: &str, source_hash: &str) ->
         party.roles.sort();
     }
     parties.sort_by(|left, right| left.key.cmp(&right.key));
-    let mut approval_policy = policy.approval_policy.clone();
+    let mut approval_policy = ApprovalPolicy::from(&policy.approval_policy);
     approval_policy.required_roles.sort_by_key(|role| role.role);
     LifecycleRecord {
         schema_version: record::SCHEMA_VERSION.to_owned(),
@@ -440,6 +473,23 @@ mod tests {
             .remove("author_reviewer");
         assert!(parse_manifest(&serde_json::to_vec(&changed).unwrap()).is_err());
         assert!(parse_manifest(br#"{"schema_version":"forge.author-handoff/1","schema_version":"forge.author-handoff/1"}"#).is_err());
+    }
+
+    #[test]
+    fn typed_deserialization_requires_every_separation_field() {
+        // The raw-JSON pre-pass is not the only entry point: a caller that
+        // deserializes HandoffManifest directly must not get silently-false
+        // separation defaults (governance bypass).
+        let (manifest, _) = fixture();
+        let mut value = serde_json::to_value(&manifest).unwrap();
+        value["policies"][0]["approval_policy"]["separation"]
+            .as_object_mut()
+            .unwrap()
+            .remove("author_approver");
+        assert!(
+            serde_json::from_value::<HandoffManifest>(value).is_err(),
+            "missing separation fields must fail typed deserialization, not default to false"
+        );
     }
 
     #[test]

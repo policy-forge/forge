@@ -5,7 +5,7 @@
 //! generated from PolicyRequirements and component metadata.
 
 use std::borrow::Borrow;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -248,6 +248,9 @@ pub struct SubjectRef {
 /// * `import_ssp_href` — Path to the SSP, from `--import-ssp` CLI flag.
 ///   Must be non-empty; returns `ForgeError::Validation` if empty.
 /// * `policy_title` — Title of the source policy document.
+/// * `timestamp_override` — identical inputs including this override produce
+///   byte-identical output (same mechanism as `build_profile`). `None` keeps
+///   `last-modified` as honest generation time.
 ///
 /// # Errors
 ///
@@ -257,6 +260,7 @@ pub fn build_assessment_plan(
     control_ids: &[String],
     import_ssp_href: &str,
     policy_title: &str,
+    timestamp_override: Option<chrono::DateTime<chrono::Utc>>,
 ) -> Result<AssessmentPlanEnvelope, ForgeError> {
     // SEC-2: Validate non-empty SSP href
     if import_ssp_href.trim().is_empty() {
@@ -281,7 +285,16 @@ pub fn build_assessment_plan(
         version: "1.0.0".to_string(),
         ..Default::default()
     };
-    let real_metadata = crate::oscal::assemble_metadata(&doc_meta, None)?;
+    // Same override mechanism as build_profile: identical inputs including the
+    // override produce byte-identical output; without one, last-modified is
+    // honest generation time.
+    let real_metadata = crate::oscal::assemble_metadata(
+        &doc_meta,
+        timestamp_override.map(|timestamp| crate::oscal::MetadataOptions {
+            timestamp_override: Some(timestamp),
+            ..Default::default()
+        }),
+    )?;
 
     // Canonicalize the emitted href before hashing so equivalent logical inputs
     // produce the same UUID. Length-prefix each sorted control ID to keep the
@@ -380,6 +393,10 @@ where
         return Vec::new();
     }
 
+    // OSCAL requires document-unique UUIDs; merged slices can repeat a
+    // stable_id. First occurrence keeps its historical seed; repeats get a
+    // deterministic '#n' suffix so identities stay stable across calls.
+    let mut seed_counts: HashMap<String, usize> = HashMap::new();
     requirements
         .iter()
         .enumerate()
@@ -393,6 +410,10 @@ where
                 .as_deref()
                 .filter(|s| !s.is_empty())
                 .map_or_else(|| format!("<unset-stable-id:{i}>"), str::to_owned);
+            let occurrence = seed_counts.entry(id_seed.clone()).or_insert(0);
+            let id_seed =
+                if *occurrence == 0 { id_seed } else { format!("{id_seed}#{occurrence}") };
+            *occurrence += 1;
             let task_uuid = generate_stable_id(&format!("assessment-task|{id_seed}"));
 
             let title = assessment_task_title(&req.text);
@@ -557,9 +578,19 @@ mod tests {
     #[test]
     fn ac1_root_key_is_assessment_plan() {
         let ids = vec!["AC-001".to_string()];
-        let envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy").unwrap();
+        let envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy", None).unwrap();
         let json = serde_json::to_string(&envelope).unwrap();
         assert!(json.contains("\"assessment-plan\""), "Root key must be assessment-plan");
+    }
+
+    #[test]
+    fn timestamp_override_makes_output_byte_identical() {
+        let ids = vec!["AC-001".to_string()];
+        let ts = chrono::DateTime::parse_from_rfc3339("2026-01-01T00:00:00Z").unwrap().to_utc();
+        let a = build_assessment_plan(&ids, "./ssp.json", "Policy", Some(ts)).unwrap();
+        let b = build_assessment_plan(&ids, "./ssp.json", "Policy", Some(ts)).unwrap();
+        assert_eq!(serde_json::to_string(&a).unwrap(), serde_json::to_string(&b).unwrap());
+        assert!(a.assessment_plan.metadata.last_modified.starts_with("2026-01-01T00:00:00"));
     }
 
     // ─── T004: AC-2 — Metadata fields ──────────────────────────────────
@@ -567,7 +598,7 @@ mod tests {
     #[test]
     fn ac2_metadata_fields_present_and_correct() {
         let ids = vec!["AC-001".to_string()];
-        let envelope = build_assessment_plan(&ids, "./ssp.json", "Corp Policy").unwrap();
+        let envelope = build_assessment_plan(&ids, "./ssp.json", "Corp Policy", None).unwrap();
         let ap = &envelope.assessment_plan;
         assert_eq!(ap.metadata.title, "Assessment Plan for Corp Policy");
         assert_eq!(ap.metadata.version, "1.0.0");
@@ -580,7 +611,7 @@ mod tests {
     #[test]
     fn ac4_reviewed_controls_with_10_ids() {
         let ids: Vec<String> = (1..=10).map(|i| format!("POL-AC-{i:03}")).collect();
-        let envelope = build_assessment_plan(&ids, "./ssp.json", "Policy").unwrap();
+        let envelope = build_assessment_plan(&ids, "./ssp.json", "Policy", None).unwrap();
         let controls =
             &envelope.assessment_plan.reviewed_controls.control_selections[0].include_controls;
         assert_eq!(controls.len(), 10);
@@ -594,7 +625,8 @@ mod tests {
     #[test]
     fn ac7_description_references_policy_title() {
         let ids = vec!["AC-001".to_string()];
-        let envelope = build_assessment_plan(&ids, "./ssp.json", "My Security Policy").unwrap();
+        let envelope =
+            build_assessment_plan(&ids, "./ssp.json", "My Security Policy", None).unwrap();
         let desc = envelope.assessment_plan.reviewed_controls.description.as_deref().unwrap();
         assert!(
             desc.contains("My Security Policy"),
@@ -606,7 +638,7 @@ mod tests {
 
     #[test]
     fn ec1_zero_controls_returns_validation_error() {
-        let error = build_assessment_plan(&[], "./ssp.json", "Policy").unwrap_err();
+        let error = build_assessment_plan(&[], "./ssp.json", "Policy", None).unwrap_err();
 
         assert!(matches!(error, ForgeError::Validation(_)));
         assert!(error.to_string().contains("zero controls"));
@@ -623,7 +655,7 @@ mod tests {
             "AC-003".to_string(),
             "AC-002".to_string(),
         ];
-        let envelope = build_assessment_plan(&ids, "./ssp.json", "Policy").unwrap();
+        let envelope = build_assessment_plan(&ids, "./ssp.json", "Policy", None).unwrap();
         let controls =
             &envelope.assessment_plan.reviewed_controls.control_selections[0].include_controls;
         assert_eq!(controls.len(), 3);
@@ -637,7 +669,7 @@ mod tests {
     #[test]
     fn ec4_json_parseable_hyphenated_root_key() {
         let ids = vec!["AC-001".to_string()];
-        let envelope = build_assessment_plan(&ids, "./ssp.json", "Policy").unwrap();
+        let envelope = build_assessment_plan(&ids, "./ssp.json", "Policy", None).unwrap();
         let json = serde_json::to_string_pretty(&envelope).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
         assert!(parsed.get("assessment-plan").is_some(), "Must have hyphenated root key");
@@ -649,8 +681,8 @@ mod tests {
     fn ec5_unit_different_inputs_different_uuids() {
         let ids_a = vec!["AC-001".to_string()];
         let ids_b = vec!["AC-002".to_string()];
-        let envelope_a = build_assessment_plan(&ids_a, "./ssp.json", "Policy").unwrap();
-        let envelope_b = build_assessment_plan(&ids_b, "./ssp.json", "Policy").unwrap();
+        let envelope_a = build_assessment_plan(&ids_a, "./ssp.json", "Policy", None).unwrap();
+        let envelope_b = build_assessment_plan(&ids_b, "./ssp.json", "Policy", None).unwrap();
         assert_ne!(
             envelope_a.assessment_plan.uuid, envelope_b.assessment_plan.uuid,
             "Different control sets must produce different UUIDs"
@@ -662,8 +694,8 @@ mod tests {
     #[test]
     fn ec5_unit_same_inputs_same_uuids() {
         let ids = vec!["AC-001".to_string(), "AC-002".to_string()];
-        let envelope_a = build_assessment_plan(&ids, "./ssp.json", "Policy").unwrap();
-        let envelope_b = build_assessment_plan(&ids, "./ssp.json", "Policy").unwrap();
+        let envelope_a = build_assessment_plan(&ids, "./ssp.json", "Policy", None).unwrap();
+        let envelope_b = build_assessment_plan(&ids, "./ssp.json", "Policy", None).unwrap();
         assert_eq!(
             envelope_a.assessment_plan.uuid, envelope_b.assessment_plan.uuid,
             "Same inputs must produce identical UUIDs"
@@ -673,9 +705,10 @@ mod tests {
     #[test]
     fn assessment_plan_uuid_uses_canonical_ssp_href() {
         let ids = vec!["AC-001".to_string()];
-        let relative = build_assessment_plan(&ids, "./ssp/system-ssp.json", "Policy").unwrap();
+        let relative =
+            build_assessment_plan(&ids, "./ssp/system-ssp.json", "Policy", None).unwrap();
         let absolute =
-            build_assessment_plan(&ids, "/different/path/system-ssp.json", "Policy").unwrap();
+            build_assessment_plan(&ids, "/different/path/system-ssp.json", "Policy", None).unwrap();
 
         assert_eq!(relative.assessment_plan.uuid, absolute.assessment_plan.uuid);
     }
@@ -684,8 +717,8 @@ mod tests {
     fn assessment_plan_uuid_length_prefixes_control_ids() {
         let first = vec!["A,B".to_string(), "C".to_string()];
         let second = vec!["A".to_string(), "B,C".to_string()];
-        let first = build_assessment_plan(&first, "./ssp.json", "Policy").unwrap();
-        let second = build_assessment_plan(&second, "./ssp.json", "Policy").unwrap();
+        let first = build_assessment_plan(&first, "./ssp.json", "Policy", None).unwrap();
+        let second = build_assessment_plan(&second, "./ssp.json", "Policy", None).unwrap();
 
         assert_ne!(first.assessment_plan.uuid, second.assessment_plan.uuid);
     }
@@ -695,14 +728,16 @@ mod tests {
     #[test]
     fn ac3_import_ssp_href_uses_filename_only() {
         let ids = vec!["AC-001".to_string()];
-        let envelope = build_assessment_plan(&ids, "./ssp/system-ssp.json", "Policy").unwrap();
+        let envelope =
+            build_assessment_plan(&ids, "./ssp/system-ssp.json", "Policy", None).unwrap();
         assert_eq!(envelope.assessment_plan.import_ssp.href, "system-ssp.json");
     }
 
     #[test]
     fn assessment_plan_import_ssp_uses_filename_only() {
         let ids = vec!["AC-001".to_string()];
-        let envelope = build_assessment_plan(&ids, "/absolute/path/to/ssp.json", "Policy").unwrap();
+        let envelope =
+            build_assessment_plan(&ids, "/absolute/path/to/ssp.json", "Policy", None).unwrap();
         assert_eq!(envelope.assessment_plan.import_ssp.href, "ssp.json");
         assert!(!envelope.assessment_plan.import_ssp.href.contains('/'));
     }
@@ -712,7 +747,7 @@ mod tests {
     #[test]
     fn ec2_empty_href_returns_validation_error() {
         let ids = vec!["AC-001".to_string()];
-        let result = build_assessment_plan(&ids, "", "Policy");
+        let result = build_assessment_plan(&ids, "", "Policy", None);
         let err = result.unwrap_err();
         assert!(
             err.to_string().contains("import-ssp"),
@@ -723,7 +758,7 @@ mod tests {
     #[test]
     fn ec2_whitespace_only_href_returns_validation_error() {
         let ids = vec!["AC-001".to_string()];
-        let result = build_assessment_plan(&ids, "   ", "Policy");
+        let result = build_assessment_plan(&ids, "   ", "Policy", None);
         let err = result.unwrap_err();
         assert!(
             err.to_string().contains("import-ssp"),
@@ -821,6 +856,27 @@ mod tests {
         assert_ne!(tasks[0].uuid, tasks[1].uuid);
     }
 
+    #[test]
+    fn duplicate_stable_ids_still_produce_unique_uuids() {
+        // OSCAL requires document-unique UUIDs; merged requirement slices can
+        // repeat a stable_id and must not collapse to one task UUID.
+        let reqs = vec![
+            make_req("same-id", "All users must use MFA"),
+            make_req("same-id", "Passwords must be at least 12 characters"),
+        ];
+        let tasks = generate_assessment_tasks(&reqs);
+        assert_ne!(tasks[0].uuid, tasks[1].uuid);
+        let a0 = &tasks[0].associated_activities.as_ref().unwrap()[0].uuid;
+        let a1 = &tasks[1].associated_activities.as_ref().unwrap()[0].uuid;
+        assert_ne!(a0, a1);
+        // Deterministic across calls, and the first occurrence keeps its
+        // historical single-requirement UUID.
+        let single = generate_assessment_tasks(&reqs[..1]);
+        assert_eq!(tasks[0].uuid, single[0].uuid);
+        let again = generate_assessment_tasks(&reqs);
+        assert_eq!(tasks[1].uuid, again[1].uuid);
+    }
+
     // ─── EC-1: Zero requirements → empty tasks[] ──────────────────────
 
     #[test]
@@ -911,7 +967,7 @@ mod tests {
     #[test]
     fn complete_plan_adds_tasks_and_subjects() {
         let ids = vec!["AC-001".to_string()];
-        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy").unwrap();
+        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy", None).unwrap();
 
         // Verify skeleton has no tasks/subjects yet
         assert!(envelope.assessment_plan.tasks.is_none());
@@ -934,7 +990,7 @@ mod tests {
     #[test]
     fn complete_plan_preserves_skeleton_fields() {
         let ids = vec!["AC-001".to_string()];
-        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy").unwrap();
+        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy", None).unwrap();
 
         let original_uuid = envelope.assessment_plan.uuid.clone();
         let original_title = envelope.assessment_plan.metadata.title.clone();
@@ -959,7 +1015,7 @@ mod tests {
     #[test]
     fn complete_plan_rejects_empty_subjects() {
         let ids = vec!["AC-001".to_string()];
-        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy").unwrap();
+        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy", None).unwrap();
         let tasks = generate_assessment_tasks(&[make_req("req-1", "All users must use MFA")]);
 
         let error = complete_assessment_plan(&mut envelope, tasks, Vec::new()).unwrap_err();
@@ -969,7 +1025,7 @@ mod tests {
     #[test]
     fn complete_plan_shares_subjects_with_all_activities() {
         let ids = vec!["AC-001".to_string()];
-        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy").unwrap();
+        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy", None).unwrap();
         let tasks = generate_assessment_tasks(&[
             make_req("req-1", "All users must use MFA"),
             make_req("req-2", "All users must use encryption"),
@@ -999,7 +1055,7 @@ mod tests {
     #[test]
     fn complete_plan_deduplicates_activity_definitions_by_uuid() {
         let ids = vec!["AC-001".to_string()];
-        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy").unwrap();
+        let mut envelope = build_assessment_plan(&ids, "./ssp.json", "Test Policy", None).unwrap();
         let task = generate_assessment_tasks(&[make_req("req-1", "All users must use MFA")])
             .pop()
             .unwrap();

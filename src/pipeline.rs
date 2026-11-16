@@ -386,6 +386,7 @@ pub(crate) fn run_catalog_pipeline_with_metadata(
             &control_ids,
             href,
             &envelope.catalog.metadata.title,
+            None,
         )?;
         let requirements = collect_all_requirements(doc_with_ids);
         let tasks = crate::oscal::generate_assessment_tasks(&requirements);
@@ -553,6 +554,7 @@ pub(crate) fn run_component_pipeline_with_metadata(
             &control_ids,
             href,
             &envelope.component_definition.metadata.title,
+            None,
         )?;
         let requirements = collect_all_requirements(doc_with_ids);
         let tasks = crate::oscal::generate_assessment_tasks(&requirements);
@@ -661,6 +663,7 @@ mod tests {
             &["ac-1".to_string()],
             "./ssp.json",
             "Example policy",
+            None,
         )
         .expect("assessment plan should build");
 
@@ -677,6 +680,7 @@ mod tests {
             &["ac-1".to_string()],
             "./ssp.json",
             "Example policy",
+            None,
         )
         .expect("assessment plan should build");
         envelope.assessment_plan.uuid.clear();

@@ -133,11 +133,11 @@ fn validate_contract(manifest: &ApplicabilityManifest) -> Result<(), ForgeError>
 
     let mut mappings = BTreeSet::new();
     for (index, mapping) in manifest.mapping_collections.iter().enumerate() {
-        if mapping.extension().and_then(|value| value.to_str()) != Some("json") {
-            return Err(error(format!(
-                "$.mapping_collections[{index}] must be a local .json file"
-            )));
-        }
+        // Reuse the impact-manifest spelling guard: absolute/drive/parent
+        // paths escape manifest_dir.join() downstream.
+        crate::framework::manifest::validate_json_path("mapping collection", mapping).map_err(
+            |_| error(format!("$.mapping_collections[{index}] must be a local .json file")),
+        )?;
         if !mappings.insert(mapping) {
             return Err(error(format!(
                 "$.mapping_collections[{index}] duplicates Mapping Collection path '{}'",
@@ -149,7 +149,16 @@ fn validate_contract(manifest: &ApplicabilityManifest) -> Result<(), ForgeError>
 }
 
 fn validate_framework(framework: &ResourceManifest) -> Result<(), ForgeError> {
-    if framework.artifact.extension().and_then(|value| value.to_str()) != Some("json") {
+    // Parent-relative artifacts are supported here (nested manifests resolve
+    // '../framework.json'), but absolute/drive/rooted spellings make
+    // manifest_dir.join() discard the base entirely.
+    let spelling = framework.artifact.to_string_lossy();
+    let bytes = spelling.as_bytes();
+    if framework.artifact.extension().and_then(|value| value.to_str()) != Some("json")
+        || framework.artifact.is_absolute()
+        || spelling.starts_with(['/', '\\'])
+        || (bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':')
+    {
         return Err(error("$.framework.artifact must be a local .json file"));
     }
     non_empty("$.framework.href", &framework.href)?;
@@ -161,9 +170,8 @@ fn validate_framework(framework: &ResourceManifest) -> Result<(), ForgeError> {
                     "$.framework.resolved_catalog is required for a Profile; run 'forge resolve' explicitly",
                 ));
             };
-            if companion.extension().and_then(|value| value.to_str()) != Some("json") {
-                return Err(error("$.framework.resolved_catalog must be a .json file"));
-            }
+            crate::framework::manifest::validate_json_path("resolved catalog", companion)
+                .map_err(|_| error("$.framework.resolved_catalog must be a .json file"))?;
             if framework.resolved_catalog_attestation != Some(true) {
                 return Err(error(
                     "$.framework.resolved_catalog_attestation must be true to attest that the companion represents this Profile",
@@ -472,6 +480,22 @@ mod tests {
             "decisions": [],
             "mapping_collections": []
         })
+    }
+
+    #[test]
+    fn local_json_paths_reject_absolute_and_traversal_spellings() {
+        for bad in ["/etc/secrets.json", "../outside.json", "C:\\evil.json"] {
+            let mut value = valid_manifest();
+            value["mapping_collections"] = json!([bad]);
+            assert!(parse(&serde_json::to_vec(&value).unwrap()).is_err(), "mapping {bad}");
+        }
+        // Parent-relative artifacts are a supported nested-manifest feature;
+        // absolute/drive spellings are not.
+        for bad in ["/etc/secrets.json", "C:\\evil.json"] {
+            let mut value = valid_manifest();
+            value["framework"]["artifact"] = json!(bad);
+            assert!(parse(&serde_json::to_vec(&value).unwrap()).is_err(), "artifact {bad}");
+        }
     }
 
     #[test]

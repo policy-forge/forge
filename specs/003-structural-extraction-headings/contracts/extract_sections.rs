@@ -71,12 +71,19 @@ pub struct SectionNode {
 /// Uses the stack-based tree construction algorithm from AR-003:
 /// 1. Initialize empty stack: `Vec<(u8, SectionNode)>`
 /// 2. Initialize empty root list: `Vec<SectionNode>`
-/// 3. For each `(event, range)` from `pulldown_cmark::Parser::new(content).into_offset_iter()`:
-///    - `Start(Heading { level, .. })`: pop stack to level < N, push new node
-///    - Text/Code/SoftBreak between headings: accumulate into current node's body_text
+/// 3. For each `(event, range)` from
+///    `Parser::new_ext(content, Options::ENABLE_YAML_STYLE_METADATA_BLOCKS).into_offset_iter()`
+///    (front matter is excluded so a closing `---` cannot become a phantom setext heading):
+///    - `Start(Heading { level, .. })`: enter heading mode, clear the title buffer,
+///      record level and the 1-based `source_line` converted from `range.start`
+///    - Text/Code/SoftBreak/HardBreak while in heading mode: accumulate into the title buffer
+///    - `End(Heading)`: leave heading mode, pop stack to level < N, push the node
+///      with the accumulated title (the node is created at End, when its title is complete)
+///    - Text/Code/SoftBreak/HardBreak/paragraph-item-list ends outside heading mode:
+///      accumulate into the current node's body_text
 ///    - Other events: skip
 /// 4. Drain stack (pop all remaining, attaching to parents or root list)
-/// 5. Return root list
+/// 5. Finalize body whitespace per node; return root list
 ///
 /// # Security Requirements
 ///

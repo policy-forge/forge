@@ -65,9 +65,16 @@ fn is_binary_content(bytes: &[u8]) -> bool {
 //        return Err(ForgeError::EmptyInput { path: path.into() });
 //    }
 //
-// 3. Binary content check (before UTF-8 conversion):
-//    if is_binary_content(&bytes) {
+// 3. Binary content check — MARKDOWN ONLY (before UTF-8 conversion):
+//    if format == InputFormat::Markdown && is_binary_content(&bytes) {
 //        return Err(ForgeError::BinaryFile { path: path.into() });
 //    }
+//    An unconditional check would reject every valid PDF (%PDF) and DOCX
+//    (PK\x03\x04) — formats ingest explicitly supports — before their
+//    extractors run. Hostile-document protections are contractual too:
+//    DOCX opens exactly word/document.xml by name (no entry iteration),
+//    caps decompression at 64x input bytes, and resolves only predefined/
+//    numeric entities (no XXE). PDF parsing requires lopdf >= 0.42.0
+//    (RUSTSEC-2026-0187: unbounded recursion stack overflow on nested arrays).
 //
 // 4. Existing checks continue: UTF-8 → InvalidEncoding

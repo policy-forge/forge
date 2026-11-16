@@ -72,7 +72,9 @@ fn open_regular_nofollow(path: &Path) -> Result<File, ForgeError> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt as _;
-        options.custom_flags(libc::O_NOFOLLOW);
+        // O_NONBLOCK: opening a FIFO for read blocks until a writer appears;
+        // never block before the regular-file check can reject it.
+        options.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
     }
     #[cfg(windows)]
     {
@@ -231,12 +233,12 @@ fn validate_cardinality(
 fn normalize_ids(path: &str, ids: &mut [String]) -> Result<(), ForgeError> {
     for (index, id) in ids.iter().enumerate() {
         let id_path = format!("{path}[{index}]");
-        validate_nonempty(&id_path, id)?;
         if id != id.trim() || id.chars().any(char::is_control) {
             return Err(error(format!(
                 "{id_path} must not contain surrounding whitespace or control characters"
             )));
         }
+        validate_nonempty(&id_path, id)?;
     }
     ids.sort();
     if ids.windows(2).any(|pair| pair[0] == pair[1]) {
@@ -249,6 +251,10 @@ fn validate_nonempty(path: &str, value: &str) -> Result<(), ForgeError> {
     if value.trim().is_empty() || value.len() > MAX_STRING_BYTES {
         return Err(error(format!("{path} must contain between 1 and {MAX_STRING_BYTES} bytes")));
     }
+    // Approval evidence attests identity; control chars could forge logs.
+    if value.chars().any(char::is_control) {
+        return Err(error(format!("{path} must not contain control characters")));
+    }
     Ok(())
 }
 
@@ -259,6 +265,41 @@ fn error(message: impl Into<String>) -> ForgeError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(unix)]
+    #[test]
+    #[allow(unsafe_code)] // mkfifo is the only way to create the FIFO under test
+    fn fifo_is_rejected_without_blocking() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("map.json");
+        let cpath = std::ffi::CString::new(path.as_os_str().as_encoded_bytes()).unwrap();
+        assert_eq!(unsafe { libc::mkfifo(cpath.as_ptr(), 0o600) }, 0);
+        // A read-mode open of a writerless FIFO blocks forever; load must
+        // reject it without hanging (run off-thread so failure is a hang, not
+        // a stuck test binary).
+        let handle = std::thread::spawn({
+            let path = path.clone();
+            move || load(&path)
+        });
+        let start = std::time::Instant::now();
+        while !handle.is_finished() && start.elapsed() < std::time::Duration::from_secs(2) {
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        assert!(handle.is_finished(), "load blocked on a FIFO instead of rejecting it");
+        let error = handle.join().unwrap().expect_err("FIFO must be rejected");
+        assert!(error.to_string().contains("regular file"), "{error}");
+    }
+
+    #[test]
+    fn approval_evidence_rejects_control_characters() {
+        let base = br#"{"schema_version":"forge.successor-map/1","relationships":[{"relationship":"successor","old_ids":["old"],"new_ids":["new"],"approved_by":"reviewer","approved_at":"2026-08-25T12:00:00Z","rationale":"reviewed"}]}"#;
+        let mut value: serde_json::Value = serde_json::from_slice(base).unwrap();
+        value["relationships"][0]["rationale"] = serde_json::json!("reviewed\n\u{1b}[31mforged");
+        assert!(parse(&serde_json::to_vec(&value).unwrap()).is_err(), "rationale controls");
+        value["relationships"][0]["rationale"] = serde_json::json!("reviewed");
+        value["relationships"][0]["approved_by"] = serde_json::json!("re\u{1b}viewer");
+        assert!(parse(&serde_json::to_vec(&value).unwrap()).is_err(), "approved_by controls");
+    }
 
     fn utc_timestamp() -> chrono::DateTime<chrono::FixedOffset> {
         chrono::DateTime::parse_from_rfc3339("2026-08-25T12:00:00Z")

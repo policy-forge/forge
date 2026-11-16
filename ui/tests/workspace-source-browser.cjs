@@ -55,7 +55,7 @@ function safeOutcome(value) {
   return { operation_id: value.operation_id, kind: value.kind, state: value.state,
     write_outcome: value.write_outcome, cleanup_state: value.cleanup_state,
     cancel_requested: value.cancel_requested, error_code: value.error?.code ?? null,
-    result: value.result === null ? null : {
+    result: value.result == null ? null : {
       exact_manifest_sha256: value.result.exact_manifest_sha256,
       committed_targets: value.result.committed_targets,
       cleanup_state: value.result.cleanup_state,
@@ -106,6 +106,10 @@ const receipt = { format: 'forge.s6-source-native-browser/1', status: 'failed', 
     page.on('pageerror', () => receipt.page_errors++);
     const requestKinds = new Set();
     await context.route('**/*', async route => {
+      // A throw here must never leave the route unresolved: the request would
+      // hang to the page timeout and the unhandled rejection kills Node before
+      // finally/receipt cleanup runs.
+      try {
       const request = route.request();
       const target = new URL(request.url());
       if (target.origin !== origin) { receipt.non_loopback_page_requests++; await route.abort(); return; }
@@ -118,6 +122,11 @@ const receipt = { format: 'forge.s6-source-native-browser/1', status: 'failed', 
         }
       }
       await route.continue();
+      } catch (error) {
+        observerError = true;
+        receipt.route_errors = (receipt.route_errors || 0) + 1;
+        try { await route.abort(); } catch {}
+      }
     });
     page.on('response', response => {
       const pathname = new URL(response.url()).pathname;
@@ -129,7 +138,7 @@ const receipt = { format: 'forge.s6-source-native-browser/1', status: 'failed', 
         const value = JSON.parse(raw);
         receipt.last_outcome = safeOutcome(value);
         if (known && value.operation_id === known.operation_id) observedOutcome = value;
-      })().catch(() => { observerError = true; });
+      })().catch(() => { observerError = true; receipt.observation_errors = (receipt.observation_errors || 0) + 1; });
       pendingObservations.add(observation);
       observation.finally(() => pendingObservations.delete(observation));
     });
@@ -187,13 +196,17 @@ const receipt = { format: 'forge.s6-source-native-browser/1', status: 'failed', 
     async function succeeded(id, expected) {
       const row = page.locator('[data-source-restore-row="' + id + '"]');
       await row.locator('[data-source-restore-status]').filter({ hasText: 'Exact source bytes committed. Cleanup verified.' }).waitFor({ timeout: 90000 });
-      await Promise.all([...pendingObservations]);
+      // Drain until stable: the poller can register new GET observations after
+      // the first snapshot, and the commit POST can render status before any
+      // GET was observed at all.
+      while (pendingObservations.size) await Promise.all([...pendingObservations]);
       assert(!observerError);
       assert(observedOutcome && observedOutcome.operation_id === id);
       assert.equal(observedOutcome.state, 'succeeded');
       assert.equal(observedOutcome.write_outcome, 'committed');
       assert.equal(observedOutcome.cleanup_state, 'verified');
-      assert.equal(observedOutcome.error, null);
+      assert.equal(observedOutcome.error ?? null, null);
+      assert(observedOutcome.result, 'terminal outcome must carry a result');
       assert.equal(observedOutcome.result.exact_manifest_sha256, expected.exact_manifest_sha256);
       assert.deepEqual(observedOutcome.result.committed_targets, expected.targets);
       return row;

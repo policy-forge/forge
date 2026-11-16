@@ -200,6 +200,7 @@ const receipt = { format: 'forge.s6-staged-source-native-browser/1', status: 'fa
     page.on('pageerror', () => receipt.page_errors++);
     const requestKinds = new Set();
     await context.route('**/*', async route => {
+      try {
       const request = route.request();
       const target = new URL(request.url());
       if (target.origin !== origin) { receipt.non_loopback_page_requests++; await route.abort(); return; }
@@ -216,6 +217,11 @@ const receipt = { format: 'forge.s6-staged-source-native-browser/1', status: 'fa
         assert(transportOrder.length < 700); transportOrder.push(request.method() + " " + target.pathname);
       }
       await route.continue();
+      } catch (error) {
+        observerError = true;
+        receipt.route_errors = (receipt.route_errors || 0) + 1;
+        try { await route.abort(); } catch {}
+      }
     });
     page.on('response', response => {
       const pathname = new URL(response.url()).pathname;
@@ -227,7 +233,7 @@ const receipt = { format: 'forge.s6-staged-source-native-browser/1', status: 'fa
         const value = JSON.parse(raw);
         receipt.last_outcome = safeOutcome(value);
         if (known && value.operation_id === known.operation_id) observedOutcome = value;
-      })().catch(() => { observerError = true; });
+      })().catch(() => { observerError = true; receipt.observation_errors = (receipt.observation_errors || 0) + 1; });
       pendingObservations.add(observation);
       observation.finally(() => pendingObservations.delete(observation));
     });
@@ -242,12 +248,14 @@ const receipt = { format: 'forge.s6-staged-source-native-browser/1', status: 'fa
         const raw = await response.body(); assert(raw.length <= 1024 * 1024);
         const requestBytes = request.postDataBuffer();
         transportBytes += raw.length + (requestBytes?.length ?? 0);
-        assert(transportBytes <= 8 * 1024 * 1024);
+        // Covers the declared maximum: 320 chunks x 32768 B (~10 MiB artifact),
+        // hex-encoded ~2x per leg across export GETs and restore PUTs.
+        assert(transportBytes <= 48 * 1024 * 1024);
         assert.equal(response.headers()['content-type']?.split(';', 1)[0].trim().toLowerCase(), 'application/json');
         const value = JSON.parse(raw);
         const body = ['POST','PUT'].includes(request.method()) ? request.postDataJSON() : null;
         transportRows.push({ method: request.method(), pathname, status: response.status(), value, request: body });
-      })().catch(() => { observerError = true; });
+      })().catch(() => { observerError = true; receipt.observation_errors = (receipt.observation_errors || 0) + 1; });
       pendingObservations.add(observation);
       observation.finally(() => pendingObservations.delete(observation));
     });
@@ -255,7 +263,8 @@ const receipt = { format: 'forge.s6-staged-source-native-browser/1', status: 'fa
     /** Await every currently dispatched observation without substituting a synthetic API response. */
     async function observedTransport() {
       await page.waitForTimeout(0);
-      await Promise.all([...pendingObservations]);
+      // Drain until quiet: observations registered while awaiting must also settle.
+      while (pendingObservations.size) await Promise.all([...pendingObservations]);
       assert(!observerError);
       return transportRows;
     }
@@ -507,7 +516,9 @@ const receipt = { format: 'forge.s6-staged-source-native-browser/1', status: 'fa
       await row.scrollIntoViewIfNeeded();
       await captures('fresh-read-only-outcome', row.locator('[data-source-restore-status]'));
       assert.equal(receipt.restore_commit_requests, 0);
-      assert(!receipt.requests.some(value => /^(POST|PUT|DELETE) \/api\/v2\/project\//.test(value)));
+      assert(!receipt.requests.some(value => /^(POST|PUT|PATCH|DELETE) \/api\/v2\/project\//.test(value)));
+      // Fresh lookup is read-only across the whole API, not just /project/.
+      assert(!receipt.requests.some(value => /^(PUT|PATCH|DELETE) \/api\//.test(value)));
       assert.equal(receipt.generic_commit_requests, 0);
       assert.deepEqual(inventory(project), before);
       receipt.readonly_project_unchanged = true;

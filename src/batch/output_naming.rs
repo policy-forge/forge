@@ -45,8 +45,14 @@ pub fn derive_output_paths(
         // A name is taken if minted in this call, already on disk, or equal
         // to the input it would overwrite (F0286).
         let taken = |path: &Path| {
+            // symlink_metadata sees dangling symlinks that exists() misses.
+            // NotFound = free; any other error (EACCES) = taken — never
+            // overwrite what we cannot inspect.
+            let on_disk = path
+                .symlink_metadata()
+                .map_or_else(|error| error.kind() != std::io::ErrorKind::NotFound, |_| true);
             claimed.contains(&ascii_case_folded_bytes(path.as_os_str()))
-                || path.exists()
+                || on_disk
                 || (output_dir.is_none() && same_file(input, path))
         };
 
@@ -103,6 +109,19 @@ mod tests {
     use super::*;
 
     // T007: derive_output_paths tests
+
+    #[cfg(unix)]
+    #[test]
+    fn dangling_symlink_output_is_not_treated_as_free() {
+        // exists() follows symlinks and returns false for dangling ones;
+        // the entry still exists and must never be silently replaced.
+        let dir = tempfile::tempdir().unwrap();
+        let input = dir.path().join("policy.md");
+        std::fs::write(&input, "x").unwrap();
+        std::os::unix::fs::symlink("missing-target", dir.path().join("policy.json")).unwrap();
+        let pairs = derive_output_paths(&[input], OutputFormat::Json, Some(dir.path()));
+        assert_eq!(pairs[0].1, dir.path().join("policy_2.json"));
+    }
 
     #[test]
     fn single_file_produces_stem_dot_json() {

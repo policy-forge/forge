@@ -39,8 +39,12 @@ pub struct ExportArgs {
 
 /// Wrapper enum for deserialized OSCAL models.
 ///
-/// Used during the export pipeline to hold the deserialized model
-/// before re-serialization to the target format.
+/// Typed envelopes model ONLY the native fields Forge's generation structs
+/// implement. Round-tripping JSON/YAML through them would silently drop
+/// unmodeled OSCAL fields (props, links, parts) — data loss. The shipped
+/// pipeline (src/cli/export.rs) therefore carries the ORIGINAL parsed value
+/// through JSON/YAML re-serialization; the typed envelope is used only for
+/// schema validation and the XML projection.
 pub enum OscalModel {
     /// OSCAL Catalog (envelope: `{"catalog": {...}}`)
     Catalog(crate::oscal::CatalogEnvelope),

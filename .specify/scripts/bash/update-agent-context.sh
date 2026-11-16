@@ -53,7 +53,8 @@ SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
 # Get all paths and variables from common functions
-eval $(get_feature_paths)
+feature_paths=$(get_feature_paths) || exit 1
+eval "$feature_paths"
 
 NEW_PLAN="$IMPL_PLAN"  # Alias for compatibility with existing code
 AGENT_TYPE="${1:-}"
@@ -254,7 +255,7 @@ get_commands_for_language() {
             echo "cargo test && cargo clippy"
             ;;
         *"JavaScript"*|*"TypeScript"*)
-            echo "npm test \\&\\& npm run lint"
+            echo "npm test && npm run lint"
             ;;
         *)
             echo "# Add commands for $lang"
@@ -265,6 +266,13 @@ get_commands_for_language() {
 get_language_conventions() {
     local lang="$1"
     echo "$lang: Follow standard conventions"
+}
+
+# Escape the sed REPLACEMENT side ('\', '&', and the '|' delimiter); the
+# pattern-side metacharacter class does not apply here ('AT&T' would expand
+# '&' to the whole match).
+sed_escape_replacement() {
+    printf '%s' "$1" | sed 's/[\\&|]/\\&/g'
 }
 
 create_new_agent_file() {
@@ -295,16 +303,16 @@ create_new_agent_file() {
     project_structure=$(get_project_structure "$NEW_PROJECT_TYPE")
     
     local commands
-    commands=$(get_commands_for_language "$NEW_LANG")
-    
+    commands=$(sed_escape_replacement "$(get_commands_for_language "$NEW_LANG")")
+
     local language_conventions
-    language_conventions=$(get_language_conventions "$NEW_LANG")
+    language_conventions=$(sed_escape_replacement "$(get_language_conventions "$NEW_LANG")")
     
     # Perform substitutions with error checking using safer approach
     # Escape special characters for sed by using a different delimiter or escaping
-    local escaped_lang=$(printf '%s\n' "$NEW_LANG" | sed 's/[\[\.*^$()+{}|]/\\&/g')
-    local escaped_framework=$(printf '%s\n' "$NEW_FRAMEWORK" | sed 's/[\[\.*^$()+{}|]/\\&/g')
-    local escaped_branch=$(printf '%s\n' "$CURRENT_BRANCH" | sed 's/[\[\.*^$()+{}|]/\\&/g')
+    local escaped_lang=$(sed_escape_replacement "$NEW_LANG")
+    local escaped_framework=$(sed_escape_replacement "$NEW_FRAMEWORK")
+    local escaped_branch=$(sed_escape_replacement "$CURRENT_BRANCH")
     
     # Build technology stack and recent change strings conditionally
     local tech_stack
@@ -330,7 +338,7 @@ create_new_agent_file() {
     fi
 
     local substitutions=(
-        "s|\[PROJECT NAME\]|$project_name|"
+        "s|\[PROJECT NAME\]|$(sed_escape_replacement "$project_name")|"
         "s|\[DATE\]|$current_date|"
         "s|\[EXTRACTED FROM ALL PLAN.MD FILES\]|$tech_stack|"
         "s|\[ACTUAL STRUCTURE FROM PLANS\]|$project_structure|g"
@@ -347,9 +355,10 @@ create_new_agent_file() {
         fi
     done
     
-    # Convert \n sequences to actual newlines
-    newline=$(printf '\n')
-    sed -i.bak2 "s/\\\\n/${newline}/g" "$temp_file"
+    # Convert literal \n sequences to real newlines. ANSI-C quoting gives sed
+    # an escaped-newline replacement: portable across GNU/BSD, and command
+    # substitution can't strip it (the old $(printf '\n') was empty).
+    sed -i.bak2 $'s/\\\\n/\\\n/g' "$temp_file"
     
     # Clean up backup files
     rm -f "$temp_file.bak" "$temp_file.bak2"
@@ -457,7 +466,9 @@ update_existing_agent_file() {
             # Keep only first 2 existing changes
             if [[ $existing_changes_count -lt 2 ]]; then
                 echo "$line" >> "$temp_file"
-                ((existing_changes_count++))
+                # ((x++)) returns exit 1 when x was 0; under set -e that kills
+                # the script on the first kept change. Assignment always exits 0.
+                existing_changes_count=$((existing_changes_count + 1))
             fi
             continue
         fi

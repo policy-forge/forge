@@ -492,14 +492,14 @@ fn id_retention_is_bounded_and_never_reuses_completed_or_cancelled_ids() {
 #[test]
 fn input_pump_frame_burst_is_finite_without_discarding_remaining_bytes() {
     let catalog = Catalog::new().unwrap();
-    let clock = ManualClock { value: Cell::new(Instant::now()) };
+    let clock = Rc::new(ManualClock { value: Cell::new(Instant::now()) });
     let mut bytes = Vec::new();
     for _ in 0..20 {
         bytes.extend(cancel(json!(999)));
     }
     let input = ScriptedInput {
         events: vec![Event::Bytes(bytes)].into(),
-        clock: Rc::new(ManualClock { value: Cell::new(clock.now()) }),
+        clock: Rc::clone(&clock),
         waits: Rc::new(RefCell::new(Vec::new())),
     };
     let output = ObservedWriter {
@@ -511,7 +511,7 @@ fn input_pump_frame_burst_is_finite_without_discarding_remaining_bytes() {
         input,
         output,
         catalog: &catalog,
-        clock: &clock,
+        clock: clock.as_ref(),
         machine: Machine::default(),
         framer: Framer::default(),
         intake: [0; READ_BURST],

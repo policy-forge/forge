@@ -85,7 +85,7 @@
       "minLength": 1,
       "maxLength": 16384,
       "not": {
-        "pattern": "[\\n\\r\\t\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u2028\\u2029]"
+        "pattern": "[\\n\\r\\t\\u0000-\\u0008\\u000b-\\u001f\\u007f-\\u009f\\u2028\\u2029\\u061c\\u200e\\u200f\\u202a-\\u202e\\u2066-\\u2069]"
       }
     },
     "label": {
@@ -253,7 +253,7 @@
           "$ref": "#/$defs/payload_span"
         }
       },
-      "$comment": "Runtime requires source for a source-span unit, and requires units to be ordered by ascending, non-overlapping payload spans that lie inside the payload artifact."
+      "$comment": "Runtime requires source for a source-span unit, unique unit_id values across units, and units ordered by ascending, non-overlapping payload spans that lie inside the payload artifact."
     },
     "payload_span": {
       "type": "object",

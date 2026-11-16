@@ -160,8 +160,15 @@ fn prepare_registration(
     if !(super::services::validate_bytes(&registration, &captured.bytes)
         || (role == Role::ApplicabilityReport
             && snapshot.analysis.as_ref().is_some_and(|analysis| {
-                serde_json::to_value(analysis).ok()
-                    == super::contract::parse(&captured.bytes, 10 * 1024 * 1024, 64 * 1024).ok()
+                // Both sides must succeed: None == None would admit arbitrary
+                // unparseable bytes as a valid report.
+                match (
+                    serde_json::to_value(analysis),
+                    super::contract::parse(&captured.bytes, 10 * 1024 * 1024, 64 * 1024),
+                ) {
+                    (Ok(expected), Ok(supplied)) => expected == supplied,
+                    _ => false,
+                }
             })))
     {
         return Err(validation_error());

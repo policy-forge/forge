@@ -151,7 +151,8 @@ impl Corpus {
                 .path
                 .to_str()
                 .ok_or_else(|| error("document path must be UTF-8"))?
-                .to_ascii_lowercase();
+                // Full Unicode folding: case-insensitive volumes alias Ä/ä spellings.
+                .to_lowercase();
             if !paths.insert(path_key) {
                 return Err(error("reuse corpus document paths must be distinct"));
             }
@@ -166,11 +167,28 @@ impl Corpus {
             unique_keys("document topic_keys", &document.topic_keys, true)?;
             unique_keys("document control_ids", &document.control_ids, false)?;
         }
+        let supersedes: std::collections::BTreeMap<&str, &str> = self
+            .documents
+            .iter()
+            .filter_map(|document| {
+                document.supersedes.as_deref().map(|previous| (document.key.as_str(), previous))
+            })
+            .collect();
         for document in &self.documents {
             if let Some(previous) = &document.supersedes
                 && (!keys.contains(previous.as_str()) || previous == &document.key)
             {
                 return Err(error("document supersedes must name another document in this corpus"));
+            }
+            // Walk the chain: mutual/longer cycles would loop downstream
+            // consumers resolving the current document. Bounded by keys.len().
+            let mut seen = std::collections::BTreeSet::new();
+            let mut cursor = document.key.as_str();
+            while let Some(next) = supersedes.get(cursor) {
+                if !seen.insert(*next) {
+                    return Err(error("document supersedes chains must not form cycles"));
+                }
+                cursor = next;
             }
         }
         Ok(())
@@ -305,6 +323,14 @@ mod tests {
 
     fn parse(value: &Value) -> Result<Corpus, ForgeError> {
         Corpus::parse(&serde_json::to_vec(value).unwrap())
+    }
+
+    #[test]
+    fn mutual_supersession_cycles_are_rejected() {
+        let mut value = manifest();
+        // A.supersedes=B and B.supersedes=A: chain walkers would loop forever.
+        value["documents"][0]["supersedes"] = json!("old-access-policy");
+        assert!(parse(&value).is_err(), "mutual supersedes cycle must be rejected");
     }
 
     #[test]

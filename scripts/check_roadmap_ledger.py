@@ -9,9 +9,15 @@ import re
 import sys
 
 
+def _evidence_ok(root, reference):
+    """Strip an optional :line/:start-end suffix, then require a contained, existing path."""
+    path = Path(re.sub(r':\d+(?:-\d+)?$', '', reference))
+    # Empty/'.' resolves to root itself; require a real named component.
+    return bool(path.parts) and not (path.is_absolute() or '..' in path.parts) and (root / path).exists()
+
 def check(root):
     ledger_path = root / 'docs/plans/2026-10-02-roadmap-requirement-ledger.json'
-    ledger = json.loads(ledger_path.read_text())
+    ledger = json.loads(ledger_path.read_text(encoding='utf-8'))
     if ledger['format'] != 'forge.roadmap-ledger/1' or ledger['release_target'] != '2.0.0':
         raise ValueError('unsupported ledger format or release target')
     rows = ledger['rows']
@@ -28,8 +34,11 @@ def check(root):
         if hashlib.sha256(data).hexdigest() != source['sha256']:
             raise ValueError(f'{prd}: PRD changed; reconcile ledger explicitly')
         text = data.decode('utf-8')
-        expected = {m[3]: (m[2].strip(), text[:m.start()].count('\n') + 1, m[1] != ' ')
-                    for m in re.finditer(pattern, text, re.M)}
+        expected = {}
+        for m in re.finditer(pattern, text, re.M):
+            if m[3] in expected:
+                raise ValueError(f'{prd}: duplicate source requirement {m[3]}')
+            expected[m[3]] = (m[2].strip(), text[:m.start()].count('\n') + 1, m[1] != ' ')
         actual = {r['id']: r for r in rows if r['prd'] == prd}
         if set(actual) != set(expected):
             raise ValueError(f'{prd}: missing/extra Must or Should requirements')
@@ -47,9 +56,7 @@ def check(root):
                 if package not in {f'F{n:02d}' for n in range(1, 23)}:
                     raise ValueError(f'{prd}/{identity}: invalid completion package')
             for reference in row['evidence']:
-                target = re.sub(r':\d+(?:-\d+)?$', '', reference)
-                path = Path(target)
-                if path.is_absolute() or '..' in path.parts or not (root / path).exists():
+                if not _evidence_ok(root, reference):
                     raise ValueError(f'{prd}/{identity}: invalid evidence reference {reference}')
     if {g['prd'] for g in ledger['gate_registry']} != expected_prds:
         raise ValueError('missing per-PRD named gate coverage')
@@ -59,13 +66,13 @@ def check(root):
         if gate['status'] not in {'open', 'recorded-satisfied', 'satisfied-as-recorded', 'unverified'}:
             raise ValueError('invalid gate disposition state')
         for reference in gate['evidence']:
-            if not (root / reference).exists():
+            if not _evidence_ok(root, reference):
                 raise ValueError(f'missing gate evidence {reference}')
     for section in ledger['gate_source_sections']:
-        lines = (root / section['source']).read_text().splitlines()
+        lines = (root / section['source']).read_text(encoding='utf-8').splitlines()
         if lines[section['source_line'] - 1] != '## ' + section['section']:
             raise ValueError('gate section source drift')
-    markdown = (root / 'docs/plans/2026-10-02-roadmap-requirement-ledger.md').read_text()
+    markdown = (root / 'docs/plans/2026-10-02-roadmap-requirement-ledger.md').read_text(encoding='utf-8')
     states = ('technical-evidence', 'partial', 'missing', 'conditional')
     for prd in expected_prds:
         counts = Counter(r['status'] for r in rows if r['prd'] == prd)

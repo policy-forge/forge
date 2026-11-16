@@ -17,6 +17,13 @@ let outcomePublished=false;
  browser=await chromium.launch(options);
  context=await browser.newContext({viewport:{width:1280,height:900},serviceWorkers:"block"});
  page=await context.newPage();page.setDefaultTimeout(20000);
+ // Waiters created before their triggering action must never become unhandled
+ // rejections when an earlier assert throws and cleanup closes the context.
+ // A no-op catch marks them handled; real awaits still see the rejection.
+ for(const method of ["waitForResponse","waitForEvent"]){
+   const original=page[method].bind(page);
+   page[method]=(...args)=>{const waiter=original(...args);waiter.catch(()=>{});return waiter;};
+ }
  const violations=[];const calls=new Set();const errors=[];let provenanceReads=0;let focusChecks=0;let embeddedAssetSha256;let embeddedStyleSha256;let inputBorderContrast;let conversionRequests=0;let unlockRequests=0;const reflowChecks=[];const syntheticFaults=[];const measuredOperationResponses=[];const measuredOperationTasks=new Set();
   page.on("request",request=>{
     const pathname=new URL(request.url()).pathname;
@@ -27,6 +34,8 @@ let outcomePublished=false;
  const contract=fs.readFileSync(path.join(__dirname,"../../docs/api/forge-workspace-v1.openapi.yaml"),"utf8");
  const documented=[];let routePath;
  for(const line of contract.split("\n")) {
+   // A top-level key ends the paths section; later 4-space keys are not methods.
+   if(line&&!line.startsWith(" "))routePath=undefined;
    const pathMatch=line.match(/^  (\/api\/v1\/[^:]+):$/);if(pathMatch)routePath=pathMatch[1];
    const method=line.match(/^    (get|post|put|delete|patch):$/);
    if(method&&routePath)documented.push({method:method[1].toUpperCase(),path:new RegExp("^"+routePath.replace(/\{[^}]+\}/g,"[^/]+")+"$")});
@@ -55,7 +64,7 @@ let outcomePublished=false;
  }
  /** Track asynchronous real-response reads so their facts settle before comparison. */
  function queueMeasuredOperation(response) {
-   const task=observeMeasuredOperation(response).catch(()=>errors.push("Measured operation response could not be retained."));
+   const task=observeMeasuredOperation(response).catch(error=>errors.push("Measured operation response could not be retained: "+response.status()+" "+new URL(response.url()).pathname+" ("+error.message+")"));
    measuredOperationTasks.add(task);
    void task.finally(()=>measuredOperationTasks.delete(task));
  }
@@ -307,10 +316,12 @@ let outcomePublished=false;
      const preparationsBefore=conversionRequests;
      const conversionReply=page.waitForResponse(response=>response.request().method()==="POST"&&new URL(response.url()).pathname==="/api/v1/conversions"&&response.ok());
      /** Lose one documented polling GET without substituting an operation state or result. */
+     let operationReadFailed=false;
      const failOperationRead=async route=>{
-       if(route.request().method()==="GET"){
-         await route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic operation read failure.",retryable:true})});
+       if(route.request().method()==="GET"&&!operationReadFailed){
+         operationReadFailed=true;
          await page.unroute("**/api/v1/operations/op_*",failOperationRead);
+         await route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic operation read failure.",retryable:true})});
        }else await route.continue();
      };
      await page.route("**/api/v1/operations/op_*",failOperationRead);
@@ -373,11 +384,13 @@ let outcomePublished=false;
      assert.deepEqual(await controlResults().locator("tbody tr").allTextContents(),firstPageRows);
      // A documented read failure must retain the committed page and focus an inline alert.
      /** Lose one cursor read while leaving other legitimate inventory requests untouched. */
+     let nextPageFailed=false;
      const failNext=async route=>{
        const target=new URL(route.request().url());
-       if(target.searchParams.get("page_size")==="50"&&target.searchParams.has("cursor")){
-         await route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic next-page failure.",retryable:true})});
+       if(target.searchParams.get("page_size")==="50"&&target.searchParams.has("cursor")&&!nextPageFailed){
+         nextPageFailed=true;
          await page.unroute("**/api/v1/applicability/controls?*",failNext);
+         await route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic next-page failure.",retryable:true})});
        }else await route.continue();
      };
      await page.route("**/api/v1/applicability/controls?*",failNext);
@@ -626,9 +639,13 @@ let outcomePublished=false;
    failureTracker.capture(error);process.exitCode=1;
    try {
 
-   console.error(error.stack || error.message);console.error("Error summary:",JSON.stringify({visible:await page.locator("#error").isVisible(),text:await page.locator("#error").textContent()}));
+   console.error(error.stack || error.message);
+   // page may be null when launch/newContext/newPage failed; diagnostics must not mask the cause.
+   if(page!==null){
+   console.error("Error summary:",JSON.stringify({visible:await page.locator("#error").isVisible(),text:await page.locator("#error").textContent()}));
    console.error("Focus state:",JSON.stringify(await page.evaluate(()=>({active:document.activeElement?.outerHTML,error:document.getElementById("error")?.outerHTML,viewInert:document.getElementById("view")?.inert,dialogs:[...document.querySelectorAll("dialog[open]")].map(node=>node.outerHTML)}))));
-   if(page!==null)await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT||"/tmp/forge-workspace-browser-failure.png",fullPage:false});
+   await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT||"/tmp/forge-workspace-browser-failure.png",fullPage:false});
+   }
    } catch(diagnosticError){failureTracker.capture(diagnosticError);}
  } finally {await reconcileCleanup(failureTracker,context,browser);}
  outcomePublished=true;

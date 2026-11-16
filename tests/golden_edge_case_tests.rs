@@ -229,9 +229,10 @@ fn normalize_for_comparison(value: &Value) -> Value {
     normalize_value(value, None)
 }
 
-fn normalizes_timestamp(s: &str, parent_key: Option<&str>) -> bool {
+fn normalizes_timestamp(_s: &str, parent_key: Option<&str>) -> bool {
+    // Key-gated only: an RFC3339-parseable string anywhere (prose, remarks,
+    // parameter values) would mask date-like content clobbered by the converter.
     parent_key.is_some_and(|key| key.ends_with("-modified") || key.ends_with("-created"))
-        || chrono::DateTime::parse_from_rfc3339(s).is_ok()
 }
 
 fn is_normalizable_uuid(s: &str) -> bool {
@@ -377,6 +378,8 @@ fn assert_component_stable_id_contract(
             .output_json
             .unwrap_or_else(|| panic!("{slug} changed component output should exist")),
     );
+    // Non-empty guard: field renames would empty both maps and pass vacuously.
+    assert!(!ids_a.is_empty(), "{slug} baseline extracted no stable IDs — field drift?");
     assert_eq!(
         ids_a.len(),
         ids_b.len(),

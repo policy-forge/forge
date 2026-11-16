@@ -23,9 +23,11 @@ pub(in crate::authoring) fn build_plan_admitted_inner<
     let first = a.equal(&loaded.report_sha256, &loaded.project.baseline.report_sha256)?;
     let second = a.equal(&loaded.pack_sha256, &loaded.project.authoring_pack.expected_sha256)?;
     if !first || !second {
-        return Err(BorrowedAuthoringError::Domain(super::super::error(
+        // Ordinary Domain failure must cross the same post-stage checkpoint
+        // as a.native-produced failures (documented contract).
+        return a.finish(Err(BorrowedAuthoringError::Domain(super::super::error(
             "captured authoring fingerprints do not match project pins",
-        )));
+        ))));
     }
     let report = a.measure(&loaded.baseline_report)?;
     registry(report, loaded.baseline_report.controls.len(), 1, a)?;
@@ -52,18 +54,21 @@ pub(in crate::authoring) fn build_plan_admitted_inner<
     registry(gap_metric, gaps.len(), 1, a)?;
     let counts = a.native(|| super::count_gaps(&gaps))?;
     a.step()?;
-    let expected = loaded
+    // Overflow is an ordinary Domain failure: same post-stage fence.
+    let Some(expected) = loaded
         .baseline_report
         .counts
         .applicable_unmapped
         .checked_add(loaded.baseline_report.counts.applicable_reviewed_no_relationship)
-        .ok_or_else(|| {
-            BorrowedAuthoringError::Domain(super::super::error("applicable gap count overflow"))
-        })?;
+    else {
+        return a.finish(Err(BorrowedAuthoringError::Domain(super::super::error(
+            "applicable gap count overflow",
+        ))));
+    };
     if counts.total != expected {
-        return Err(BorrowedAuthoringError::Domain(super::super::error(
+        return a.finish(Err(BorrowedAuthoringError::Domain(super::super::error(
             "applicable gap totals do not match the complete baseline",
-        )));
+        ))));
     }
     admit_policies(loaded, &gaps, &questions, a)?;
     let policies = a.native(|| super::build_policies(loaded, &gaps, &questions, &mut budget))?;

@@ -69,11 +69,17 @@ pub fn validate_inputs(input_paths: &[PathBuf]) -> Result<(), ForgeError>;
 
 /// Derive output file paths for all inputs, with collision avoidance.
 ///
-/// Rules:
+/// Rules (shipped: src/batch/output_naming.rs):
 /// 1. Output filename = {input_stem}.{format_extension}
 /// 2. If output_dir is Some, place in that directory
 /// 3. If output_dir is None, place in current directory
 /// 4. For collisions (same stem from different dirs), append _{n} suffix (n starts at 2)
+/// 5. Generated names are also checked against files already on disk; an
+///    existing file forces the next suffix (no silent overwrite).
+/// 6. An output equal to its own input is always suffixed — conversion must
+///    never clobber its source (F0286, data loss).
+/// 7. Collision keys are case-folded so names that alias on case-insensitive
+///    filesystems cannot overwrite each other (F0287).
 ///
 /// Returns a Vec of (input_path, output_path) pairs in the same order as input.
 pub fn derive_output_paths(

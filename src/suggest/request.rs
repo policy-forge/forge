@@ -487,6 +487,11 @@ impl SuggestRequest {
             }
         }
         shared::single_line("request.retention_notice", &self.retention_notice)?;
+        // Operator free text is persisted verbatim into request/preview/consent;
+        // scan every persisted string at this one shared boundary.
+        let persisted = serde_json::to_string(self)
+            .map_err(|cause| shared::error(format!("cannot inspect request strings: {cause}")))?;
+        super::redact::refuse_secrets(&persisted)?;
         Ok(())
     }
 }
@@ -581,6 +586,20 @@ mod tests {
 
     fn parse(value: &Value) -> Result<SuggestRequest, ForgeError> {
         SuggestRequest::parse(&serde_json::to_vec(value).unwrap())
+    }
+
+    #[test]
+    fn operator_free_text_is_secret_scanned() {
+        let secret = "sk-ABCDEFGHIJKLMNOPQRSTUVWX";
+        let mut bad = fixture_request_json();
+        bad["retention_notice"] = json!(format!("retain {secret}"));
+        assert!(parse(&bad).is_err(), "retention_notice");
+        let mut bad = fixture_request_json();
+        bad["adapter"]["model_id"] = json!(secret);
+        assert!(parse(&bad).is_err(), "model_id");
+        let mut bad = fixture_request_json();
+        bad["adapter"]["argv"] = json!(["--api-key", secret]);
+        assert!(parse(&bad).is_err(), "argv");
     }
 
     #[test]

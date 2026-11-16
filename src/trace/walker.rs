@@ -158,16 +158,19 @@ fn walk_control(control: &serde_json::Value, entries: &mut Vec<TraceEntry>, dept
 pub fn walk_compdef_elements(compdef: &serde_json::Value) -> Vec<TraceEntry> {
     let mut entries = Vec::new();
 
+    // One counter across both walks: uuid-less containers must not share the
+    // 'unknown-container' fallback or their composite IDs collide.
+    let mut container_index = 0usize;
     if let Some(components) = array_field(compdef, "components") {
         for component in components {
-            collect_impl_requirements(component, &mut entries);
+            collect_impl_requirements(component, &mut entries, &mut container_index);
         }
     }
 
     // OSCAL component-definitions may also group implementations under capabilities.
     if let Some(capabilities) = array_field(compdef, "capabilities") {
         for capability in capabilities {
-            collect_impl_requirements(capability, &mut entries);
+            collect_impl_requirements(capability, &mut entries, &mut container_index);
         }
     }
 
@@ -175,13 +178,19 @@ pub fn walk_compdef_elements(compdef: &serde_json::Value) -> Vec<TraceEntry> {
 }
 
 /// Collect implemented-requirements from a component or capability's control-implementations.
-fn collect_impl_requirements(container: &serde_json::Value, entries: &mut Vec<TraceEntry>) {
+fn collect_impl_requirements(
+    container: &serde_json::Value,
+    entries: &mut Vec<TraceEntry>,
+    container_index: &mut usize,
+) {
+    let fallback = format!("unknown-container-{container_index}");
+    *container_index += 1;
     let Some(control_impls) = array_field(container, "control-implementations") else {
         return;
     };
 
     let container_id =
-        container.get("uuid").and_then(serde_json::Value::as_str).unwrap_or("unknown-container");
+        container.get("uuid").and_then(serde_json::Value::as_str).unwrap_or(&fallback);
 
     for (implementation_index, impl_block) in control_impls.iter().enumerate() {
         let Some(impl_reqs) = array_field(impl_block, "implemented-requirements") else {
@@ -362,6 +371,27 @@ mod tests {
         let catalog = json!({ "uuid": "123" });
         let entries = walk_catalog_elements(&catalog);
         assert_eq!(entries.len(), 0);
+    }
+
+    #[test]
+    fn uuidless_containers_get_distinct_element_ids() {
+        let component = |title: &str| {
+            json!({
+                "type": "software", "title": title, "description": "d",
+                "control-implementations": [{
+                    "source": "cat",
+                    "description": "d",
+                    "implemented-requirements": [{"control-id": "ac-1", "description": "d"}]
+                }]
+            })
+        };
+        let compdef = json!({"components": [component("A"), component("B")]});
+        let entries = walk_compdef_elements(&compdef);
+        assert_eq!(entries.len(), 2);
+        assert_ne!(
+            entries[0].element_id, entries[1].element_id,
+            "shared unknown-container fallback collides for distinct components"
+        );
     }
 
     // T014: walk_compdef_elements tests

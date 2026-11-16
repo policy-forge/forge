@@ -243,10 +243,9 @@ fn proposed_index(snapshot: &Snapshot, bundle: &Bundle, request: &Value) -> Resu
 /// Exact shared paths deduplicate; portable aliases remain invalid rather than
 /// receiving physical-count credit. Captured identity checks still follow.
 fn admit_capture_paths(snapshot: &Snapshot, bundle: &Bundle) -> Result<()> {
-    let mut paths = Vec::<&str>::new();
-    if snapshot.index_present {
-        paths.push(INDEX_PATH);
-    }
+    // prepare_import always publishes an index; reserve its slot even when
+    // absent, or the committed 101st file bricks every later effect.
+    let mut paths = vec![INDEX_PATH];
     for registration in snapshot.index.resources.iter().chain(&bundle.index.resources) {
         let path = registration.path.as_str();
         if paths.iter().any(|old| *old != path && old.eq_ignore_ascii_case(path)) {
@@ -763,25 +762,26 @@ mod tests {
         );
     }
 
-    /// A full hundred incoming files fits only an absent index and no other consumed file.
+    /// 99 incoming files plus the always-published index fill the hundred-file
+    /// ceiling; a hundredth incoming file would brick later effects (101st file).
     #[test]
     fn whole_incoming_hundred_is_admitted_without_a_prefix() {
-        let current = fixture(100, false, "forge.workspace/1");
+        let current = fixture(99, false, "forge.workspace/1");
         let request = import_request(&bundle(&current, &current.incoming), 1);
         let plan =
             prepare_import(&current.root, &current.snapshot, &request, &mut NoopControl).unwrap();
-        assert_eq!(plan.consumed_file_count, 100);
-        assert_eq!(plan.external.len(), 100);
-        assert_eq!(plan.input_hashes.len(), 100);
+        assert_eq!(plan.consumed_file_count, 99);
+        assert_eq!(plan.external.len(), 99);
+        assert_eq!(plan.input_hashes.len(), 99);
         assert_eq!(
             plan.replacement.as_ref().unwrap()["proposed_index"]["resources"]
                 .as_array()
                 .unwrap()
                 .len(),
-            100
+            99
         );
         assert!(!current.project.path().join(INDEX_PATH).exists());
-        let overflow = fixture(101, false, "forge.workspace/1");
+        let overflow = fixture(100, false, "forge.workspace/1");
         let mut control = Recorder::default();
         expect_failure(
             prepare_import(

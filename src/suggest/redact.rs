@@ -32,7 +32,9 @@ pub struct RedactionRule {
     pub rule_id: String,
     /// Literal text to remove, held only in memory.
     pub literal: String,
-    /// SHA-256 of the rule's own text, recorded in the request.
+    /// SHA-256 of the rule identifier only, recorded in the request. Hashing
+    /// the literal too would let anyone with the record guess low-entropy
+    /// secrets offline (rule-id TAB candidate dictionary).
     pub rule_sha256: String,
 }
 
@@ -112,7 +114,7 @@ pub fn parse_rules(bytes: &[u8]) -> Result<Vec<RedactionRule>, ForgeError> {
         }
         rules.push(RedactionRule {
             rule_id: rule_id.to_string(),
-            rule_sha256: crate::hashing::sha256_hex(line.as_bytes()),
+            rule_sha256: crate::hashing::sha256_hex(rule_id.as_bytes()),
             literal: literal.to_string(),
         });
     }
@@ -236,7 +238,9 @@ mod tests {
         assert_eq!(rules.len(), 1);
         assert_eq!(rules[0].rule_id, "account-id");
         assert_eq!(rules[0].literal, "123456789012");
-        assert_eq!(rules[0].rule_sha256, crate::hashing::sha256_hex(b"account-id\t123456789012"));
+        // Digest covers the identifier only: hashing the literal turns the
+        // recorded request into an offline dictionary oracle for the secret.
+        assert_eq!(rules[0].rule_sha256, crate::hashing::sha256_hex(b"account-id"));
     }
 
     #[test]

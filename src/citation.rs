@@ -35,7 +35,9 @@ static URL_REGEX: LazyLock<Regex> =
 // T016: Bibliographic pattern — NIST SP, ISO, RFC, FIPS with optional Rev and Section suffixes.
 // SAFETY: static regex — panics only if regex literal is invalid
 static BIBLIO_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)\b(?:NIST\s+SP|ISO|RFC|FIPS)\s+[\d]+[-\w.]*(?:\s+Rev\.?\s*\d+)?(?:,?\s+Section\s+[\w.-]+)?")
+    // Dots only between word chars: a trailing '.' is sentence punctuation,
+    // not part of the identifier ("Follow RFC 2119." must leave the period).
+    Regex::new(r"(?i)\b(?:NIST\s+SP|ISO|RFC|FIPS)\s+[\d]+[-\w]*(?:\.[\w]+[-\w]*)*(?:\s+Rev\.?\s*\d+)?(?:,?\s+Section\s+[\w-]+(?:\.[\w-]+)*)?")
         .expect("Bibliographic regex must compile")
 });
 
@@ -309,6 +311,13 @@ fn overlaps_any(range: &Range<usize>, existing: &[Range<usize>]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bibliographic_match_stops_at_sentence_period() {
+        let (text, citations) = extract_citations_from_text("req-1", "Follow RFC 2119.").unwrap();
+        assert_eq!(citations[0].text, "RFC 2119");
+        assert_eq!(text, "Follow.");
+    }
 
     // === T009: US1 URL Extraction Tests ===
 

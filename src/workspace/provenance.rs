@@ -109,7 +109,9 @@ impl Graph {
                         if subject["side"] == "policy" { "policy-subject" } else { "control" };
                     let mut refs = vec![
                         json!({"kind":"resource","id":subject["resource_id"]}),
-                        json!({"kind":kind,"id":subject_id}),
+                        // Same prov hash as the subject entry key and every
+                        // other ref; the raw subj_ id resolves to no node.
+                        json!({"kind":kind,"id":opaque("prov", &[subject_id])}),
                     ];
                     if let Some(analysis) = &snapshot.analysis {
                         let source = snapshot

@@ -57,7 +57,9 @@ function files() {
     await page.getByRole("button", { name: "Apply lifecycle date and filters", exact: true }).click();
     const queue = page.locator('[data-inspection-page="queue"]');
     await queue.waitFor();
-    await queue.locator("[data-review-alerts]").waitFor();
+    // Wait for the re-rendered text, not mere visibility: the element can
+    // still show the previous render ("No due or overdue reviews") here.
+    await queue.locator("[data-review-alerts]").filter({ hasText: "1 overdue and 0 due-soon review placements" }).waitFor();
     const alertSummary = await queue.locator("[data-review-alerts]").textContent();
     assert.match(alertSummary, /1 overdue and 0 due-soon review placements on this page/);
     assert.match(alertSummary, /do not change review state or imply approval/);

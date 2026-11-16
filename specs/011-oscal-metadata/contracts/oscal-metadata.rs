@@ -31,7 +31,10 @@ pub const OSCAL_VERSION: &str = "1.2.0";
 /// ```
 #[derive(Debug, Clone, Serialize)]
 pub struct OscalMetadata {
-    /// UUID v4 — unique per artifact generation instance.
+    /// UUID v4 — unique per artifact generation instance. Internal only:
+    /// the OSCAL metadata schema has no `uuid` property (additionalProperties:
+    /// false); the artifact UUID belongs at the envelope root. Never serialized.
+    #[serde(skip_serializing)]
     pub uuid: Uuid,
 
     /// Document title from PolicyDocument.metadata.title.
@@ -75,7 +78,11 @@ pub struct MetadataOptions {
 ///
 /// # Errors
 ///
-/// Currently infallible. Returns `Result` for API consistency and future extensibility.
+/// # Errors
+///
+/// Returns `ForgeError::Validation` if `doc_metadata.title` or
+/// `doc_metadata.version` is empty: both are mandatory OSCAL metadata fields,
+/// so empty input is refused rather than emitted as non-compliant metadata.
 ///
 /// # Security
 ///
@@ -87,12 +94,18 @@ pub fn assemble_metadata(
     doc_metadata: &DocumentMetadata,
     options: Option<MetadataOptions>,
 ) -> Result<OscalMetadata, ForgeError> {
-    let opts = options.unwrap_or_default();
-
     if doc_metadata.title.is_empty() {
-        tracing::warn!("DocumentMetadata title is empty; OSCAL metadata.title will be empty");
+        return Err(ForgeError::Validation(
+            "OSCAL metadata title must not be empty".to_string(),
+        ));
+    }
+    if doc_metadata.version.is_empty() {
+        return Err(ForgeError::Validation(
+            "OSCAL metadata version must not be empty".to_string(),
+        ));
     }
 
+    let opts = options.unwrap_or_default();
     Ok(OscalMetadata {
         uuid: opts.uuid_override.unwrap_or_else(Uuid::new_v4),
         title: doc_metadata.title.clone(),

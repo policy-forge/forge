@@ -1,10 +1,11 @@
 ---
 source: tests/applicability_cli_test.rs
+assertion_line: 260
 expression: "String::from_utf8(first.stdout.clone()).expect(\"UTF-8 report\")"
 ---
 {
   "schema_version": "forge.applicability-report/1",
-  "manifest_sha256": "bb4cb9be4e056e1e6d176bf65d67675b18b2842d0ef846d95c9360550a323505",
+  "manifest_sha256": "3138c51acd1e1635d95628a43572224a03f7fcbe5f2dc6e16e5957fa38394b18",
   "framework": {
     "resource_type": "catalog",
     "href": "framework.json",

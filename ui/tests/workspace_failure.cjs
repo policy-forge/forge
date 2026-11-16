@@ -87,7 +87,7 @@ async function reconcileCleanup(tracker, context, browser) {
 
 /** Publish one reconciled outcome; missing success data remains a fixed failure. */
 function publishOutcome(tracker, observation, publish) {
-  if (observation === null && !tracker.hasFailure()) tracker.capture(new TypeError("Missing browser observation"));
+  if (observation == null && !tracker.hasFailure()) tracker.capture(new TypeError("Missing browser observation"));
   publish(tracker.current() || observation);
   return !tracker.hasFailure();
 }

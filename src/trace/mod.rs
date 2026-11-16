@@ -104,9 +104,10 @@ pub fn generate_trace_report(
         .and_then(|value| value.get("metadata"))
         .and_then(|metadata| metadata.get("last-modified"))
         .and_then(serde_json::Value::as_str);
-    let source_stale = matches!(
+    // Fail closed: Unknown (missing mtime/timestamp) must not read as fresh.
+    let source_stale = !matches!(
         resolver::check_source_staleness(source_modified, metadata_last_modified),
-        Staleness::Stale
+        Staleness::Fresh
     );
 
     Ok(TraceReport {
@@ -158,8 +159,20 @@ fn read_source_file(path: &Path) -> Result<(usize, Option<SystemTime>), ForgeErr
 
 /// Open a regular trace input and reject known oversized files before reading.
 fn open_file(path: &Path) -> Result<(File, Metadata), ForgeError> {
-    let file = File::open(path).map_err(|error| map_io_error(path, error))?;
+    // O_NONBLOCK: a read-mode FIFO open blocks until a writer appears; never
+    // block before the regular-file check can reject it.
+    let mut options = std::fs::OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt as _;
+        options.custom_flags(libc::O_NONBLOCK);
+    }
+    let file = options.open(path).map_err(|error| map_io_error(path, error))?;
     let metadata = file.metadata().map_err(|error| map_io_error(path, error))?;
+    if !metadata.is_file() {
+        return Err(ForgeError::NotAFile { path: path.to_path_buf() });
+    }
     if metadata.len() > crate::io::MAX_FILE_SIZE {
         return Err(ForgeError::FileTooLarge {
             path: path.to_path_buf(),
@@ -208,6 +221,40 @@ fn map_io_error(path: &Path, error: std::io::Error) -> ForgeError {
 mod tests {
     use super::*;
     use std::io::{Error, ErrorKind, Write};
+
+    #[test]
+    fn unknown_staleness_fails_closed() {
+        // Missing/unparsable last-modified must not report a stale source as fresh.
+        let dir = tempfile::tempdir().unwrap();
+        let artifact = dir.path().join("catalog.json");
+        let source = dir.path().join("policy.md");
+        std::fs::write(
+            &artifact,
+            r#"{"catalog":{"uuid":"11111111-1111-4111-8111-111111111111","metadata":{"title":"T","version":"1","oscal-version":"1.2.3"},"groups":[]}}"#,
+        )
+        .unwrap();
+        std::fs::write(&source, "# Policy\n").unwrap();
+        let report = generate_trace_report(&artifact, &source).unwrap();
+        assert!(report.source_stale, "Unknown staleness must fail closed");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    #[allow(unsafe_code)] // mkfifo is the only way to create the FIFO under test
+    fn fifo_trace_input_is_rejected_without_blocking() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("policy.md");
+        let cpath = std::ffi::CString::new(path.as_os_str().as_encoded_bytes()).unwrap();
+        assert_eq!(unsafe { libc::mkfifo(cpath.as_ptr(), 0o600) }, 0);
+        // Off-thread: a read-mode FIFO open blocks forever before the fix.
+        let handle = std::thread::spawn(move || open_file(&path).map(|_| ()));
+        let start = std::time::Instant::now();
+        while !handle.is_finished() && start.elapsed() < std::time::Duration::from_secs(2) {
+            std::thread::sleep(std::time::Duration::from_millis(20));
+        }
+        assert!(handle.is_finished(), "open blocked on a FIFO instead of rejecting it");
+        assert!(matches!(handle.join().unwrap(), Err(ForgeError::NotAFile { .. })));
+    }
 
     #[test]
     fn permission_errors_are_normalized_before_or_during_reads() {

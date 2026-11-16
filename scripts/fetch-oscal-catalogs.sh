@@ -52,7 +52,7 @@ esac
 
 log() { echo "[fetch-oscal] $*"; }
 
-CURL=(curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 15 -m 600)
+CURL=(curl -fsSL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 2 --connect-timeout 15 -m 600)
 
 mkdir -p "${DEST}"
 DEST="$(cd -P "${DEST}" && pwd)"
@@ -153,6 +153,13 @@ PY
     local path name title
     while IFS=$'\t' read -r path name title; do
         [[ -z "${path}" ]] && continue
+        # A hostile registry listing must not redirect the download host
+        # (e.g. self='@evil.example/x' would demote the origin to userinfo).
+        if ! python3 "${SCRIPT_DIR}/registry_self_path.py" "${path}"; then
+            FAILURES+=("${name} (unsafe registry self path)")
+            log "ERR ${name}: refusing unsafe registry self path"
+            continue
+        fi
         local out="${name}"
         fetch "${out}" "https://registry.oscal.io${path}" "${title}"
         if [[ -f "${DEST}/${out}" ]]; then

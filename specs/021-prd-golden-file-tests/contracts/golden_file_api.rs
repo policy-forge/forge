@@ -71,7 +71,9 @@ pub struct AccuracyReport {
 
 /// Measure extraction accuracy by comparing control IDs in expected vs actual.
 ///
-/// For Catalog strategy: extracts control IDs from `$.catalog.groups[*].controls[*].id`
+/// For Catalog strategy: recursively collects every `id` under `$.catalog`,
+///   covering top-level `controls[*]`, nested `groups[*].groups[*]...`, and
+///   nested controls/enhancements (`controls[*].controls[*]...`).
 /// For Component strategy: extracts control-ids from
 ///   `$.component-definition.components[*].control-implementations[*].implemented-requirements[*].control-id`
 ///

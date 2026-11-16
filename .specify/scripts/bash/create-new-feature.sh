@@ -42,6 +42,12 @@ while [ $i -le $# ]; do
                 echo 'Error: --number requires a value' >&2
                 exit 1
             fi
+            # Validate here: $((10#...)) later crashes under set -e with a raw
+            # arithmetic error for non-numeric/negative values.
+            if ! [[ "$next_arg" =~ ^[0-9]+$ ]]; then
+                echo "Error: --number must be a non-negative integer (got '$next_arg')" >&2
+                exit 1
+            fi
             BRANCH_NUMBER="$next_arg"
             ;;
         --help|-h) 
@@ -120,9 +126,10 @@ get_highest_from_branches() {
             # Clean branch name: remove leading markers and remote prefixes
             clean_branch=$(echo "$branch" | sed 's/^[* ]*//; s|^remotes/[^/]*/||')
             
-            # Extract feature number if branch matches pattern ###-*
-            if echo "$clean_branch" | grep -q '^[0-9]\{3\}-'; then
-                number=$(echo "$clean_branch" | grep -o '^[0-9]\{3\}' || echo "0")
+            # Extract feature number if branch matches pattern NNN+-*
+            # (3+ digits: 1000-foo must not be invisible and re-allocated).
+            if echo "$clean_branch" | grep -q '^[0-9]\{3,\}-'; then
+                number=$(echo "$clean_branch" | grep -o '^[0-9]\{3,\}' || echo "0")
                 number=$((10#$number))
                 if [ "$number" -gt "$highest" ]; then
                     highest=$number

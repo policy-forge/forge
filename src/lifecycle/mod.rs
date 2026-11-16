@@ -659,15 +659,7 @@ fn current_artifacts(
 /// parent-directory components prevents a hostile record from redirecting
 /// artifact reads or alias checks outside that boundary.
 fn confined_join(base: &Path, raw: &str) -> Result<PathBuf, ForgeError> {
-    let drive_prefixed = raw.as_bytes().get(1) == Some(&b':')
-        && raw.as_bytes().first().is_some_and(u8::is_ascii_alphabetic);
-    let relative = !drive_prefixed
-        && Path::new(raw).components().all(|component| matches!(component, Component::Normal(_)));
-    if !relative {
-        return Err(error(format!(
-            "lifecycle artifact path '{raw}' must be a relative path without '.', '..', absolute, or drive-prefix components"
-        )));
-    }
+    record::validate_artifact_path_shape("lifecycle artifact path", raw)?;
     Ok(base.join(raw))
 }
 
@@ -956,10 +948,17 @@ fn reject_symlink_components(path: &Path) -> Result<(), ForgeError> {
     let mut current = PathBuf::new();
     for component in path.components() {
         current.push(component.as_os_str());
-        if let Ok(metadata) = std::fs::symlink_metadata(&current)
-            && metadata.file_type().is_symlink()
-        {
-            return Err(error(format!("path '{}' is a symlink", current.display())));
+        match std::fs::symlink_metadata(&current) {
+            Ok(metadata) if metadata.file_type().is_symlink() => {
+                return Err(error(format!("path '{}' is a symlink", current.display())));
+            }
+            Ok(_) => {}
+            // Only NotFound is tolerated (a component may not exist yet);
+            // EACCES/EIO must fail closed, never downgrade to "not a symlink".
+            Err(cause) if cause.kind() == std::io::ErrorKind::NotFound => {}
+            Err(cause) => {
+                return Err(error(format!("cannot inspect path '{}': {cause}", current.display())));
+            }
         }
     }
     Ok(())
@@ -1174,6 +1173,11 @@ mod tests {
             ".",
             absolute,
             r"C:\evil\policy.md",
+            // Portable records cross platforms: Windows separators and NTFS
+            // stream syntax must be rejected on every host, not just Windows.
+            r"..\..\secret",
+            r"\\server\share",
+            "policy.md:stream",
         ] {
             let error = confined_join(base, raw).expect_err(raw);
             assert!(error.to_string().contains("must be a relative path"), "{raw}: {error}");

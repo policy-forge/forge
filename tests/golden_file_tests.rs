@@ -81,6 +81,20 @@ fn load_fixture(path: &Path) -> Result<String, String> {
 // Normalization (stub — T005 implements)
 // ---------------------------------------------------------------------------
 
+/// `UPDATE_GOLDEN_FILES=1` only (0/empty must not regenerate); writes the
+/// normalized portable form, never run-dynamic UUIDs/timestamps/paths.
+/// Schema validity is already asserted by `convert_and_validate` upstream.
+fn maybe_update_golden(expected_path: &Path, actual: &Value) -> bool {
+    if std::env::var("UPDATE_GOLDEN_FILES").as_deref() != Ok("1") {
+        return false;
+    }
+    let content = serde_json::to_string_pretty(&normalize_for_comparison(actual))
+        .unwrap_or_else(|e| panic!("Failed to serialize golden: {e}"));
+    std::fs::write(expected_path, format!("{content}\n"))
+        .unwrap_or_else(|e| panic!("Failed to update {}: {e}", expected_path.display()));
+    true
+}
+
 /// Normalize non-deterministic fields in OSCAL JSON for stable comparison.
 ///
 /// Recursively walks the JSON tree and:
@@ -586,11 +600,7 @@ mod golden_catalog_tests {
     fn assert_accuracy(fixture_dir: &str, actual: &Value) {
         let expected_path =
             Path::new("tests/fixtures/golden").join(fixture_dir).join("expected-catalog.json");
-        if std::env::var_os("UPDATE_GOLDEN_FILES").is_some() {
-            let content = serde_json::to_string_pretty(actual)
-                .unwrap_or_else(|e| panic!("Failed to serialize catalog golden: {e}"));
-            std::fs::write(&expected_path, format!("{content}\n"))
-                .unwrap_or_else(|e| panic!("Failed to update {}: {e}", expected_path.display()));
+        if super::maybe_update_golden(&expected_path, actual) {
             return;
         }
         let expected_str = load_fixture(&expected_path)
@@ -693,11 +703,7 @@ mod golden_component_tests {
         let expected_path = Path::new("tests/fixtures/golden")
             .join(fixture_dir)
             .join("expected-component-definition.json");
-        if std::env::var_os("UPDATE_GOLDEN_FILES").is_some() {
-            let content = serde_json::to_string_pretty(actual)
-                .unwrap_or_else(|e| panic!("Failed to serialize component golden: {e}"));
-            std::fs::write(&expected_path, format!("{content}\n"))
-                .unwrap_or_else(|e| panic!("Failed to update {}: {e}", expected_path.display()));
+        if super::maybe_update_golden(&expected_path, actual) {
             return;
         }
         let expected_str = load_fixture(&expected_path)

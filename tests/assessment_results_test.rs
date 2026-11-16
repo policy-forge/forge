@@ -196,7 +196,7 @@ fn fixture() -> Fixture {
         .to_string();
 
     let mut assessment_plan = serde_json::to_value(
-        build_assessment_plan(&[CONTROL_ID.to_string()], "ssp.json", "Assessment fixture")
+        build_assessment_plan(&[CONTROL_ID.to_string()], "ssp.json", "Assessment fixture", None)
             .expect("build assessment plan"),
     )
     .unwrap();
@@ -1211,6 +1211,129 @@ fn plural_result_baselines_rejected_without_mutating_report() {
             ));
         }
     }
+}
+
+/// A baseline context fingerprint for a kind no longer in scope must surface, not silently drop.
+#[test]
+fn baseline_removed_upstream_kind_is_reported() {
+    use forge::assessment_results::report::{AssessmentResultsReport, ContextSummary};
+
+    let fixture = fixture();
+    let (manifest, context, current) = built_epoch_fixture(&fixture);
+    let mut baseline = serde_json::to_value(&current.artifact).unwrap();
+    baseline["assessment-results"]["metadata"]["props"].as_array_mut().unwrap().push(json!({
+        "name": "context-sha256",
+        "ns": "https://policy-forge.github.io/ns/assessment-results",
+        "value": format!("retired-artifact:{}", "a".repeat(64))
+    }));
+    let bytes = serde_json::to_vec(&baseline).unwrap();
+    let mut report = AssessmentResultsReport::new(
+        &manifest,
+        current.artifact.assessment_results.uuid.clone(),
+        context.artifact_identities().into_iter().map(ContextSummary::from),
+    );
+    forge::assessment_results::baseline::analyze(
+        &bytes,
+        &current.object_snapshots,
+        &context,
+        &mut report,
+    )
+    .expect("removed upstream kind is a finding, not a hard error");
+    assert!(
+        report.findings.iter().any(|finding| finding.code == "upstream-fingerprint-changed"
+            && finding.key == "retired-artifact"
+            && finding.new_fingerprint.is_none()),
+        "baseline-only context kind must surface as upstream-fingerprint-changed"
+    );
+}
+
+/// A schema-valid uppercase UUID spelling is the same stable identity.
+#[test]
+fn baseline_uuid_spelling_is_canonicalized_before_identity_comparison() {
+    use forge::assessment_results::report::{AssessmentResultsReport, ContextSummary};
+
+    let fixture = fixture();
+    let (manifest, context, current) = built_epoch_fixture(&fixture);
+    let mut baseline = serde_json::to_value(&current.artifact).unwrap();
+    let observation = &mut baseline["assessment-results"]["results"][0]["observations"][0];
+    observation["uuid"] = json!(observation["uuid"].as_str().unwrap().to_uppercase());
+    let bytes = serde_json::to_vec(&baseline).unwrap();
+    let mut report = AssessmentResultsReport::new(
+        &manifest,
+        current.artifact.assessment_results.uuid.clone(),
+        context.artifact_identities().into_iter().map(ContextSummary::from),
+    );
+    let before = serde_json::to_value(&report).unwrap();
+    forge::assessment_results::baseline::analyze(
+        &bytes,
+        &current.object_snapshots,
+        &context,
+        &mut report,
+    )
+    .expect("equivalent UUID spelling must not fail identity comparison");
+    assert_eq!(serde_json::to_value(&report).unwrap(), before);
+}
+
+/// An unsupported subject type must not silently escape stale-reference detection.
+#[test]
+fn baseline_unsupported_subject_type_is_rejected_not_skipped() {
+    use forge::assessment_results::report::{AssessmentResultsReport, ContextSummary};
+
+    let fixture = fixture();
+    let (manifest, context, current) = built_epoch_fixture(&fixture);
+    let mut baseline = serde_json::to_value(&current.artifact).unwrap();
+    baseline["assessment-results"]["results"][0]["observations"][0]["subjects"][0]["type"] =
+        json!("custom-subject");
+    let bytes = serde_json::to_vec(&baseline).unwrap();
+    let mut report = AssessmentResultsReport::new(
+        &manifest,
+        current.artifact.assessment_results.uuid.clone(),
+        context.artifact_identities().into_iter().map(ContextSummary::from),
+    );
+    assert!(
+        forge::assessment_results::baseline::analyze(
+            &bytes,
+            &current.object_snapshots,
+            &context,
+            &mut report,
+        )
+        .is_err(),
+        "unsupported subject type must be rejected, not silently skipped"
+    );
+}
+
+/// A late baseline rejection must not leave partially pushed findings in the report.
+#[test]
+fn late_baseline_rejection_does_not_mutate_report() {
+    use forge::assessment_results::report::{AssessmentResultsReport, ContextSummary};
+
+    let fixture = fixture();
+    let (manifest, context, current) = built_epoch_fixture(&fixture);
+    let mut baseline = serde_json::to_value(&current.artifact).unwrap();
+    let result = &mut baseline["assessment-results"]["results"][0];
+    // Finding content change pushes a finding early in the stable-identity loop.
+    for prop in result["findings"][0]["props"].as_array_mut().unwrap() {
+        if prop["name"] == "content-sha256" {
+            prop["value"] = json!("f".repeat(64));
+        }
+    }
+    // Risk UUID mismatch errors later in the same loop (Observation < Finding < Risk).
+    result["risks"][0]["uuid"] = json!("99999999-9999-4999-8999-999999999999");
+    let bytes = serde_json::to_vec(&baseline).unwrap();
+    let mut report = AssessmentResultsReport::new(
+        &manifest,
+        current.artifact.assessment_results.uuid.clone(),
+        context.artifact_identities().into_iter().map(ContextSummary::from),
+    );
+    let before = serde_json::to_value(&report).unwrap();
+    let outcome = forge::assessment_results::baseline::analyze(
+        &bytes,
+        &current.object_snapshots,
+        &context,
+        &mut report,
+    );
+    assert!(outcome.is_err(), "UUID mismatch must be rejected");
+    assert_eq!(serde_json::to_value(&report).unwrap(), before, "rejection mutated the report");
 }
 
 /// Preserve unchanged one-result comparisons through both the public API and CLI exit gates.

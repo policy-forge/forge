@@ -98,6 +98,12 @@ CONFIG_FILE="$REPO_ROOT/.specify/config.json"
 
 # Show current configuration
 if $SHOW_CONFIG; then
+    # --show exits before applying updates; combining them would silently
+    # skip the requested change. Reject instead.
+    if [[ -n "$MODE" || -n "$STRATEGY" || -n "$CUSTOM_PATH" ]]; then
+        echo "Error: --show cannot be combined with --mode/--strategy/--path" >&2
+        exit 1
+    fi
     if [[ ! -f "$CONFIG_FILE" ]]; then
         echo "No configuration file found. Using defaults:"
         echo "  git_mode: branch"
@@ -134,10 +140,24 @@ if [[ -n "$STRATEGY" ]]; then
     fi
 fi
 
-# Validate custom path requirements
+# Validate custom path requirements against the EFFECTIVE values: a stored
+# custom path satisfies --strategy custom, so re-selecting custom works.
 if [[ "$STRATEGY" == "custom" && -z "$CUSTOM_PATH" ]]; then
-    echo "Error: --path is required when strategy is 'custom'" >&2
-    exit 1
+    CUSTOM_PATH=$(read_config_value "worktree_custom_path" "")
+    if [[ -z "$CUSTOM_PATH" ]]; then
+        echo "Error: --path is required when strategy is 'custom' and no custom path is configured" >&2
+        exit 1
+    fi
+fi
+
+# --path without a custom strategy stores an orphan path contradicting the
+# active strategy; reject instead.
+if [[ -n "$CUSTOM_PATH" ]]; then
+    effective_strategy="${STRATEGY:-$(read_config_value "worktree_strategy" "sibling")}"
+    if [[ "$effective_strategy" != "custom" ]]; then
+        echo "Error: --path requires --strategy custom (active strategy: $effective_strategy)" >&2
+        exit 1
+    fi
 fi
 
 # Validate custom path is absolute
@@ -165,6 +185,8 @@ mkdir -p "$REPO_ROOT/.specify"
 if [[ -f "$CONFIG_FILE" ]]; then
     if command -v jq &>/dev/null; then
         EXISTING_CONFIG=$(cat "$CONFIG_FILE")
+        # An empty existing file would make jq emit nothing and clobber config.
+        [[ -z "$EXISTING_CONFIG" ]] && EXISTING_CONFIG='{}'
     else
         # Without jq, we'll reconstruct the file
         EXISTING_CONFIG="{}"
@@ -197,19 +219,34 @@ if command -v jq &>/dev/null; then
         UPDATE_EXPR="$UPDATE_EXPR | .worktree_custom_path = \"\""
     fi
 
-    echo "$EXISTING_CONFIG" | jq "${JQ_ARGS[@]}" "$UPDATE_EXPR" > "$CONFIG_FILE"
+    # Render fully before touching the file: '>' truncation plus a jq failure
+    # (malformed/empty existing config) would leave a 0-byte config behind.
+    updated_config=$(printf '%s' "$EXISTING_CONFIG" | jq "${JQ_ARGS[@]}" "$UPDATE_EXPR") || {
+        >&2 echo "[specify] Error: existing $CONFIG_FILE is not valid JSON; leaving it unchanged."
+        exit 1
+    }
+    printf '%s\n' "$updated_config" > "$CONFIG_FILE"
 else
-    # Fallback without jq: construct JSON manually
-    # Warn user about potential data loss
-    if [[ -f "$CONFIG_FILE" ]]; then
-        >&2 echo "[specify] Warning: jq not found. Config file will be rewritten with only worktree settings."
-        >&2 echo "[specify] Install jq to preserve other configuration keys."
+    # Fallback without jq: construct JSON manually. A warning is not enough:
+    # the rewrite would irreversibly discard every other key. Refuse instead.
+    if [[ -f "$CONFIG_FILE" ]] && grep -q '"' "$CONFIG_FILE" 2>/dev/null; then
+        other_keys=$(grep -o '"[^"]*"[[:space:]]*:' "$CONFIG_FILE" \
+            | sed 's/"\([^"]*\)".*/\1/' \
+            | grep -v '^\(git_mode\|worktree_strategy\|worktree_custom_path\)$' || true)
+        if [[ -n "$other_keys" ]]; then
+            >&2 echo "[specify] Error: jq is required to update a config containing other keys:"
+            >&2 printf '  %s\n' $other_keys
+            >&2 echo "[specify] Install jq, or remove those keys first. Config left unchanged."
+            exit 1
+        fi
     fi
 
-    # Read existing values
+    # Read existing values; decode JSON string escapes so re-escaping below
+    # does not double them on every update (C:\\foo -> C\\\\foo corruption).
     CURRENT_MODE=$(read_config_value "git_mode" "branch")
     CURRENT_STRATEGY=$(read_config_value "worktree_strategy" "sibling")
     CURRENT_PATH=$(read_config_value "worktree_custom_path" "")
+    CURRENT_PATH=$(printf '%s' "$CURRENT_PATH" | sed 's/\\\\/\\/g; s/\\"/"/g')
 
     # Apply updates
     [[ -n "$MODE" ]] && CURRENT_MODE="$MODE"

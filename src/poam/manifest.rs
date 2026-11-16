@@ -332,7 +332,7 @@ fn normalized_local_reference(path: &str, value: &str) -> Result<(), ForgeError>
 /// Recognize reserved Windows device stems before local path admission.
 fn windows_device(segment: &str) -> bool {
     let stem = segment.split('.').next().unwrap_or_default().to_ascii_uppercase();
-    matches!(stem.as_str(), "CON" | "PRN" | "AUX" | "NUL")
+    matches!(stem.as_str(), "CON" | "PRN" | "AUX" | "NUL" | "CONIN$" | "CONOUT$")
         || stem.strip_prefix("COM").is_some_and(device_number)
         || stem.strip_prefix("LPT").is_some_and(device_number)
 }
@@ -368,6 +368,16 @@ mod tests {
     use super::*;
 
     const UUID: &str = "11111111-1111-4111-8111-111111111111";
+
+    #[test]
+    fn windows_device_rejects_console_aliases() {
+        // CONIN$/CONOUT$ are exact full names on Windows; '$' passes the
+        // local-reference gate, so this filter must reject them itself.
+        for name in ["CONIN$", "conout$", "CON", "nul.txt", "COM1", "LPT9"] {
+            assert!(windows_device(name), "{name}");
+        }
+        assert!(!windows_device("context.json"));
+    }
 
     /// Construct a syntactically pinned companion for manifest boundary controls.
     fn artifact(name: &str) -> Value {

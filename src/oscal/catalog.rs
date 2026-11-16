@@ -180,6 +180,11 @@ pub fn generate_group_id(section_title: &str) -> String {
         result.pop();
     }
 
+    // OSCAL TokenDatatype is an NCName: must start with a letter or '_',
+    // never a digit (numbered headings like "3.1 ..." are common).
+    if result.starts_with(|c: char| c.is_ascii_digit()) {
+        result.insert_str(0, "g-");
+    }
     result
 }
 
@@ -663,7 +668,9 @@ mod tests {
     fn group_id_normal_cases() {
         assert_eq!(generate_group_id("Access Control Policies"), "access-control-policies");
         assert_eq!(generate_group_id("Data Protection & Privacy"), "data-protection-privacy");
-        assert_eq!(generate_group_id("3.1 \u{2014} Incident Response"), "3-1-incident-response");
+        assert_eq!(generate_group_id("3.1 \u{2014} Incident Response"), "g-3-1-incident-response");
+        // OSCAL TokenDatatype forbids digit-leading IDs (NCName).
+        assert_eq!(generate_group_id("9"), "g-9");
     }
 
     #[test]
