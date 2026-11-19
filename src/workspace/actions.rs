@@ -233,12 +233,12 @@ pub(crate) fn prepare_with_control(
 
 /// Redaction categories actually removed from a report export.
 ///
-/// Opted-in excerpts are raw source lines that no secret scrubber has inspected, so that
-/// export must not claim `secrets` were removed (or that excerpts were); the conservative
-/// default removes all four categories.
+/// Opted-in excerpts are raw source lines. Nothing inspects them for secrets, reviewer names
+/// or absolute paths, so that export cannot vouch for removing any category and reports none;
+/// the conservative default removes all four.
 fn report_removed_categories(include_excerpts: bool) -> serde_json::Value {
     if include_excerpts {
-        json!(["reviewer-names", "absolute-paths"])
+        json!([])
     } else {
         json!(["reviewer-names", "absolute-paths", "source-excerpts", "secrets"])
     }
@@ -519,21 +519,17 @@ pub(crate) fn prepare_with_control_for_api(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::AtomicBool;
 
-    /// An excerpt export never claims the redactions it did not perform.
+    /// An excerpt export never claims a redaction it did not perform.
     #[test]
-    fn excerpt_export_does_not_claim_secret_or_excerpt_removal() {
+    fn excerpt_export_does_not_claim_any_redaction() {
         assert_eq!(
             report_removed_categories(false),
             json!(["reviewer-names", "absolute-paths", "source-excerpts", "secrets"])
         );
-        let opted_in = report_removed_categories(true);
-        assert_eq!(opted_in, json!(["reviewer-names", "absolute-paths"]));
-        for category in ["secrets", "source-excerpts"] {
-            assert!(!opted_in.as_array().unwrap().iter().any(|value| value == category));
-        }
+        assert_eq!(report_removed_categories(true), json!([]));
     }
-    use std::sync::atomic::AtomicBool;
 
     fn catalog(controls: &[&str], uuid: &str) -> Value {
         json!({"catalog":{"uuid":uuid,"metadata":{"title":"Synthetic catalog","last-modified":"2026-09-10T00:00:00Z","version":"1","oscal-version":"1.2.3"},
