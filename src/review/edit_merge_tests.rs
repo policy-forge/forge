@@ -281,6 +281,8 @@ fn invalid_edit_is_classified_and_merge_continues() {
     assert_eq!(recorded.items[0].state, ItemState::QuorumMet);
     assert_eq!(recorded.items[0].met_seats.len(), 1);
     assert_eq!(recorded.items[0].met_seats[0].reviewer_key, "bob");
+    // The discarded response is named in the merged item, not silently dropped.
+    assert!(recorded.items[0].reason_codes.iter().any(|reason| reason == "invalid-edit-responses"));
 }
 
 /// G-4 never-applied: a valid proposed edit is retained as inert evidence and the complete
