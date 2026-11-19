@@ -247,7 +247,7 @@ class HostedChromeControls(unittest.TestCase):
         long=name.startswith("long-");read_only=name.endswith("read-only");expected=2 if read_only else 6
         metadata={"previewRegistrations":expected,"comparisonExpected":expected,"localDownloadBytes":100,"localDownloadSha256":"c"*64,"rawEnvelopeBytes":111,"strictDuplicateStatus":400}
         if long:metadata["longContent"]={"metadataReflow":[{"viewportWidth":width,"pageWidth":width} for width in [640,320]*2]}
-        return {"mode":"read-only" if read_only else "writable","browserVersion":"150.1.2.3","embeddedAssetSha256":"d"*64,"embeddedStyleSha256":"e"*64,"inputBorderContrast":{},"focusChecks":10,"reflowChecks":[{"viewportWidth":640,"pageWidth":640},{"viewportWidth":320,"pageWidth":320}],"syntheticFaults":[{"message":"PRIVATE"}],"captureConsumerObservation":{"actualCounterResponses":0,"distinctRenderedCounterFacts":0,"responseFactsWithoutRenderedObservation":0},"metadataConsumerObservation":metadata,"unlockRequests":3,"documentedRequests":["PRIVATE"],"nonLoopbackRequests":0,"pageErrors":0}
+        return {"mode":"read-only" if read_only else "writable","browserVersion":"150.1.2.3","embeddedAssetSha256":"d"*64,"embeddedStyleSha256":"e"*64,"inputBorderContrast":{},"focusChecks":10,"markerChecks":["Workspace passphrase"],"reflowChecks":[{"viewportWidth":640,"pageWidth":640},{"viewportWidth":320,"pageWidth":320}],"syntheticFaults":[{"message":"PRIVATE"}],"captureConsumerObservation":{"actualCounterResponses":0,"distinctRenderedCounterFacts":0,"responseFactsWithoutRenderedObservation":0},"metadataConsumerObservation":metadata,"unlockRequests":3,"documentedRequests":["PRIVATE"],"nonLoopbackRequests":0,"pageErrors":0}
 
     def test_actual_cjs_long_reflow_shape_requires_all_six_observations(self):
         """Model unchanged CJS preview and selected-file measurements plus final widths; reject incomplete/extra evidence."""
@@ -308,6 +308,19 @@ class HostedChromeControls(unittest.TestCase):
             elif kind=="capture":value["captureConsumerObservation"]["distinctRenderedCounterFacts"]=1
             else:value["metadataConsumerObservation"]["rawEnvelopeBytes"]=110
             with self.subTest(kind=kind),self.assertRaises(ValueError):browser.safe_observation(value,"default-read-only",source,self.tools)
+
+    def test_marker_checks_must_be_a_nonempty_bounded_label_list(self):
+        """Accept the real unchanged-CJS info-marker observation; reject absent, empty, oversized or non-label evidence and never retain labels."""
+        source={"ui/workspace.js":{"sha256":"d"*64},"ui/workspace.css":{"sha256":"e"*64}}
+        observation=browser.safe_observation(self.cjs_fixture(),"default-read-only",source,self.tools)
+        self.assertNotIn("Workspace passphrase",json.dumps(observation))
+        for bad in ([],"Workspace passphrase",[1],[""],["x"*129],["marker"]*101,None):
+            value=self.cjs_fixture();value["markerChecks"]=bad
+            with self.subTest(bad=repr(bad)[:24]),self.assertRaises(ValueError):browser.safe_observation(value,"default-read-only",source,self.tools)
+        value=self.cjs_fixture();del value["markerChecks"]
+        with self.assertRaises(ValueError):browser.safe_observation(value,"default-read-only",source,self.tools)
+        value=self.cjs_fixture();value["unexpectedObservation"]=1
+        with self.assertRaises(ValueError):browser.safe_observation(value,"default-read-only",source,self.tools)
 
     def test_true_google_chrome_engine_and_exact_tools_required(self):
         """Reject a launcher/global tool path and wrong exact Node/npm versions before any browser launch."""

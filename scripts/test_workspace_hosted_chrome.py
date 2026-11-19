@@ -387,13 +387,16 @@ def make_fixture(project,name):
 
 def safe_observation(value,name,source,tools):
     """Retain only bounded numeric/hash browser facts after unchanged real CJS assertions and child exit zero."""
-    closed(value,("mode","browserVersion","embeddedAssetSha256","embeddedStyleSha256","inputBorderContrast","focusChecks","reflowChecks","syntheticFaults","captureConsumerObservation","metadataConsumerObservation","unlockRequests","documentedRequests","nonLoopbackRequests","pageErrors"))
+    closed(value,("mode","browserVersion","embeddedAssetSha256","embeddedStyleSha256","inputBorderContrast","focusChecks","markerChecks","reflowChecks","syntheticFaults","captureConsumerObservation","metadataConsumerObservation","unlockRequests","documentedRequests","nonLoopbackRequests","pageErrors"))
     expected_mode="read-only" if name.endswith("read-only") else "writable"
     if value["mode"]!=expected_mode or value["browserVersion"]!=tools["chrome"]["version"]:raise ValueError("browser-binding")
     for field,key in (("embeddedAssetSha256","ui/workspace.js"),("embeddedStyleSha256","ui/workspace.css")):
         if value[field]!=source[key]["sha256"]:raise ValueError("asset-binding")
     if type(value["nonLoopbackRequests"]) is not int or value["nonLoopbackRequests"]!=0 or type(value["pageErrors"]) is not int or value["pageErrors"]!=0:raise ValueError("browser-error")
     if not isinstance(value["documentedRequests"],list) or not isinstance(value["syntheticFaults"],list):raise ValueError("browser-denominator")
+    # Info-marker labels the unchanged CJS verified in installed Chrome; at least one real marker must be observed.
+    markers=value["markerChecks"]
+    if not isinstance(markers,list) or not 1<=len(markers)<=100 or any(type(label) is not str or not 1<=len(label)<=128 for label in markers):raise ValueError("browser-denominator")
     metadata=value["metadataConsumerObservation"]
     expected=2 if expected_mode=="read-only" else 6
     if integer(metadata["previewRegistrations"],1000)!=expected or integer(metadata["comparisonExpected"],1000)!=expected or integer(metadata["strictDuplicateStatus"],599)!=400:raise ValueError("metadata-denominator")
