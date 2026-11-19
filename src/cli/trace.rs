@@ -55,15 +55,11 @@ fn format_source_excerpts(
     report: &crate::trace::report::TraceReport,
 ) -> Result<String, ForgeError> {
     use std::fmt::Write as _;
-    let source = std::fs::read_to_string(&report.source_path).map_err(|error| {
-        ForgeError::Io(std::io::Error::new(
-            error.kind(),
-            format!(
-                "Failed to read source '{}' for excerpts: {error}",
-                report.source_path.display()
-            ),
-        ))
-    })?;
+    let source = read_excerpt_source(
+        &report.source_path,
+        crate::io::MAX_FILE_SIZE,
+        report.source_line_count,
+    )?;
     let lines: Vec<&str> = source.lines().collect();
     let mut out = String::from("\nSource excerpts (opt-in; untrusted source content):\n");
     let mut count = 0;
@@ -86,6 +82,46 @@ fn format_source_excerpts(
         let _ = writeln!(out, "  {} (line {line}): {}{marker}", entry.element_id, &raw[..end]);
     }
     Ok(out)
+}
+
+/// Re-read the traced source for opt-in excerpts without trusting it blindly.
+///
+/// The report already counted the source's lines when it was built, so the read is bounded
+/// by the same limit the trace itself uses, and a file whose line count has since changed is
+/// refused instead of excerpting lines the report never saw.
+fn read_excerpt_source(
+    path: &Path,
+    max_bytes: u64,
+    expected_lines: usize,
+) -> Result<String, ForgeError> {
+    use std::io::Read as _;
+    let describe = |error: &std::io::Error| {
+        ForgeError::Io(std::io::Error::new(
+            error.kind(),
+            format!("Failed to read source '{}' for excerpts: {error}", path.display()),
+        ))
+    };
+    let file = std::fs::File::open(path).map_err(|error| describe(&error))?;
+    let mut source = String::new();
+    let read = file
+        .take(max_bytes.saturating_add(1))
+        .read_to_string(&mut source)
+        .map_err(|error| describe(&error))?;
+    let read = u64::try_from(read).unwrap_or(u64::MAX);
+    if read > max_bytes {
+        return Err(ForgeError::FileTooLarge {
+            path: path.to_path_buf(),
+            size_bytes: read,
+            limit_bytes: max_bytes,
+        });
+    }
+    if source.lines().count() != expected_lines {
+        return Err(ForgeError::Io(std::io::Error::other(format!(
+            "Source '{}' changed since the trace report was generated; refusing to excerpt it",
+            path.display()
+        ))));
+    }
+    Ok(source)
 }
 
 fn contextualize_trace_input_error(
@@ -127,5 +163,28 @@ mod tests {
             .expect_err("a non-UTF-8 source must fail trace generation");
 
         assert!(error.to_string().contains(&source.display().to_string()), "{error}");
+    }
+
+    /// Excerpts re-read the source only within the trace bound and only if it still matches the report.
+    #[test]
+    fn excerpt_source_is_bounded_and_must_match_the_traced_line_count() {
+        let directory = tempfile::tempdir().unwrap();
+        let source = directory.path().join("policy.md");
+        std::fs::write(&source, "one\ntwo\nthree\n").unwrap();
+
+        assert_eq!(read_excerpt_source(&source, 1024, 3).unwrap(), "one\ntwo\nthree\n");
+        // Exactly at the byte bound is accepted; one byte under the file size is refused.
+        assert!(read_excerpt_source(&source, 14, 3).is_ok());
+        let too_large = read_excerpt_source(&source, 13, 3).unwrap_err();
+        assert!(matches!(too_large, ForgeError::FileTooLarge { .. }), "{too_large}");
+        // A source that gained or lost lines since the report was built is refused.
+        for expected in [2, 4] {
+            let changed = read_excerpt_source(&source, 1024, expected).unwrap_err();
+            assert!(changed.to_string().contains("changed since the trace report"), "{changed}");
+        }
+        // A missing source names the path.
+        let missing = directory.path().join("missing.md");
+        let error = read_excerpt_source(&missing, 1024, 0).unwrap_err();
+        assert!(error.to_string().contains(&missing.display().to_string()), "{error}");
     }
 }

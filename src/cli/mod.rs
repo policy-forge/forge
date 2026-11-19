@@ -3424,10 +3424,7 @@ fn run_edit_review(command: &EditReviewCommand) -> Result<(), ForgeError> {
             };
             let patch = match &args.proposed_patch {
                 None => None,
-                Some(path) => Some(
-                    std::fs::read(path)
-                        .map_err(|_| ForgeError::Validation("cannot read proposed patch".into()))?,
-                ),
+                Some(path) => Some(read_proposed_patch(path)?),
             };
             edit_commands::respond(
                 &commands::RespondOptions {
@@ -3458,6 +3455,22 @@ fn run_edit_review(command: &EditReviewCommand) -> Result<(), ForgeError> {
         ),
     };
     result.map_err(review_error)
+}
+
+/// Read one `--proposed-patch` file through the bounded regular-file reader.
+///
+/// The review contract admits at most `MAX_PATCH_BYTES` of patch text. Reading with an
+/// unbounded `std::fs::read` would let a huge file or a FIFO/device exhaust memory or hang
+/// before that limit applies, so the cap, regular-file and no-symlink checks happen first.
+fn read_proposed_patch(path: &Path) -> Result<Vec<u8>, ForgeError> {
+    let limit =
+        u64::try_from(crate::review::edit_response_binding::MAX_PATCH_BYTES).unwrap_or(u64::MAX);
+    crate::io::read_bounded(path, limit).map_err(|error| match error {
+        ForgeError::FileTooLarge { .. } => {
+            ForgeError::Validation(format!("proposed patch exceeds {limit} bytes"))
+        }
+        _ => ForgeError::Validation("cannot read proposed patch".into()),
+    })
 }
 
 /// Dispatch the separate Authoring /3 family through complete actual operation owners.
@@ -3536,6 +3549,34 @@ mod tests {
     #[test]
     fn mcp_serve_requires_explicit_project() {
         assert!(Cli::try_parse_from(["forge", "mcp", "serve"]).is_err());
+    }
+
+    /// The patch reader refuses over-limit, special-file and symlink inputs before buffering them.
+    #[test]
+    fn proposed_patch_read_is_bounded_and_regular_file_only() {
+        let temp = tempfile::tempdir().unwrap();
+        let ok = temp.path().join("ok.patch");
+        std::fs::write(&ok, b"replacement text").unwrap();
+        assert_eq!(read_proposed_patch(&ok).unwrap(), b"replacement text");
+
+        let limit = crate::review::edit_response_binding::MAX_PATCH_BYTES;
+        let at_bound = temp.path().join("at-bound.patch");
+        std::fs::write(&at_bound, vec![b'a'; limit]).unwrap();
+        assert_eq!(read_proposed_patch(&at_bound).unwrap().len(), limit);
+
+        let over = temp.path().join("over.patch");
+        std::fs::write(&over, vec![b'a'; limit + 1]).unwrap();
+        let error = read_proposed_patch(&over).unwrap_err();
+        assert!(error.to_string().contains("exceeds"), "{error}");
+
+        assert!(read_proposed_patch(temp.path()).is_err(), "a directory is not a patch");
+        assert!(read_proposed_patch(&temp.path().join("missing.patch")).is_err());
+        #[cfg(unix)]
+        {
+            let link = temp.path().join("link.patch");
+            std::os::unix::fs::symlink(&ok, &link).unwrap();
+            assert!(read_proposed_patch(&link).is_err(), "a symlink is not followed");
+        }
     }
 
     /// The CLI preserves every explicit root and raw digest for the actual admission gate.
