@@ -562,6 +562,9 @@ impl LinuxConfinement {
             if ruleset < 0 {
                 return Err(std::io::Error::last_os_error());
             }
+            // A successful `landlock_create_ruleset` returns a file descriptor, which always fits
+            // in an `i32`; a fallible conversion would add an allocation after fork.
+            #[allow(clippy::cast_possible_truncation)]
             let ruleset = ruleset as i32;
             let result = self.install_rules(ruleset);
             libc::close(ruleset);
@@ -653,6 +656,9 @@ impl LinuxConfinement {
 }
 
 /// Build the deny-list filter for the running architecture.
+// The BPF opcodes combined here (`BPF_JMP | BPF_JEQ | BPF_K` and friends) are small
+// compile-time constants that fit the 16-bit `code` field of `sock_filter`.
+#[allow(clippy::cast_possible_truncation)]
 #[cfg(target_os = "linux")]
 fn seccomp_filter() -> Vec<libc::sock_filter> {
     let insn = |code: u16, k: u32| libc::sock_filter { code, jt: 0, jf: 0, k };
@@ -701,6 +707,9 @@ fn seccomp_filter() -> Vec<libc::sock_filter> {
 }
 
 /// Socket-creating syscalls present on this architecture.
+// Syscall numbers are small non-negative constants that fit the 32-bit `k` field of a BPF
+// instruction.
+#[allow(clippy::cast_possible_truncation)]
 #[cfg(target_os = "linux")]
 fn denied_syscalls() -> Vec<u32> {
     #[cfg_attr(not(target_arch = "x86"), allow(unused_mut))]

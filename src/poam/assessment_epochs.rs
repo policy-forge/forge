@@ -2604,7 +2604,6 @@ fn validate_previous_changes(
             })?;
         }
     }
-    drop(require);
     validate_previous_metadata_changes(changes, old, expected)
 }
 
