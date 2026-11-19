@@ -706,7 +706,13 @@ fn seccomp_filter() -> Vec<libc::sock_filter> {
     filter
 }
 
-/// Socket-creating syscalls present on this architecture.
+/// Socket-creating syscalls plus the cross-process access syscalls present on this architecture.
+///
+/// Landlock confines filesystem access but not access to other processes of the same user, so
+/// `ptrace`, `process_vm_readv/writev` and `pidfd_getfd` are denied as well: depending on
+/// `kernel.yama.ptrace_scope` they could otherwise reach processes outside the sandbox.
+/// Signalling (`kill`) is not denied because a confined adapter legitimately manages its own
+/// children; see `docs/local-model-confinement.md`.
 // Syscall numbers are small non-negative constants that fit the 32-bit `k` field of a BPF
 // instruction.
 #[allow(clippy::cast_possible_truncation)]
@@ -719,6 +725,10 @@ fn denied_syscalls() -> Vec<u32> {
         libc::SYS_io_uring_setup as u32,
         libc::SYS_io_uring_enter as u32,
         libc::SYS_io_uring_register as u32,
+        libc::SYS_ptrace as u32,
+        libc::SYS_process_vm_readv as u32,
+        libc::SYS_process_vm_writev as u32,
+        libc::SYS_pidfd_getfd as u32,
     ];
     // i386 routes socket calls through one multiplexer; 64-bit architectures
     // have no socketcall.
