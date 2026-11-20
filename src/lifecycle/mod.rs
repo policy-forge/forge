@@ -1254,7 +1254,8 @@ mod tests {
                 Path::new(r"c:\work\records\artifacts\policy.md")
             )
             .expect("relative path"),
-            Path::new("artifacts").join("policy.md").to_string_lossy()
+            // Stored records are portable: always `/`, never the host separator.
+            "artifacts/policy.md"
         );
     }
 
