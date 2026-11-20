@@ -32,7 +32,8 @@ pub(crate) enum TentativeStateV4 {
     Conflicted,
     /// Active request-changes blocks clean seat satisfaction.
     ChangesRequested,
-    /// Maximum matching fills every seat, with no active blocker.
+    /// Maximum matching fills every seat, with no active blocker (a rejection,
+    /// request-changes or malformed-edit response each block).
     SeatsFilled,
     /// Unsatisfied policy at or after the explicit due second.
     Expired,
@@ -471,7 +472,10 @@ fn state(
     if facts.decisive & 4 != 0 {
         return Ok(TentativeStateV4::ChangesRequested);
     }
-    if complete && facts.decisive & 2 == 0 {
+    // A response whose proposed edit was malformed blocks clean seat satisfaction: the
+    // reviewer's intent is unknown, so the item cannot be reported quorum-met until a
+    // valid response replaces it.
+    if complete && facts.decisive & 2 == 0 && !facts.invalid_edit.is_present() {
         return Ok(TentativeStateV4::SeatsFilled);
     }
     if let Some(due) = &item.due_at
@@ -494,7 +498,7 @@ fn reasons(
     state: TentativeStateV4,
     ledger: &mut ContractLedger,
 ) -> Result<Vec<String>, ContractError> {
-    let mut result = reserved(14, ledger)?;
+    let mut result = reserved(15, ledger)?;
     let flags = [
         (state == TentativeStateV4::SeatsFilled, "approval-seats-filled"),
         (true, "asserted-identity-only"),
@@ -506,6 +510,7 @@ fn reasons(
         (true, "currentness-unverified"),
         (state == TentativeStateV4::Expired, "deadline-unsatisfied"),
         (facts.future.is_present(), "future-responses"),
+        (facts.invalid_edit.is_present(), "invalid-edit-blocks"),
         (facts.invalid_edit.is_present(), "invalid-edit-responses"),
         (facts.late.is_present(), "late-responses"),
         (facts.abstain.is_present(), "nonapproving-abstention"),
