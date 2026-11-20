@@ -84,3 +84,25 @@ fn selection_order_and_membership_are_enforced() {
     // Unknown clause key.
     binding(adapter::prepare(&owner, &["missing-clause"], &mut ledger, &mut control));
 }
+
+/// A plan with no human clauses has nothing to select: the empty selection is its complete
+/// (zero) denominator, not a refusal, so clause-free plans stay reviewable.
+#[test]
+fn a_plan_without_clauses_prepares_an_empty_clause_review() {
+    let mut f = Fixture::new(false, false);
+    // The scaffold emits `human_clauses: []`; the default fixture carries one clause.
+    f.project["human_clauses"] = serde_json::json!([]);
+    f.clauses.clear();
+    f.save();
+    originals(&f);
+    let mut ledger = ContractLedger::default();
+    let mut caller = NoopControl;
+    let mut control = ReviewControl::accept(&mut caller);
+    let owner = init(&f, &mut ledger, &mut control).unwrap();
+
+    let prepared = adapter::prepare(&owner, &[], &mut ledger, &mut control).unwrap();
+    assert_eq!(prepared.complete_clauses(), 0);
+    assert!(prepared.facts().is_empty());
+    // Naming a clause the plan does not have is still a binding refusal.
+    binding(adapter::prepare(&owner, &["missing-clause"], &mut ledger, &mut control));
+}

@@ -562,6 +562,9 @@ impl LinuxConfinement {
             if ruleset < 0 {
                 return Err(std::io::Error::last_os_error());
             }
+            // A successful `landlock_create_ruleset` returns a file descriptor, which always fits
+            // in an `i32`; a fallible conversion would add an allocation after fork.
+            #[allow(clippy::cast_possible_truncation)]
             let ruleset = ruleset as i32;
             let result = self.install_rules(ruleset);
             libc::close(ruleset);
@@ -653,6 +656,9 @@ impl LinuxConfinement {
 }
 
 /// Build the deny-list filter for the running architecture.
+// The BPF opcodes combined here (`BPF_JMP | BPF_JEQ | BPF_K` and friends) are small
+// compile-time constants that fit the 16-bit `code` field of `sock_filter`.
+#[allow(clippy::cast_possible_truncation)]
 #[cfg(target_os = "linux")]
 fn seccomp_filter() -> Vec<libc::sock_filter> {
     let insn = |code: u16, k: u32| libc::sock_filter { code, jt: 0, jf: 0, k };
@@ -700,7 +706,16 @@ fn seccomp_filter() -> Vec<libc::sock_filter> {
     filter
 }
 
-/// Socket-creating syscalls present on this architecture.
+/// Socket-creating syscalls plus the cross-process access syscalls present on this architecture.
+///
+/// Landlock confines filesystem access but not access to other processes of the same user, so
+/// `ptrace`, `process_vm_readv/writev` and `pidfd_getfd` are denied as well: depending on
+/// `kernel.yama.ptrace_scope` they could otherwise reach processes outside the sandbox.
+/// Signalling (`kill`) is not denied because a confined adapter legitimately manages its own
+/// children; see `docs/local-model-confinement.md`.
+// Syscall numbers are small non-negative constants that fit the 32-bit `k` field of a BPF
+// instruction.
+#[allow(clippy::cast_possible_truncation)]
 #[cfg(target_os = "linux")]
 fn denied_syscalls() -> Vec<u32> {
     #[cfg_attr(not(target_arch = "x86"), allow(unused_mut))]
@@ -710,6 +725,10 @@ fn denied_syscalls() -> Vec<u32> {
         libc::SYS_io_uring_setup as u32,
         libc::SYS_io_uring_enter as u32,
         libc::SYS_io_uring_register as u32,
+        libc::SYS_ptrace as u32,
+        libc::SYS_process_vm_readv as u32,
+        libc::SYS_process_vm_writev as u32,
+        libc::SYS_pidfd_getfd as u32,
     ];
     // i386 routes socket calls through one multiplexer; 64-bit architectures
     // have no socketcall.

@@ -157,7 +157,12 @@ fn prepare_inner<'a>(
     ledger: &mut ContractLedger,
     control: &mut dyn WorkControl,
 ) -> Result<PreparedAuthoringClauseReview<'a>, ContractError> {
-    if selected.is_empty() || selected.len() > MAX_CLAUSES {
+    // An empty selection is valid only for a plan that genuinely has no human clauses (the
+    // scaffold emits `human_clauses: []`): there is nothing to select, and refusing it would
+    // block authoring review for every clause-free plan. A plan with clauses must select some.
+    if selected.len() > MAX_CLAUSES
+        || (selected.is_empty() && !closure.facts().loaded.clauses.is_empty())
+    {
         return Err(ContractError::Invalid);
     }
     ledger.visits(selected.len())?;

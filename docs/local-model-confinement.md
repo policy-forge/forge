@@ -58,9 +58,12 @@ Before `exec`, the child installs (via `libc`, no new dependency):
   kernel without Landlock the adapter refuses with a clear error.
 - a **seccomp-BPF** filter that returns `EPERM` for every socket-creating
   syscall (`socket`, `socketpair`, the `io_uring_*` family, and `socketcall`
-  on i386),
+  on i386) and for the cross-process access syscalls (`ptrace`,
+  `process_vm_readv`, `process_vm_writev`, `pidfd_getfd`),
   kills the process on a foreign ABI or the x32 syscall range, and allows the
-  rest. This blocks network egress including the `io_uring` bypass. The filter
+  rest. This blocks network egress including the `io_uring` bypass, and stops
+  the child from attaching to or reading other processes of the same user
+  that sit outside the sandbox (Landlock does not confine that). The filter
   is inherited across `fork`/`exec`.
 
 `no_new_privs` is set first, as both mechanisms require it. The seccomp policy
@@ -74,6 +77,17 @@ identity inside the sandbox. A malicious model can still consume resources
 until the timeout kills its group. Treat the executable as trusted code that
 is being prevented from reaching data and networks it was not consented to,
 not as a defense against arbitrary hostile computation.
+
+Known limits of the boundary that are **not** closed:
+
+- **Signals (Linux and macOS).** The child may still signal other processes of
+  the same user (`kill` is not denied on Linux because an adapter manages its
+  own children; the macOS profile allows `signal`).
+- **macOS mach services (not verified).** The Seatbelt profile allows `mach*`
+  and `process*`. Whether those let a sandboxed child reach the network
+  indirectly (for example name resolution through a system service) or launch
+  a helper outside the sandbox has not been tested; until it is, do not rely
+  on "no network" as a hard guarantee on macOS.
 
 ## Platform limitations
 

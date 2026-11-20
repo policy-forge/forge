@@ -407,6 +407,8 @@ struct Evidence {
     unassigned: Presence,
     /// Withdrawn history or a timely withdrawal marker remains visible.
     superseded: Presence,
+    /// A response carried a malformed proposed edit and was discarded as evidence.
+    invalid_edit: Presence,
 }
 
 /// Inspect every item-key response and preserve complete dissent references.
@@ -442,9 +444,10 @@ fn evidence(
             ResponseClassification::Late => facts.late = Presence::Present,
             ResponseClassification::Unassigned => facts.unassigned = Presence::Present,
             ResponseClassification::Superseded => facts.superseded = Presence::Present,
-            // InvalidEdit is emitted only by the edit-capable /4 family; the
-            // zero-edit families treat it as inert non-approving evidence.
-            ResponseClassification::Foreign | ResponseClassification::InvalidEdit => {}
+            // A malformed edit envelope discards that response as evidence; record that it
+            // happened so the merged item names it instead of silently dropping the vote.
+            ResponseClassification::InvalidEdit => facts.invalid_edit = Presence::Present,
+            ResponseClassification::Foreign => {}
         }
     }
     Ok((facts, ids, dissent))
@@ -491,7 +494,7 @@ fn reasons(
     state: TentativeStateV4,
     ledger: &mut ContractLedger,
 ) -> Result<Vec<String>, ContractError> {
-    let mut result = reserved(13, ledger)?;
+    let mut result = reserved(14, ledger)?;
     let flags = [
         (state == TentativeStateV4::SeatsFilled, "approval-seats-filled"),
         (true, "asserted-identity-only"),
@@ -503,6 +506,7 @@ fn reasons(
         (true, "currentness-unverified"),
         (state == TentativeStateV4::Expired, "deadline-unsatisfied"),
         (facts.future.is_present(), "future-responses"),
+        (facts.invalid_edit.is_present(), "invalid-edit-responses"),
         (facts.late.is_present(), "late-responses"),
         (facts.abstain.is_present(), "nonapproving-abstention"),
         (facts.decisive & 2 != 0, "rejection-blocks"),

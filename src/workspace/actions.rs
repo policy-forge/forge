@@ -231,6 +231,19 @@ pub(crate) fn prepare_with_control(
     )
 }
 
+/// Redaction categories actually removed from a report export.
+///
+/// Opted-in excerpts are raw source lines. Nothing inspects them for secrets, reviewer names
+/// or absolute paths, so that export cannot vouch for removing any category and reports none;
+/// the conservative default removes all four.
+fn report_removed_categories(include_excerpts: bool) -> serde_json::Value {
+    if include_excerpts {
+        json!([])
+    } else {
+        json!(["reviewer-names", "absolute-paths", "source-excerpts", "secrets"])
+    }
+}
+
 /// Prepare a selected-major request after public admission, with the existing real stop fences.
 /// The tuple carries the selected major and private canonical path; it is never a wire alias.
 #[allow(clippy::too_many_lines)] // One audited route-to-effect table, unchanged domain branches.
@@ -490,11 +503,7 @@ pub(crate) fn prepare_with_control_for_api(
             let inputs = super::reports::inputs(snapshot, kind)?;
             control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
             let preview = store.preview(root, snapshot, target, "report-export", bytes, &inputs)?;
-            let removed = if include_excerpts {
-                json!(["reviewer-names", "absolute-paths", "secrets"])
-            } else {
-                json!(["reviewer-names", "absolute-paths", "source-excerpts", "secrets"])
-            };
+            let removed = report_removed_categories(include_excerpts);
             Ok(operation_reply(store.completed("export",json!({"operation_id":"op_000000000000","preview":preview,"redaction_summary":{"removed_categories":removed}}))?))
         }
         _ => {
@@ -511,6 +520,16 @@ pub(crate) fn prepare_with_control_for_api(
 mod tests {
     use super::*;
     use std::sync::atomic::AtomicBool;
+
+    /// An excerpt export never claims a redaction it did not perform.
+    #[test]
+    fn excerpt_export_does_not_claim_any_redaction() {
+        assert_eq!(
+            report_removed_categories(false),
+            json!(["reviewer-names", "absolute-paths", "source-excerpts", "secrets"])
+        );
+        assert_eq!(report_removed_categories(true), json!([]));
+    }
 
     fn catalog(controls: &[&str], uuid: &str) -> Value {
         json!({"catalog":{"uuid":uuid,"metadata":{"title":"Synthetic catalog","last-modified":"2026-09-10T00:00:00Z","version":"1","oscal-version":"1.2.3"},
