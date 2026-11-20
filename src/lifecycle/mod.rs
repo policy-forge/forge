@@ -948,6 +948,13 @@ fn reject_symlink_components(path: &Path) -> Result<(), ForgeError> {
     let mut current = PathBuf::new();
     for component in path.components() {
         current.push(component.as_os_str());
+        // A bare Windows drive prefix (`C:`, `\\?\C:`) names a device, not a
+        // directory, so it cannot be inspected on its own ("Incorrect
+        // function"). The root component that follows (`C:\`) can be, and
+        // every real directory below it still is.
+        if matches!(component, Component::Prefix(_)) {
+            continue;
+        }
         match std::fs::symlink_metadata(&current) {
             Ok(metadata) if metadata.file_type().is_symlink() => {
                 return Err(error(format!("path '{}' is a symlink", current.display())));
@@ -1156,6 +1163,15 @@ mod tests {
         let as_of = NaiveDate::from_ymd_opt(2026, 8, 25).expect("date");
         let boundary = as_of.checked_add_days(chrono::Days::new(30)).expect("boundary");
         assert_eq!(boundary, NaiveDate::from_ymd_opt(2026, 9, 24).expect("date"));
+    }
+
+    #[test]
+    fn symlink_component_check_accepts_a_real_absolute_directory() {
+        // On Windows the canonical form starts with a bare `\\?\C:` prefix
+        // that must not be inspected on its own.
+        let dir = tempfile::tempdir().unwrap();
+        let canonical = dir.path().canonicalize().unwrap();
+        reject_symlink_components(&canonical).unwrap();
     }
 
     #[test]
