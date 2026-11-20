@@ -320,8 +320,9 @@ let outcomePublished=false;
      const failOperationRead=async route=>{
        if(route.request().method()==="GET"&&!operationReadFailed){
          operationReadFailed=true;
-         await page.unroute("**/api/v1/operations/op_*",failOperationRead);
+         // Fulfil before unrouting: unrouting first makes the in-flight route "already handled".
          await route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic operation read failure.",retryable:true})});
+         await page.unroute("**/api/v1/operations/op_*",failOperationRead);
        }else await route.continue();
      };
      await page.route("**/api/v1/operations/op_*",failOperationRead);
@@ -389,8 +390,8 @@ let outcomePublished=false;
        const target=new URL(route.request().url());
        if(target.searchParams.get("page_size")==="50"&&target.searchParams.has("cursor")&&!nextPageFailed){
          nextPageFailed=true;
-         await page.unroute("**/api/v1/applicability/controls?*",failNext);
          await route.fulfill({status:500,contentType:"application/json",body:JSON.stringify({code:"internal-error",message:"Synthetic next-page failure.",retryable:true})});
+         await page.unroute("**/api/v1/applicability/controls?*",failNext);
        }else await route.continue();
      };
      await page.route("**/api/v1/applicability/controls?*",failNext);
@@ -644,8 +645,8 @@ let outcomePublished=false;
    if(page!==null){
    console.error("Error summary:",JSON.stringify({visible:await page.locator("#error").isVisible(),text:await page.locator("#error").textContent()}));
    console.error("Focus state:",JSON.stringify(await page.evaluate(()=>({active:document.activeElement?.outerHTML,error:document.getElementById("error")?.outerHTML,viewInert:document.getElementById("view")?.inert,dialogs:[...document.querySelectorAll("dialog[open]")].map(node=>node.outerHTML)}))));
-   await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT||"/tmp/forge-workspace-browser-failure.png",fullPage:false});
    }
+   if(page!==null)await page.screenshot({path:process.env.FORGE_TEST_SCREENSHOT||"/tmp/forge-workspace-browser-failure.png",fullPage:false});
    } catch(diagnosticError){failureTracker.capture(diagnosticError);}
  } finally {await reconcileCleanup(failureTracker,context,browser);}
  outcomePublished=true;
