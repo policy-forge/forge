@@ -996,20 +996,21 @@ fn relative_path(base: &Path, target: &Path) -> Result<String, ForgeError> {
         }
     }
 
-    let mut relative = PathBuf::new();
+    // Records are portable across platforms, so the stored form always uses
+    // `/` separators (never the host's `\\`).
+    let mut parts: Vec<&str> = Vec::new();
     for component in target_components {
         let Component::Normal(component) = component else {
             return Err(error("artifact must be located beneath lifecycle record directory"));
         };
-        relative.push(component);
+        parts.push(component.to_str().ok_or_else(|| {
+            error("artifact path is not valid UTF-8 and cannot be stored in JSON")
+        })?);
     }
-    if relative.as_os_str().is_empty() {
+    if parts.is_empty() {
         return Err(error("artifact path must identify a file beneath lifecycle record directory"));
     }
-    relative
-        .to_str()
-        .map(str::to_string)
-        .ok_or_else(|| error("artifact path is not valid UTF-8 and cannot be stored in JSON"))
+    Ok(parts.join("/"))
 }
 
 #[cfg(windows)]
@@ -1198,6 +1199,13 @@ mod tests {
             let error = confined_join(base, raw).expect_err(raw);
             assert!(error.to_string().contains("must be a relative path"), "{raw}: {error}");
         }
+    }
+
+    #[test]
+    fn relative_path_stores_portable_forward_slash_separators() {
+        let records = Path::new("records");
+        let artifact = records.join("generated").join("00.json");
+        assert_eq!(relative_path(records, &artifact).unwrap(), "generated/00.json");
     }
 
     #[test]

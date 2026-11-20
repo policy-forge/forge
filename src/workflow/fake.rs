@@ -99,7 +99,13 @@ impl FakeServer {
                     Ok((stream, _)) => {
                         let state = Arc::clone(&server_state);
                         std::thread::spawn(move || {
-                            let _ = serve_connection(stream, &state);
+                            // The listener is non-blocking and macOS/BSD accepted
+                            // sockets inherit that mode (Linux does not). Handlers read
+                            // with blocking semantics, so a request that has not fully
+                            // arrived would fail with WouldBlock and drop the connection.
+                            if stream.set_nonblocking(false).is_ok() {
+                                let _ = serve_connection(stream, &state);
+                            }
                         });
                     }
                     Err(cause) if cause.kind() == std::io::ErrorKind::WouldBlock => {
