@@ -281,7 +281,7 @@
       "expires_on": "2026-12-27",
       "name": "hyper",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the hyper 1.11.1 -> 1.12.0 Dependabot upgrade (PR #261). The prior 1.11.1 identity was only a legacy unowned cargo-vet exemption and is retired because the lock no longer contains it. Agent-assisted differential review only (PR #267 review packet); no accepted source audit, safety certification or release acceptance is asserted.",
+      "rationale": "OWNER-APPROVED 2026-11-20 (PR #294): exact-identity temporary exception for the hyper 1.11.1 -> 1.12.0 Dependabot upgrade (PR #261). The prior 1.11.1 identity was only a legacy unowned cargo-vet exemption and is retired because the lock no longer contains it. Agent-assisted differential review only (PR #267 review packet); no accepted source audit, safety certification or release acceptance is asserted.",
       "review_by": "2026-11-27",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.12.0"
@@ -506,7 +506,7 @@
       "expires_on": "2026-12-26",
       "name": "quick-xml",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary integration exception for the quick-xml 0.41 -> 0.42 API migration (supersedes Dependabot PR #264). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "rationale": "OWNER-APPROVED 2026-11-20 (PR #294): exact-identity temporary integration exception for the quick-xml 0.41 -> 0.42 API migration (supersedes Dependabot PR #264). Full-rooted accepted source audit remains outstanding; graph/archive pins and compatibility tests are separate evidence, not audit credit or release acceptance.",
       "review_by": "2026-11-26",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "0.42.0"
@@ -672,7 +672,7 @@
       "expires_on": "2026-12-27",
       "name": "serde_json",
       "owner": "brianluby",
-      "rationale": "PROPOSED pending owner approval: exact-identity temporary exception for the serde_json 1.0.151 -> 1.0.154 Dependabot upgrade (PR #263). It replaces the owner-approved 1.0.151 exception, which is retired because the lock no longer contains that identity. Agent-assisted differential review only (PR #267 review packet); no accepted source audit, safety certification or release acceptance is asserted.",
+      "rationale": "OWNER-APPROVED 2026-11-20 (PR #294): exact-identity temporary exception for the serde_json 1.0.151 -> 1.0.154 Dependabot upgrade (PR #263). It replaces the owner-approved 1.0.151 exception, which is retired because the lock no longer contains that identity. Agent-assisted differential review only (PR #267 review packet); no accepted source audit, safety certification or release acceptance is asserted.",
       "review_by": "2026-11-27",
       "source": "registry+https://github.com/rust-lang/crates.io-index",
       "version": "1.0.154"

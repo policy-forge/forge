@@ -874,7 +874,7 @@ criteria = "safe-to-run"
 [[exemptions.quick-xml]]
 version = "0.42.0"
 criteria = "safe-to-deploy"
-notes = "PROPOSED pending owner approval; quick-xml 0.42 API migration, see https://github.com/policy-forge/forge/pull/268"
+notes = "OWNER-APPROVED 2026-11-20 (PR #294); quick-xml 0.42 API migration, see https://github.com/policy-forge/forge/pull/268"
 
 [[exemptions.quote]]
 version = "1.0.45"
@@ -1057,7 +1057,7 @@ criteria = "safe-to-deploy"
 [[exemptions.serde_json]]
 version = "1.0.154"
 criteria = "safe-to-deploy"
-notes = "PROPOSED pending owner approval; Dependabot upgrade PR #263, replaces 1.0.151. No accepted source audit is asserted."
+notes = "OWNER-APPROVED 2026-11-20 (PR #294); Dependabot upgrade PR #263, replaces 1.0.151. No accepted source audit is asserted."
 
 [[exemptions.serde_spanned]]
 version = "1.1.1"
