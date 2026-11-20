@@ -50,11 +50,14 @@ pub(super) fn invoke_confined(
     timeout: Duration,
 ) -> Result<AdapterOutput, ForgeError> {
     let resolved = std::fs::canonicalize(executable)?;
+    // Pin the file identity BEFORE hashing so a replacement during or after
+    // the hash is detected by the recheck immediately before spawn. Copying
+    // signed platform binaries breaks macOS code signatures, so the
+    // executable stays in place and is pinned instead (hash-then-exec TOCTOU).
+    let identity = file_identity(&resolved)?;
     let bytes = crate::io::read_bounded(&resolved, crate::suggest::prepare::MAX_ADAPTER_BYTES)?;
     if crate::hashing::sha256_hex(&bytes) != expected_sha {
-        return Err(shared::error(
-            "the adapter executable changed since it was fingerprinted; re-run prepare and consent again",
-        ));
+        return Err(changed_executable());
     }
     let scratch = tempfile::Builder::new().prefix("forge-model-").tempdir().map_err(|cause| {
         shared::error(format!("cannot create the adapter scratch directory: {cause}"))
@@ -62,6 +65,10 @@ pub(super) fn invoke_confined(
     let scratch_path = scratch.path().canonicalize().map_err(|cause| {
         shared::error(format!("cannot resolve the adapter scratch directory: {cause}"))
     })?;
+    // Recheck after the hash and the scratch setup, immediately before spawn.
+    if file_identity(&resolved)? != identity {
+        return Err(changed_executable());
+    }
     let started = Instant::now();
     let mut child = spawn(&resolved, argv, &scratch_path)?;
     let (result, drained) = supervise(&mut child, payload, timeout, started);
@@ -76,6 +83,46 @@ pub(super) fn invoke_confined(
         let _ = scratch.keep();
     }
     result
+}
+
+fn changed_executable() -> ForgeError {
+    shared::error(
+        "the adapter executable changed since it was fingerprinted; re-run prepare and consent again",
+    )
+}
+
+/// Identity of the executable file; a replacement or in-place rewrite changes it.
+#[derive(Debug, PartialEq, Eq)]
+struct FileIdentity {
+    device: u64,
+    inode: u64,
+    len: u64,
+    modified: Option<std::time::SystemTime>,
+}
+
+#[cfg(unix)]
+fn file_identity(path: &Path) -> Result<FileIdentity, ForgeError> {
+    use std::os::unix::fs::MetadataExt;
+    let metadata = std::fs::metadata(path)?;
+    Ok(FileIdentity {
+        device: metadata.dev(),
+        inode: metadata.ino(),
+        len: metadata.len(),
+        modified: metadata.modified().ok(),
+    })
+}
+
+/// No device/inode here; the type still compiles so the crate builds. Spawning
+/// is refused on this platform (see `spawn`), so this is never relied on.
+#[cfg(not(unix))]
+fn file_identity(path: &Path) -> Result<FileIdentity, ForgeError> {
+    let metadata = std::fs::metadata(path)?;
+    Ok(FileIdentity {
+        device: 0,
+        inode: 0,
+        len: metadata.len(),
+        modified: metadata.modified().ok(),
+    })
 }
 
 /// Spawn the confined child in its own process group with piped output.
@@ -725,6 +772,8 @@ fn denied_syscalls() -> Vec<u32> {
         libc::SYS_io_uring_setup as u32,
         libc::SYS_io_uring_enter as u32,
         libc::SYS_io_uring_register as u32,
+        // Same-uid cross-process escape hatches: attaching to or reading and
+        // writing an unconfined operator process escapes every boundary here.
         libc::SYS_ptrace as u32,
         libc::SYS_process_vm_readv as u32,
         libc::SYS_process_vm_writev as u32,
@@ -755,6 +804,40 @@ fn platform_command(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn deny_list_closes_same_uid_cross_process_escape_hatches() {
+        let denied = denied_syscalls();
+        for syscall in [
+            libc::SYS_ptrace,
+            libc::SYS_process_vm_readv,
+            libc::SYS_process_vm_writev,
+            libc::SYS_pidfd_getfd,
+        ] {
+            let syscall = u32::try_from(syscall).expect("syscall numbers fit in u32");
+            assert!(denied.contains(&syscall), "syscall {syscall} must be denied");
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn file_identity_changes_when_the_path_is_replaced_or_rewritten() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("adapter");
+        std::fs::write(&path, b"verified").unwrap();
+        let before = file_identity(&path).unwrap();
+        assert_eq!(file_identity(&path).unwrap(), before, "unchanged file keeps identity");
+        // In-place rewrite (same inode) with different content length.
+        std::fs::write(&path, b"verified-but-longer").unwrap();
+        assert_ne!(file_identity(&path).unwrap(), before, "in-place rewrite must be detectable");
+        let rewritten = file_identity(&path).unwrap();
+        // Atomic replacement (rename over the path) swaps the inode.
+        let replacement = dir.path().join("replacement");
+        std::fs::write(&replacement, b"attacker-bytes!!!!").unwrap();
+        std::fs::rename(&replacement, &path).unwrap();
+        assert_ne!(file_identity(&path).unwrap(), rewritten, "replacement must be detectable");
+    }
 
     #[test]
     fn finished_by_detaches_a_thread_that_outlives_the_deadline() {

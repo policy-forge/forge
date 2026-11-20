@@ -213,7 +213,7 @@ fn write_resource<W: Write>(
     }
 
     // Description (position 2) — OSCAL XSD requires markup-multiline (block elements like <p>)
-    if let Some(desc) = &resource.description {
+    if let Some(desc) = resource.description.as_deref().filter(|desc| !desc.is_empty()) {
         write_markup_element(writer, "description", desc)?;
     }
 
@@ -287,6 +287,20 @@ fn write_control<W: Write>(
 ///
 /// Writes: `<group id="...">` → title, prop*, link*, group*, control* → `</group>`
 fn write_group<W: Write>(writer: &mut Writer<W>, group: &OscalGroup) -> Result<(), ForgeError> {
+    write_group_bounded(writer, group, 1)
+}
+
+/// Nested groups are limited to `MAX_PART_DEPTH` levels to prevent stack exhaustion.
+fn write_group_bounded<W: Write>(
+    writer: &mut Writer<W>,
+    group: &OscalGroup,
+    depth: usize,
+) -> Result<(), ForgeError> {
+    if depth > MAX_PART_DEPTH {
+        return Err(ForgeError::Serialization(format!(
+            "group nesting exceeds maximum depth {MAX_PART_DEPTH}"
+        )));
+    }
     let mut elem = BytesStart::new("group");
     elem.push_attribute(("id", group.id.as_str()));
     writer.write_event(Event::Start(elem)).map_err(map_xml_err)?;
@@ -306,7 +320,7 @@ fn write_group<W: Write>(writer: &mut Writer<W>, group: &OscalGroup) -> Result<(
 
     // Nested sub-groups (XSD GroupType order: group* before control*)
     for subgroup in &group.groups {
-        write_group(writer, subgroup)?;
+        write_group_bounded(writer, subgroup, depth + 1)?;
     }
 
     // Controls (position 7)
@@ -433,7 +447,9 @@ fn write_markup_element<W: Write>(
     content: &str,
 ) -> Result<(), ForgeError> {
     if content.is_empty() {
-        return Ok(());
+        // Mandatory markup elements (minOccurs=1) must not vanish silently;
+        // optional callers skip empty content before calling this.
+        return Err(ForgeError::Serialization(format!("required <{tag}> content is empty")));
     }
     writer.write_event(Event::Start(BytesStart::new(tag))).map_err(map_xml_err)?;
     writer.write_event(Event::Start(BytesStart::new("p"))).map_err(map_xml_err)?;
@@ -710,6 +726,43 @@ mod tests {
     use crate::oscal::catalog::OscalMetadata;
     use crate::oscal::component_definition::ComponentDefinitionMetadata;
     use crate::oscal::parts::OscalPartName;
+
+    #[test]
+    fn empty_required_description_is_refused_not_dropped() {
+        // description is minOccurs=1 for component/control-implementation/
+        // implemented-requirement/capability; silently emitting nothing makes
+        // the document schema-invalid.
+        let mut writer = Writer::new(Vec::new());
+        let error = write_markup_element(&mut writer, "description", "")
+            .expect_err("empty mandatory description must fail closed");
+        assert!(error.to_string().contains("description"), "{error}");
+    }
+
+    #[test]
+    fn group_nesting_is_bounded_like_parts() {
+        let mut group = crate::oscal::catalog::OscalGroup {
+            id: "leaf".into(),
+            title: "Leaf".into(),
+            props: vec![],
+            links: vec![],
+            controls: vec![],
+            groups: vec![],
+        };
+        for _ in 0..=MAX_PART_DEPTH {
+            group = crate::oscal::catalog::OscalGroup {
+                id: "g".into(),
+                title: "G".into(),
+                props: vec![],
+                links: vec![],
+                controls: vec![],
+                groups: vec![group],
+            };
+        }
+        let mut writer = Writer::new(Vec::new());
+        let error = write_group(&mut writer, &group)
+            .expect_err("deep group nesting must error, not overflow the stack");
+        assert!(error.to_string().contains("depth"), "{error}");
+    }
 
     // ── Test helpers ──────────────────────────────────────
 

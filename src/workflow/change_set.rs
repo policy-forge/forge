@@ -173,17 +173,24 @@ fn validate_item(item: &WorkItem) -> Result<(), ForgeError> {
     if item.key.is_empty() || item.title.is_empty() {
         return Err(error("work items require a nonempty key and title"));
     }
+    // Portable repository-relative contract: reject URL schemes, Windows
+    // drive/UNC roots and NTFS streams (':' or '\'), POSIX roots, and '..' as
+    // a whole component — but not benign names like 'notes..v2.md'.
     if item.provenance.source.is_empty()
+        || item.provenance.source.contains([':', '\\'])
         || item.provenance.source.starts_with('/')
-        || item.provenance.source.contains("..")
+        || item.provenance.source.split('/').any(|component| component == "..")
     {
         return Err(error("provenance must be a repository-relative source link"));
     }
     json_strict::validate_lowercase_sha256("provenance hash", &item.provenance.sha256)
         .map_err(error)?;
     for text in std::iter::once(&item.title)
+        .chain(std::iter::once(&item.key))
         .chain(item.reason_codes.iter())
         .chain(item.owners.iter())
+        .chain(item.due_date.iter())
+        .chain([&item.provenance.source, &item.provenance.schema_version])
         .chain(item.excerpt.iter())
     {
         reject_secret_text(text, "work item")?;
@@ -433,9 +440,10 @@ fn excerpt(include: bool, text: &str) -> Result<Option<String>, ForgeError> {
     while !text.is_char_boundary(end) {
         end -= 1;
     }
-    let bounded = &text[..end];
-    reject_secret_text(bounded, "excerpt")?;
-    Ok(Some(bounded.to_string()))
+    // Scan the full source text first: truncation must not hide a secret
+    // sitting past the byte cutoff.
+    reject_secret_text(text, "excerpt")?;
+    Ok(Some(text[..end].to_string()))
 }
 
 #[cfg(test)]
@@ -478,6 +486,50 @@ mod tests {
         assert!(set.items[0].id < set.items[1].id);
         let round = parse(bytes.as_bytes()).unwrap();
         assert_eq!(round, set);
+    }
+
+    #[test]
+    fn excerpt_scan_covers_text_beyond_the_truncation_boundary() {
+        let text = format!("{}ghp_A1b2C3d4E5f6", "x".repeat(MAX_EXCERPT_BYTES));
+        assert!(excerpt(true, &text).is_err(), "secret past the cutoff must still be refused");
+    }
+
+    #[test]
+    fn provenance_links_are_repository_relative_on_every_platform() {
+        for source in [
+            "C:\\evil\\x.json",
+            "C:/evil/x.json",
+            "\\\\server\\share\\x.json",
+            "file:///etc/x.json",
+            "https://evil.example/x.json",
+            "reports/../../secret.json",
+            "reports\\..\\..\\secret.json",
+        ] {
+            let mut bad = item("a");
+            bad.provenance.source = source.to_string();
+            assert!(ChangeSet::new(vec![bad]).is_err(), "{source}");
+        }
+        // '..' inside a name is not a traversal component.
+        let mut benign = item("a");
+        benign.provenance.source = "reports/notes..v2.md".to_string();
+        assert!(ChangeSet::new(vec![benign]).is_ok());
+    }
+
+    #[test]
+    fn every_free_text_field_is_secret_scanned() {
+        let secret = "ghp_A1b2C3d4E5f6G7h8I9j0";
+        let mut bad = item("a");
+        bad.key = secret.to_string();
+        assert!(ChangeSet::new(vec![bad]).is_err(), "key");
+        let mut bad = item("a");
+        bad.due_date = Some(secret.to_string());
+        assert!(ChangeSet::new(vec![bad]).is_err(), "due_date");
+        let mut bad = item("a");
+        bad.provenance.source = format!("reports/{secret}.json");
+        assert!(ChangeSet::new(vec![bad]).is_err(), "provenance.source");
+        let mut bad = item("a");
+        bad.provenance.schema_version = secret.to_string();
+        assert!(ChangeSet::new(vec![bad]).is_err(), "provenance.schema_version");
     }
 
     #[test]

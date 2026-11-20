@@ -88,6 +88,21 @@ pub(crate) fn parse_value(
     let strict = StrictValue::deserialize(&mut deserializer).map_err(|source| {
         let message = source.to_string();
         if let Some(key) = message.strip_prefix(DUPLICATE_KEY_PREFIX) {
+            // serde's fix_position appends " at line L column C" to custom
+            // visitor errors; keep the key itself, not the decoder's suffix.
+            let key = match key.rsplit_once(" at line ") {
+                Some((key, location))
+                    if location.split_once(" column ").is_some_and(|(line, column)| {
+                        !line.is_empty()
+                            && !column.is_empty()
+                            && line.bytes().all(|b| b.is_ascii_digit())
+                            && column.bytes().all(|b| b.is_ascii_digit())
+                    }) =>
+                {
+                    key
+                }
+                _ => key,
+            };
             StrictJsonError::DuplicateKey { key: key.to_string() }
         } else {
             StrictJsonError::InvalidJson { label: label.to_string(), source }
@@ -519,9 +534,11 @@ mod tests {
 
     #[test]
     fn classifies_duplicate_trailing_and_bound_violations_without_raw_keys() {
+        // The key must be exactly 'a': serde's fix_position appends
+        // " at line L column C" to custom errors; it must not pollute the key.
         assert!(matches!(
             parse_value(br#"{"a":1,"a":2}"#, "test", LIMITS),
-            Err(super::StrictJsonError::DuplicateKey { .. })
+            Err(super::StrictJsonError::DuplicateKey { key }) if key == "a"
         ));
         assert!(matches!(
             parse_value(b"{} {}", "test", LIMITS),

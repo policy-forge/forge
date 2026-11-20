@@ -257,7 +257,7 @@ fn redaction_rewrites_the_payload_and_records_only_the_rule_identity() {
     assert_eq!(request["redactions"].as_array().unwrap().len(), 1);
     assert_eq!(request["redactions"][0]["rule_id"], json!("account-id"));
     assert_eq!(request["redactions"][0]["unit_id"], json!("unit-0002"));
-    assert_eq!(request["redactions"][0]["rule_sha256"], json!(hash(b"account-id\t123456789012")));
+    assert_eq!(request["redactions"][0]["rule_sha256"], json!(hash(b"account-id")));
 }
 
 #[test]

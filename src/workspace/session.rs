@@ -18,11 +18,14 @@ const LANES: u32 = 1;
 const TAG_BYTES: usize = 32;
 const SALT_BYTES: usize = 16;
 const MAX_CAPABILITIES: usize = 16;
-/// SEC-LOG-2: hard ceiling on security-event lines a single process may emit.
-/// The ceiling counts the single `limit-reached` marker line itself, so the
-/// process never writes more than `MAX_SECURITY_EVENTS` lines.
+/// SEC-LOG-2: hard per-class ceiling on security-event lines a single process
+/// may emit. Each class budget counts its own `limit-reached` marker line, so
+/// the process never writes more than `2 * MAX_SECURITY_EVENTS` lines.
 const MAX_SECURITY_EVENTS: u64 = 1024;
-static SECURITY_EVENTS: AtomicU64 = AtomicU64::new(0);
+// One budget per event class: cheap capability rejections must never exhaust
+// the slots reserved for unlock/throttle audit events (audit suppression).
+static CAPABILITY_EVENTS: AtomicU64 = AtomicU64::new(0);
+static UNLOCK_EVENTS: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -93,20 +96,19 @@ fn attempt_bucket(count: u32) -> &'static str {
 /// can never reach it. The session identifier is an opaque correlation value, never
 /// an authenticator. `SEC-LOG-3` control-character stripping keeps hostile content
 /// from forging log lines, and the process-wide counter keeps the surface from
-/// becoming an unbounded log amplifier: it admits events while the counter is below
-/// the ceiling and then prints exactly one `limit-reached` marker, which is itself
-/// counted, so no more than `MAX_SECURITY_EVENTS` lines are ever emitted.
+/// becoming an unbounded log amplifier: each event class admits events while its
+/// own counter is below the ceiling and then prints exactly one `limit-reached`
+/// marker, which is itself counted. Capability rejections use a separate budget
+/// so they can never suppress unlock/throttle audit events.
 pub(crate) fn security_event(session: &str, kind: &str, outcome: &str, detail: &str) {
-    // `fetch_add` returns the previous value, so reserved slots `0..MAX-1` are
-    // event lines and slot `MAX-1` is the once-only marker. Everything after it
-    // is dropped without writing, keeping the documented ceiling absolute.
-    let reserved = SECURITY_EVENTS.fetch_add(1, Ordering::Relaxed);
-    if reserved == MAX_SECURITY_EVENTS - 1 {
-        eprintln!("forge-workspace event=limit-reached limit={MAX_SECURITY_EVENTS}");
-        return;
-    }
-    if reserved >= MAX_SECURITY_EVENTS {
-        return;
+    let counter = if kind == "capability" { &CAPABILITY_EVENTS } else { &UNLOCK_EVENTS };
+    match reserve_event_slot(counter) {
+        Some(true) => {
+            eprintln!("forge-workspace event=limit-reached limit={MAX_SECURITY_EVENTS}");
+            return;
+        }
+        Some(false) => {}
+        None => return,
     }
     let at = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
     let line = format!(
@@ -116,6 +118,19 @@ pub(crate) fn security_event(session: &str, kind: &str, outcome: &str, detail: &
     // must additionally collapse them (SEC-LOG-3): one event is always one line.
     let line = crate::sanitize::strip_control_chars(&line).replace(['\n', '\t'], " ");
     eprintln!("{line}");
+}
+
+/// Reserve one slot from a class budget. `Some(false)` = emit event,
+/// `Some(true)` = emit the once-only marker, `None` = drop silently.
+fn reserve_event_slot(counter: &AtomicU64) -> Option<bool> {
+    // `fetch_add` returns the previous value, so reserved slots `0..MAX-1` are
+    // event lines and slot `MAX-1` is the once-only marker. Everything after it
+    // is dropped without writing, keeping the documented ceiling absolute.
+    let reserved = counter.fetch_add(1, Ordering::Relaxed);
+    if reserved == MAX_SECURITY_EVENTS - 1 {
+        return Some(true);
+    }
+    if reserved >= MAX_SECURITY_EVENTS { None } else { Some(false) }
 }
 
 fn digest(secret: &[u8]) -> Zeroizing<[u8; 32]> {
@@ -340,6 +355,23 @@ pub(crate) fn prompt() -> Result<Zeroizing<String>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn capability_budget_exhaustion_never_suppresses_unlock_events() {
+        let capability = AtomicU64::new(0);
+        let unlock = AtomicU64::new(0);
+        // Flood the capability class past its ceiling.
+        let mut emitted = 0;
+        for _ in 0..(MAX_SECURITY_EVENTS + 10) {
+            if reserve_event_slot(&capability) == Some(true) {
+                emitted += 1;
+            }
+        }
+        assert!(emitted < MAX_SECURITY_EVENTS, "capability class must stay bounded");
+        // The unlock class must still admit events after the flood.
+        assert_eq!(reserve_event_slot(&unlock), Some(false));
+        assert_eq!(reserve_event_slot(&unlock), Some(false));
+    }
 
     #[test]
     fn machine_scope_read_only_and_shutdown() {

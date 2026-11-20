@@ -113,7 +113,10 @@ pub fn ingest_file(path: &Path, max_size_bytes: u64) -> Result<IngestedDocument,
         });
     }
 
-    let bytes = std::fs::read(path).map_err(map_io_error(path))?;
+    // Cap the bytes actually read from one handle; a file swapped or grown
+    // after the metadata check must not bypass the limit (TOCTOU).
+    let file = std::fs::File::open(path).map_err(map_io_error(path))?;
+    let bytes = read_capped(file, max_size_bytes, path)?;
 
     if bytes.is_empty() {
         return Err(ForgeError::EmptyInput { path: path.to_path_buf() });
@@ -203,15 +206,42 @@ fn extract_docx_content(
     Ok(extracted)
 }
 
+fn append_docx_text(
+    text: &str,
+    in_cell: bool,
+    cell: &mut String,
+    in_paragraph: bool,
+    paragraph: &mut String,
+) {
+    if in_cell {
+        cell.push_str(text);
+    } else if in_paragraph {
+        paragraph.push_str(text);
+    }
+}
+
+/// Read the w:val style id from a w:pStyle element (Start or Empty spelling).
+fn docx_paragraph_style(element: &quick_xml::events::BytesStart<'_>) -> Option<String> {
+    element
+        .attributes()
+        .flatten()
+        .find(|attr| attr.key.as_ref() == "w:val")
+        .map(|attr| attr.value.into_owned())
+}
+
 fn extract_docx_document_xml(xml: &str) -> Result<String, ForgeError> {
     let mut reader = Reader::from_str(xml);
-    reader.config_mut().trim_text(true);
+    // trim_text would eat boundary spaces around entity refs ("Roles &amp;
+    // Responsibilities" -> "Roles&Responsibilities"); paragraph edges are
+    // trimmed at w:p end instead.
+    reader.config_mut().trim_text(false);
 
     let mut output = Vec::new();
     let mut paragraph = String::new();
     let mut style: Option<String> = None;
     let mut in_paragraph = false;
     let mut in_table = false;
+    let mut table_header_pending = false;
     let mut in_row = false;
     let mut in_cell = false;
     let mut cell = String::new();
@@ -227,7 +257,10 @@ fn extract_docx_document_xml(xml: &str) -> Result<String, ForgeError> {
                     style = None;
                     is_list_item = false;
                 }
-                "w:tbl" => in_table = true,
+                "w:tbl" => {
+                    in_table = true;
+                    table_header_pending = true;
+                }
                 "w:tr" => {
                     in_row = true;
                     row.clear();
@@ -237,31 +270,31 @@ fn extract_docx_document_xml(xml: &str) -> Result<String, ForgeError> {
                     cell.clear();
                 }
                 "w:numPr" if in_paragraph => is_list_item = true,
-                "w:pStyle" if in_paragraph => {
-                    for attr in element.attributes().flatten() {
-                        if attr.key.as_ref() == "w:val" {
-                            style = Some(attr.value.into_owned());
-                        }
-                    }
-                }
+                "w:pStyle" if in_paragraph => style = docx_paragraph_style(&element),
                 _ => {}
             },
             Ok(XmlEvent::Empty(element)) => match element.name().as_ref() {
                 "w:numPr" if in_paragraph => is_list_item = true,
-                "w:pStyle" if in_paragraph => {
-                    for attr in element.attributes().flatten() {
-                        if attr.key.as_ref() == "w:val" {
-                            style = Some(attr.value.into_owned());
-                        }
-                    }
-                }
+                "w:pStyle" if in_paragraph => style = docx_paragraph_style(&element),
+                // Self-closing <w:tc/> is an empty cell, not a skipped column.
+                "w:tc" if in_row => row.push(String::new()),
                 _ => {}
             },
+            // CDATA and entity refs carry ordinary policy text; dropping them
+            // corrupts the source ("Roles &amp; Responsibilities").
             Ok(XmlEvent::Text(text)) => {
-                if in_cell {
-                    cell.push_str(&text);
-                } else if in_paragraph {
-                    paragraph.push_str(&text);
+                append_docx_text(&text, in_cell, &mut cell, in_paragraph, &mut paragraph);
+            }
+            Ok(XmlEvent::CData(text)) => {
+                append_docx_text(&text, in_cell, &mut cell, in_paragraph, &mut paragraph);
+            }
+            Ok(XmlEvent::GeneralRef(reference)) => {
+                let resolved = reference.resolve_char_ref().ok().flatten().map(String::from);
+                let resolved = resolved.or_else(|| {
+                    quick_xml::escape::resolve_predefined_entity(&reference).map(str::to_string)
+                });
+                if let Some(resolved) = resolved {
+                    append_docx_text(&resolved, in_cell, &mut cell, in_paragraph, &mut paragraph);
                 }
             }
             Ok(XmlEvent::End(element)) => match element.name().as_ref() {
@@ -274,13 +307,20 @@ fn extract_docx_document_xml(xml: &str) -> Result<String, ForgeError> {
                 }
                 "w:tc" => {
                     if in_row {
-                        row.push(cell.trim().to_string());
+                        // Unescaped pipes would shift every following column.
+                        row.push(cell.trim().replace('|', "\\|"));
                     }
                     in_cell = false;
                 }
                 "w:tr" => {
                     if !row.is_empty() {
                         output.push(format!("| {} |", row.join(" | ")));
+                        // GFM needs a delimiter row after the header or the
+                        // table parses as plain paragraph text downstream.
+                        if table_header_pending {
+                            output.push(format!("|{}", " --- |".repeat(row.len())));
+                            table_header_pending = false;
+                        }
                     }
                     in_row = false;
                 }
@@ -344,12 +384,63 @@ fn looks_like_heading(line: &str) -> bool {
         && !line.contains(" shall ")
 }
 
+fn read_capped(mut reader: impl Read, max: u64, path: &Path) -> Result<Vec<u8>, ForgeError> {
+    let mut bytes = Vec::new();
+    reader
+        .by_ref()
+        .take(max.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .map_err(map_io_error(path))?;
+    if bytes.len() as u64 > max {
+        return Err(ForgeError::FileTooLarge {
+            path: path.to_path_buf(),
+            size_bytes: bytes.len() as u64,
+            limit_bytes: max,
+        });
+    }
+    Ok(bytes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::fs;
     use std::io::Write;
     use tempfile::TempDir;
+
+    #[test]
+    fn docx_table_emits_valid_gfm_with_escaped_cells() {
+        let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:tbl><w:tr><w:tc><w:p><w:r><w:t>Role</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>A|B</w:t></w:r></w:p></w:tc></w:tr><w:tr><w:tc/><w:tc><w:p><w:r><w:t>x</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:body></w:document>"#;
+        let text = extract_docx_document_xml(xml).unwrap();
+        assert!(text.contains("| Role | A\\|B |"), "header/escaping: {text:?}");
+        assert!(text.contains("| --- | --- |"), "GFM delimiter row missing: {text:?}");
+        assert!(text.contains("|  | x |"), "empty cell dropped, columns drift: {text:?}");
+    }
+
+    #[test]
+    fn docx_text_keeps_cdata_and_entity_references() {
+        let xml = r#"<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Roles &amp; Responsibilities</w:t></w:r><w:r><w:t><![CDATA[ & duties]]></w:t></w:r><w:r><w:t>&#8212; end</w:t></w:r></w:p></w:body></w:document>"#;
+        let text = extract_docx_document_xml(xml).unwrap();
+        assert!(text.contains("Roles & Responsibilities"), "entity dropped: {text:?}");
+        assert!(text.contains("& duties"), "CDATA dropped: {text:?}");
+        assert!(text.contains("\u{2014} end"), "char ref dropped: {text:?}");
+    }
+
+    #[test]
+    fn capped_read_rejects_bytes_beyond_limit_despite_small_metadata() {
+        // Metadata says 3 bytes but the stream yields more: the cap must apply
+        // to the bytes actually read, not the pre-read metadata size (TOCTOU).
+        let reader = std::io::Cursor::new(vec![b'a'; 100]);
+        let error = read_capped(reader, 10, Path::new("x.md"))
+            .expect_err("actual read length must be capped");
+        assert!(matches!(error, ForgeError::FileTooLarge { size_bytes: 11, limit_bytes: 10, .. }));
+    }
+
+    #[test]
+    fn capped_read_accepts_exactly_the_limit() {
+        let reader = std::io::Cursor::new(vec![b'a'; 10]);
+        assert_eq!(read_capped(reader, 10, Path::new("x.md")).unwrap().len(), 10);
+    }
 
     fn create_temp_md(dir: &TempDir, name: &str, content: &str) -> PathBuf {
         let path = dir.path().join(name);

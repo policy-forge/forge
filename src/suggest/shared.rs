@@ -80,12 +80,21 @@ pub(super) fn key(name: &str, value: &str) -> Result<(), ForgeError> {
     Ok(())
 }
 
-/// One non-empty line with no control characters or line separators.
+/// Bidirectional overrides/isolates: banned everywhere untrusted text is
+/// displayed, so operator-facing labels cannot be visually spoofed.
+fn bidi(ch: char) -> bool {
+    matches!(ch,
+        '\u{061c}' | '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
+}
+
+/// One non-empty line with no control characters, line separators or bidi.
 pub(super) fn single_line(name: &str, value: &str) -> Result<(), ForgeError> {
     if value.is_empty()
         || value.len() > MAX_STRING_BYTES
         || value.trim() != value
-        || value.chars().any(|ch| ch.is_control() || matches!(ch, '\u{2028}' | '\u{2029}'))
+        || value
+            .chars()
+            .any(|ch| ch.is_control() || bidi(ch) || matches!(ch, '\u{2028}' | '\u{2029}'))
     {
         return Err(error(format!("{name} must be one non-empty line")));
     }
@@ -98,12 +107,7 @@ pub(super) fn text(name: &str, value: &str) -> Result<(), ForgeError> {
     if !has_nonblank_text(value)
         || value.len() > MAX_STRING_BYTES
         || value.chars().any(|ch| ch.is_control() && !matches!(ch, '\n' | '\t'))
-        || value.chars().any(|ch| {
-            matches!(
-                ch,
-                '\u{061c}' | '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}'
-            )
-        })
+        || value.chars().any(bidi)
     {
         return Err(error(format!(
             "{name} must be non-blank text of at most {MAX_STRING_BYTES} bytes"
@@ -200,6 +204,14 @@ mod tests {
         assert!(single_line("field", "two\nlines").is_err());
         assert!(single_line("field", " padded").is_err());
         assert!(single_line("field", "").is_err());
+    }
+
+    #[test]
+    fn single_line_rejects_bidi_overrides_like_free_text() {
+        assert!(single_line("label", "plain label").is_ok());
+        // Operator-facing display fields must not be visually spoofable.
+        assert!(single_line("label", "override\u{202e}").is_err());
+        assert!(single_line("label", "isolate\u{2066}").is_err());
     }
 
     #[test]

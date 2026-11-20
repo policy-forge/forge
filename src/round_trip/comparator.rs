@@ -178,11 +178,13 @@ fn normalize_soft_line_breaks(value: &str) -> Option<String> {
         return None;
     }
 
-    for (index, line) in lines.iter().enumerate() {
+    for line in &lines {
         if line.ends_with("  ") || line.ends_with('\\') {
             return None;
         }
-        if index > 0 && is_markdown_block_start(line) {
+        // The first line counts too: "# Heading\nparagraph" joined would
+        // turn h1 + paragraph into a single h1.
+        if is_markdown_block_start(line) {
             return None;
         }
     }
@@ -477,6 +479,13 @@ mod tests {
 
     fn default_rules() -> OscalComparisonRules {
         OscalComparisonRules::default()
+    }
+
+    #[test]
+    fn first_line_heading_blocks_soft_wrap_normalization() {
+        // "# Heading\nparagraph" is h1 + paragraph; joining makes one h1.
+        assert!(normalize_soft_line_breaks("# Heading\nparagraph").is_none());
+        assert!(normalize_soft_line_breaks("plain text\nmore text").is_some());
     }
 
     // T009(a): Identical documents → empty divergence list

@@ -977,7 +977,9 @@ pub fn validate_local_path(name: &str, path: &Path) -> Result<(), ForgeError> {
 }
 
 fn path_key(path: &Path) -> Result<String, ForgeError> {
-    path.to_str().map(str::to_ascii_lowercase).ok_or_else(|| error("path must be UTF-8"))
+    // Full Unicode folding: case-insensitive volumes alias Ä.md with ä.md.
+    // shortcut: NFC/NFD variants still alias on APFS; needs an approved unicode-normalization dep.
+    path.to_str().map(str::to_lowercase).ok_or_else(|| error("path must be UTF-8"))
 }
 
 fn validate_reviewers(reviewers: &[Reviewer]) -> Result<BTreeSet<&str>, ForgeError> {

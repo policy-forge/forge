@@ -1,5 +1,6 @@
 ---
 source: tests/golden_file_tests.rs
+assertion_line: 656
 expression: normalized
 ---
 {
@@ -1296,7 +1297,7 @@ expression: normalized
               {
                 "constraints": [
                   {
-                    "description": "minimum: 30 days"
+                    "description": "maximum: 30 days"
                   }
                 ],
                 "id": "be0ef430-0c29-5e48-aa4b-750214a2188c_prm_1",
@@ -1438,7 +1439,7 @@ expression: normalized
               {
                 "constraints": [
                   {
-                    "description": "minimum: 12 months"
+                    "description": "maximum: 12 months"
                   }
                 ],
                 "id": "dfed83c2-39df-58be-a3ce-e281ada2010b_prm_0",

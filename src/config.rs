@@ -319,10 +319,12 @@ pub fn load_file(path: &Path, source: SourceKind) -> Result<ProjectConfig, Forge
         )));
     }
 
-    let bytes = fs::read(path).map_err(|e| {
+    // Cap the bytes actually read from one handle: the metadata check above
+    // can be raced by a swap/grow before the read (M-10 TOCTOU).
+    let file = fs::File::open(path).map_err(|e| {
         ForgeError::Config(format!("cannot read config file {}: {e}", path.display()))
     })?;
-    check_read_size(path, &bytes)?;
+    let bytes = read_capped_config(file, path, MAX_CONFIG_SIZE)?;
 
     let text = String::from_utf8(bytes).map_err(|_| {
         ForgeError::Config(format!("{}: configuration file is not valid UTF-8", path.display()))
@@ -333,17 +335,25 @@ pub fn load_file(path: &Path, source: SourceKind) -> Result<ProjectConfig, Forge
 }
 
 /// Enforce the configuration size limit on the bytes actually read.
-fn check_read_size(path: &Path, bytes: &[u8]) -> Result<(), ForgeError> {
-    if u64::try_from(bytes.len()).is_ok_and(|len| len > MAX_CONFIG_SIZE) {
+fn read_capped_config(
+    reader: impl std::io::Read,
+    path: &Path,
+    max: u64,
+) -> Result<Vec<u8>, ForgeError> {
+    use std::io::Read as _;
+    let mut bytes = Vec::new();
+    reader.take(max.saturating_add(1)).read_to_end(&mut bytes).map_err(|e| {
+        ForgeError::Config(format!("cannot read config file {}: {e}", path.display()))
+    })?;
+    if bytes.len() as u64 > max {
         return Err(ForgeError::Config(format!(
             "{}: configuration exceeds the {} MiB limit after read ({} bytes)",
             path.display(),
-            MAX_CONFIG_SIZE / (1024 * 1024),
+            max / (1024 * 1024),
             bytes.len()
         )));
     }
-
-    Ok(())
+    Ok(bytes)
 }
 
 /// Parse and validate config text. Returns the validated settings or a
@@ -1160,11 +1170,14 @@ mod tests {
     }
 
     #[test]
-    fn post_read_size_limit_is_enforced() {
-        let bytes = vec![0; usize::try_from(MAX_CONFIG_SIZE + 1).expect("test limit fits usize")];
-        let err = check_read_size(Path::new("forge.toml"), &bytes).unwrap_err();
-
-        assert!(err.to_string().contains("exceeds the 1 MiB limit after read"));
+    fn config_read_caps_actual_bytes_despite_small_metadata() {
+        // TOCTOU: the pre-read metadata check must not be the only cap; the
+        // bytes actually read from the held handle are bounded too.
+        let reader = std::io::Cursor::new(vec![b'a'; 100]);
+        let err = read_capped_config(reader, Path::new("forge.toml"), 10).unwrap_err();
+        assert!(err.to_string().contains("exceeds"), "{err}");
+        let ok = read_capped_config(std::io::Cursor::new(vec![b'a'; 10]), Path::new("f"), 10);
+        assert_eq!(ok.unwrap().len(), 10);
     }
 
     #[test]

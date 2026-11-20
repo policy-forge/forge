@@ -5,7 +5,7 @@
 
 use std::fmt::Write;
 
-use super::error_types::{ValidationErrorCategory, ValidationReport};
+use super::error_types::{ValidationError, ValidationErrorCategory, ValidationReport};
 
 /// Render a `ValidationReport` as human-readable text (PRD S-2).
 ///
@@ -110,7 +110,17 @@ pub fn render_text_report(report: &ValidationReport) -> String {
 pub fn render_json_report(report: &ValidationReport) -> String {
     serde_json::to_string_pretty(report).unwrap_or_else(|error| {
         tracing::error!(error = %error, "ValidationReport serialization failed; returning fallback JSON structure");
-        let fallback = ValidationReport::new(String::new(), Vec::new());
+        // Fail closed: an unserializable report must never render is_valid=true.
+        let fallback = ValidationReport::new(
+            String::new(),
+            vec![ValidationError::new(
+                ValidationErrorCategory::Schema,
+                "$".to_string(),
+                "validation report could not be serialized".to_string(),
+                "serializable report".to_string(),
+                "serialization failure",
+            )],
+        );
         serde_json::to_string_pretty(&fallback).unwrap_or_else(|fallback_error| {
             tracing::error!(error = %fallback_error, "ValidationReport fallback serialization failed");
             "{}".to_owned()

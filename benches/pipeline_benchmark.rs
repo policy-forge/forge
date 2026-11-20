@@ -251,6 +251,13 @@ fn bench_per_stage(c: &mut Criterion) {
     let doc_for_catalog = forge::uuid::assign_stable_ids(atomized);
     let doc_for_catalog = forge::citation::extract_citations(doc_for_catalog)
         .expect("pipeline stage preparation: extract_citations failed");
+    // Steps 7c/7d: match production (src/pipeline.rs) so the timed catalog
+    // stage measures a fully enriched document, not a citations-only one.
+    let doc_for_catalog = forge::parse::annotate_modalities(doc_for_catalog)
+        .expect("pipeline stage preparation: annotate_modalities failed");
+    let mut doc_for_catalog = doc_for_catalog;
+    forge::parameter::extract_parameters(&mut doc_for_catalog)
+        .expect("pipeline stage preparation: extract_parameters failed");
 
     // ── Stage 4: Catalog Assembly ──
     group.bench_function("catalog_assembly", |b| {

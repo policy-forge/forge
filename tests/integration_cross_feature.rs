@@ -62,25 +62,52 @@ fn run_forge(args: &[&str]) -> std::process::Output {
         .stderr(Stdio::piped())
         .spawn()
         .expect("failed to execute forge");
+    // Drain both pipes while polling: a child writing more than the OS pipe
+    // buffer blocks on write and would be falsely killed as a timeout.
+    let (out_tx, out_rx) = std::sync::mpsc::channel();
+    let (err_tx, err_rx) = std::sync::mpsc::channel();
+    let mut stdout_pipe = child.stdout.take();
+    let mut stderr_pipe = child.stderr.take();
+    thread::spawn(move || {
+        let mut bytes = Vec::new();
+        if let Some(pipe) = &mut stdout_pipe {
+            let _ = std::io::Read::read_to_end(pipe, &mut bytes);
+        }
+        let _ = out_tx.send(bytes);
+    });
+    thread::spawn(move || {
+        let mut bytes = Vec::new();
+        if let Some(pipe) = &mut stderr_pipe {
+            let _ = std::io::Read::read_to_end(pipe, &mut bytes);
+        }
+        let _ = err_tx.send(bytes);
+    });
     let deadline = Instant::now() + Duration::from_secs(120);
-    loop {
-        if child.try_wait().expect("failed to poll forge").is_some() {
-            break;
+    let status = loop {
+        if let Some(status) = child.try_wait().expect("failed to poll forge") {
+            break status;
         }
         if Instant::now() >= deadline {
             child.kill().expect("failed to kill timed-out forge");
-            let output =
-                child.wait_with_output().expect("failed to collect timed-out forge output");
+            let _ = child.wait();
             panic!(
                 "forge {:?} timed out after 120s\nstdout: {}\nstderr: {}",
                 args,
-                String::from_utf8_lossy(&output.stdout),
-                String::from_utf8_lossy(&output.stderr)
+                String::from_utf8_lossy(
+                    &out_rx.recv_timeout(Duration::from_secs(5)).unwrap_or_default()
+                ),
+                String::from_utf8_lossy(
+                    &err_rx.recv_timeout(Duration::from_secs(5)).unwrap_or_default()
+                )
             );
         }
         thread::sleep(Duration::from_millis(10));
-    }
-    let output = child.wait_with_output().expect("failed to collect forge output");
+    };
+    let output = std::process::Output {
+        status,
+        stdout: out_rx.recv_timeout(Duration::from_secs(5)).expect("stdout drain lost"),
+        stderr: err_rx.recv_timeout(Duration::from_secs(5)).expect("stderr drain lost"),
+    };
     assert!(
         output.status.success(),
         "forge {:?} failed (exit {})\nstdout: {}\nstderr: {}",

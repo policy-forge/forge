@@ -229,13 +229,7 @@ pub fn execute_round_trip(
     let rt_json_path = run_round_trip_chain(&canonical_input, &invoker, temp_dir.path(), timeout)?;
 
     // Step 5: Parse round-tripped JSON and compare
-    let rt_content = std::fs::read_to_string(&rt_json_path).map_err(ForgeError::Io)?;
-    let rt_json: serde_json::Value = serde_json::from_str(&rt_content).map_err(|e| {
-        ForgeError::Validation(format!(
-            "round-tripped artifact parse failure for {}: {e}",
-            rt_json_path.display()
-        ))
-    })?;
+    let rt_json = read_round_trip_json(&rt_json_path)?;
 
     let rules = OscalComparisonRules::default();
     let divergences = compare_oscal_json(&original_json, &rt_json, "", &rules);
@@ -252,6 +246,24 @@ pub fn execute_round_trip(
     output_round_trip_results(&result, unresolved_count, output, format)?;
 
     if passed { Ok(()) } else { Err(ForgeError::RoundTripFailed(unresolved_count)) }
+}
+
+/// Read oscal-cli output through the same bounded reader as the original input;
+/// a hostile or broken CLI must not be able to exhaust memory (SEC-3/4/5).
+fn read_round_trip_json(path: &Path) -> Result<serde_json::Value, ForgeError> {
+    let bytes = validate::read_bounded_file(path).map_err(|error| match error {
+        ValidateError::FileTooLarge { .. } => ForgeError::Validation(format!(
+            "round-tripped artifact '{}' exceeds the read limit",
+            path.display()
+        )),
+        other => map_validate_error(other),
+    })?;
+    serde_json::from_slice(&bytes).map_err(|e| {
+        ForgeError::Validation(format!(
+            "round-tripped artifact parse failure for {}: {e}",
+            path.display()
+        ))
+    })
 }
 
 /// Classify typed Catalog/Component round-trip checks and retain other models as unsupported.
@@ -443,6 +455,19 @@ mod tests {
             .expect_err("bounded reader must reject oversized input");
 
         assert!(error.to_string().contains("Artifact file is too large"), "{error}");
+    }
+
+    #[test]
+    fn round_trip_output_read_is_bounded() {
+        let directory = tempfile::tempdir().unwrap();
+        let output = directory.path().join("rt.json");
+        std::fs::write(&output, vec![b'x'; usize::try_from(crate::io::MAX_FILE_SIZE).unwrap() + 1])
+            .unwrap();
+
+        let error = read_round_trip_json(&output)
+            .expect_err("round-trip output must be bounded like the original input");
+        assert!(error.to_string().contains("exceeds the read limit"), "{error}");
+        assert!(error.to_string().contains(&output.display().to_string()), "{error}");
     }
 
     #[test]

@@ -20,10 +20,13 @@ pub enum ArtifactType {
 /// Internal type — not exposed in DiffReport, only used during comparison.
 pub struct ControlSnapshot {
     pub control_id: String,
-    /// UUID of this control. Empty string for FORGE Catalog outputs
-    /// (uuid is skip_serializing on OscalControl). Populated for Component
-    /// Definition implemented-requirements.
-    pub uuid: String,
+    /// UUID of this control. `None` for FORGE Catalog outputs (uuid is
+    /// skip_serializing on OscalControl); populated for Component Definition
+    /// implemented-requirements. Option, NOT an empty-string sentinel: ""
+    /// would conflate absent with present-empty and flag every matched
+    /// control as changed when diffing against uuid-emitting catalogs.
+    /// Shipped: src/diff/types.rs uses Option<String>.
+    pub uuid: Option<String>,
     /// Present for Catalog controls (control["title"]).
     /// None for Component Definition implemented-requirements (no title field).
     pub title: Option<String>,
@@ -209,7 +212,13 @@ pub fn execute(
 /// For Catalog: recursively traverses groups[].controls[] at all depths.
 /// For ComponentDefinition: traverses components[].control-implementations[].implemented-requirements[].
 ///
-/// Returns a HashMap directly (never errors — malformed structures yield empty maps).
+/// Returns a HashMap directly. Root-key/schema validation happens UPSTREAM
+/// (forge validate / deserialization); this extractor does not re-validate.
+/// Entries without a string id/control-id are skipped with a warning.
+/// Duplicate control-ids: Catalog — last-wins with a warning (duplicate ids
+/// in one catalog are schema-invalid and rejected upstream); Component
+/// Definition — legal multi-component implementations AGGREGATE descriptions
+/// (newline-joined) rather than clobbering. Shipped: src/diff/extractor.rs.
 fn extract_controls(
     json: &serde_json::Value,
     artifact_type: &ArtifactType,

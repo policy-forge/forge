@@ -48,7 +48,9 @@ pub(crate) fn response(
             hash(value, ledger)?;
         }
         if document.rationale.len() > 8192 {
-            return Err(ledger.capacity());
+            // Content cap, not resource exhaustion: schema maxLength counts
+            // code points, so multi-byte text reaches here. Non-latching.
+            return Err(ContractError::Invalid);
         }
         compared(&[&document.rationale], ledger)?;
         match (document.disposition, &document.abstention_reason) {
@@ -84,14 +86,14 @@ fn counters(
     let counts = &document.counts;
     if counts.items != 1
         || document.items.len() != 1
-        || usize::try_from(counts.unique_responses).map_err(|_| ledger.capacity())?
+        || usize::try_from(counts.unique_responses).map_err(|_| ContractError::Invalid)?
             != document.responses.len()
         || counts.response_files > 10_000
         || counts.response_files
             != counts
                 .unique_responses
                 .checked_add(counts.exact_duplicates)
-                .ok_or_else(|| ledger.capacity())?
+                .ok_or(ContractError::Invalid)?
     {
         return Err(ContractError::Invalid);
     }

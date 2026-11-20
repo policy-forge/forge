@@ -670,10 +670,7 @@ mod tests {
         assert_eq!(redactions.len(), 1);
         assert_eq!(redactions[0].unit_id, "unit-0001");
         assert_eq!(redactions[0].rule_id, "account-id");
-        assert_eq!(
-            redactions[0].rule_sha256,
-            crate::hashing::sha256_hex(b"account-id\t123456789012")
-        );
+        assert_eq!(redactions[0].rule_sha256, crate::hashing::sha256_hex(b"account-id"));
         assert!(payload.contains(redact::MARKER));
         assert!(!payload.contains("123456789012"));
         assert_eq!(

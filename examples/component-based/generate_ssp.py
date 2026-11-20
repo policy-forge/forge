@@ -13,9 +13,10 @@ cd = comp_def["component-definition"]
 # Collect control IDs from component definition, remembering which component
 # supplied each one so `links[].href` can point at that component's real SSP
 # UUID (fragments must resolve to a component uuid, not a slug).
-def ssp_seed_for_component(comp):
-    title = comp.get("title", "")
-    if "database" in title.lower():
+# The CD has one documentary policy component owning all controls, so the
+# owner signal is each IR's description, not the component title.
+def ssp_seed_for_requirement(ir):
+    if "database component" in ir.get("description", "").lower():
         return "database"
     return "web-application"
 
@@ -23,12 +24,15 @@ def ssp_seed_for_component(comp):
 control_ids = []
 owner_seed = {}
 for comp in cd.get("components", []):
-    seed = ssp_seed_for_component(comp)
     for ci in comp.get("control-implementations", []):
         for ir in ci.get("implemented-requirements", []):
             cid = ir["control-id"]
+            # One IR per control: duplicate uuids would be invalid OSCAL.
+            # First declaration wins; the example CD has a single owner.
+            if cid in owner_seed:
+                continue
             control_ids.append(cid)
-            owner_seed[cid] = seed
+            owner_seed[cid] = ssp_seed_for_requirement(ir)
 
 # Generate deterministic UUIDs for SSP components
 def stable_uuid(seed):
@@ -40,10 +44,13 @@ for cid in control_ids:
     implemented_reqs.append({
         "uuid": stable_uuid(f"ir-{cid.lower()}"),
         "control-id": cid,
-        "description": f"Implementation statement for {cid} - see component definition for details.",
-        "links": [
-            {"href": "#" + stable_uuid(owner_seed[cid]), "rel": "implements"}
-        ]
+        # OSCAL implemented-requirement has no description field; narrative
+        # belongs in by-components[].description tied to a component uuid.
+        "by-components": [{
+            "uuid": stable_uuid(f"bc-{cid.lower()}"),
+            "component-uuid": stable_uuid(owner_seed[cid]),
+            "description": f"Implementation statement for {cid} - see component definition for details."
+        }]
     })
 
 # Build the SSP
@@ -56,11 +63,32 @@ ssp = {
             "title": "System Security Plan for Component-Based Security Policy",
             "last-modified": now,
             "version": "1.0.0",
-            "oscal-version": "1.1.3"
+            "oscal-version": "1.2.3",
+            "parties": [
+                {"uuid": stable_uuid("party-app-eng"), "type": "organization", "name": "Application Engineering Team"},
+                {"uuid": stable_uuid("party-sec-eng"), "type": "organization", "name": "Security Engineering Team"},
+                {"uuid": stable_uuid("party-db-ops"), "type": "organization", "name": "Database Operations Team"},
+                {"uuid": stable_uuid("party-aws"), "type": "organization", "name": "Amazon Web Services"}
+            ]
         },
-        "system-id": {
-            "identifier-type": "http://example.org/system-id",
-            "id": "system-csp-001"
+        "import-profile": {"href": "profile.json"},
+        "system-characteristics": {
+            "system-ids": [{
+                "identifier-type": "http://example.org/system-id",
+                "id": "system-csp-001"
+            }],
+            "system-name": "Component-Based Security Policy System",
+            "description": "Representative system built from the component definition.",
+            "system-information": {
+                "information-types": [{
+                    "title": "Security Policy Data",
+                    "description": "Policy requirements and implementation evidence."
+                }]
+            },
+            "status": {"state": "operational"},
+            "authorization-boundary": {
+                "description": "The web application and database components."
+            }
         },
         "system-implementation": {
             "components": [
@@ -70,8 +98,8 @@ ssp = {
                     "title": "Web Application Component",
                     "description": "The primary web application handling user authentication, authorization, and API requests. Implements TLS 1.3, MFA, RBAC, and audit logging.",
                     "responsible-roles": [
-                        {"role-id": "system-admin", "responsible-party": "Application Engineering Team"},
-                        {"role-id": "security-officer", "responsible-party": "Security Engineering Team"}
+                        {"role-id": "system-admin", "party-uuids": [stable_uuid("party-app-eng")]},
+                        {"role-id": "security-officer", "party-uuids": [stable_uuid("party-sec-eng")]}
                     ],
                     "status": {"state": "operational"}
                 },
@@ -81,8 +109,8 @@ ssp = {
                     "title": "Database Component",
                     "description": "PostgreSQL database server with AES-256 encryption at rest, automated backups, and direct access audit logging. Communicates with the application component over mTLS.",
                     "responsible-roles": [
-                        {"role-id": "database-admin", "responsible-party": "Database Operations Team"},
-                        {"role-id": "security-officer", "responsible-party": "Security Engineering Team"}
+                        {"role-id": "database-admin", "party-uuids": [stable_uuid("party-db-ops")]},
+                        {"role-id": "security-officer", "party-uuids": [stable_uuid("party-sec-eng")]}
                     ],
                     "status": {"state": "operational"}
                 }
@@ -155,8 +183,10 @@ ssp = {
                 {
                     "uuid": stable_uuid("leveraged-aws"),
                     "title": "AWS GovCloud Infrastructure",
-                    "href": "https://aws.amazon.com/compliance/fedramp/",
-                    "description": "Physical security, hypervisor, and infrastructure controls inherited from AWS GovCloud (FedRAMP Moderate)"
+                    "party-uuid": stable_uuid("party-aws"),
+                    "date-authorized": "2026-01-01",
+                    "links": [{"href": "https://aws.amazon.com/compliance/fedramp/", "rel": "reference"}],
+                    "remarks": "Physical security, hypervisor, and infrastructure controls inherited from AWS GovCloud (FedRAMP Moderate)"
                 }
             ]
         },
@@ -182,6 +212,12 @@ ssp = {
         }
     }
 }
+
+# Every by-component reference must resolve to a declared SSP component.
+declared = {c["uuid"] for c in ssp["system-security-plan"]["system-implementation"]["components"]}
+for ir in implemented_reqs:
+    for bc in ir["by-components"]:
+        assert bc["component-uuid"] in declared, f"dangling component uuid for {ir['control-id']}"
 
 with open("output/ssp.json", "w") as f:
     json.dump(ssp, f, indent=2)

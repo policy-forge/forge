@@ -94,12 +94,14 @@ pub struct ParameterConstraint {
 pub enum ConstraintType {
     /// Value must be at least this amount.
     ///
-    /// Triggered by: `"at least"`, `"minimum"`, `"no fewer than"`, `"no less than"`, `"within"`, `"after"`
+    /// Triggered by: `"at least"`, `"minimum"`, `"no fewer than"`, `"no less than"`, `"after"`
+    /// NOT `"within"`: a deadline bounds the interval above (see Maximum).
     Minimum,
 
     /// Value must be at most this amount.
     ///
-    /// Triggered by: `"no more than"`, `"maximum"`, `"at most"`
+    /// Triggered by: `"no more than"`, `"maximum"`, `"at most"`, `"within"`
+    /// (a deadline: interval <= N; Minimum would permit never acting).
     Maximum,
 
     /// Value must equal exactly this.

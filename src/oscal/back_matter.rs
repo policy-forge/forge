@@ -171,9 +171,10 @@ fn build_resource_parts(
             (rlinks, citation_field(&citation.text), vec![])
         }
         UrlClassification::Malformed(raw_url) => {
+            // No raw URL in logs: it can carry credentials or control chars;
+            // citation_id already identifies it.
             tracing::warn!(
                 citation_id = %citation.id,
-                url = %raw_url,
                 "Malformed or non-http/https URL preserved with unvalidated annotation"
             );
             let rlinks = vec![Rlink { href: raw_url, media_type: None }];
@@ -184,10 +185,9 @@ fn build_resource_parts(
             }];
             (rlinks, citation_field(&citation.text), props)
         }
-        UrlClassification::Dangerous(raw_url) => {
+        UrlClassification::Dangerous(_raw_url) => {
             tracing::warn!(
                 citation_id = %citation.id,
-                url = %raw_url,
                 "Dangerous URL scheme stripped from rlink href (SEC-2)"
             );
             let props = vec![Prop {

@@ -73,7 +73,8 @@ def build_sbom(root: Path, as_of: str) -> dict:
     lock_bytes = read_bytes(root, "Cargo.lock")
     manifest_bytes = read_bytes(root, "Cargo.toml")
     workflow_bytes = read_bytes(root, ".github/workflows/release.yml")
-    graph = load_json(read_bytes(root, "supply-chain/dependency-graph.json"))
+    graph_bytes = read_bytes(root, "supply-chain/dependency-graph.json")
+    graph = load_json(graph_bytes)
     if not isinstance(graph, dict) or graph.get("format") != "forge.dependency-graph/1":
         _fail("unsupported dependency-graph format")
 
@@ -162,6 +163,11 @@ def build_sbom(root: Path, as_of: str) -> dict:
         _fail("graph must declare exactly one workspace root")
     if len(lock_by_name_version) != len(by_id) + 1:
         _fail("Cargo.lock and graph package populations differ")
+    # Counts alone tolerate a stale forge row; the one extra row must be the
+    # workspace root at the manifest version.
+    forge_row = lock_by_name_version.get(("forge", root_version))
+    if forge_row is None or forge_row.get("source") is not None:
+        _fail("Cargo.lock lacks the forge workspace root at the manifest version")
 
     edge_total = 0
     all_edges: list[tuple[tuple[str, str, str], tuple[str, str, str], str]] = []
@@ -248,8 +254,11 @@ def build_sbom(root: Path, as_of: str) -> dict:
     dependencies = [{"ref": ref, "dependsOn": sorted(values)}
                     for ref, values in sorted(merged.items())]
 
+    # Same serial + version must mean the same BOM: include every
+    # content-shaping input digest, not just the lock.
     serial = uuid.uuid5(PURL_NAMESPACE,
-                        f"forge-draft-sbom:{as_of}:{sha256(lock_bytes)}")
+                        f"forge-draft-sbom:{as_of}:{sha256(lock_bytes)}:"
+                        f"{sha256(manifest_bytes)}:{sha256(graph_bytes)}")
     return {
         "bomFormat": "CycloneDX",
         "specVersion": "1.6",
@@ -257,7 +266,10 @@ def build_sbom(root: Path, as_of: str) -> dict:
         "serialNumber": f"urn:uuid:{serial}",
         "version": 1,
         "metadata": {
-            "licenses": [{"license": {"id": license_id}}],
+            # SPDX expressions (dual licenses) are invalid in license.id.
+            "licenses": ([{"expression": license_id}]
+                         if any(op in license_id for op in (" OR ", " AND ", " WITH "))
+                         else [{"license": {"id": license_id}}]),
             "component": {
                 "type": "application",
                 "bom-ref": root_ref,
@@ -271,8 +283,7 @@ def build_sbom(root: Path, as_of: str) -> dict:
                 {"name": "forge:as-of", "value": as_of},
                 {"name": "forge:disclaimer", "value": DISCLAIMER},
                 {"name": "forge:cargo-lock-sha256", "value": sha256(lock_bytes)},
-                {"name": "forge:dependency-graph-sha256",
-                 "value": sha256(read_bytes(root, "supply-chain/dependency-graph.json"))},
+                {"name": "forge:dependency-graph-sha256", "value": sha256(graph_bytes)},
                 {"name": "forge:targets", "value": ",".join(sorted(targets))},
             ],
         },

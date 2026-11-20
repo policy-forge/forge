@@ -15,7 +15,11 @@ use uuid::Uuid;
 /// # Breaking Change Warning
 ///
 /// Changing this value will change ALL generated control-implementation UUIDs.
-pub const CONTROL_IMPL_NAMESPACE: Uuid = Uuid::from_bytes([/* computed bytes */]);
+// Exact bytes pinned from src/uuid.rs; derivation is regression-checked by
+// the namespace-derivation tests there. Do not re-derive independently.
+pub const CONTROL_IMPL_NAMESPACE: Uuid = Uuid::from_bytes([
+    0x2B, 0x14, 0x50, 0xFE, 0xC1, 0x0F, 0x55, 0xAE, 0x98, 0x93, 0x9A, 0x4E, 0xA3, 0x05, 0x75, 0x0B,
+]);
 
 /// Fixed namespace UUID for implemented-requirement identifier generation.
 ///
@@ -24,7 +28,9 @@ pub const CONTROL_IMPL_NAMESPACE: Uuid = Uuid::from_bytes([/* computed bytes */]
 /// # Breaking Change Warning
 ///
 /// Changing this value will change ALL generated implemented-requirement UUIDs.
-pub const IMPL_REQ_NAMESPACE: Uuid = Uuid::from_bytes([/* computed bytes */]);
+pub const IMPL_REQ_NAMESPACE: Uuid = Uuid::from_bytes([
+    0x41, 0x39, 0x89, 0xA7, 0xB5, 0x5A, 0x53, 0xB2, 0xB9, 0x81, 0x11, 0x19, 0x28, 0x04, 0x29, 0x0F,
+]);
 
 // ─── Core Builder Functions (in src/oscal/implemented_requirements.rs) ──
 
@@ -74,9 +80,13 @@ fn generate_control_impl_uuid(source_profile: &str, policy_title: &str) -> Uuid;
 
 /// Generate a deterministic UUID v5 for an implemented-requirement entry.
 ///
-/// Seed: `"{stable_id}\0{text}\0{index}"`
-/// The index ensures uniqueness when two requirements have identical text (EC-5).
-fn generate_impl_req_uuid(stable_id: &str, text: &str, index: usize) -> Uuid;
+/// Seed: `"{stable_id}\0{normalize_for_hashing(text)}\0{occurrence}"`
+/// `occurrence` is the per-(stable_id, normalized_text) ordinal (0 for unique
+/// content), NOT a global index: inserting/deleting a requirement must not
+/// re-roll other UUIDs. Text passes through `normalize_for_hashing` first
+/// (AR-007) so whitespace-only edits keep the identifier stable.
+/// Shipped: src/oscal/implemented_requirements.rs::generate_impl_req_uuid.
+fn generate_impl_req_uuid(stable_id: &str, text: &str, occurrence: usize) -> Uuid;
 
 /// Derive a control-id for a requirement, with fallback for missing stable_id.
 ///
@@ -113,22 +123,28 @@ pub fn execute(
 
 // ─── New Pipeline Function (in src/pipeline.rs) ─────────────────────────
 
-/// Orchestrates the full component pipeline: ingest -> parse -> normalize -> map -> serialize -> output.
+/// Orchestrates the full component pipeline: ingest -> parse -> enrich -> map -> serialize.
 ///
 /// # Arguments
 /// * `input_path` - Path to the Markdown policy document
-/// * `output_path` - Optional output file path; if None, writes JSON to stdout
 /// * `max_size_bytes` - Maximum allowed input file size in bytes
-/// * `source_profile` - The baseline profile reference for control-implementations
+/// * `source_profile` - Optional baseline profile reference for control-implementations;
+///   when `None`, produces a Component Definition with empty `control-implementations`
+/// * `format` - Output format (JSON, YAML, or XML)
+/// * `import_ssp_href` - Optional SSP reference for assessment plan generation
+///
+/// # Returns
+/// * `Ok(PipelineOutput)` on success; the caller writes it to disk or stdout
 ///
 /// # Errors
 /// * `Err(ForgeError)` if any pipeline stage fails
 pub fn run_component_pipeline(
     input_path: &Path,
-    output_path: Option<&Path>,
     max_size_bytes: u64,
-    source_profile: &str,
-) -> Result<(), ForgeError>;
+    source_profile: Option<&str>,
+    format: &OutputFormat,
+    import_ssp_href: Option<&str>,
+) -> Result<PipelineOutput, ForgeError>;
 
 // ─── CLI Changes (in src/cli/mod.rs) ────────────────────────────────────
 
@@ -139,8 +155,10 @@ pub fn run_component_pipeline(
 //     source_profile: Option<String>,
 //
 // Validation in convert.rs (runtime, not clap-level):
+// - the CLI value is trimmed and empty results are dropped:
+//   opts.source_profile.map(str::trim).filter(|profile| !profile.is_empty())
+//   so a whitespace-only value can never reach the builder as an empty reference
 // - strategy == Component && source_profile.is_none() -> ForgeError::Validation
-// - strategy == Component && source_profile == Some("") -> ForgeError::Validation
 
 // ─── Visibility Changes (in src/oscal/catalog.rs) ───────────────────────
 

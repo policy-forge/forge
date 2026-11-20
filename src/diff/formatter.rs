@@ -109,7 +109,11 @@ fn one_line(value: &str, max_chars: usize) -> String {
     for character in value.chars() {
         match character {
             '\n' | '\r' | '\t' => rendered.push(' '),
+            '"' => rendered.push_str("\\\""),
+            '\\' => rendered.push_str("\\\\"),
             '→' => rendered.push_str("\\u{2192}"),
+            // Untrusted field values must not inject terminal escapes (SEC-5).
+            c if c.is_control() => rendered.extend(c.escape_default()),
             _ => rendered.push(character),
         }
     }
@@ -189,6 +193,15 @@ fn format_uuid_section(out: &mut String, uuid_changed: &[&DiffEntry]) {
 mod tests {
     use super::*;
     use crate::diff::types::*;
+
+    #[test]
+    fn one_line_escapes_quotes_backslash_and_controls() {
+        let hostile = "a\"b\\c\u{1b}[31m\u{7}";
+        let rendered = one_line(hostile, 100);
+        assert!(!rendered.contains('\u{1b}'), "ESC must not reach terminals: {rendered:?}");
+        assert!(!rendered.contains('\u{7}'), "BEL must not reach terminals: {rendered:?}");
+        assert!(rendered.contains("\\\"") || !rendered.contains('"'), "quotes escaped or absent");
+    }
 
     fn empty_report() -> DiffReport {
         DiffReport {

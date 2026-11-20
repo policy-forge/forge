@@ -13,7 +13,10 @@
 /// # Arguments
 ///
 /// * `control_ids` — Control IDs from the conversion pipeline (Catalog or Component
-///   Definition). May be empty (produces empty `include-controls` + warning).
+///   Definition). Must be NON-EMPTY: empty input returns `ForgeError::Validation`
+///   ("refusing to emit an Assessment Plan with an empty include-controls array").
+///   An empty `include-controls` is not valid OSCAL scope, and this `Result`-only
+///   API has no warning delivery channel — fail closed instead.
 ///   Duplicates are removed. Order is normalized (sorted) for determinism.
 /// * `import_ssp_href` — Path to the SSP, from `--import-ssp` CLI flag.
 ///   Must be non-empty; returns `ForgeError::Validation` if empty.
@@ -31,7 +34,10 @@
 ///
 /// # Guarantees
 ///
-/// * Same inputs always produce identical output (deterministic UUID v5).
+/// * Same inputs including `timestamp_override` produce byte-identical output
+///   (deterministic UUID v5; same override mechanism as `build_profile`).
+///   Without an override, `metadata.last-modified` is honest generation time
+///   (wall clock) — content and UUIDs remain deterministic.
 /// * `reviewed-controls.control-selections[0].include-controls` contains exactly
 ///   the deduplicated, sorted control IDs from the input slice.
 /// * `metadata.version` is always `"1.0.0"`.
@@ -50,15 +56,19 @@ pub fn build_assessment_plan(
     control_ids: &[String],
     import_ssp_href: &str,
     policy_title: &str,
+    timestamp_override: Option<chrono::DateTime<chrono::Utc>>,
 ) -> Result<AssessmentPlanEnvelope, ForgeError>;
 
 // ─── Control ID Collectors ────────────────────────────────────────────────
 
 /// Collect all control IDs from a built OSCAL Catalog.
 ///
-/// Iterates `catalog.groups[].controls[].id` in declaration order.
-/// Returns an empty Vec if the catalog has no groups or controls.
+/// Walks root-level `catalog.controls` AND every group recursively (nested
+/// `groups[].groups` included) in declaration order — a flat groups-only walk
+/// would silently shrink assessment scope for catalogs with root controls or
+/// sub-groups. Returns an empty Vec only if the catalog has no controls at all.
 /// Does NOT deduplicate — deduplication is performed by `build_assessment_plan`.
+/// Shipped: src/oscal/catalog.rs::collect_control_ids_from_catalog.
 ///
 /// # Example
 ///

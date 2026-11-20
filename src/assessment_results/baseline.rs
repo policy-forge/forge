@@ -49,6 +49,9 @@ pub fn analyze(
     super::validate_completed_json(&baseline)?;
     let prior_snapshots = extract_snapshots(&baseline)?;
 
+    // Buffer findings locally: a late rejection must leave the caller's
+    // report untouched, not partially populated.
+    let mut findings: Vec<BaselineFinding> = Vec::new();
     let all_keys: BTreeSet<_> =
         prior_snapshots.keys().chain(current_snapshots.keys()).cloned().collect();
     for (object_type, key) in all_keys {
@@ -57,7 +60,7 @@ pub fn analyze(
             current_snapshots.get(&(object_type, key.clone())),
         ) {
             (None, Some(current)) => push(
-                report,
+                &mut findings,
                 CODE_OBJECT_ADDED,
                 Some(object_type),
                 &key,
@@ -65,7 +68,7 @@ pub fn analyze(
                 Some(current.uuid.clone()),
             ),
             (Some(prior), None) => push(
-                report,
+                &mut findings,
                 CODE_OBJECT_REMOVED,
                 Some(object_type),
                 &key,
@@ -82,7 +85,7 @@ pub fn analyze(
                 }
                 if prior.content_sha256 != current.content_sha256 {
                     push(
-                        report,
+                        &mut findings,
                         CODE_CONTENT_CHANGED,
                         Some(object_type),
                         &key,
@@ -92,7 +95,7 @@ pub fn analyze(
                 }
                 if prior.rationale_sha256 != current.rationale_sha256 {
                     push(
-                        report,
+                        &mut findings,
                         CODE_RATIONALE_CHANGED,
                         Some(object_type),
                         &key,
@@ -102,7 +105,7 @@ pub fn analyze(
                 }
                 if prior.status != current.status {
                     push(
-                        report,
+                        &mut findings,
                         CODE_STATUS_CHANGED,
                         Some(object_type),
                         &key,
@@ -115,8 +118,9 @@ pub fn analyze(
         }
     }
 
-    compare_upstream(&baseline, context, report)?;
-    find_stale_references(&baseline, context, report)?;
+    compare_upstream(&baseline, context, &mut findings)?;
+    find_stale_references(&baseline, context, &mut findings)?;
+    report.findings.extend(findings);
     Ok(())
 }
 
@@ -145,7 +149,11 @@ fn extract_snapshots(
             for object in result.get(field).and_then(Value::as_array).into_iter().flatten() {
                 let key = required_prop(object, "stable-key")?;
                 let uuid = required_string(object.get("uuid"), "baseline conclusion UUID")?;
-                Uuid::parse_str(&uuid).map_err(|_| error("baseline conclusion UUID is invalid"))?;
+                // Canonicalize: schema permits uppercase/hyphen variants of the
+                // same identity; snapshots compare against canonical builder UUIDs.
+                let uuid = Uuid::parse_str(&uuid)
+                    .map_err(|_| error("baseline conclusion UUID is invalid"))?
+                    .to_string();
                 let content_sha256 = required_prop(object, "content-sha256")?;
                 let rationale_sha256 = required_prop(object, "rationale-sha256")?;
                 json_strict::validate_lowercase_sha256("baseline content-sha256", &content_sha256)
@@ -194,7 +202,7 @@ fn extract_snapshots(
 fn compare_upstream(
     baseline: &Value,
     context: &LoadedContext,
-    report: &mut AssessmentResultsReport,
+    findings: &mut Vec<BaselineFinding>,
 ) -> Result<(), ForgeError> {
     let metadata = baseline
         .pointer("/assessment-results/metadata")
@@ -222,13 +230,22 @@ fn compare_upstream(
         };
         if previous != &identity.sha256 {
             push(
-                report,
+                findings,
                 CODE_UPSTREAM_CHANGED,
                 None,
                 identity.kind,
                 Some(previous.clone()),
                 Some(identity.sha256.clone()),
             );
+        }
+    }
+    // Symmetric direction: a baseline fingerprint whose kind left the current
+    // context is a removal, not something to silently ignore.
+    let current_kinds: BTreeSet<&str> =
+        context.artifact_identities().iter().map(|identity| identity.kind).collect();
+    for (kind, hash) in &prior {
+        if !current_kinds.contains(kind.as_str()) {
+            push(findings, CODE_UPSTREAM_CHANGED, None, kind, Some(hash.clone()), None);
         }
     }
     let prior_evidence_hashes = props_named(metadata, "evidence-index-sha256");
@@ -243,7 +260,7 @@ fn compare_upstream(
     };
     if prior_evidence_hash.as_ref() != context.evidence_index_sha256.as_ref() {
         push(
-            report,
+            findings,
             CODE_UPSTREAM_CHANGED,
             None,
             "evidence-index",
@@ -261,7 +278,7 @@ fn compare_upstream(
 fn find_stale_references(
     baseline: &Value,
     context: &LoadedContext,
-    report: &mut AssessmentResultsReport,
+    findings: &mut Vec<BaselineFinding>,
 ) -> Result<(), ForgeError> {
     let results = baseline
         .pointer("/assessment-results/results")
@@ -315,9 +332,10 @@ fn find_stale_references(
                 let Some(uuid) = subject.get("subject-uuid").and_then(Value::as_str) else {
                     continue;
                 };
-                if let Ok(subject_type) = parse_subject_type(kind)
-                    && !context.subject_is_in_scope(subject_type, uuid)
-                {
+                // Unsupported subject types must not silently escape stale
+                // detection; the typed contract rejects them like the builder.
+                let subject_type = parse_subject_type(kind)?;
+                if !context.subject_is_in_scope(subject_type, uuid) {
                     stale.insert(format!("subject:{kind}:{uuid}"));
                 }
             }
@@ -336,9 +354,10 @@ fn find_stale_references(
             for evidence in
                 observation.get("relevant-evidence").and_then(Value::as_array).into_iter().flatten()
             {
-                if let Ok(key) = required_prop(evidence, "stable-key")
-                    && !context.evidence.contains_key(&key)
-                {
+                // FORGE always stamps stable-key on evidence entries; a
+                // baseline missing it is invalid, like conclusions in extract_snapshots.
+                let key = required_prop(evidence, "stable-key")?;
+                if !context.evidence.contains_key(&key) {
                     stale.insert(format!("evidence:{key}"));
                 }
             }
@@ -367,7 +386,7 @@ fn find_stale_references(
         }
     }
     for key in stale {
-        push(report, CODE_STALE_SUBJECT, None, &key, None, None);
+        push(findings, CODE_STALE_SUBJECT, None, &key, None, None);
     }
     Ok(())
 }
@@ -416,7 +435,7 @@ fn parse_subject_type(value: &str) -> Result<SubjectType, ForgeError> {
 }
 
 fn push(
-    report: &mut AssessmentResultsReport,
+    findings: &mut Vec<BaselineFinding>,
     code: &str,
     object_type: Option<ConclusionType>,
     key: &str,
@@ -430,7 +449,7 @@ fn push(
         seed.extend_from_slice(value.as_bytes());
     }
     let id = Uuid::new_v5(&crate::uuid::FORGE_NAMESPACE_UUID, &seed).to_string();
-    report.findings.push(BaselineFinding {
+    findings.push(BaselineFinding {
         id,
         code: code.to_string(),
         object_type,

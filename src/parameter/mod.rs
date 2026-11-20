@@ -203,6 +203,16 @@ fn extract_requirement_parameters(
     };
 
     if req.parameters_extracted {
+        // Re-register committed IDs: skipping them would let a later fresh
+        // requirement generate the same ID without tripping the doc-wide check.
+        for parameter in &req.parameters {
+            if !parameter_ids.insert(parameter.id.clone()) {
+                return Err(ForgeError::ParameterExtraction(format!(
+                    "Duplicate OSCAL parameter ID '{}' generated from requirement '{stable_id}'",
+                    parameter.id
+                )));
+            }
+        }
         return Ok(req.parameters.len());
     }
     if req.text.is_empty() {
@@ -446,7 +456,7 @@ mod tests {
             value: "30 days".to_string(),
             parameter_type: ParameterType::TimeWindow,
             constraint: Some(ParameterConstraint {
-                constraint_type: ConstraintType::Minimum,
+                constraint_type: ConstraintType::Maximum,
                 value: "30 days".to_string(),
             }),
         };
@@ -455,7 +465,7 @@ mod tests {
         assert_eq!(oscal.label, "within 30 days");
         assert_eq!(oscal.values, vec!["30 days"]);
         assert_eq!(oscal.constraints.len(), 1);
-        assert_eq!(oscal.constraints[0].description, "minimum: 30 days");
+        assert_eq!(oscal.constraints[0].description, "maximum: 30 days");
     }
 
     #[test]
@@ -601,7 +611,7 @@ mod tests {
     #[test]
     fn ec9_time_window_weeks_months_years() {
         let cases = vec![
-            ("within 6 weeks", "6 weeks", ConstraintType::Minimum),
+            ("within 6 weeks", "6 weeks", ConstraintType::Maximum),
             ("after 3 months", "3 months", ConstraintType::Minimum),
             ("every 2 years", "2 years", ConstraintType::Exact),
         ];
@@ -695,6 +705,22 @@ mod tests {
             parameters: vec![],
             parameters_extracted: false,
         }
+    }
+
+    #[test]
+    fn second_run_still_rejects_duplicate_ids_from_extracted_requirements() {
+        // Run 1 extracted p1's parameters; run 2 over a doc that also contains
+        // an unextracted requirement generating the same ID must still fail.
+        let mut first_doc = make_doc(vec![make_req("p1", "Passwords must change within 30 days")]);
+        extract_parameters(&mut first_doc).unwrap();
+        let extracted = first_doc.sections[0].requirements[0].clone();
+        assert!(extracted.parameters_extracted && !extracted.parameters.is_empty());
+        let fresh = make_req("p1", "Passwords must change within 30 days");
+        let mut doc = make_doc(vec![extracted, fresh]);
+        assert!(
+            extract_parameters(&mut doc).is_err(),
+            "early return must still register already-extracted IDs"
+        );
     }
 
     fn make_doc(reqs: Vec<crate::model::PolicyRequirement>) -> PolicyDocument {

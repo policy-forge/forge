@@ -79,7 +79,9 @@ fn format_source_excerpts(
             end -= 1;
         }
         let marker = if end < raw.len() { " …" } else { "" };
-        let _ = writeln!(out, "  {} (line {line}): {}{marker}", entry.element_id, &raw[..end]);
+        // Untrusted source bytes must not inject terminal escapes (SEC-5).
+        let excerpt = crate::sanitize::strip_control_chars(&raw[..end]);
+        let _ = writeln!(out, "  {} (line {line}): {excerpt}{marker}", entry.element_id);
     }
     Ok(out)
 }
@@ -171,6 +173,34 @@ fn contextualize_trace_input_error(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn source_excerpts_strip_terminal_escapes() {
+        use crate::trace::report::{ElementType, TraceEntry, TraceMetadata, TraceReport};
+        let directory = tempfile::tempdir().unwrap();
+        let source = directory.path().join("policy.md");
+        std::fs::write(&source, "safe\u{1b}[31mred\u{7}text\n").unwrap();
+        let report = TraceReport {
+            artifact_path: directory.path().join("catalog.json"),
+            source_path: source,
+            artifact_type: crate::types::OscalModelType::Catalog,
+            entries: vec![TraceEntry {
+                element_id: "c-1".into(),
+                element_type: ElementType::Control,
+                trace: Some(TraceMetadata {
+                    source_file: "policy.md".into(),
+                    source_section: "Section".into(),
+                    source_line: Some(1),
+                }),
+            }],
+            source_stale: false,
+            source_line_count: 1,
+        };
+        let rendered = format_source_excerpts(&report).unwrap();
+        assert!(!rendered.contains('\u{1b}'), "ESC must not reach the terminal: {rendered:?}");
+        assert!(!rendered.contains('\u{7}'), "BEL must not reach the terminal: {rendered:?}");
+        assert!(rendered.contains("safe"), "visible text survives");
+    }
 
     #[test]
     fn invalid_utf8_source_error_names_source_path() {

@@ -207,7 +207,7 @@ fn validate_resource(path: &str, resource: &FrameworkResource) -> Result<(), For
 /// Validate only a path's local JSON spelling; this cannot constrain a symlink-resolved target.
 ///
 /// File-open sites MUST canonicalize and prefix-check the resolved path against the trusted root.
-fn validate_json_path(path: &str, value: &Path) -> Result<(), ForgeError> {
+pub(crate) fn validate_json_path(path: &str, value: &Path) -> Result<(), ForgeError> {
     if value.as_os_str().is_empty()
         || value.extension().and_then(|extension| extension.to_str()) != Some("json")
     {
@@ -228,7 +228,9 @@ fn validate_json_path(path: &str, value: &Path) -> Result<(), ForgeError> {
 }
 
 fn normalized_path_key(path: &Path) -> Result<String, ForgeError> {
-    path.to_str().map(str::to_ascii_lowercase).ok_or_else(|| {
+    // Full Unicode folding: case-insensitive volumes alias non-ASCII spellings.
+    // shortcut: NFC/NFD variants still alias on APFS; needs an approved unicode-normalization dep.
+    path.to_str().map(str::to_lowercase).ok_or_else(|| {
         impact_error(format!("manifest path '{}' is not valid UTF-8", path.display()))
     })
 }

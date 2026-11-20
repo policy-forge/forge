@@ -58,7 +58,16 @@ pub(crate) fn repo_relative(base: &Path, target: &Path) -> Result<String, ForgeE
             target.display()
         ))
     })?;
-    let text = relative.to_string_lossy().replace('\\', "/");
+    // Lossy conversion would export U+FFFD and point at a different file.
+    let text = relative
+        .to_str()
+        .ok_or_else(|| {
+            error(format!(
+                "source '{}' is not valid UTF-8; cannot export a faithful link",
+                target.display()
+            ))
+        })?
+        .replace('\\', "/");
     if text.is_empty() {
         return Err(error("source path resolves to the project root itself"));
     }
@@ -112,6 +121,21 @@ pub(crate) fn valid_repo_target(target: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Linux only: APFS enforces UTF-8 names, so the lossy-export input is
+    // representable only on filesystems that allow arbitrary bytes.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn non_utf8_source_path_is_refused_not_lossily_exported() {
+        use std::os::unix::ffi::OsStrExt;
+        let dir = tempfile::tempdir().unwrap();
+        // 0xFF is not valid UTF-8: to_string_lossy would export U+FFFD and
+        // point the link at a different (or nonexistent) file.
+        let name = std::ffi::OsStr::from_bytes(b"bad\xff.md");
+        let path = dir.path().join(name);
+        std::fs::write(&path, "x").unwrap();
+        assert!(repo_relative(dir.path(), &path).is_err());
+    }
 
     #[test]
     fn repo_targets_are_closed_owner_repo_labels() {

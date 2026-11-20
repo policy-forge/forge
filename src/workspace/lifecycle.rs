@@ -228,9 +228,9 @@ fn inventory(snapshot: &Snapshot, control: &mut dyn WorkControl) -> WorkResult<V
                     row.diagnostic = None;
                 }
                 Err(WorkError::Interrupted(reason)) => return Err(WorkError::Interrupted(reason)),
-                Err(WorkError::Failed(error)) if error.code == "resource-containment" => {
-                    return Err(error.into());
-                }
+                // Containment failures here are record-declared path text only
+                // (snapshot integrity already failed earlier); per-row admission
+                // applies — one malformed record must not fail the whole listing.
                 Err(WorkError::Failed(_)) => {
                     row.availability = "unavailable";
                     row.diagnostic = Some("lifecycle-input-unavailable");

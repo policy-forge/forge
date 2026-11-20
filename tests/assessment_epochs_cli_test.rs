@@ -116,7 +116,8 @@ fn native_companions(root: &Path) -> (Value, Value) {
     let subject =
         ssp_value["system-security-plan"]["system-implementation"]["components"][0]["uuid"].clone();
     let mut ap_value = serde_json::to_value(
-        build_assessment_plan(&["AC-1".to_string()], "ssp.json", "Synthetic assessment").unwrap(),
+        build_assessment_plan(&["AC-1".to_string()], "ssp.json", "Synthetic assessment", None)
+            .unwrap(),
     )
     .unwrap();
     ap_value["assessment-plan"]["reviewed-controls"]["control-objective-selections"] =

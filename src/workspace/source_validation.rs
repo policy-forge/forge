@@ -306,7 +306,9 @@ fn prepare_native_analysis(
             let built = crate::mapping::prepare(&stage.path().join(&resource.path), None, false)
                 .map_err(|_| invalid());
             control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;
-            built?;
+            let built = built?;
+            // Reconcile every reported mapping read like the other engines.
+            closure.observed_inputs(stage.path(), &built.input_paths)?;
         }
         if let Some(resource) = manifests.first() {
             control.checkpoint(Stage::PrepareDomain, ProgressUpdate::Unchanged)?;

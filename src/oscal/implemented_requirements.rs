@@ -192,7 +192,8 @@ fn map_requirement_to_implemented(
         });
     }
     let links = source_file
-        .map_or_else(Vec::new, |path| vec![build_trace_link(path, requirement.source_line)]);
+        .and_then(|path| build_trace_link(path, requirement.source_line))
+        .map_or_else(Vec::new, |link| vec![link]);
 
     ImplementedRequirement {
         uuid: uuid.to_string(),

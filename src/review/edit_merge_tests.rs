@@ -265,7 +265,8 @@ fn wrong_target_hash_is_stale_and_merge_continues() {
 }
 
 /// A malformed edit envelope (wrong patch digest) is classified invalid-edit on that response;
-/// the merge continues and a clean response from another reviewer still fills the seat.
+/// the merge continues, but the item cannot report quorum while that response stands (owner
+/// decision: invalid-edit blocks, like a rejection or request-changes).
 #[test]
 fn invalid_edit_is_classified_and_merge_continues() {
     let (f, q, raw) = fixture();
@@ -278,11 +279,14 @@ fn invalid_edit_is_classified_and_merge_continues() {
     assert_eq!(recorded.responses[0].classification, ResponseClassification::InvalidEdit);
     assert_eq!(recorded.responses[1].classification, ResponseClassification::Current);
     // The clean response still satisfies the declared seat; the invalid edit never supplies one.
-    assert_eq!(recorded.items[0].state, ItemState::QuorumMet);
     assert_eq!(recorded.items[0].met_seats.len(), 1);
     assert_eq!(recorded.items[0].met_seats[0].reviewer_key, "bob");
-    // The discarded response is named in the merged item, not silently dropped.
-    assert!(recorded.items[0].reason_codes.iter().any(|reason| reason == "invalid-edit-responses"));
+    // ...but the malformed edit blocks quorum, and the merged item names both facts.
+    assert_eq!(recorded.items[0].state, ItemState::InReview);
+    let reasons = &recorded.items[0].reason_codes;
+    assert!(reasons.iter().any(|reason| reason == "invalid-edit-responses"));
+    assert!(reasons.iter().any(|reason| reason == "invalid-edit-blocks"));
+    assert!(!reasons.iter().any(|reason| reason == "approval-seats-filled"));
 }
 
 /// G-4 never-applied: a valid proposed edit is retained as inert evidence and the complete

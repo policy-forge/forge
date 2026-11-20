@@ -337,6 +337,9 @@ impl PreparedLocal {
                 ))
             }
             OpenedLocal::Absent(missing, ancestors, directories) => {
+                // Held ancestors do not stop new entries: reconfirm the leaf
+                // is still missing at read time, like the Present branch.
+                recheck_absence(&root, &relative, &missing, &directories)?;
                 verify_root_admitted(&root, admit)?;
                 Ok(CapturedLocal::Absent(AbsenceGeneration {
                     root,
@@ -398,6 +401,7 @@ impl PreparedLocal {
                 ))
             }
             OpenedLocal::Absent(missing, ancestors, directories) => {
+                recheck_absence(&root, &relative, &missing, &directories)?;
                 verify_root(&root)?;
                 Ok(CapturedLocal::Absent(AbsenceGeneration {
                     root,
@@ -635,8 +639,9 @@ fn read_bounded_admitted<E>(
     }
     let measured =
         usize::try_from(measured).map_err(|_| error("original byte count conversion failed"))?;
-    let limit =
-        usize::try_from(limit).map_err(|_| error("original byte count conversion failed"))?;
+    // measured <= limit already passed: clamp instead of failing a generous
+    // u64 limit on 32-bit targets.
+    let limit = usize::try_from(limit).unwrap_or(usize::MAX);
     let scratch_size = SCRATCH_BYTES.min(measured.saturating_add(1));
     admit(scratch_size).map_err(VerificationError::Admission)?;
     let mut scratch = vec![0_u8; scratch_size].into_boxed_slice();
@@ -662,6 +667,26 @@ fn read_bounded_admitted<E>(
     }
     admit(0).map_err(VerificationError::Admission)?;
     Ok(bytes)
+}
+
+/// Reconfirm the first missing component is still absent under the held parent
+/// handle: a file created after prepare must not be captured as Absent.
+#[cfg(unix)]
+fn recheck_absence(
+    root: &RootGeneration,
+    _relative: &Path,
+    missing: &Path,
+    directories: &[File],
+) -> Result<(), ForgeError> {
+    let parent = directories
+        .last()
+        .or_else(|| root.directories.last())
+        .ok_or_else(|| error("qualified root handle is missing"))?;
+    let name = missing.file_name().ok_or_else(|| error("absence record has no leaf component"))?;
+    match open_child(parent, name, false) {
+        Err(cause) if cause.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        _ => Err(error("previously unavailable local evidence appeared")),
+    }
 }
 
 /// Reuse the current regular/single-link original handle checks without accepting directory aliases.
@@ -893,6 +918,20 @@ fn open_local(
         }
     }
     Err(error("evidence input path is empty"))
+}
+
+/// Windows mirror: re-walk the held route; any present leaf refuses absence.
+#[cfg(windows)]
+fn recheck_absence(
+    root: &RootGeneration,
+    relative: &Path,
+    missing: &Path,
+    _directories: &[File],
+) -> Result<(), ForgeError> {
+    match open_local(root, relative, true)? {
+        OpenedLocal::Absent(now, _, _) if now == *missing => Ok(()),
+        _ => Err(error("previously unavailable local evidence appeared")),
+    }
 }
 
 /// Refuse platforms without the existing native held-handle confinement primitives.
@@ -2673,6 +2712,18 @@ mod disclosure_held_tests {
         };
         assert_eq!(bytes, b"old");
         assert!(verify_file(&original, &bytes).is_err());
+    }
+
+    /// A file created between prepare and read must not be captured as Absent.
+    #[test]
+    fn absence_capture_rechecks_the_leaf_at_read_time() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().canonicalize().unwrap();
+        let held =
+            prepare_local(Rc::new(qualify_root(&path).unwrap()), Path::new("input.txt"), true)
+                .unwrap();
+        std::fs::write(path.join("input.txt"), b"appeared").unwrap();
+        assert!(held.read(1024).is_err(), "newly appeared bytes must refuse absence capture");
     }
 
     /// Actual sibling roots may share ancestry while equal/nested roots cannot be disjoint.

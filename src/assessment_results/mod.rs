@@ -93,27 +93,26 @@ pub fn execute_init(
             manifest_dir.display()
         ))
     })?;
-    let assessment_plan = scaffold_artifact(
+    let (assessment_plan, assessment_plan_value) = scaffold_artifact(
         &manifest_dir,
         assessment_plan_path,
         "assessment-plan",
         confined_href(&manifest_dir, assessment_plan_path, "assessment-plan")?,
     )?;
-    let assessment_plan_value = read_json(assessment_plan_path, "Assessment Plan")?;
     let ssp_href = required_pointer(
         &assessment_plan_value,
         "/assessment-plan/import-ssp/href",
         "Assessment Plan import-ssp href",
     )?;
-    let ssp = scaffold_artifact(&manifest_dir, ssp_path, "system-security-plan", ssp_href)?;
-    let ssp_value = read_json(ssp_path, "SSP")?;
+    let (ssp, ssp_value) =
+        scaffold_artifact(&manifest_dir, ssp_path, "system-security-plan", ssp_href)?;
     let profile_href = required_pointer(
         &ssp_value,
         "/system-security-plan/import-profile/href",
         "SSP import-profile href",
     )?;
-    let profile = scaffold_artifact(&manifest_dir, profile_path, "profile", profile_href)?;
-    let profile_value = read_json(profile_path, "Profile")?;
+    let (profile, profile_value) =
+        scaffold_artifact(&manifest_dir, profile_path, "profile", profile_href)?;
     let imports = profile_value
         .pointer("/profile/imports")
         .and_then(Value::as_array)
@@ -125,7 +124,8 @@ pub fn execute_init(
     }
     let catalog_href =
         required_pointer(&profile_value, "/profile/imports/0/href", "Profile Catalog import href")?;
-    let catalog = scaffold_artifact(&manifest_dir, catalog_path, "catalog", catalog_href)?;
+    let (catalog, _catalog_value) =
+        scaffold_artifact(&manifest_dir, catalog_path, "catalog", catalog_href)?;
     let evidence_index = evidence_index_path
         .map(|path| {
             let artifact = confined_relative(&manifest_dir, path, "evidence index")?;
@@ -262,7 +262,7 @@ fn scaffold_artifact(
     path: &Path,
     root_name: &str,
     href: String,
-) -> Result<manifest::ArtifactManifest, ForgeError> {
+) -> Result<(manifest::ArtifactManifest, Value), ForgeError> {
     let artifact = confined_relative(manifest_dir, path, root_name)?;
     let bytes = io::read_bounded(path, io::MAX_FILE_SIZE)
         .map_err(|cause| error(format!("cannot read {root_name}: {cause}")))?;
@@ -278,20 +278,19 @@ fn scaffold_artifact(
         root.pointer("/metadata/oscal-version"),
         &format!("{root_name}.metadata.oscal-version"),
     )?;
-    Ok(manifest::ArtifactManifest {
-        artifact,
-        href,
-        expected_sha256: sha256_hex(&bytes),
-        root_uuid,
-        document_version,
-        oscal_version,
-    })
-}
-
-fn read_json(path: &Path, label: &str) -> Result<Value, ForgeError> {
-    let bytes = io::read_bounded(path, io::MAX_FILE_SIZE)
-        .map_err(|cause| error(format!("cannot read {label}: {cause}")))?;
-    serde_json::from_slice(&bytes).map_err(|cause| error(format!("{label} is not JSON: {cause}")))
+    // Return the exact Value parsed from the hashed bytes so href extraction
+    // never re-reads the file unverified; load_from_root still hash-verifies.
+    Ok((
+        manifest::ArtifactManifest {
+            artifact,
+            href,
+            expected_sha256: sha256_hex(&bytes),
+            root_uuid,
+            document_version,
+            oscal_version,
+        },
+        value,
+    ))
 }
 
 fn required_pointer(value: &Value, pointer: &str, label: &str) -> Result<String, ForgeError> {

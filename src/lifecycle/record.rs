@@ -615,9 +615,13 @@ fn validate_approval(
     }
     // `/1` records and their migrated `/2` legacy-event windows cannot gain
     // historical author assertions retroactively; preserve their established
-    // read/migrate contract. New `/2` approvals still fail closed (F0490).
+    // read/migrate contract. The whole evidence window must be legacy-carried:
+    // a fresh event tagged with a publicly computable legacy ID must not relax
+    // the gate for a new window. New `/2` approvals still fail closed (F0490).
     let require_author_evidence = record.schema_version == SCHEMA_VERSION
-        && record.history[event_index].legacy_event_id.is_none();
+        && record.history[review_start..=event_index]
+            .iter()
+            .any(|event| event.legacy_event_id.is_none());
     validate_separation(&record.approval_policy.separation, &evidence, require_author_evidence)
 }
 
@@ -670,13 +674,12 @@ fn validate_fingerprint(path: &str, value: &ArtifactFingerprint) -> Result<(), F
 }
 
 /// Stored artifact paths must be plain descendants of the lifecycle record
-/// directory. Absolute paths, Windows drive prefixes, and `.` or `..`
-/// components are rejected so a record cannot redirect later artifact reads
-/// outside its trust boundary.
-fn validate_artifact_path_shape(path: &str, value: &str) -> Result<(), ForgeError> {
-    let drive_prefixed = value.as_bytes().get(1) == Some(&b':')
-        && value.as_bytes().first().is_some_and(u8::is_ascii_alphabetic);
-    let relative = !drive_prefixed
+/// directory. Absolute paths, `.`/`..` components, and any `\` or `:` are
+/// rejected on every host: records are portable, so Windows separators, UNC
+/// roots, drive prefixes and NTFS stream syntax must never pass just because
+/// the validating host is Unix.
+pub(crate) fn validate_artifact_path_shape(path: &str, value: &str) -> Result<(), ForgeError> {
+    let relative = !value.contains(['\\', ':'])
         && Path::new(value).components().all(|component| matches!(component, Component::Normal(_)));
     if !relative {
         return Err(error(format!(
@@ -1098,6 +1101,48 @@ mod tests {
         sign_events(&mut record);
 
         assert!(validate(&record).is_ok(), "legacy evidence must remain readable/migratable");
+    }
+
+    #[test]
+    fn fresh_window_with_legacy_tagged_approval_cannot_skip_author_evidence() {
+        // A brand-new in-review event (no legacy marker) plus an approval that
+        // self-asserts a publicly computable legacy ID must not relax the
+        // author-evidence gate: the whole window must be legacy-carried.
+        let mut record = record(
+            LifecycleState::Approved,
+            vec![
+                RoleRequirement { role: DeclaredRole::Reviewer, count: 1 },
+                RoleRequirement { role: DeclaredRole::Approver, count: 1 },
+            ],
+            SeparationRules {
+                author_reviewer: false,
+                author_approver: true,
+                reviewer_approver: false,
+            },
+            vec![
+                event(
+                    1,
+                    LifecycleState::Draft,
+                    LifecycleState::InReview,
+                    "reviewer",
+                    DeclaredRole::Reviewer,
+                    false,
+                ),
+                event(
+                    2,
+                    LifecycleState::InReview,
+                    LifecycleState::Approved,
+                    "approver",
+                    DeclaredRole::Approver,
+                    true,
+                ),
+            ],
+        );
+        sign_events(&mut record);
+
+        let error =
+            validate(&record).expect_err("mixed windows must fail closed on author evidence");
+        assert!(error.to_string().contains("author assertion"), "{error}");
     }
 
     #[test]

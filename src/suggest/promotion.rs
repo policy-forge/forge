@@ -181,10 +181,9 @@ impl PromotionProposal {
             return Err(shared::error(format!("promotion.entries exceeds {MAX_ENTRIES} entries")));
         }
         let expected_contract = self.destination.kind.contract();
-        // Fold ASCII case: on case-insensitive filesystems (macOS) case variants alias.
-        let mut paths =
-            std::collections::BTreeSet::from([self.destination.path.to_ascii_lowercase()]);
-        if !paths.insert(self.patch.artifact.to_ascii_lowercase()) {
+        // Full Unicode folding: case-insensitive volumes alias Ä/ä spellings too.
+        let mut paths = std::collections::BTreeSet::from([self.destination.path.to_lowercase()]);
+        if !paths.insert(self.patch.artifact.to_lowercase()) {
             return Err(shared::error("promotion patch aliases the destination"));
         }
         let mut seen = std::collections::BTreeSet::new();

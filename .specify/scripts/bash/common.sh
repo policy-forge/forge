@@ -159,7 +159,9 @@ find_feature_dir_by_prefix() {
         # Multiple matches - this shouldn't happen with proper naming convention
         echo "ERROR: Multiple spec directories found with prefix '$prefix': ${matches[*]}" >&2
         echo "Please ensure only one spec directory exists per numeric prefix." >&2
-        echo "$specs_dir/$branch_name"  # Return something to avoid breaking the script
+        # Emit nothing and fail: a fallback path would send callers against a
+        # wrong/nonexistent spec with no detectable failure.
+        return 1
     fi
 }
 
@@ -172,8 +174,10 @@ get_feature_paths() {
         has_git_repo="true"
     fi
 
-    # Use prefix-based lookup to support multiple branches per spec
-    local feature_dir=$(find_feature_dir_by_prefix "$repo_root" "$current_branch")
+    # Use prefix-based lookup to support multiple branches per spec.
+    # Separate assignment: 'local' would swallow the resolver's exit status.
+    local feature_dir
+    feature_dir=$(find_feature_dir_by_prefix "$repo_root" "$current_branch") || return 1
 
     local prd_path
     local ard_path
@@ -225,7 +229,8 @@ read_config_value() {
     local value=""
     if command -v jq &>/dev/null; then
         # Use jq if available (preferred)
-        value=$(jq -r ".$key // empty" "$config_file" 2>/dev/null)
+        # 'has' + null check: '// empty' would treat configured false as absent.
+        value=$(jq -r "if has(\"$key\") and .[\"$key\"] != null then .[\"$key\"] else empty end" "$config_file" 2>/dev/null)
     else
         # Fallback: simple grep/sed for JSON values
         # Try quoted string first: "key": "value"

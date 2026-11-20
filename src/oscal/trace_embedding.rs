@@ -37,8 +37,11 @@ pub const LINK_REL_SOURCE: &str = "source";
 /// Maximum file path length accepted for href encoding (4096 per POSIX `PATH_MAX`).
 const MAX_HREF_PATH_LENGTH: usize = 4096;
 
-/// Percent-encode RFC 3986 reserved characters in a file name used as an href path.
-fn encode_href_path(path: &str) -> String {
+/// Percent-encode RFC 3986 reserved characters in a file name used as an href
+/// path. `None` when the encoded form exceeds the length budget: a truncated
+/// href would name a different file than the source-file prop (corrupting
+/// provenance), so the caller must omit the link instead.
+fn encode_href_path(path: &str) -> Option<String> {
     let mut encoded = String::with_capacity(path.len().min(MAX_HREF_PATH_LENGTH));
 
     for character in path.chars() {
@@ -65,26 +68,47 @@ fn encode_href_path(path: &str) -> String {
             ' ' => Some("%20"),
             _ => None,
         };
-        let encoded_length = escaped.map_or_else(|| character.len_utf8(), str::len);
+        // URIs are ASCII (RFC 3986 / EC-6): non-ASCII becomes UTF-8
+        // percent-bytes; controls and the excluded set (neither reserved nor
+        // unreserved) are never legal raw in an href.
+        let percent_bytes = (escaped.is_none()
+            && (!character.is_ascii()
+                || character.is_ascii_control()
+                || matches!(character, '"' | '<' | '>' | '\\' | '^' | '`' | '{' | '|' | '}')))
+        .then(|| {
+            use std::fmt::Write as _;
+            let mut buf = [0u8; 4];
+            let mut out = String::new();
+            for byte in character.encode_utf8(&mut buf).bytes() {
+                let _ = write!(out, "%{byte:02X}");
+            }
+            out
+        });
+        let encoded_length = escaped.map_or_else(
+            || percent_bytes.as_ref().map_or(character.len_utf8(), String::len),
+            str::len,
+        );
 
         if encoded.len() + encoded_length > MAX_HREF_PATH_LENGTH {
             tracing::warn!(
                 original_length = path.len(),
                 encoded_length = encoded.len(),
                 max_length = MAX_HREF_PATH_LENGTH,
-                "Trace href path exceeded length limit and was truncated"
+                "Trace href path exceeded length limit; omitting the source link"
             );
-            break;
+            return None;
         }
 
         if let Some(escaped) = escaped {
             encoded.push_str(escaped);
+        } else if let Some(percent_bytes) = percent_bytes {
+            encoded.push_str(&percent_bytes);
         } else {
             encoded.push(character);
         }
     }
 
-    encoded
+    Some(encoded)
 }
 
 /// Return a filename-only trace value without exposing source directories.
@@ -134,13 +158,13 @@ pub fn build_trace_props(
 /// The path is normalized to its filename component before encoding so the link
 /// cannot expose source directories.
 #[must_use]
-pub fn build_trace_link(source_file: &str, line_number: usize) -> OscalLink {
-    let encoded = encode_href_path(source_file_name(source_file));
-    OscalLink {
+pub fn build_trace_link(source_file: &str, line_number: usize) -> Option<OscalLink> {
+    let encoded = encode_href_path(source_file_name(source_file))?;
+    Some(OscalLink {
         href: format!("{encoded}#line={line_number}"),
         rel: LINK_REL_SOURCE.to_string(),
         text: None,
-    }
+    })
 }
 
 // ─── Embedding Functions ─────────────────────────────────────────────────
@@ -201,6 +225,7 @@ fn annotate_group(
     }
 
     if let Some(section_title) = group_section_title {
+        group.props.retain(|prop| prop.ns.as_deref() != Some(FORGE_TRACE_NS));
         group.props.push(OscalProp {
             name: PROP_SOURCE_SECTION.to_string(),
             ns: Some(FORGE_TRACE_NS.to_string()),
@@ -240,11 +265,16 @@ fn annotate_control(
     };
     let section_title = loc.section_title.as_deref().unwrap_or("unknown-section");
 
+    // Idempotent re-embedding: replace prior trace annotations, never append
+    // duplicates on a load/modify/regenerate round trip.
+    control.props.retain(|prop| prop.ns.as_deref() != Some(FORGE_TRACE_NS));
+    control.links.retain(|link| link.rel != LINK_REL_SOURCE);
     let props = build_trace_props(&file, section_title, loc.line_number);
     control.props.extend(props);
 
-    let link = build_trace_link(&file, loc.line_number);
-    control.links.push(link);
+    if let Some(link) = build_trace_link(&file, loc.line_number) {
+        control.links.push(link);
+    }
 
     Some(TraceAnnotation { section_title: loc.section_title.clone() })
 }
@@ -257,39 +287,59 @@ mod tests {
 
     #[test]
     fn encode_percent() {
-        assert_eq!(encode_href_path("100%done"), "100%25done");
+        assert_eq!(encode_href_path("100%done").as_deref(), Some("100%25done"));
     }
 
     #[test]
     fn encode_space() {
-        assert_eq!(encode_href_path("my file.md"), "my%20file.md");
+        assert_eq!(encode_href_path("my file.md").as_deref(), Some("my%20file.md"));
     }
 
     #[test]
     fn encode_hash() {
-        assert_eq!(encode_href_path("file#1.md"), "file%231.md");
+        assert_eq!(encode_href_path("file#1.md").as_deref(), Some("file%231.md"));
     }
 
     #[test]
     fn encode_empty_string() {
-        assert_eq!(encode_href_path(""), "");
+        assert_eq!(encode_href_path("").as_deref(), Some(""));
+    }
+
+    #[test]
+    fn encode_excluded_characters() {
+        // RFC 3986 excluded set: neither reserved nor unreserved, never legal raw.
+        assert_eq!(encode_href_path("a\"b<c>d.md").as_deref(), Some("a%22b%3Cc%3Ed.md"));
+        assert_eq!(
+            encode_href_path("a\\b^c`d{e|f}g.md").as_deref(),
+            Some("a%5Cb%5Ec%60d%7Be%7Cf%7Dg.md")
+        );
+        assert_eq!(encode_href_path("a\tb\u{7f}.md").as_deref(), Some("a%09b%7F.md"));
+        // Unreserved stays raw.
+        assert_eq!(encode_href_path("a-Z_0.9~").as_deref(), Some("a-Z_0.9~"));
+    }
+
+    #[test]
+    fn encode_non_ascii_as_utf8_percent_bytes() {
+        // EC-6 / RFC 3986: URIs are ASCII; raw UTF-8 makes an IRI, not a URI.
+        assert_eq!(encode_href_path("caf\u{e9}.md").as_deref(), Some("caf%C3%A9.md"));
+        assert_eq!(encode_href_path("\u{6e96}.md").as_deref(), Some("%E6%BA%96.md"));
     }
 
     #[test]
     fn encode_normal_path_unchanged() {
-        assert_eq!(encode_href_path("access-control.md"), "access-control.md");
+        assert_eq!(encode_href_path("access-control.md").as_deref(), Some("access-control.md"));
     }
 
     #[test]
     fn encode_combined_special_chars() {
-        assert_eq!(encode_href_path("my file#1%.md"), "my%20file%231%25.md");
+        assert_eq!(encode_href_path("my file#1%.md").as_deref(), Some("my%20file%231%25.md"));
     }
 
     #[test]
     fn encode_all_rfc3986_reserved_characters() {
         assert_eq!(
-            encode_href_path("a:/?#[]@!$&'()*+,;=b"),
-            "a%3A%2F%3F%23%5B%5D%40%21%24%26%27%28%29%2A%2B%2C%3B%3Db"
+            encode_href_path("a:/?#[]@!$&'()*+,;=b").as_deref(),
+            Some("a%3A%2F%3F%23%5B%5D%40%21%24%26%27%28%29%2A%2B%2C%3B%3Db")
         );
     }
 
@@ -297,19 +347,21 @@ mod tests {
     fn encode_percent_first_avoids_double_encoding() {
         // If we encoded space first, "a b" -> "a%20b", then encoding % -> "a%2520b" (wrong)
         // Correct: encode % first (no-op here), then space -> "a%20b"
-        assert_eq!(encode_href_path("a b"), "a%20b");
+        assert_eq!(encode_href_path("a b").as_deref(), Some("a%20b"));
         // With actual percent: "a%b" -> "a%25b" (% encoded), no further changes
-        assert_eq!(encode_href_path("a%b"), "a%25b");
+        assert_eq!(encode_href_path("a%b").as_deref(), Some("a%25b"));
         // With percent AND space: "a% b" -> "a%25 b" (% encoded) -> "a%25%20b" (space encoded)
-        assert_eq!(encode_href_path("a% b"), "a%25%20b");
+        assert_eq!(encode_href_path("a% b").as_deref(), Some("a%25%20b"));
     }
 
     #[test]
     fn encode_href_path_caps_encoded_length() {
-        let encoded = encode_href_path(&"%".repeat(MAX_HREF_PATH_LENGTH));
-
+        // Within budget: complete encoding, never a split percent-escape.
+        let encoded = encode_href_path(&"%".repeat(MAX_HREF_PATH_LENGTH / 3)).unwrap();
         assert!(encoded.len() <= MAX_HREF_PATH_LENGTH);
         assert_eq!(encoded.len() % 3, 0);
+        // Over budget: no link rather than a truncated one.
+        assert!(encode_href_path(&"%".repeat(MAX_HREF_PATH_LENGTH)).is_none());
     }
 
     // ── T007: build_trace_props tests ────────────────────────────────
@@ -347,7 +399,7 @@ mod tests {
     #[test]
     fn trace_builders_strip_untrusted_source_directories() {
         let props = build_trace_props("C:\\policies\\security.md", "Access Control", 42);
-        let link = build_trace_link("/srv/policies/security.md", 42);
+        let link = build_trace_link("/srv/policies/security.md", 42).unwrap();
 
         assert_eq!(props[0].value, "security.md");
         assert_eq!(link.href, "security.md#line=42");
@@ -371,26 +423,36 @@ mod tests {
 
     #[test]
     fn build_trace_link_rel_is_source() {
-        let link = build_trace_link("policy.md", 42);
+        let link = build_trace_link("policy.md", 42).unwrap();
         assert_eq!(link.rel, LINK_REL_SOURCE);
     }
 
     #[test]
     fn build_trace_link_text_is_none() {
-        let link = build_trace_link("policy.md", 42);
+        let link = build_trace_link("policy.md", 42).unwrap();
         assert!(link.text.is_none());
     }
 
     #[test]
     fn build_trace_link_href_format() {
-        let link = build_trace_link("policy.md", 42);
+        let link = build_trace_link("policy.md", 42).unwrap();
         assert_eq!(link.href, "policy.md#line=42");
     }
 
     #[test]
     fn build_trace_link_special_chars_encoded() {
-        let link = build_trace_link("my file#1%.md", 10);
+        let link = build_trace_link("my file#1%.md", 10).unwrap();
         assert_eq!(link.href, "my%20file%231%25.md#line=10");
+    }
+
+    #[test]
+    fn overlong_filename_yields_no_link_instead_of_a_truncated_one() {
+        // A truncated href points at a different/nonexistent file while the
+        // source-file prop keeps the full name — corrupting provenance.
+        // Fail closed: no link; the prop remains the truthful record.
+        let long = format!("{}.md", "x".repeat(MAX_HREF_PATH_LENGTH));
+        assert!(build_trace_link(&long, 1).is_none());
+        assert!(build_trace_link("policy.md", 1).is_some());
     }
 
     // ── T010: embed_trace_in_catalog tests ───────────────────────────
@@ -442,6 +504,26 @@ mod tests {
                 line_number: line,
             },
         }
+    }
+
+    #[test]
+    fn embed_trace_is_idempotent() {
+        // A load/modify/regenerate round trip re-embeds: props/links must be
+        // replaced, not accumulated into duplicates.
+        let mut catalog = test_catalog(vec![OscalGroup {
+            id: "access-control".to_string(),
+            title: "Access Control".to_string(),
+            props: vec![],
+            links: vec![],
+            controls: vec![test_control("POL-AC-001", "uuid-1")],
+            groups: vec![],
+        }]);
+        let mut tl = TraceLinkCollection::new();
+        tl.record(test_trace_link("uuid-1", "policy.md", "Access Control", 10)).unwrap();
+        embed_trace_in_catalog(&mut catalog, &tl);
+        let once = serde_json::to_value(&catalog).unwrap();
+        embed_trace_in_catalog(&mut catalog, &tl);
+        assert_eq!(serde_json::to_value(&catalog).unwrap(), once, "re-embedding must be a no-op");
     }
 
     #[test]

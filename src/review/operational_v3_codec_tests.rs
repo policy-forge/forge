@@ -447,7 +447,8 @@ fn rationale_uses_complete_utf8_bytes_and_nonblank_semantics() {
     v["rationale"] = json!("é".repeat(4096));
     assert!(decode_r(&raw(&v)).is_ok());
     v["rationale"] = json!("é".repeat(4097));
-    assert_eq!(error(decode_r(&raw(&v))), ContractError::Capacity);
+    // Byte-cap overage is content validation, not a latching capacity stop.
+    assert_eq!(error(decode_r(&raw(&v))), ContractError::Invalid);
     let mut v = rv();
     v["rationale"] = json!(" \n\t");
     assert_eq!(error(decode_r(&raw(&v))), ContractError::Invalid);

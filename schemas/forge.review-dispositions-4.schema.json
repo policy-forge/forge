@@ -57,8 +57,7 @@
         "changes-requested",
         "quorum-met",
         "expired",
-        "stale",
-        "invalid-edit"
+        "stale"
       ]
     },
     "RecordedCurrentness": {

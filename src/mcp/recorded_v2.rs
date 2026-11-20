@@ -483,6 +483,7 @@ pub(in crate::mcp::artifact_status::queries) fn encode<C: WorkControl + ?Sized>(
     );
     let bytes = counter.bytes;
     let chunks = counter.chunks;
+    let precharged_hash = counter.hash.finalize();
     let ordinary = count_result.map_err(|_| QueryError::Unavailable(Reason::OutputBoundExceeded));
     phase(&mut admission, ordinary)?;
     let complete = work::add(bytes, 1, &mut admission)?;
@@ -508,6 +509,12 @@ pub(in crate::mcp::artifact_status::queries) fn encode<C: WorkControl + ?Sized>(
         return phase(&mut admission, Err(reason.into()));
     }
     if encoded.value().len() != complete {
+        return phase(&mut admission, Err(Reason::InvalidArtifact.into()));
+    }
+    // Same length is not same shape: bind the reserved work to the exact
+    // precharged bytes so wire-layer drift cannot silently uncharge the passes.
+    // wire::success appends one LF after the JSON; the precharge covers JSON only.
+    if Sha256::digest(&encoded.value()[..complete - 1]) != precharged_hash {
         return phase(&mut admission, Err(Reason::InvalidArtifact.into()));
     }
     let emitted = match response.data.as_ref() {

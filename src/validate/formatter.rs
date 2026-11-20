@@ -87,6 +87,8 @@ pub(crate) fn append_property_segment(path: &mut String, key: &str) {
             match character {
                 '\\' => path.push_str("\\\\"),
                 '\'' => path.push_str("\\'"),
+                // Instance-derived keys must not forge log lines (SEC-2).
+                c if c.is_control() => path.extend(c.escape_default()),
                 _ => path.push(character),
             }
         }
@@ -129,6 +131,12 @@ fn pointer_has_sensitive_key(pointer: &str) -> bool {
             "sessionid",
             "credential",
             "authorization",
+            "passwd",
+            "pwd",
+            "private_key",
+            "privatekey",
+            "access_key",
+            "accesskey",
         ]
         .iter()
         .any(|needle| key.contains(needle))
@@ -137,7 +145,11 @@ fn pointer_has_sensitive_key(pointer: &str) -> bool {
 
 fn preview_value(value: &Value) -> String {
     let preview = match value {
-        Value::String(text) => format!("\"{text}\""),
+        // JSON escaping neutralizes quotes, newlines and control/ANSI bytes
+        // so instance-controlled text cannot forge log lines (SEC-2).
+        Value::String(text) => {
+            serde_json::to_string(text).unwrap_or_else(|_| "\"(unencodable)\"".to_string())
+        }
         Value::Null => "null".to_string(),
         Value::Bool(boolean) => boolean.to_string(),
         Value::Number(number) => number.to_string(),
@@ -172,6 +184,25 @@ pub fn format_schema_error(
 ///
 /// SEC-2: Never pass through raw crate messages. Classification uses the
 /// validator's structured error kind so wording changes cannot alter output.
+/// Instance-controlled property names: escape controls, cap count and length
+/// so a hostile document cannot flood or forge diagnostics (SEC-1).
+fn additional_properties_message(unexpected: &[String]) -> String {
+    use std::fmt::Write as _;
+    let shown: Vec<String> = unexpected
+        .iter()
+        .take(10)
+        .map(|name| {
+            let escaped: String = name.chars().take(80).flat_map(char::escape_default).collect();
+            if name.chars().count() > 80 { format!("{escaped}…") } else { escaped }
+        })
+        .collect();
+    let mut message = format!("unexpected additional properties: {}", shown.join(", "));
+    if unexpected.len() > 10 {
+        let _ = write!(message, " (and {} more)", unexpected.len() - 10);
+    }
+    message
+}
+
 fn classify_error(error: &jsonschema::ValidationError) -> (String, String) {
     match error.kind() {
         ValidationErrorKind::Required { property } => {
@@ -207,10 +238,9 @@ fn classify_error(error: &jsonschema::ValidationError) -> (String, String) {
         ValidationErrorKind::Format { format } => {
             (format!("invalid format: expected {format}"), format!("format: {format}"))
         }
-        ValidationErrorKind::AdditionalProperties { unexpected } => (
-            format!("unexpected additional properties: {}", unexpected.join(", ")),
-            "no additional properties".to_string(),
-        ),
+        ValidationErrorKind::AdditionalProperties { unexpected } => {
+            (additional_properties_message(unexpected), "no additional properties".to_string())
+        }
         ValidationErrorKind::Enum { .. } => {
             ("value not in allowed set".to_string(), "one of the allowed values".to_string())
         }
@@ -221,6 +251,38 @@ fn classify_error(error: &jsonschema::ValidationError) -> (String, String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn property_segment_escapes_control_characters() {
+        let mut path = String::from("$");
+        append_property_segment(&mut path, "key\n\u{1b}[31m");
+        assert!(!path.contains('\n') && !path.contains('\u{1b}'), "{path:?}");
+    }
+
+    #[test]
+    fn sensitive_keys_cover_common_secret_names() {
+        for key in ["passwd", "pwd", "private_key", "privatekey", "access_key", "accesskey"] {
+            assert!(pointer_has_sensitive_key(&format!("/data/{key}")), "{key}");
+        }
+    }
+
+    #[test]
+    fn additional_properties_message_is_bounded_and_escaped() {
+        let names: Vec<String> =
+            (0..500).map(|i| format!("hostile-key-{i}\u{1b}[31m-{}", "x".repeat(200))).collect();
+        let message = additional_properties_message(&names);
+        assert!(message.len() < 2000, "message must be bounded, got {} bytes", message.len());
+        assert!(!message.contains('\u{1b}'), "names must be escaped");
+    }
+
+    #[test]
+    fn preview_string_escapes_quotes_and_controls() {
+        let value = Value::String("a\"b\n\u{1b}[31m".to_string());
+        let preview = preview_value(&value);
+        assert_eq!(preview, "\"a\\\"b\\n\\u001b[31m\"");
+        assert!(!preview.contains('\n'), "raw newline must not forge log lines");
+        assert!(!preview.contains('\u{1b}'), "raw ANSI escape must not reach terminals");
+    }
 
     // --- T007: truncate_value tests ---
 

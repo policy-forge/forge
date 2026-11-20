@@ -1,18 +1,13 @@
-/// Strip ASCII control characters (0x00-0x1F, excluding 0x0A newline and 0x09 tab)
-/// and DEL (0x7F) from a string. Used to prevent terminal escape injection (SEC-5).
+/// Strip control characters (C0 0x00-0x1F excluding 0x0A newline and 0x09 tab,
+/// DEL 0x7F, and the C1 block U+0080-U+009F) from a string. Used to prevent
+/// terminal escape injection (SEC-5), including C1 CSI/OSC sequences.
 ///
 /// Tab and newline are deliberately preserved. Callers feeding untrusted input into single-line
 /// surfaces (log entries or status bars) must additionally collapse tabs and newlines, because
 /// embedded line feeds can forge extra plausible output lines.
 #[must_use]
 pub fn strip_control_chars(s: &str) -> String {
-    s.chars()
-        .filter(|&c| {
-            let b = c as u32;
-            // Keep everything except control chars 0x00-0x1F and DEL 0x7F, but preserve tab (0x09) and newline (0x0A)
-            (b >= 0x20 && b != 0x7F) || b == 0x09 || b == 0x0A
-        })
-        .collect()
+    s.chars().filter(|&c| !c.is_control() || c == '\t' || c == '\n').collect()
 }
 
 #[cfg(test)]
@@ -47,10 +42,10 @@ mod tests {
     }
 
     #[test]
-    fn strip_del_character() {
-        let input = "Hello\x7FWorld";
+    fn strip_del_and_c1_controls() {
+        let input = "Hello\x7F\u{009B}31m\u{0085}World";
         let result = strip_control_chars(input);
-        assert_eq!(result, "HelloWorld");
+        assert_eq!(result, "Hello31mWorld");
     }
 
     #[test]

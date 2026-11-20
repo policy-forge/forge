@@ -3880,7 +3880,7 @@ mod tests {
             ssp_value["system-security-plan"]["system-implementation"]["components"][0]["uuid"]
                 .clone();
         let mut ap_value = serde_json::to_value(
-            build_assessment_plan(&["AC-1".to_string()], "ssp.json", "Synthetic assessment")
+            build_assessment_plan(&["AC-1".to_string()], "ssp.json", "Synthetic assessment", None)
                 .unwrap(),
         )
         .unwrap();

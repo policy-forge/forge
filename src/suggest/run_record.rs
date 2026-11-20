@@ -137,6 +137,11 @@ impl RunRecord {
                 "run.exit_code must be 0: a record is only written for a successful adapter run",
             ));
         }
+        // Operator free text (argv, model_id) is republished in Provenance;
+        // scan every persisted string at this one shared boundary.
+        let persisted = serde_json::to_string(self)
+            .map_err(|cause| shared::error(format!("cannot inspect run strings: {cause}")))?;
+        super::redact::refuse_secrets(&persisted)?;
         Ok(())
     }
 
@@ -222,6 +227,17 @@ mod tests {
         assert_eq!(parsed.mode.as_str(), "process");
         let serialized = serde_json::to_vec(&parsed).unwrap();
         assert_eq!(RunRecord::parse(&serialized).unwrap(), parsed);
+    }
+
+    #[test]
+    fn run_provenance_free_text_is_secret_scanned() {
+        let secret = "sk-ABCDEFGHIJKLMNOPQRSTUVWX";
+        let mut bad = fixture_run_json();
+        bad["argv"] = json!(["--api-key", secret]);
+        assert!(parse(&bad).is_err(), "argv");
+        let mut bad = fixture_run_json();
+        bad["model_id"] = json!(secret);
+        assert!(parse(&bad).is_err(), "model_id");
     }
 
     #[test]

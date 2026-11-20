@@ -151,7 +151,8 @@ fn roster(
         memberships =
             memberships.checked_add(row.role_keys.len()).ok_or_else(|| ledger.capacity())?;
         if memberships > 3200 {
-            return Err(ledger.capacity());
+            // Content cap on asserted data, not resource exhaustion: non-latching.
+            return Err(ContractError::Invalid);
         }
         for role in &row.role_keys {
             role_index(queue, role, ledger)?;
@@ -183,7 +184,8 @@ fn policy_order(
         total = total.checked_add(count).ok_or_else(|| ledger.capacity())?;
     }
     if total > 100 {
-        return Err(ledger.capacity());
+        // Content cap (schema allows 32 seats x count<=100): non-latching.
+        return Err(ContractError::Invalid);
     }
     for row in &policy.substitutions {
         for value in [&row.seat_role, &row.reviewer_key, &row.asserted_role, &row.reason_code] {
@@ -302,7 +304,8 @@ fn policy_graph(
             .ok_or_else(|| ledger.capacity())?;
     }
     if edges > 10_000 {
-        return Err(ledger.capacity());
+        // Content cap on derived graph size from asserted counts: non-latching.
+        return Err(ContractError::Invalid);
     }
     ledger.visits(100)?;
     let vertices =

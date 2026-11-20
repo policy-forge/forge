@@ -200,14 +200,12 @@ pub fn render_json_report(report: &ValidationReport) -> String {
 ///
 /// MUST collect ALL errors from both passes (PRD M-2).
 /// MUST NOT stop at the first error.
+// Shipped in src/validate/mod.rs (WI-20 complete). Real types:
+// OscalModelType = crate::validate::OscalModelType,
+// ValidateError = crate::validate::ValidateError,
+// ValidationReport = crate::validate::error_types::ValidationReport.
 pub fn run_full_validation(
     artifact_path: &str,
     json: &Value,
     model_type: OscalModelType,
-) -> Result<ValidationReport, ValidateError> {
-    todo!("WI-20: Implement full validation orchestrator")
-}
-
-// Placeholder for existing types referenced above
-type OscalModelType = ();
-type ValidateError = ();
+) -> Result<ValidationReport, ValidateError>;

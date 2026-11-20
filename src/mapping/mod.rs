@@ -15,7 +15,7 @@ use crate::{ForgeError, io, validate};
 pub(crate) struct PreparedBuild {
     pub(crate) artifact_json: String,
     pub(crate) report: model::MappingReport,
-    input_paths: Vec<PathBuf>,
+    pub(crate) input_paths: Vec<PathBuf>,
 }
 
 /// Build a Mapping artifact and optional separate review report.
@@ -35,9 +35,14 @@ pub fn execute_build(
 ) -> Result<bool, ForgeError> {
     let prepared = prepare(manifest_path, baseline_path, include_excerpts)?;
     validate_destinations(&prepared.input_paths, output, report_path)?;
+    // Render before persisting anything: a render failure must not leave the
+    // artifact already written (matches execute_check's order).
+    let rendered = match report_path {
+        Some(_) => Some(render_report(&prepared.report, report_format)?),
+        None => None,
+    };
     crate::cli::output::write_output(&prepared.artifact_json, output)?;
-    if let Some(path) = report_path {
-        let rendered = render_report(&prepared.report, report_format)?;
+    if let (Some(path), Some(rendered)) = (report_path, rendered) {
         crate::cli::output::write_output(&rendered, Some(path))?;
     }
     Ok(review_required(&prepared.report, fail_on))
@@ -440,8 +445,13 @@ fn same_file_identity(left: &Path, right: &Path) -> Result<bool, ForgeError> {
 }
 
 #[cfg(not(any(unix, windows)))]
-fn same_file_identity(_left: &Path, _right: &Path) -> Result<bool, ForgeError> {
-    Ok(false)
+fn same_file_identity(left: &Path, _right: &Path) -> Result<bool, ForgeError> {
+    // Fail closed like the Windows branch: an unverifiable destination must
+    // abort the write, never silently disable the hardlink guard.
+    Err(mapping_error(format!(
+        "cannot verify file identity of '{}' on this platform; refusing the write",
+        left.display()
+    )))
 }
 
 #[cfg(windows)]
@@ -512,7 +522,8 @@ fn path_identity(path: &Path) -> Result<PathBuf, ForgeError> {
             mapping_error(format!("cannot resolve '{}': {error}", path.display()))
         });
     }
-    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    // parent() returns Some("") for bare filenames; canonicalize("") fails.
+    let parent = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
     let canonical_parent = parent.canonicalize().map_err(|error| {
         mapping_error(format!("cannot resolve parent of '{}': {error}", path.display()))
     })?;
@@ -536,6 +547,15 @@ fn mapping_error(message: impl Into<String>) -> ForgeError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn path_identity_resolves_bare_relative_filenames() {
+        // Path::parent() returns Some("") for "out.json"; canonicalize("")
+        // fails ENOENT, breaking every build/check with a bare --output.
+        let resolved = path_identity(Path::new("forge-test-output.json")).unwrap();
+        assert!(resolved.is_absolute(), "{resolved:?}");
+        assert!(resolved.ends_with("forge-test-output.json"));
+    }
 
     fn report_with(code: &str) -> model::MappingReport {
         let evidence = inventory::ResourceEvidence {

@@ -63,9 +63,24 @@ pub fn format_batch_summary(summary: &BatchSummary) -> String {
     buf
 }
 
-/// Flatten control characters so untrusted errors cannot forge terminal rows.
+/// Flatten control and invisible/bidi format characters so untrusted errors
+/// cannot forge or visually reorder terminal rows (Cc alone misses Cf).
 fn sanitize_terminal_line(value: &str) -> String {
-    value.chars().map(|character| if character.is_control() { ' ' } else { character }).collect()
+    value
+        .chars()
+        .map(|character| {
+            if character.is_control()
+                || matches!(character,
+                    '\u{00ad}' | '\u{061c}' | '\u{200b}'..='\u{200f}'
+                    | '\u{2028}' | '\u{2029}' | '\u{202a}'..='\u{202e}'
+                    | '\u{2060}'..='\u{2064}' | '\u{2066}'..='\u{206f}' | '\u{feff}')
+            {
+                ' '
+            } else {
+                character
+            }
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -75,6 +90,16 @@ mod tests {
 
     use super::*;
     use crate::batch::summary::{BatchSummary, FileResult};
+
+    #[test]
+    fn sanitize_flattens_bidi_and_zero_width_format_characters() {
+        // Cf characters are not Cc: is_control() alone lets a filename reorder
+        // or hide parts of a summary row.
+        let hostile = "ok\u{202e}gnp.exe\u{200b}\u{feff}\u{2028}next";
+        let clean = sanitize_terminal_line(hostile);
+        assert!(!clean.contains(['\u{202e}', '\u{200b}', '\u{feff}', '\u{2028}']), "{clean:?}");
+        assert!(clean.contains("ok"), "visible text is preserved");
+    }
 
     // T008: format_batch_summary tests
 

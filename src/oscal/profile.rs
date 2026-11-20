@@ -182,8 +182,15 @@ pub fn build_modify_section(param_overrides: &[(String, String)]) -> Option<Modi
         map.entry(id.clone()).or_default().push(value.clone());
     }
 
-    let set_parameters: Vec<SetParameter> =
-        map.into_iter().map(|(param_id, values)| SetParameter { param_id, values }).collect();
+    let set_parameters: Vec<SetParameter> = map
+        .into_iter()
+        .map(|(param_id, mut values)| {
+            // The UUID seed sorts (id, value) pairs; serialization must match
+            // that canonical order or equal seeds render different bytes.
+            values.sort();
+            SetParameter { param_id, values }
+        })
+        .collect();
 
     Some(Modify { set_parameters })
 }
@@ -319,9 +326,11 @@ pub fn parse_control_ids(raw: &str) -> Result<Vec<String>, ForgeError> {
     let mut ids = Vec::new();
 
     for token in raw.split(',').map(str::trim).filter(|token| !token.is_empty()) {
-        if token.chars().any(char::is_control) {
+        // trim() only strips the ends: internal whitespace (incl. NBSP)
+        // would yield identifiers that cannot match any real control id.
+        if token.chars().any(|c| c.is_control() || c.is_whitespace()) {
             return Err(ForgeError::InvalidArgument(format!(
-                "Control ID contains a control character: {token:?}"
+                "Control ID contains a control character or internal whitespace: {token:?}"
             )));
         }
         if seen.insert(token.to_string()) {
@@ -350,6 +359,23 @@ mod tests {
     #[test]
     fn build_modify_section_empty_returns_none() {
         assert!(build_modify_section(&[]).is_none());
+    }
+
+    #[test]
+    fn build_modify_section_canonicalizes_value_order_like_the_uuid_seed() {
+        let forward = build_modify_section(&[
+            ("p".to_string(), "a".to_string()),
+            ("p".to_string(), "b".to_string()),
+        ]);
+        let reversed = build_modify_section(&[
+            ("p".to_string(), "b".to_string()),
+            ("p".to_string(), "a".to_string()),
+        ]);
+        // The UUID seed sorts pairs; identical seeds must serialize identically.
+        assert_eq!(
+            serde_json::to_string(&forward).unwrap(),
+            serde_json::to_string(&reversed).unwrap()
+        );
     }
 
     #[test]
@@ -502,6 +528,15 @@ mod tests {
     fn parse_trims_whitespace() {
         let ids = parse_control_ids("  AC-1  ,  AC-2  ").unwrap();
         assert_eq!(ids, vec!["AC-1", "AC-2"]);
+    }
+
+    #[test]
+    fn parse_rejects_internal_whitespace() {
+        // trim() only strips the ends; internal spaces/NBSP would produce
+        // identifiers that cannot match any real control id.
+        assert!(parse_control_ids("AC 1").is_err(), "internal space");
+        assert!(parse_control_ids("AC\u{a0}1").is_err(), "NBSP");
+        assert!(parse_control_ids("AC\t1").is_err(), "tab (control char)");
     }
 
     #[test]

@@ -99,23 +99,19 @@ pub struct Prop {
 
 // ─── Citation (Input Contract from WI-8) ────────────────────────────────
 
-/// A citation extracted from a policy document by WI-8.
-///
-/// This is the input to back matter generation.
-#[derive(Debug, Clone, Serialize)]
-pub struct Citation {
-    /// Unique identifier for this citation.
-    pub id: String,
-
-    /// Citation text (bibliographic reference or descriptive text).
-    pub text: String,
-
-    /// URL if this is a URL-based citation; None for bibliographic-only.
-    pub url: Option<String>,
-
-    /// stable_id of the PolicyRequirement that references this citation.
-    pub source_requirement_id: Option<String>,
-}
+// Citation is the canonical WI-8 type from src/model/mod.rs, imported not
+// re-declared: it derives PartialEq and uses the typed RequirementId newtype
+// (`pub struct RequirementId(String)`) for source_requirement_id.
+//
+// use crate::model::{Citation, RequirementId};
+//
+// #[derive(Debug, Clone, PartialEq, Serialize)]
+// pub struct Citation {
+//     pub id: String,
+//     pub text: String,
+//     pub url: Option<String>,
+//     pub source_requirement_id: Option<RequirementId>,
+// }
 
 // ─── Function Signatures ────────────────────────────────────────────────
 

@@ -531,7 +531,9 @@ pub fn apply(
         // Reconcile before create: an existing binding means the object already
         // exists; never create a duplicate (M-8).
         if operation.kind == OperationKind::Create
-            && let Some(binding) = state.bindings.get(&operation.work_item_id)
+            // next_state, not the original snapshot: a second Create for the
+            // same ID in this run must see the binding the first one inserted.
+            && let Some(binding) = next_state.bindings.get(&operation.work_item_id)
         {
             entry.status = "skipped-duplicate".to_string();
             entry.remote_id = Some(binding.remote_id.clone());
@@ -594,7 +596,7 @@ fn execute_with_retry(
     policy: &super::config::NetworkPolicy,
     request: &OperationRequest,
 ) -> Result<RemoteObject, TransportError> {
-    let mut last = TransportError::Protocol("no attempt".to_string());
+    let mut last = TransportError::Protocol("no attempt");
     for _ in 0..MAX_ATTEMPTS {
         match transport.execute(policy, request) {
             Ok(remote) => return Ok(remote),

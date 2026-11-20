@@ -78,9 +78,10 @@ pub struct DocumentaryComponent {
     /// Component description (template format).
     pub description: String,
 
-    /// Control implementations placeholder (empty for WI-14; populated by WI-15).
-    #[serde(rename = "control-implementations")]
-    pub control_implementations: Vec<serde_json::Value>,
+    /// Control implementations under this capability (populated by WI-15).
+    /// Empty vecs are skipped: OSCAL requires minItems 1 when the array is present.
+    #[serde(default, rename = "control-implementations", skip_serializing_if = "Vec::is_empty")]
+    pub control_implementations: Vec<crate::oscal::implemented_requirements::ControlImplementation>,
 }
 
 // ─── Builder Function ───────────────────────────────────────────────────

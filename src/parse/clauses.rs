@@ -553,6 +553,21 @@ mod tests {
 
     // ── Phase 2: Foundational Tests ───────────────────────────────────
 
+    #[test]
+    fn ragged_table_rows_match_header_width() {
+        // GFM permits ragged rows; rows must pad/truncate to header width so
+        // downstream indexing by header position cannot panic or misalign.
+        let md = "| A | B | C |\n| --- | --- | --- |\n| 1 |\n| 1 | 2 | 3 | 4 |\n";
+        let result = extract_clauses(md).unwrap();
+        let table = &result.tables[0];
+        assert_eq!(table.headers.len(), 3);
+        for row in &table.rows {
+            assert_eq!(row.len(), 3, "ragged row not normalized: {row:?}");
+        }
+        assert_eq!(table.rows[0], vec!["1", "", ""]);
+        assert_eq!(table.rows[1], vec!["1", "2", "3"]);
+    }
+
     /// T005: Empty document returns empty `ExtractedContent` (SEC-1, EC-1)
     #[test]
     fn test_empty_document_returns_empty_content() {

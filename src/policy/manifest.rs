@@ -500,14 +500,22 @@ fn valid_kebab_key(value: &str) -> bool {
 
 #[must_use]
 pub fn is_sensitive_parameter_name(name: &str) -> bool {
-    let normalized = name.replace('_', "-").to_ascii_lowercase();
-    ["password", "passphrase", "secret", "token", "api-key", "private-key", "credential"]
-        .iter()
-        .any(|pattern| {
-            normalized == *pattern
-                || normalized.contains(&format!("-{pattern}"))
-                || normalized.contains(&format!("{pattern}-"))
-        })
+    let normalized = name.replace(['_', '-'], "").to_ascii_lowercase();
+    // Substring match: concatenated/plural forms (mytoken, passwords) must not
+    // slip past a hyphen-boundary check. Over-redaction is the safe direction.
+    [
+        "password",
+        "passwd",
+        "pwd",
+        "passphrase",
+        "secret",
+        "token",
+        "apikey",
+        "privatekey",
+        "credential",
+    ]
+    .iter()
+    .any(|pattern| normalized.contains(pattern))
 }
 
 fn validate_project_root(path: &Path) -> Result<(), ForgeError> {
@@ -556,9 +564,12 @@ pub fn validate_local_path(
 }
 
 fn normalized_path(path: &Path) -> Result<String, ForgeError> {
-    path.to_str()
-        .map(str::to_ascii_lowercase)
-        .ok_or_else(|| error(format!("path '{}' is not valid UTF-8", path.display())))
+    // Fold case AND drop '.' components: 'outputs/./a.md' and 'outputs/a.md'
+    // name the same file and must collide in the distinctness check.
+    let text = path
+        .to_str()
+        .ok_or_else(|| error(format!("path '{}' is not valid UTF-8", path.display())))?;
+    Ok(text.split('/').filter(|part| *part != ".").collect::<Vec<_>>().join("/").to_lowercase())
 }
 
 pub(crate) fn error(message: impl Into<String>) -> ForgeError {
@@ -569,6 +580,26 @@ pub(crate) fn error(message: impl Into<String>) -> ForgeError {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn output_distinctness_normalizes_dot_components_and_unicode_case() {
+        assert_eq!(
+            normalized_path(Path::new("outputs/./a.md")).unwrap(),
+            normalized_path(Path::new("outputs/a.md")).unwrap()
+        );
+        assert_eq!(
+            normalized_path(Path::new("outputs/\u{c4}.md")).unwrap(),
+            normalized_path(Path::new("outputs/\u{e4}.md")).unwrap()
+        );
+    }
+
+    #[test]
+    fn sensitive_names_match_concatenated_and_plural_forms() {
+        for name in ["apikey", "mytoken", "passwords", "secrets", "passwd", "pwd"] {
+            assert!(is_sensitive_parameter_name(name), "{name}");
+        }
+        assert!(!is_sensitive_parameter_name("owner-role"));
+    }
 
     fn valid_component() -> serde_json::Value {
         json!({

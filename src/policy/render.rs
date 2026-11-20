@@ -823,11 +823,28 @@ pub fn escape_markdown(value: &str) -> String {
 }
 
 fn is_link_destination(line: &str, offset: usize) -> bool {
-    let before = &line[..offset];
-    let after = &line[offset..];
-    before
-        .rfind("](")
-        .is_some_and(|start| !before[start + 2..].contains(')') && after.contains(')'))
+    let Some(start) = line[..offset].rfind("](") else { return false };
+    let dest = &line[start + 2..offset];
+    // Angle destinations run to '>'; parens inside are ordinary characters.
+    if dest.starts_with('<') {
+        return !dest.contains('>');
+    }
+    // CommonMark destinations may contain balanced parentheses; only an
+    // unbalanced ')' closes the destination before the placeholder.
+    let mut depth = 0usize;
+    for character in dest.chars() {
+        match character {
+            '(' => depth += 1,
+            ')' => {
+                if depth == 0 {
+                    return false;
+                }
+                depth -= 1;
+            }
+            _ => {}
+        }
+    }
+    line[offset..].contains(')')
 }
 
 fn is_reference_definition(line: &str) -> bool {
@@ -1041,6 +1058,21 @@ mod tests {
         assert!(byte_failure.to_string().contains("4 byte budget"));
         let span_failure = render_fragment(&component, MAX_ASSEMBLED_BYTES, 1).err().unwrap();
         assert!(span_failure.to_string().contains("1 span limit"));
+    }
+
+    #[test]
+    fn link_destination_detection_handles_balanced_and_angle_destinations() {
+        // CommonMark destinations may contain balanced parentheses; the old
+        // heuristic let a placeholder after an inner ')' slip into the URL.
+        let balanced = "[x](foo(bar){{forge:param:p}})";
+        assert!(is_link_destination(balanced, balanced.find("{{").unwrap()));
+        let angle = "[x](<https://e.test/{{forge:param:p}}>)";
+        assert!(is_link_destination(angle, angle.find("{{").unwrap()));
+        // A placeholder after the destination closed is link text context.
+        let closed = "[x](foo(bar)) {{forge:param:p}}";
+        assert!(!is_link_destination(closed, closed.find("{{").unwrap()));
+        let plain = "text {{forge:param:p}} more";
+        assert!(!is_link_destination(plain, plain.find("{{").unwrap()));
     }
 
     #[test]

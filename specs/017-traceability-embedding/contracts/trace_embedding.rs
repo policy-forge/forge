@@ -72,14 +72,21 @@ pub fn build_trace_link(source_file: &str, line_number: usize) -> OscalLink {
 
 /// Percent-encode special characters in a file path for use in link href.
 ///
-/// Encodes: `%` -> `%25`, ` ` (space) -> `%20`, `#` -> `%23` (per RFC 3986 EC-6).
+/// Encodes ALL RFC 3986 reserved characters, spaces, ASCII controls, and
+/// non-ASCII (UTF-8 percent-bytes) per EC-6. Shipped: encode_href_path in
+/// src/oscal/trace_embedding.rs.
 ///
 /// # Contract
-/// - `%` is encoded FIRST (before other substitutions) to avoid double-encoding
-/// - Spaces become `%20`, not `+`
-/// - `#` becomes `%23` (prevents fragment confusion)
-/// - All other characters pass through unchanged
-/// - Empty input returns empty string
+/// - `%` -> `%25` (input is never treated as already-encoded)
+/// - Spaces become `%20`, not `+`; `#` becomes `%23`
+/// - Reserved set (`:/?#[]@!$&'()*+,;=`) is fully escaped so a filename
+///   cannot alter the path, query, or fragment of the generated link
+/// - Non-ASCII becomes UTF-8 percent-bytes (`café.md` -> `caf%C3%A9.md`):
+///   URIs are ASCII; raw UTF-8 would make an IRI, not a URI
+/// - ASCII control characters are percent-encoded, never emitted raw
+/// - Unreserved characters (alphanumerics, `-._~`) pass through unchanged
+/// - Empty input returns empty string; output is bounded to 4096 bytes
+///   (truncation warns, never splits a percent-escape)
 fn encode_href_path(path: &str) -> String {
     // Implementation: sequential replacement with % first
     todo!()
@@ -96,8 +103,11 @@ fn encode_href_path(path: &str) -> String {
 ///
 /// For each **control**:
 /// - Look up `trace_links.by_oscal_element(control.uuid)` -> `Option<&TraceLink>`
-/// - If found: `build_trace_props(file, section, line)` -> 3 props, appended to `control.props`
-/// - If found: `build_trace_link(file, line)` -> 1 link, appended to `control.links`
+/// - If found: remove existing FORGE_TRACE_NS props and LINK_REL_SOURCE links from
+///   the target element, then `build_trace_props(file, section, line)` -> 3 props
+///   and `build_trace_link(file, line)` -> 1 link (when it fits the href budget)
+/// - Idempotent: re-embedding replaces prior FORGE trace annotations instead of
+///   duplicating them (group `source-section` prop is likewise replaced)
 /// - If not found: log `tracing::debug!` and skip (no error — supports partial trace data)
 ///
 /// # Arguments
@@ -131,11 +141,14 @@ pub fn embed_trace_in_catalog(
 // AFTER:
 //   pub struct OscalProp {
 //       pub name: String,
-//       #[serde(skip_serializing_if = "Option::is_none")]
+//       #[serde(default, skip_serializing_if = "Option::is_none")]
 //       pub ns: Option<String>,
 //       pub value: String,
 //   }
 //
+// `default` is mandatory, not optional: skip_serializing_if governs OUTPUT
+// only. Without it, serde demands the `ns` key on input and every
+// pre-existing artifact lacking `ns` fails to parse ("missing field `ns`").
 // All existing construction sites must add `ns: None`.
 
 // ─── OscalGroup Extension Contract ──────────────────────────────────────
@@ -153,13 +166,14 @@ pub fn embed_trace_in_catalog(
 //   pub struct OscalGroup {
 //       pub id: String,
 //       pub title: String,
-//       #[serde(skip_serializing_if = "Vec::is_empty")]
+//       #[serde(default, skip_serializing_if = "Vec::is_empty")]
 //       pub props: Vec<OscalProp>,
-//       #[serde(skip_serializing_if = "Vec::is_empty")]
+//       #[serde(default, skip_serializing_if = "Vec::is_empty")]
 //       pub links: Vec<OscalLink>,
-//       #[serde(skip_serializing_if = "Vec::is_empty")]
+//       #[serde(default, skip_serializing_if = "Vec::is_empty")]
 //       pub controls: Vec<OscalControl>,
 //   }
+// `default` on each new Vec keeps pre-extension artifacts parseable.
 
 // ─── DocumentaryComponent Extension Contract ────────────────────────────
 
@@ -180,10 +194,11 @@ pub fn embed_trace_in_catalog(
 //       pub component_type: String,
 //       pub title: String,
 //       pub description: String,
-//       #[serde(skip_serializing_if = "Vec::is_empty")]
+//       #[serde(default, skip_serializing_if = "Vec::is_empty")]
 //       pub props: Vec<OscalProp>,
 //       pub control_implementations: Vec<serde_json::Value>,
 //   }
+// `default` keeps pre-extension components parseable (see OscalProp above).
 
 // ─── Implemented Requirements Trace Contract ────────────────────────────
 

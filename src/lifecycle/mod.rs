@@ -659,15 +659,7 @@ fn current_artifacts(
 /// parent-directory components prevents a hostile record from redirecting
 /// artifact reads or alias checks outside that boundary.
 fn confined_join(base: &Path, raw: &str) -> Result<PathBuf, ForgeError> {
-    let drive_prefixed = raw.as_bytes().get(1) == Some(&b':')
-        && raw.as_bytes().first().is_some_and(u8::is_ascii_alphabetic);
-    let relative = !drive_prefixed
-        && Path::new(raw).components().all(|component| matches!(component, Component::Normal(_)));
-    if !relative {
-        return Err(error(format!(
-            "lifecycle artifact path '{raw}' must be a relative path without '.', '..', absolute, or drive-prefix components"
-        )));
-    }
+    record::validate_artifact_path_shape("lifecycle artifact path", raw)?;
     Ok(base.join(raw))
 }
 
@@ -956,10 +948,24 @@ fn reject_symlink_components(path: &Path) -> Result<(), ForgeError> {
     let mut current = PathBuf::new();
     for component in path.components() {
         current.push(component.as_os_str());
-        if let Ok(metadata) = std::fs::symlink_metadata(&current)
-            && metadata.file_type().is_symlink()
-        {
-            return Err(error(format!("path '{}' is a symlink", current.display())));
+        // A bare Windows drive prefix (`C:`, `\\?\C:`) names a device, not a
+        // directory, so it cannot be inspected on its own ("Incorrect
+        // function"). The root component that follows (`C:\`) can be, and
+        // every real directory below it still is.
+        if matches!(component, Component::Prefix(_)) {
+            continue;
+        }
+        match std::fs::symlink_metadata(&current) {
+            Ok(metadata) if metadata.file_type().is_symlink() => {
+                return Err(error(format!("path '{}' is a symlink", current.display())));
+            }
+            Ok(_) => {}
+            // Only NotFound is tolerated (a component may not exist yet);
+            // EACCES/EIO must fail closed, never downgrade to "not a symlink".
+            Err(cause) if cause.kind() == std::io::ErrorKind::NotFound => {}
+            Err(cause) => {
+                return Err(error(format!("cannot inspect path '{}': {cause}", current.display())));
+            }
         }
     }
     Ok(())
@@ -990,20 +996,21 @@ fn relative_path(base: &Path, target: &Path) -> Result<String, ForgeError> {
         }
     }
 
-    let mut relative = PathBuf::new();
+    // Records are portable across platforms, so the stored form always uses
+    // `/` separators (never the host's `\\`).
+    let mut parts: Vec<&str> = Vec::new();
     for component in target_components {
         let Component::Normal(component) = component else {
             return Err(error("artifact must be located beneath lifecycle record directory"));
         };
-        relative.push(component);
+        parts.push(component.to_str().ok_or_else(|| {
+            error("artifact path is not valid UTF-8 and cannot be stored in JSON")
+        })?);
     }
-    if relative.as_os_str().is_empty() {
+    if parts.is_empty() {
         return Err(error("artifact path must identify a file beneath lifecycle record directory"));
     }
-    relative
-        .to_str()
-        .map(str::to_string)
-        .ok_or_else(|| error("artifact path is not valid UTF-8 and cannot be stored in JSON"))
+    Ok(parts.join("/"))
 }
 
 #[cfg(windows)]
@@ -1160,6 +1167,15 @@ mod tests {
     }
 
     #[test]
+    fn symlink_component_check_accepts_a_real_absolute_directory() {
+        // On Windows the canonical form starts with a bare `\\?\C:` prefix
+        // that must not be inspected on its own.
+        let dir = tempfile::tempdir().unwrap();
+        let canonical = dir.path().canonicalize().unwrap();
+        reject_symlink_components(&canonical).unwrap();
+    }
+
+    #[test]
     fn confined_join_rejects_escaping_paths() {
         let base = Path::new("/records");
         assert_eq!(
@@ -1174,10 +1190,22 @@ mod tests {
             ".",
             absolute,
             r"C:\evil\policy.md",
+            // Portable records cross platforms: Windows separators and NTFS
+            // stream syntax must be rejected on every host, not just Windows.
+            r"..\..\secret",
+            r"\\server\share",
+            "policy.md:stream",
         ] {
             let error = confined_join(base, raw).expect_err(raw);
             assert!(error.to_string().contains("must be a relative path"), "{raw}: {error}");
         }
+    }
+
+    #[test]
+    fn relative_path_stores_portable_forward_slash_separators() {
+        let records = Path::new("records");
+        let artifact = records.join("generated").join("00.json");
+        assert_eq!(relative_path(records, &artifact).unwrap(), "generated/00.json");
     }
 
     #[test]
@@ -1226,7 +1254,8 @@ mod tests {
                 Path::new(r"c:\work\records\artifacts\policy.md")
             )
             .expect("relative path"),
-            Path::new("artifacts").join("policy.md").to_string_lossy()
+            // Stored records are portable: always `/`, never the host separator.
+            "artifacts/policy.md"
         );
     }
 

@@ -15,12 +15,21 @@ pub enum OscalModelType {
 }
 
 /// Result of schema validation.
+///
+/// Constructed only by `validate_artifact`, which derives `is_valid` from
+/// `errors.is_empty()`; the field is a read-only projection of that invariant.
 #[derive(Debug)]
 pub struct ValidationResult {
     /// Whether the artifact is valid (`errors.is_empty()`).
     pub is_valid: bool,
     /// Detected or specified model type.
     pub model_type: OscalModelType,
+    /// Document-declared OSCAL version, when it is a string.
+    pub declared_oscal_version: Option<String>,
+    /// Actual pinned schema baseline used for validation.
+    pub schema_version_used: &'static str,
+    /// Whether the declaration is accepted by the current compatibility policy.
+    pub supported_input: bool,
     /// All schema validation errors (empty if valid).
     pub errors: Vec<SchemaError>,
 }

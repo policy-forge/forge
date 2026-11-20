@@ -114,8 +114,10 @@ pub enum TransportError {
         /// HTTP-style status class label.
         status: u16,
     },
-    /// Transport protocol or credential failure; redacted detail.
-    Protocol(String),
+    /// Transport protocol or credential failure. `&'static str` enforces the
+    /// redaction contract at compile time: provider prose/credentials can
+    /// never be carried into audit reports.
+    Protocol(&'static str),
 }
 
 impl TransportError {
@@ -147,7 +149,7 @@ impl TransportError {
                 format!("rate limited; retry after {retry_after_secs}s")
             }
             Self::ServerFailure { status } => format!("provider failure ({status})"),
-            Self::Protocol(message) => message.clone(),
+            Self::Protocol(message) => (*message).to_string(),
             other => other.class().to_string(),
         }
     }
@@ -204,6 +206,8 @@ mod tests {
         assert_eq!(conflict.class(), "conflict");
         assert_eq!(conflict.detail(), "remote version drift: expected 1, observed 2");
         assert_eq!(TransportError::Timeout.detail(), "timeout");
+        assert_eq!(TransportError::Protocol("connect failed").class(), "protocol");
+        assert_eq!(TransportError::Protocol("connect failed").detail(), "connect failed");
         assert_eq!(
             TransportError::ServerFailure { status: 500 }.detail(),
             "provider failure (500)"

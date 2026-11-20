@@ -40,23 +40,31 @@ pub fn extract_citations(document: &mut PolicyDocument) -> Result<(), ForgeError
 ///
 /// # Errors
 ///
-/// Returns `ForgeError::Parse` if regex matching encounters an error.
+/// The `Result` wrapper is retained for API stability, but this function
+/// never returns `Err`: the static patterns are compiled once at
+/// initialization and `find_iter` on a compiled `regex::Regex` is infallible.
 pub fn extract_citations_from_text(
     requirement_id: &str,
     text: &str,
 ) -> Result<(String, Vec<Citation>), ForgeError>;
 
-/// Generate a deterministic citation ID from requirement ID and citation text.
+/// Generate a deterministic citation ID from requirement ID, occurrence
+/// ordinal and citation text.
 ///
 /// Uses UUID v5 with FORGE_NAMESPACE_UUID namespace.
-/// Input: "{requirement_id}:{citation_text}"
+/// Input: "{requirement_id}:{occurrence}:{citation_text}"
+///
+/// The per-text occurrence ordinal (0-based, counted within one requirement)
+/// keeps repeated identical citations distinct instead of colliding on one
+/// UUID (F0298).
 ///
 /// # Arguments
 ///
 /// * `requirement_id` - The stable_id of the source requirement
 /// * `citation_text` - The extracted citation text
+/// * `occurrence` - Ordinal of this citation text within the requirement
 ///
 /// # Returns
 ///
 /// A deterministic UUID v5 string.
-pub fn generate_citation_id(requirement_id: &str, citation_text: &str) -> String;
+pub fn generate_citation_id(requirement_id: &str, citation_text: &str, occurrence: usize) -> String;

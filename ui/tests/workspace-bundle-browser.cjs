@@ -26,8 +26,17 @@ const receipt={format:'forge.s6-native-browser-development/1',status:'error',mod
   browser=await chromium.launch({headless:true,executablePath:process.env.FORGE_TEST_BROWSER_EXECUTABLE||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',args:['--disable-background-networking']});receipt.browser_version=browser.version();
   receipt.playwright_version=JSON.parse(fs.readFileSync(path.join(root,'ui/node_modules/playwright/package.json'))).version;
   const context=await browser.newContext({viewport:{width:1440,height:1000},serviceWorkers:'block',acceptDownloads:true});page=await context.newPage();page.setDefaultTimeout(20000);
+  // Waiters created before their trigger must never become unhandled
+  // rejections when an earlier assert throws and cleanup closes the context.
+  for(const method of ['waitForResponse','waitForEvent']){
+   const original=page[method].bind(page);
+   page[method]=(...args)=>{const waiter=original(...args);waiter.catch(()=>{});return waiter;};
+  }
   const requests=new Set();const routeViolations=[];let mutatingApiRequests=0;page.on('pageerror',()=>receipt.page_errors++);
   await context.route('**/*',async route=>{
+   // A throw or a reject from abort/continue (request already handled, page
+   // closing) must not escape as an unhandled rejection that kills Node.
+   try{
    const request=route.request();const target=new URL(request.url());
    if(target.origin!==origin){receipt.non_loopback_requests++;await route.abort();return;}
    if(target.pathname.startsWith('/api/')){
@@ -35,6 +44,7 @@ const receipt={format:'forge.s6-native-browser-development/1',status:'error',mod
     if(!['GET','HEAD','OPTIONS'].includes(request.method())&&!(request.method()==='POST'&&/^\/api\/v2\/(?:session\/(?:unlock|shutdown)|project\/bundle-verifications)$/.test(target.pathname)))mutatingApiRequests++;
     requests.add(request.method()+' '+target.pathname.replace(/(?:res|op|prev)_[0-9a-z]+/g,'{id}'));receipt.requests=[...requests].sort();
    }await route.continue();
+   }catch(error){receipt.route_errors=(receipt.route_errors||0)+1;try{await route.abort();}catch{}}
   });
   /** Wait for observed connected focus without assigning the expected element to satisfy the predicate. */
   async function focused(locator,label){
@@ -108,6 +118,6 @@ const receipt={format:'forge.s6-native-browser-development/1',status:'error',mod
   }
   receipt.phase='native-shutdown';const stop=page.locator('#stop');await stop.focus();await stop.press('Enter');const confirmStop=page.locator('#confirm-stop');await confirmStop.focus();await confirmStop.press('Enter');await page.waitForFunction(()=>document.getElementById('status').textContent.startsWith('Workspace stopped'));await focused(page.locator('#main'),'stopped-main');
   assert.deepEqual(routeViolations,[],'Requests outside /api/v2 must not occur');receipt.shutdown_UI_observed=true;receipt.fixture_after=files();assert.deepEqual(fs.readFileSync(path.join(root,'ui/workspace.js')),sourceJS);assert.deepEqual(fs.readFileSync(path.join(root,'ui/workspace.css')),sourceCSS);receipt.source_assets_unchanged=true;assert.equal(receipt.page_errors,0);assert.equal(receipt.non_loopback_requests,0);receipt.status='passed';receipt.phase='complete';
- }catch(error){receipt.error_class=error.constructor.name;process.exitCode=1;if(page)try{await page.screenshot({path:path.join(out,'failure.png'),fullPage:false});receipt.screenshots.push('failure.png');}catch{}}
+ }catch(error){process.exitCode=1;receipt.error_class=error?.constructor?.name??typeof error;receipt.error_message=error instanceof Error?error.message:String(error);receipt.error_stack=error instanceof Error?error.stack:undefined;if(page)try{await page.screenshot({path:path.join(out,'failure.png'),fullPage:false});receipt.screenshots.push('failure.png');}catch{}}
  finally{if(browser)await browser.close();fs.writeFileSync(path.join(out,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');process.stdout.write(JSON.stringify({receipt:path.join(out,'receipt.json'),status:receipt.status,phase:receipt.phase})+'\n');}
 })();

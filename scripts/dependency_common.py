@@ -209,6 +209,10 @@ def load_toml(data: bytes) -> dict[str, Any]:
             value, depth = pending.pop()
             if depth > MAX_JSON_DEPTH:
                 raise InputError(f"TOML nesting exceeds {MAX_JSON_DEPTH}")
+            # tomllib accepts inf/nan (valid TOML); align with load_json's
+            # finite-number contract so canonical output cannot carry them.
+            if isinstance(value, float) and not math.isfinite(value):
+                raise InputError("TOML contains a non-finite number")
             if isinstance(value, dict):
                 pending.extend((child, depth + 1) for child in value.values())
             elif isinstance(value, list):

@@ -116,7 +116,9 @@ fn bind_storage(
 ) -> Result<(), ContractError> {
     ledger.visits(1)?;
     ledger.bytes(4 * std::mem::size_of::<usize>())?;
-    if raw.len() != actual.len() || !std::ptr::eq(raw.as_ptr(), actual.as_ptr()) {
+    // Empty slices share one dangling sentinel pointer, so ptr::eq alone
+    // cannot distinguish distinct zero-length allocations.
+    if raw.is_empty() || raw.len() != actual.len() || !std::ptr::eq(raw.as_ptr(), actual.as_ptr()) {
         return Err(ContractError::Binding);
     }
     Ok(())
@@ -445,4 +447,21 @@ fn document(
             states,
         },
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bind_storage_refuses_distinct_empty_slices() {
+        // Two zero-length slices share the dangling sentinel pointer; ptr::eq
+        // alone must not admit them as the same storage.
+        let a: &[u8] = &[];
+        let b: &[u8] = &[];
+        let mut ledger = ContractLedger::default();
+        assert!(bind_storage(a, b, &mut ledger).is_err());
+        let bytes = b"{}";
+        assert!(bind_storage(bytes, bytes, &mut ledger).is_ok());
+    }
 }
