@@ -85,8 +85,6 @@ pub(super) fn invoke_confined(
     result
 }
 
-/// Spawn the confined child in its own process group with piped output.
-#[cfg(unix)]
 fn changed_executable() -> ForgeError {
     shared::error(
         "the adapter executable changed since it was fingerprinted; re-run prepare and consent again",
