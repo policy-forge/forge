@@ -1155,6 +1155,9 @@ class Workspace:
                 try:
                     self.request("POST", self.api_path("/session/shutdown"), {})
                 except Exception:
+                    # Best effort: the shutdown reply may never arrive (the
+                    # server exits first) or may be malformed. The owned
+                    # process is terminated in the finally block regardless.
                     pass
         finally:
             self._capability = ""

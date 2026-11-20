@@ -415,11 +415,11 @@ class ClientVersionControls(unittest.TestCase):
             with self.subTest(major=major), Harness(descriptor(major)) as h:
                 client = h.launch(major=major)
                 prefix = f"/api/v{major}"
-                completed = {"operation_id": "op_mock", "state": "succeeded"}
-                h.enqueue("GET", prefix + "/operations/op_mock", completed)
-                self.assertEqual(client.wait({"operation_id": "op_mock", "state": "running"}), completed)
+                completed = {"operation_id": "op_mock00000000", "state": "succeeded"}
+                h.enqueue("GET", prefix + "/operations/op_mock00000000", completed)
+                self.assertEqual(client.wait({"operation_id": "op_mock00000000", "state": "running"}), completed)
                 self.assertEqual(h.requests[-1]["method"], "GET")
-                self.assertEqual(h.requests[-1]["path"], prefix + "/operations/op_mock")
+                self.assertEqual(h.requests[-1]["path"], prefix + "/operations/op_mock00000000")
                 self.assertFalse(any(r["method"] == "POST" and r["path"] != prefix + "/session/shutdown" for r in h.requests))
 
     def test_wait_timeout_abstains_from_operation_poll(self):
@@ -428,7 +428,7 @@ class ClientVersionControls(unittest.TestCase):
             client = h.launch()
             before = list(h.requests)
             with self.assertRaises(TimeoutError):
-                client.wait({"operation_id": "op_mock", "state": "pending"}, timeout=0)
+                client.wait({"operation_id": "op_mock00000000", "state": "pending"}, timeout=0)
             self.assertEqual(h.requests, before)
 
     def test_commit_routes_exact_confirmation_preview_and_key(self):

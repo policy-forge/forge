@@ -273,6 +273,53 @@ sys.stdout.write("SOCKET-DENIED")"#;
     );
 }
 
+/// Probe for the cross-process access syscalls the seccomp filter denies: it reports
+/// `CROSS-PROCESS-DENIED` only when `ptrace` and `process_vm_readv` both fail with `EPERM`.
+#[cfg(target_os = "linux")]
+const CROSS_PROCESS_PROBE: &str = r#"import ctypes, errno, os, sys
+libc = ctypes.CDLL(None, use_errno=True)
+libc.process_vm_readv.argtypes = [ctypes.c_int, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_ulong]
+libc.process_vm_readv.restype = ctypes.c_ssize_t
+def denied(call):
+    ctypes.set_errno(0)
+    return call() == -1 and ctypes.get_errno() == errno.EPERM
+buf = ctypes.create_string_buffer(8)
+iov = (ctypes.c_size_t * 2)(ctypes.addressof(buf), 8)
+if not denied(lambda: libc.ptrace(0, 0, 0, 0)):
+    sys.stdout.write("PTRACE-ALLOWED")
+elif not denied(lambda: libc.process_vm_readv(os.getpid(), iov, 1, iov, 1, 0)):
+    sys.stdout.write("PROCESS-VM-ALLOWED")
+else:
+    sys.stdout.write("CROSS-PROCESS-DENIED")"#;
+
+#[cfg(target_os = "linux")]
+#[test]
+fn a_confined_child_cannot_use_cross_process_access_syscalls() {
+    if !confinement_available() {
+        return;
+    }
+    let Some(python) = which_python() else {
+        return;
+    };
+    // Unconfined control: the probe must be able to see the syscalls succeed, otherwise the
+    // host (e.g. a container with its own seccomp profile) cannot tell us anything.
+    let control = std::process::Command::new(&python)
+        .args(["-S", "-c", CROSS_PROCESS_PROBE])
+        .output()
+        .unwrap();
+    if String::from_utf8_lossy(&control.stdout) == "CROSS-PROCESS-DENIED" {
+        return;
+    }
+    let adapter = sh_adapter(&format!("{python} -S -"));
+    let output = adapter.invoke(CROSS_PROCESS_PROBE.as_bytes(), Duration::from_secs(10)).unwrap();
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        "CROSS-PROCESS-DENIED",
+        "ptrace/process_vm_readv were not denied with EPERM; stderr: {}",
+        output.stderr
+    );
+}
+
 /// Locate a python3 interpreter, or None when the host has none.
 fn which_python() -> Option<String> {
     for candidate in ["python3", "/usr/bin/python3"] {

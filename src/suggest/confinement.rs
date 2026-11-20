@@ -50,11 +50,14 @@ pub(super) fn invoke_confined(
     timeout: Duration,
 ) -> Result<AdapterOutput, ForgeError> {
     let resolved = std::fs::canonicalize(executable)?;
+    // Pin the file identity BEFORE hashing so a replacement during or after
+    // the hash is detected by the recheck immediately before spawn. Copying
+    // signed platform binaries breaks macOS code signatures, so the
+    // executable stays in place and is pinned instead (hash-then-exec TOCTOU).
+    let identity = file_identity(&resolved)?;
     let bytes = crate::io::read_bounded(&resolved, crate::suggest::prepare::MAX_ADAPTER_BYTES)?;
     if crate::hashing::sha256_hex(&bytes) != expected_sha {
-        return Err(shared::error(
-            "the adapter executable changed since it was fingerprinted; re-run prepare and consent again",
-        ));
+        return Err(changed_executable());
     }
     let scratch = tempfile::Builder::new().prefix("forge-model-").tempdir().map_err(|cause| {
         shared::error(format!("cannot create the adapter scratch directory: {cause}"))
@@ -62,20 +65,9 @@ pub(super) fn invoke_confined(
     let scratch_path = scratch.path().canonicalize().map_err(|cause| {
         shared::error(format!("cannot resolve the adapter scratch directory: {cause}"))
     })?;
-    // Re-verify identity immediately before spawn: a replacement between the
-    // hash check and exec must not slip past the fingerprint (hash-then-exec
-    // TOCTOU). Copying signed platform binaries breaks macOS code signatures,
-    // so the executable stays in place and its inode identity is pinned.
-    let identity = file_identity(&resolved)?;
-    if file_identity(&resolved)? != identity
-        || crate::hashing::sha256_hex(&crate::io::read_bounded(
-            &resolved,
-            crate::suggest::prepare::MAX_ADAPTER_BYTES,
-        )?) != expected_sha
-    {
-        return Err(shared::error(
-            "the adapter executable changed since it was fingerprinted; re-run prepare and consent again",
-        ));
+    // Recheck after the hash and the scratch setup, immediately before spawn.
+    if file_identity(&resolved)? != identity {
+        return Err(changed_executable());
     }
     let started = Instant::now();
     let mut child = spawn(&resolved, argv, &scratch_path)?;
@@ -95,14 +87,48 @@ pub(super) fn invoke_confined(
 
 /// Spawn the confined child in its own process group with piped output.
 #[cfg(unix)]
-/// Device/inode identity of the executable; a path replacement changes it.
-#[cfg(unix)]
-fn file_identity(path: &Path) -> Result<(u64, u64), ForgeError> {
-    use std::os::unix::fs::MetadataExt;
-    let metadata = std::fs::metadata(path)?;
-    Ok((metadata.dev(), metadata.ino()))
+fn changed_executable() -> ForgeError {
+    shared::error(
+        "the adapter executable changed since it was fingerprinted; re-run prepare and consent again",
+    )
 }
 
+/// Identity of the executable file; a replacement or in-place rewrite changes it.
+#[derive(Debug, PartialEq, Eq)]
+struct FileIdentity {
+    device: u64,
+    inode: u64,
+    len: u64,
+    modified: Option<std::time::SystemTime>,
+}
+
+#[cfg(unix)]
+fn file_identity(path: &Path) -> Result<FileIdentity, ForgeError> {
+    use std::os::unix::fs::MetadataExt;
+    let metadata = std::fs::metadata(path)?;
+    Ok(FileIdentity {
+        device: metadata.dev(),
+        inode: metadata.ino(),
+        len: metadata.len(),
+        modified: metadata.modified().ok(),
+    })
+}
+
+/// No device/inode here; the type still compiles so the crate builds. Spawning
+/// is refused on this platform (see `spawn`), so this is never relied on.
+#[cfg(not(unix))]
+fn file_identity(path: &Path) -> Result<FileIdentity, ForgeError> {
+    let metadata = std::fs::metadata(path)?;
+    Ok(FileIdentity {
+        device: 0,
+        inode: 0,
+        len: metadata.len(),
+        modified: metadata.modified().ok(),
+    })
+}
+
+/// Spawn the confined child in its own process group with piped output.
+#[cfg(unix)]
 fn spawn(executable: &Path, argv: &[String], scratch: &Path) -> Result<Child, ForgeError> {
     use std::os::unix::process::CommandExt as _;
 
@@ -585,6 +611,9 @@ impl LinuxConfinement {
             if ruleset < 0 {
                 return Err(std::io::Error::last_os_error());
             }
+            // A successful `landlock_create_ruleset` returns a file descriptor, which always fits
+            // in an `i32`; a fallible conversion would add an allocation after fork.
+            #[allow(clippy::cast_possible_truncation)]
             let ruleset = ruleset as i32;
             let result = self.install_rules(ruleset);
             libc::close(ruleset);
@@ -676,6 +705,9 @@ impl LinuxConfinement {
 }
 
 /// Build the deny-list filter for the running architecture.
+// The BPF opcodes combined here (`BPF_JMP | BPF_JEQ | BPF_K` and friends) are small
+// compile-time constants that fit the 16-bit `code` field of `sock_filter`.
+#[allow(clippy::cast_possible_truncation)]
 #[cfg(target_os = "linux")]
 fn seccomp_filter() -> Vec<libc::sock_filter> {
     let insn = |code: u16, k: u32| libc::sock_filter { code, jt: 0, jf: 0, k };
@@ -723,7 +755,16 @@ fn seccomp_filter() -> Vec<libc::sock_filter> {
     filter
 }
 
-/// Socket-creating syscalls present on this architecture.
+/// Socket-creating syscalls plus the cross-process access syscalls present on this architecture.
+///
+/// Landlock confines filesystem access but not access to other processes of the same user, so
+/// `ptrace`, `process_vm_readv/writev` and `pidfd_getfd` are denied as well: depending on
+/// `kernel.yama.ptrace_scope` they could otherwise reach processes outside the sandbox.
+/// Signalling (`kill`) is not denied because a confined adapter legitimately manages its own
+/// children; see `docs/local-model-confinement.md`.
+// Syscall numbers are small non-negative constants that fit the 32-bit `k` field of a BPF
+// instruction.
+#[allow(clippy::cast_possible_truncation)]
 #[cfg(target_os = "linux")]
 fn denied_syscalls() -> Vec<u32> {
     #[cfg_attr(not(target_arch = "x86"), allow(unused_mut))]
@@ -738,6 +779,7 @@ fn denied_syscalls() -> Vec<u32> {
         libc::SYS_ptrace as u32,
         libc::SYS_process_vm_readv as u32,
         libc::SYS_process_vm_writev as u32,
+        libc::SYS_pidfd_getfd as u32,
     ];
     // i386 routes socket calls through one multiplexer; 64-bit architectures
     // have no socketcall.
@@ -770,27 +812,33 @@ mod tests {
     fn deny_list_closes_same_uid_cross_process_escape_hatches() {
         let denied = denied_syscalls();
         for syscall in [
-            libc::SYS_ptrace as u32,
-            libc::SYS_process_vm_readv as u32,
-            libc::SYS_process_vm_writev as u32,
+            libc::SYS_ptrace,
+            libc::SYS_process_vm_readv,
+            libc::SYS_process_vm_writev,
+            libc::SYS_pidfd_getfd,
         ] {
+            let syscall = u32::try_from(syscall).expect("syscall numbers fit in u32");
             assert!(denied.contains(&syscall), "syscall {syscall} must be denied");
         }
     }
 
     #[cfg(unix)]
     #[test]
-    fn file_identity_changes_when_the_path_is_replaced() {
+    fn file_identity_changes_when_the_path_is_replaced_or_rewritten() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("adapter");
         std::fs::write(&path, b"verified").unwrap();
         let before = file_identity(&path).unwrap();
-        assert_eq!(file_identity(&path).unwrap(), before, "in-place reads keep identity");
+        assert_eq!(file_identity(&path).unwrap(), before, "unchanged file keeps identity");
+        // In-place rewrite (same inode) with different content length.
+        std::fs::write(&path, b"verified-but-longer").unwrap();
+        assert_ne!(file_identity(&path).unwrap(), before, "in-place rewrite must be detectable");
+        let rewritten = file_identity(&path).unwrap();
         // Atomic replacement (rename over the path) swaps the inode.
         let replacement = dir.path().join("replacement");
-        std::fs::write(&replacement, b"attacker").unwrap();
+        std::fs::write(&replacement, b"attacker-bytes!!!!").unwrap();
         std::fs::rename(&replacement, &path).unwrap();
-        assert_ne!(file_identity(&path).unwrap(), before, "replacement must be detectable");
+        assert_ne!(file_identity(&path).unwrap(), rewritten, "replacement must be detectable");
     }
 
     #[test]
