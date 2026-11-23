@@ -26,9 +26,11 @@ October 6, 2026, then approved 13 exact exceptions for PRs #160–164. On
 October 24, 2026 the owner renewed those 34 entries, approved 6 more for
 Dependabot PRs #234–238 and 5 for the `ctutils`/`zip` security updates (replacing
 `ctutils` 0.4.2). On October 25 it approved follow-up entries for `tokio` 1.54.1,
-`toml` 1.1.8 and three transitive `toml` crates. The current set has 47 owned
-entries, due for review by
-November 7 and expiring November 23, 2026. See the [initial decision](../docs/plans/2026-10-06-merge-dependency-decisions.md),
+`toml` 1.1.8 and three transitive `toml` crates. On November 23, 2026 the owner renewed the 40 entries then past review to
+review by December 23 with expiry at each entry's 90-day cap, approved `url`
+2.5.9 with `form_urlencoded` 1.2.3 for RUSTSEC-2026-0592, and approved five
+Dependabot bumps ([decision](../docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md)).
+The current set has 62 owned entries. See the [initial decision](../docs/plans/2026-10-06-merge-dependency-decisions.md),
 [update decision](../docs/plans/2026-10-06-merge-dependency-update-decisions.md)
 and [renewal decision](../docs/plans/2026-10-24-dependency-renewal-and-update-decisions.md)
 for locked identities, rationale, review/expiry dates and approval scope.
