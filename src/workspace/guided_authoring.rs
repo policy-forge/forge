@@ -134,15 +134,27 @@ pub(crate) fn prepare<'a>(
             }
         }
     };
-    // Only files the loader actually read are pinned; supplied documents are bound by the
-    // artifact's own hashes and cannot share a path with a registered resource.
+    // Every baseline file the loader read is pinned to its registered resource. Supplied
+    // documents are bound by the artifact's own hashes. A baseline path that matches no
+    // registration is impossible by construction and fails rather than pinning less.
     let inputs = loaded
         .inputs
         .iter()
-        .filter_map(|fingerprint| {
-            items.iter().copied().find(|item| item.registration.path == fingerprint.path)
+        .filter(|fingerprint| !is_supplied(&fingerprint.role))
+        .map(|fingerprint| {
+            items
+                .iter()
+                .copied()
+                .find(|item| item.registration.path == fingerprint.path)
+                .or_else(|| {
+                    items
+                        .iter()
+                        .copied()
+                        .find(|item| item.registration.path.eq_ignore_ascii_case(&fingerprint.path))
+                })
+                .ok_or_else(internal)
         })
-        .collect();
+        .collect::<Result<Vec<_>>>()?;
     let mut summary = json!({
         "artifact_kind": kind.wire(),
         "gap_counts": serde_json::to_value(&plan.counts).map_err(|_| Error::invalid())?,
@@ -156,6 +168,11 @@ pub(crate) fn prepare<'a>(
         summary["policy_key"] = json!(policy_key);
     }
     Ok(PreparedAuthoring { kind: kind.operation(), bytes, inputs, summary })
+}
+
+/// Roles whose bytes arrive in the request; every other loader input is a registered resource.
+fn is_supplied(role: &str) -> bool {
+    role == "author-project" || role == "authoring-pack" || role.starts_with("human-clause-")
 }
 
 /// One request string field.
@@ -295,6 +312,22 @@ mod tests {
 
     fn baseline() -> Vec<(String, Vec<u8>)> {
         BASELINE.iter().map(|name| ((*name).to_owned(), example(name))).collect()
+    }
+
+    #[test]
+    fn only_request_supplied_roles_are_exempt_from_registered_input_pinning() {
+        for role in ["author-project", "authoring-pack", "human-clause-access", "human-clause-"] {
+            assert!(is_supplied(role), "{role} arrives in the request");
+        }
+        for role in [
+            "gap-report",
+            "applicability-manifest",
+            "framework",
+            "resolved-catalog",
+            "mapping-collection-0",
+        ] {
+            assert!(!is_supplied(role), "{role} must be a registered resource");
+        }
     }
 
     #[test]
