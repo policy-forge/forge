@@ -720,7 +720,10 @@
               "mapping-manifest-write",
               "applicability-report-write",
               "mapping-report-write",
-              "report-export"
+              "report-export",
+              "authoring-plan-write",
+              "authoring-provenance-write",
+              "authoring-skeleton-write"
             ],
             "type": "string"
           },
@@ -1192,7 +1195,8 @@
               "applicability-analysis",
               "mapping-build",
               "commit",
-              "export"
+              "export",
+              "guided-authoring"
             ],
             "type": "string"
           },
@@ -1242,6 +1246,9 @@
               },
               {
                 "$ref": "#/components/schemas/ExportResult"
+              },
+              {
+                "$ref": "#/components/schemas/GuidedAuthoringResult"
               }
             ]
           },
@@ -6691,6 +6698,180 @@
           "response_id"
         ],
         "type": "object"
+      },
+      "AuthoringArtifactRequest": {
+        "additionalProperties": false,
+        "description": "One PRD 061 artifact for the gaps of the project's reviewed applicability analysis. The author project, authoring pack and human clause files are the exact UTF-8 bytes a reviewer pinned; baseline files are read only from registered workspace resources. No policy prose is generated.",
+        "properties": {
+          "artifact_kind": {
+            "description": "Which single-file artifact to prepare.",
+            "enum": [
+              "plan",
+              "provenance",
+              "skeleton"
+            ],
+            "type": "string"
+          },
+          "author_project": {
+            "description": "Exact bytes of the forge.author-project/1 document. Pins are verified against these bytes.",
+            "maxLength": 2097152,
+            "minLength": 2,
+            "type": "string"
+          },
+          "authoring_pack": {
+            "description": "Exact bytes of the forge.authoring-pack/1 document named by the author project. Pins are verified against these bytes.",
+            "maxLength": 2097152,
+            "minLength": 2,
+            "type": "string"
+          },
+          "human_clauses": {
+            "description": "Optional explicitly supplied human clause files. They are written only into the private preparation snapshot.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "content": {
+                  "maxLength": 1048576,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "path": {
+                  "$ref": "#/components/schemas/ProjectRelativePath"
+                }
+              },
+              "required": [
+                "content",
+                "path"
+              ],
+              "type": "object"
+            },
+            "maxItems": 64,
+            "type": "array"
+          },
+          "policy_key": {
+            "description": "Policy whose skeleton is prepared; required when artifact_kind is skeleton.",
+            "maxLength": 16384,
+            "minLength": 1,
+            "type": "string"
+          },
+          "target_path": {
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          }
+        },
+        "required": [
+          "artifact_kind",
+          "author_project",
+          "authoring_pack",
+          "target_path"
+        ],
+        "type": "object",
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "artifact_kind": {
+                  "const": "skeleton"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "policy_key"
+              ]
+            }
+          }
+        ]
+      },
+      "GuidedAuthoringResult": {
+        "additionalProperties": false,
+        "description": "Typed terminal result of a succeeded guided-authoring operation. Draft states are authoring states and never an approval or compliance claim.",
+        "properties": {
+          "artifact_kind": {
+            "enum": [
+              "plan",
+              "provenance",
+              "skeleton"
+            ],
+            "type": "string"
+          },
+          "gap_counts": {
+            "additionalProperties": false,
+            "description": "Reconciled gap accounting from the drafting plan.",
+            "properties": {
+              "assigned": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "deferred": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "total": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "unresolved": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "assigned",
+              "deferred",
+              "total",
+              "unresolved"
+            ],
+            "type": "object"
+          },
+          "policies": {
+            "description": "Draft state of every policy in the plan.",
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "policy_key": {
+                  "maxLength": 16384,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "planned",
+                    "blocked-context",
+                    "skeleton-ready",
+                    "human-draft-present"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "policy_key",
+                "state"
+              ],
+              "type": "object"
+            },
+            "maxItems": 10000,
+            "type": "array"
+          },
+          "policy_key": {
+            "description": "Present only for a skeleton.",
+            "maxLength": 16384,
+            "minLength": 1,
+            "type": "string"
+          },
+          "preview": {
+            "$ref": "#/components/schemas/EffectPreview"
+          },
+          "validation": {
+            "$ref": "#/components/schemas/ValidationReport"
+          }
+        },
+        "required": [
+          "artifact_kind",
+          "gap_counts",
+          "policies",
+          "preview",
+          "validation"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -10716,6 +10897,63 @@
         "summary": "Write one confined review response file (S-1)",
         "tags": [
           "Review Queue"
+        ]
+      }
+    },
+    "/api/v2/authoring/artifacts": {
+      "post": {
+        "description": "Runs the shared PRD 061 services for one artifact: the drafting plan, its provenance graph, or one policy skeleton. Writable preparation only; Idempotency-Key is required and query parameters are forbidden. The author project and authoring pack travel as exact text; baseline files must be registered resources. Each artifact is one single-file effect confirmed through the existing preview receipt and commit path.",
+        "operationId": "prepareAuthoringArtifact",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthoringArtifactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Operation"
+                }
+              }
+            },
+            "description": "Guided-authoring operation created; identical idempotent retries return it unchanged."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenReadOnly"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "422": {
+            "$ref": "#/components/responses/UnprocessableValidation"
+          }
+        },
+        "security": [
+          {
+            "capabilityBearer": []
+          }
+        ],
+        "summary": "Prepare a PRD 061 drafting plan, provenance graph or policy skeleton",
+        "tags": [
+          "Policy Onboarding"
         ]
       }
     }

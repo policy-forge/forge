@@ -144,7 +144,7 @@ API 2.3.0 declares57 operations, preserving the51-operation2.2 contract and addi
 
 ## Staged source successor: API2.4
 
-The current draft contract declares eight staged-source operations (66 total) and five actions. API1/1.2.0 remains 39; the inline Bundle3/2.3 checkpoint remains 57. Staged controls require explicit 2.4; the maintained client admits 2.4 for inspection, metadata and inline-source features according to their separate version gates. These declarations do not establish a published release or acceptance; advertisement and conformance evidence must bind the selected runtime/artifact.
+The current draft contract declares eight staged-source operations (66 total) and five actions. API1/1.2.0 remains 39; the inline Bundle3/2.3 checkpoint remains 57. Staged controls require explicit 2.4; the maintained client admits 2.4 for inspection, metadata and inline-source features according to their separate version gates. CM-53 and CM-54 were added within the same 2.4.0 contract (67 operations). These declarations do not establish a published release or acceptance; advertisement and conformance evidence must bind the selected runtime/artifact.
 
 | ID | Action | Step | Stories | Operations | Authorization |
 |---|---|---|---|---|---|
@@ -154,6 +154,7 @@ The current draft contract declares eight staged-source operations (66 total) an
 | CM-51 | Prepare and confirm an exact staged-profile source export | cross-cutting | US-7, US-9, US-10, US-13 | `prepareProjectSourceStreamExport`, `getOperation`, `getEffectPreview`, `commitEffectPreview` | browser-write |
 | CM-52 | Read manifest and exact parts of a committed staged-source export | cross-cutting | US-7, US-9, US-10, US-13 | `getProjectSourceStreamExportManifest`, `getProjectSourceStreamExportChunk` | browser-read |
 | CM-53 | Write one portable review response file from the interactive client | cross-cutting | US-4, US-13 | `writeReviewResponse` | browser-write |
+| CM-54 | Prepare a PRD 061 drafting plan, provenance graph or policy skeleton for the gaps of the reviewed applicability analysis | cross-cutting | US-5, US-9, US-13 | `prepareAuthoringArtifact`, `getOperation`, `getEffectPreview`, `commitEffectPreview` | browser-write |
 
 **CM-48:** API2.4-only staged transport and complete off-Store preview. Whole declaration is reserved; exact part/full hashes, complete native proposed closure and100paths precede confirmation. Source bytes are sensitive; no prefix, native freshness or source approval from transport.
 
@@ -166,3 +167,5 @@ The current draft contract declares eight staged-source operations (66 total) an
 **CM-52:** Same-session committed private family only. Every request recaptures and fully verifies exact artifact<=10MiB before returning manifest or<=32KiB part; no supplied-path or HTML-family fallback.
 
 The10MiB artifact ceiling is not a cap increase for request/capture/retention. Every old and new admission must share20MiB and256 distinct retained entities; no accepted authority is evicted. Browser/client/native/platform/human/release/full integrated-documentation gates remain open; this matrix supplies traceability, not delivery proof.
+
+**CM-54:** PRD 062 S-2 over the shared PRD 061 services. The author project, authoring pack and optional human clause files are exact request bytes; baseline files (gap report, applicability manifest, framework catalog, mapping collections) are read only from registered resources, through a private snapshot and the standard confined loader, so each artifact equals the matching `forge author plan` or `forge author build` output. One single-file effect per artifact uses the existing preview receipt and commit path; no multi-file transaction is introduced. Draft states are authoring states: no policy prose is generated and nothing is approved. Written artifacts have no registered role in this slice.

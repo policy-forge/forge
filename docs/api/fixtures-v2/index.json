@@ -1449,6 +1449,27 @@
       "schema": "openapi:components/schemas/ProjectSourceBundleImportPreview",
       "expectation": "valid",
       "description": "Synthetic schema-valid shape; compiler execution pending."
+    },
+    {
+      "file": "authoring/plan-request-valid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/AuthoringArtifactRequest",
+      "expectation": "valid",
+      "description": "Valid prepareAuthoringArtifact body for a drafting plan. The two documents are synthetic placeholders; the PRD 061 loader verifies real pins at run time."
+    },
+    {
+      "file": "authoring/skeleton-request-missing-policy-key-invalid.json",
+      "kind": "request",
+      "schema": "openapi:components/schemas/AuthoringArtifactRequest",
+      "expectation": "invalid",
+      "description": "Rejected because a skeleton artifact requires policy_key."
+    },
+    {
+      "file": "authoring/result-valid.json",
+      "kind": "response",
+      "schema": "openapi:components/schemas/GuidedAuthoringResult",
+      "expectation": "valid",
+      "description": "Valid succeeded guided-authoring result: reconciled gap counts, per-policy draft states and the bound EffectPreview for one single-file write."
     }
   ]
 }

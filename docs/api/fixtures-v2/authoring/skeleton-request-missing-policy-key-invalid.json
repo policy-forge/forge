@@ -1,0 +1,6 @@
+{
+  "artifact_kind": "skeleton",
+  "author_project": "{\n  \"schema_version\": \"forge.author-project/1\"\n}\n",
+  "authoring_pack": "{\n  \"schema_version\": \"forge.authoring-pack/1\"\n}\n",
+  "target_path": "authoring/drafts/access.md"
+}
