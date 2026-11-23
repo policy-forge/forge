@@ -6712,6 +6712,10 @@
             ],
             "type": "string"
           },
+          "author_project_path": {
+            "description": "Project-relative path of the author project document. It is recorded in the plan's provenance and never read from disk; the exact bytes are in author_project.",
+            "$ref": "#/components/schemas/ProjectRelativePath"
+          },
           "author_project": {
             "description": "Exact bytes of the forge.author-project/1 document. Pins are verified against these bytes.",
             "maxLength": 2097152,
@@ -6760,6 +6764,7 @@
         "required": [
           "artifact_kind",
           "author_project",
+          "author_project_path",
           "authoring_pack",
           "target_path"
         ],

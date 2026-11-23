@@ -556,7 +556,7 @@ impl Store {
         Ok(preview)
     }
 
-    /// Preserve ordinary single-file effect admission and its established preview shape.
+    /// Preserve the original v1 single-file preview boundary for existing callers.
     pub(crate) fn preview(
         &mut self,
         root: &Root,
@@ -565,6 +565,21 @@ impl Store {
         kind: &str,
         bytes: Vec<u8>,
         inputs: &[&super::services::Item],
+    ) -> Result<Value> {
+        self.preview_for_api(root, snapshot, path, kind, bytes, inputs, contract::ApiMajor::V1)
+    }
+
+    /// Preserve ordinary single-file effect admission and its established preview shape.
+    #[allow(clippy::too_many_arguments)] // The selected major is the one addition to the v1 shape.
+    pub(crate) fn preview_for_api(
+        &mut self,
+        root: &Root,
+        snapshot: &Snapshot,
+        path: &str,
+        kind: &str,
+        bytes: Vec<u8>,
+        inputs: &[&super::services::Item],
+        api_major: contract::ApiMajor,
     ) -> Result<Value> {
         if inputs.len() > MAX_CONSUMED_INPUTS {
             return Err(too_many_inputs());
@@ -589,7 +604,7 @@ impl Store {
             "exact_bytes_sha256":crate::hashing::sha256_hex(&bytes),"input_hashes":inputs.iter().map(|item|json!({"resource_id":resource_id(&item.registration),"sha256":item.captured.sha256})).collect::<Vec<_>>(),
             "validation":super::services::validation(true,None),"semantic_summary":semantic_summary(kind,&bytes),
             "diff_text":diff,"diff_truncated":diff_truncated,"receipt":{"token":&*token,"expires_at":expires}});
-        contract::validate("EffectPreview", &preview)?;
+        contract::validate_for(api_major, "EffectPreview", &preview)?;
         let retained = bytes
             .len()
             .saturating_add(target.base.as_ref().map_or(0, |base| base.bytes.len()))
@@ -917,7 +932,17 @@ impl Store {
         Ok(())
     }
     /// Retain one validated completed operation under the same shared record admission.
-    pub(crate) fn completed(&mut self, kind: &str, mut result: Value) -> Result<Value> {
+    pub(crate) fn completed(&mut self, kind: &str, result: Value) -> Result<Value> {
+        self.completed_for_api(kind, result, contract::ApiMajor::V1)
+    }
+
+    /// Retain one completed operation validated against the selected contract major.
+    pub(crate) fn completed_for_api(
+        &mut self,
+        kind: &str,
+        mut result: Value,
+        api_major: contract::ApiMajor,
+    ) -> Result<Value> {
         if self.operation_count() >= MAX_RETAINED {
             return Err(capacity());
         }
@@ -926,7 +951,7 @@ impl Store {
             result["operation_id"] = json!(operation_id);
         }
         let op = json!({"operation_id":operation_id,"kind":kind,"state":"succeeded","created_at":now(),"updated_at":now(),"cancel_requested":false,"result":result});
-        contract::validate("Operation", &op)?;
+        contract::validate_for(api_major, "Operation", &op)?;
         self.admit_growth(0, source_receipts::staged_value_charge(&op)?, 1)?;
         self.operations.insert(operation_id, op.clone());
         Ok(op)
@@ -1119,6 +1144,9 @@ fn semantic_summary(kind: &str, bytes: &[u8]) -> String {
         "applicability-report-write" => "Publish a gap analysis of the committed scope and mapping inputs. Classifications describe review state, not implementation or compliance.".into(),
         "mapping-report-write" => "Publish the mapping collection from committed reviewed relationships. Participation is not implementation, effectiveness, or approval.".into(),
         "report-export" => "Export an inert static report containing numeric review facts and opaque input hashes. Prose, reviewer names, rationale, and source excerpts are excluded.".into(),
+        "authoring-plan-write" => "Write the PRD 061 drafting plan for the reviewed gaps. Draft states are authoring states; no policy prose is generated and nothing is approved.".into(),
+        "authoring-provenance-write" => "Write the provenance graph of the PRD 061 build: output spans linked to topics, gaps, controls, answers, clauses and input hashes.".into(),
+        "authoring-skeleton-write" => "Write one PRD 061 policy skeleton with visible unresolved markers. No clause is synthesized and no control is claimed satisfied.".into(),
         _ => "Write the explicitly prepared bytes to the reviewed destination.".into(),
     }
 }

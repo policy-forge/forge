@@ -513,6 +513,26 @@ pub(crate) fn prepare_with_control_for_api(
             let removed = report_removed_categories(include_excerpts);
             Ok(operation_reply(store.completed("export",json!({"operation_id":"op_000000000000","preview":preview,"redaction_summary":{"removed_categories":removed}}))?))
         }
+        // PRD 062 S-2: one PRD 061 artifact per single-file effect, through the shared engine.
+        ("POST", "/api/v1/authoring/artifacts") if api_major == ApiMajor::V2 => {
+            let target = text(request, "target_path")?;
+            output_target(snapshot, target, None)?;
+            let prepared = super::guided_authoring::prepare(snapshot, request, control)?;
+            control.checkpoint(Stage::PreparePreview, ProgressUpdate::Unchanged)?;
+            let preview = store.preview_for_api(
+                root,
+                snapshot,
+                target,
+                prepared.kind,
+                prepared.bytes,
+                &prepared.inputs,
+                api_major,
+            )?;
+            let mut result = prepared.summary;
+            result["validation"] = super::services::validation(true, None);
+            result["preview"] = preview;
+            Ok(operation_reply(store.completed_for_api("guided-authoring", result, api_major)?))
+        }
         _ => {
             Err(Error::new("not-found", "The requested effect operation was not found.", false)
                 .into())

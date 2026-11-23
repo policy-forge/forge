@@ -1256,7 +1256,13 @@ mod api2_artifact_drift {
         let operation = &document["paths"]["/api/v2/authoring/artifacts"]["post"];
         assert_eq!(operation["operationId"], "prepareAuthoringArtifact");
         let request = &schemas["AuthoringArtifactRequest"];
-        for field in ["artifact_kind", "author_project", "authoring_pack", "target_path"] {
+        for field in [
+            "artifact_kind",
+            "author_project",
+            "author_project_path",
+            "authoring_pack",
+            "target_path",
+        ] {
             assert!(strings(&request["required"]).contains(&field), "{field} is required");
         }
         assert_eq!(

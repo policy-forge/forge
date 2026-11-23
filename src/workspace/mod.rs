@@ -7,6 +7,7 @@ pub(crate) mod bundles;
 pub(crate) mod contract;
 pub(crate) mod domain;
 pub(crate) mod effects;
+pub(crate) mod guided_authoring;
 pub(crate) mod http;
 pub(crate) mod impact;
 pub(crate) mod index;
