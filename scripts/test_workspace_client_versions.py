@@ -516,6 +516,52 @@ class ClientVersionControls(unittest.TestCase):
                         client.request("POST", "/api/v2/resources/upload", body)
                 self.assertEqual(h.requests, before)
 
+    def test_prepare_authoring_artifact_sends_exact_text_and_only_a_skeleton_policy_key(self):
+        """PRD 062 S-2: exact documents reach the v2 route; a missing or misplaced policy key sends nothing."""
+        preview = {"preview_id": "prev_0123456789abcdef0123", "operation_type": "authoring-plan-write",
+                   "target": {"path": "authoring-plan.json", "status": "create"}, "base_sha256": None,
+                   "exact_bytes_sha256": "a" * 64, "input_hashes": [], "target_version": "synthetic-version-1",
+                   "validation": {"state": "valid", "error_count": 0, "warning_count": 0, "diagnostics": []},
+                   "semantic_summary": "Synthetic authoring preparation.", "diff_text": "Synthetic diff",
+                   "diff_truncated": False,
+                   "receipt": {"token": "synthetic-receipt-opaque-token", "expires_at": "2026-11-23T01:00:00Z"}}
+        operation = {"operation_id": "op_0123456789abcdef0123", "kind": "guided-authoring", "state": "succeeded",
+                     "created_at": "2026-11-23T00:00:00Z", "updated_at": "2026-11-23T00:00:01Z",
+                     "cancel_requested": False, "result": {
+                         "artifact_kind": "plan", "gap_counts": {"total": 2, "assigned": 2, "deferred": 0, "unresolved": 0},
+                         "policies": [{"policy_key": "sample-policy", "state": "planned"}],
+                         "validation": preview["validation"], "preview": preview}}
+        route = ("POST", "/api/v2/authoring/artifacts")
+        with Harness(descriptor(2, False)) as h:
+            h.launch(read_only=False)
+            project = "{\n  \"schema_version\": \"forge.author-project/1\"\n}\n"
+            h.enqueue(*route, operation, status=202)
+            self.assertEqual(h.client.prepare_authoring_artifact(
+                "plan", project, "project.json", "{}", "authoring-plan.json", idempotency_key="synthetic-key-000001"), operation)
+            sent = h.requests[-1]
+            self.assertEqual((sent["method"], sent["path"]), route)
+            self.assertEqual(json.loads(sent["body"]), {"artifact_kind": "plan", "author_project": project,
+                "author_project_path": "project.json", "authoring_pack": "{}", "target_path": "authoring-plan.json"})
+            self.assertEqual(sent["headers"]["Idempotency-Key"], "synthetic-key-000001")
+            h.enqueue(*route, operation, status=202)
+            h.client.prepare_authoring_artifact("skeleton", project, "project.json", "{}", "drafts/sample-policy.md",
+                policy_key="sample-policy", human_clauses=[{"path": "clause.md", "content": "Clause.\n"}],
+                idempotency_key="synthetic-key-000002")
+            body = json.loads(h.requests[-1]["body"])
+            self.assertEqual(body["policy_key"], "sample-policy")
+            self.assertEqual(body["human_clauses"], [{"path": "clause.md", "content": "Clause.\n"}])
+            before = len(h.requests)
+            for invalid in ({"artifact_kind": "skeleton"}, {"artifact_kind": "plan", "policy_key": "sample-policy"},
+                            {"artifact_kind": "report"}, {"artifact_kind": "plan", "author_project": ""}):
+                arguments = {"artifact_kind": "plan", "author_project": project, "author_project_path": "project.json",
+                             "authoring_pack": "{}", "target_path": "authoring-plan.json", "idempotency_key": "synthetic-key-000003"}
+                arguments.update(invalid)
+                with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                    h.client.prepare_authoring_artifact(arguments.pop("artifact_kind"), arguments.pop("author_project"),
+                        arguments.pop("author_project_path"), arguments.pop("authoring_pack"), arguments.pop("target_path"),
+                        policy_key=arguments.pop("policy_key", None), idempotency_key=arguments.pop("idempotency_key"))
+            self.assertEqual(len(h.requests), before, "a refused call must not reach the transport")
+
 
 if __name__ == "__main__":
     unittest.main()

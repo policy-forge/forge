@@ -292,6 +292,33 @@ present, its referenced framework and mapping files. If the manifest changed,
 only its historical hash is shown; old file paths cannot be reconstructed or
 inferred from current registrations.
 
+## Guided authoring
+
+PRD 061 artifacts can be added from the workspace as single files. On **Trace &
+Reports**, choose the artifact, paste the exact text of the reviewer-pinned
+`forge.author-project/1` document and its `forge.authoring-pack/1`, name the
+author project's project-relative path and a destination, then prepare it.
+
+- The drafting plan is the `forge.authoring-plan/1` document: every gap is
+  assigned, deferred or unresolved, and each policy has a draft state.
+- The provenance graph links output spans to topics, gaps, controls, answers,
+  clauses and input hashes.
+- A policy skeleton is one policy's Markdown with visible unresolved markers.
+
+The author project, pack and baseline fingerprints must match exactly. Baseline
+files (the gap report, applicability manifest, framework catalog and mapping
+collections) are read only from registered resources, through a private snapshot
+and the standard confined loader, so each file equals the matching `forge author
+plan` or `forge author build` output. The preview pins exactly those registered
+files, and a changed baseline invalidates the receipt. Destinations must be new
+files in existing directories and cannot be registered resources.
+
+Limits in this release: human clause files cannot be attached from the browser
+(keep using the CLI for them), and written artifacts have no registered role.
+PRD 059 components, static HTML views and the PRD 058 draft handoff remain
+CLI-only. Draft states are authoring states: no policy prose is generated and
+nothing is approved.
+
 ## Supported local clients and bounds
 
 ```sh
