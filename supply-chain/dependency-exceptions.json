@@ -709,6 +709,21 @@
     },
     {
       "approval_reference": "docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md",
+      "checksum": "47d7069beb7d6ac7b9acd1039986e73443f24234f41074da099d6f994ac9ad19",
+      "created_on": "2026-11-23",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2027-02-21",
+      "name": "sha2",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for the sha2 0.11.0 -> 0.11.1 update (Dependabot PR #300); see docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md. Full-rooted accepted source audit remains outstanding; the source examination, advisory scan and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-12-23",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.11.1"
+    },
+    {
+      "approval_reference": "docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md",
       "checksum": "9628de9b8791db39ceda2b119bbe13134770b56c138ec1d3af810d045c04f9bd",
       "created_on": "2026-10-06",
       "criteria": [
