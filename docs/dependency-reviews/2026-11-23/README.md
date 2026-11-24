@@ -112,3 +112,47 @@ Pull request: the upkeep change that also renews the 40 stale exceptions, cited 
   gate` clean; `test_dependency_inventory.py` 47 passed;
   `test_generate_sbom.py` 21 passed; the pre-commit full suite passed. CI
   evidence is the run attached to this commit on PR #297.
+
+## `jsonschema` 0.61.1 → 0.61.2 (Dependabot PR #299)
+
+- **Transition.** Lockfile only; `Cargo.toml` unchanged; one identity moves
+  (archive checksum in the packet). `main` at `7cc0dbd` was merged into the
+  Dependabot branch without conflicts, and `cargo fetch --locked` accepted the
+  merged lockfile.
+- **Source examination.** The crate ships no changelog, so this is read from
+  `diff -ru` of `src/` (1328 added and 92 removed lines across 13 files) and
+  the published manifest. It is a validation-performance change:
+  - `$ref` targets are resolved through a cache filled on first use
+    (`CachedTarget`, `RefTarget`, `lookup_cached_target`; `keywords/ref_.rs`,
+    `node.rs`).
+  - `allOf` branches that only check object members are merged into one pass
+    over the object (`ObjectBranches`, `Merged`, `MergedNames`;
+    `keywords/all_of.rs`, `properties.rs`).
+  - `required` names are checked during the walk of a closed object
+    (`additionalProperties: false`) using bit sets (`required_bits`,
+    `CheckedByClosedObjectValidator`); the source states that only `is_valid`
+    leans on that shortcut (`keywords/required.rs`,
+    `keywords/additional_properties.rs`).
+  - `unevaluatedProperties` tracks evaluated properties as a set plus
+    conditional contributions (`Contributions`, `Part`;
+    `keywords/unevaluated_properties.rs`, 333 added lines).
+  - New tests in `tests/pattern_sequence.rs`. `unsafe` occurrences are
+    unchanged at 2. The published manifest changes only the version and the
+    versions of its helper crates; the locked `jsonschema-regex`,
+    `jsonschema-value`, `referencing` 0.61.2 and `fancy-regex` 0.20.2 already
+    satisfy them, so nothing else moves.
+- **Exposure.** Forge uses `jsonschema` for runtime schema validation, so
+  correctness, not only speed, depends on this crate. The full suite on the
+  three CI platforms, including the validate and API contract tests, passes
+  against 0.61.2.
+- **Advisory scan.** `cargo audit` exits 0 with the three allowed unmaintained
+  warnings; `cargo deny check` reports advisories, bans, licenses and sources ok.
+- **Bookkeeping.** One new cargo-vet `safe-to-deploy` exemption and one exact
+  owned exception for `jsonschema` 0.61.2. The owned record for `jsonschema`
+  0.61.1, approved on 2026-11-14, is retired because that identity left
+  `Cargo.lock`. The graph and the committed draft SBOM were regenerated.
+- **Verification at the pushed head.** `cargo vet --locked` succeeded (298
+  exempted); `dependency_graph.py check` qualified; `dependency_inventory.py
+  gate` clean; `test_dependency_inventory.py` 47 passed;
+  `test_generate_sbom.py` 21 passed; the pre-commit full suite passed. CI
+  evidence is the run attached to this commit on PR #299.
