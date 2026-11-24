@@ -80,3 +80,35 @@ Pull request: the upkeep change that also renews the 40 stale exceptions, cited 
   gate` clean for 2026-11-23 and 2026-11-24; `test_dependency_inventory.py` 47
   passed; `test_generate_sbom.py` 21 passed; the pre-commit full suite passed.
   CI evidence is the run attached to this commit on PR #300.
+
+## `zeroize` 1.9.0 → 1.9.1 (Dependabot PR #297)
+
+- **Transition.** Lockfile only; `Cargo.toml` unchanged; one identity moves
+  (archive checksum in the packet). `main` at `d733632` was merged into the
+  Dependabot branch without conflicts, and `cargo fetch --locked` accepted the
+  merged lockfile.
+- **Source examination.** Changelog entry 1.9.1 (2026-10-06), confirmed against
+  `diff -ru` of `src/`:
+  - `Zeroizing<Z>` no longer derives `Debug`; a manual implementation prints
+    only the struct name, so a protected value cannot leak through a `Debug`
+    or error message. This matters to Forge, which keeps the workspace
+    session salt, tag and hash in `Zeroizing` (`src/workspace/session.rs`).
+  - `Vec`'s zeroization zeroes spare capacity before `clear()`, so initialized
+    elements are no longer zeroed a second time.
+  - The internal `optimization_barrier` is removed; the x86 and AArch64 paths
+    use volatile reads through `MaybeUninit` instead.
+  - Files touched: `src/lib.rs`, `src/x86.rs`, `src/aarch64.rs`,
+    `src/barrier.rs`, `tests/alloc.rs`. `unsafe` occurrences are unchanged at
+    21. The published manifest changes only the version.
+- **Exposure.** Forge uses `zeroize` in two source files for session secret
+    handling.
+- **Advisory scan.** `cargo audit` exits 0 with the three allowed unmaintained
+  warnings; `cargo deny check` reports advisories, bans, licenses and sources ok.
+- **Bookkeeping.** One new cargo-vet `safe-to-deploy` exemption and one exact
+  owned exception for `zeroize` 1.9.1. `zeroize` 1.9.0 had no owned record, so
+  nothing was retired. The graph and the committed draft SBOM were regenerated.
+- **Verification at the pushed head.** `cargo vet --locked` succeeded (298
+  exempted); `dependency_graph.py check` qualified; `dependency_inventory.py
+  gate` clean; `test_dependency_inventory.py` 47 passed;
+  `test_generate_sbom.py` 21 passed; the pre-commit full suite passed. CI
+  evidence is the run attached to this commit on PR #297.
