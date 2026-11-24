@@ -198,3 +198,41 @@ Pull request: the upkeep change that also renews the 40 stale exceptions, cited 
   gate` clean; `test_dependency_inventory.py` 47 passed;
   `test_generate_sbom.py` 21 passed; the pre-commit full suite passed. CI
   evidence is the run attached to this commit on PR #296.
+
+## `base64` 0.22.1 → 0.23.1 (Dependabot PR #298)
+
+- **Transition.** `Cargo.toml` moves to
+  `base64 = { version = "0.23", default-features = false, features = ["std"] }`
+  on explicit owner instruction (2026-11-24); one lock identity moves (archive
+  checksum in the packet). `main` at `6234f62` was merged into the Dependabot
+  branch without conflicts, and `cargo fetch --locked` accepted the merged
+  lockfile.
+- **Owner decision.** Version 0.23 adds a `simd-unsafe` feature, on by
+  default, introducing SIMD engines that are the crate's only `unsafe` code
+  (44 `unsafe` occurrences in non-test source with it, a new 807-line
+  `engine/simd.rs`; 4 without it). The owner chose to opt out: with the
+  feature off the crate is `#![forbid(unsafe_code)]`, matching 0.22's
+  unconditional posture. `cargo tree -e features` confirms forge enables only
+  `std`/`alloc`, and forge is base64's only dependent, so no feature
+  unification reintroduces it.
+- **Source examination.** Beyond the SIMD engines, the scalar standard engine
+  was reworked (`engine/general_purpose/`: roughly 286 added lines in
+  `mod.rs`), alphabets and decode/encode paths were refactored, and the MSRV
+  rises to 1.71 (edition 2021), below Forge's 1.88. The published manifest
+  adds no runtime dependency.
+- **Exposure.** Forge uses base64 in one runtime path, decoding uploaded
+  resources with the scalar `general_purpose::STANDARD` engine
+  (`src/workspace/actions.rs`); the SIMD engines are never called. The full
+  suite, including the workspace upload and API tests, passes against the
+  reworked scalar engine.
+- **Advisory scan.** `cargo audit` exits 0 with the three allowed unmaintained
+  warnings; `cargo deny check` reports advisories, bans, licenses and sources ok.
+- **Bookkeeping.** One new cargo-vet `safe-to-deploy` exemption and one exact
+  owned exception for `base64` 0.23.1. `base64` 0.22.1 had no owned record, so
+  nothing was retired. The graph and the committed draft SBOM were regenerated
+  after the manifest change.
+- **Verification at the pushed head.** `cargo vet --locked` succeeded (298
+  exempted); `dependency_graph.py check` qualified; `dependency_inventory.py
+  gate` clean; `test_dependency_inventory.py` 47 passed;
+  `test_generate_sbom.py` 21 passed; the pre-commit full suite passed. CI
+  evidence is the run attached to this commit on PR #298.
