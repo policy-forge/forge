@@ -433,6 +433,11 @@ criteria = "safe-to-deploy"
 version = "1.2.2"
 criteria = "safe-to-deploy"
 
+[[exemptions.form_urlencoded]]
+version = "1.2.3"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md."
+
 [[exemptions.fraction]]
 version = "0.15.3"
 criteria = "safe-to-deploy"
@@ -1084,6 +1089,11 @@ criteria = "safe-to-deploy"
 version = "0.11.0"
 criteria = "safe-to-deploy"
 
+[[exemptions.sha2]]
+version = "0.11.1"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md."
+
 [[exemptions.sharded-slab]]
 version = "0.1.7"
 criteria = "safe-to-deploy"
@@ -1333,6 +1343,11 @@ criteria = "safe-to-deploy"
 version = "2.5.8"
 criteria = "safe-to-deploy"
 
+[[exemptions.url]]
+version = "2.5.9"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md."
+
 [[exemptions.utf8_iter]]
 version = "1.0.4"
 criteria = "safe-to-deploy"
@@ -1565,6 +1580,11 @@ criteria = "safe-to-deploy"
 [[exemptions.zeroize]]
 version = "1.9.0"
 criteria = "safe-to-deploy"
+
+[[exemptions.zeroize]]
+version = "1.9.1"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md."
 
 [[exemptions.zerotrie]]
 version = "0.2.3"
