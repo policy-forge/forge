@@ -125,6 +125,12 @@ const fieldHelp = {
   "I understand the complete preview may create or overwrite project files": ["Required acknowledgment before preparing the restore.", "Confirms you understand the restore preview may list file creations and overwrites, and new-directory intentions, all shown explicitly before the single batch confirmation. One of three required acknowledgments.", "Example: check it after reviewing every listed target in the preview.", "Guide: docs/workspace-source-bundles.md."],
   "Source restore outcome operation ID": ["Optional. The op_… ID shown when preparing or confirming.", "Optional. Look up the current public outcome of one restore preparation or confirmation by its operation ID (op_ followed by 12–80 lowercase letters/digits). Use it after an interrupted confirmation instead of resending; lookup is read-only and never revives old authority.", "Example: op_3f9c2a7b41d8.", "Guide: docs/workspace-source-bundles.md."],
   "Unconfirmed source transfer stage ID": ["Optional. The bst_… ID of a retained stage.", "Optional. The public stage ID (bst_ followed by 12–80 lowercase letters/digits) of an unconfirmed staged transfer. Enter it to check the stage's status or discard it explicitly; stages expire on their original deadline.", "Example: bst_8a1c3e5f7092.", "Guide: docs/workspace-staged-source-bundles.md."],
+  "Authoring artifact": ["Required. Drafting plan, provenance graph or one policy skeleton.", "Required. Selects which single PRD 061 file to prepare. The drafting plan accounts for every gap as assigned, deferred or unresolved and gives each policy a draft state. The provenance graph links output spans to topics, gaps, controls, answers, clauses and input hashes. A policy skeleton is one policy's Markdown with visible unresolved markers. Draft states are authoring states, never approval.", "Example: Drafting plan.", "Guide: docs/local-workspace.md, Guided authoring."],
+  "Policy key (skeleton only)": ["Required for a policy skeleton. Leave empty for a plan or provenance graph.", "The key of the policy to render, exactly as the author project declares it. It is sent only for a skeleton; a drafting plan or provenance graph never sends it.", "Example: sample-policy.", "Guide: docs/local-workspace.md, Guided authoring."],
+  "Author project document": ["Required. The complete forge.author-project/1 file as exact text.", "Required. Paste the exact bytes of the reviewer-pinned author project. Forge verifies each SHA-256 pin in it against the supplied pack and clauses and the registered baseline files, and records the document's own fingerprint, so reformatted JSON no longer matches the review.", "Example: the reviewed contents of project.json.", "Guide: docs/local-workspace.md, Guided authoring."],
+  "Author project path within project": ["Required. Project-relative file name recorded in the plan's provenance.", "Required. Where the author project document lives in this project. It is recorded in the plan's provenance and never read from disk by this operation. It cannot equal a registered resource's path.", "Example: project.json.", "Guide: docs/local-workspace.md, Guided authoring."],
+  "Authoring pack document": ["Required. The complete forge.authoring-pack/1 file as exact text.", "Required. Paste the exact bytes of the authoring pack the author project pins. Its baseline fingerprints must match the registered gap report, framework and catalog.", "Example: the reviewed contents of pack.json.", "Guide: docs/local-workspace.md, Guided authoring."],
+  "Artifact destination within project": ["Required. A new file in an existing project directory.", "Required. The project-relative path of the one file to write. The directory must already exist, the file must not, and the destination cannot be a registered resource. Nothing is written until you confirm the exact previewed bytes.", "Example: authoring-plan.json.", "Guide: docs/local-workspace.md, Guided authoring."],
 };
 
 /** Attach the shared inline hint and a keyboard-operable info disclosure beside one field label. */
@@ -370,7 +376,7 @@ async function renderView(isCurrent = () => true) {
       const resources = await collection("/resources");
       fragment.append(node("p", "Select a registered resource to inspect its source and decision references."));
       for (const resource of resources) fragment.append(button(`Trace ${resource.key}`, () => showProvenance(resource.resource_id)));
-      if (!readOnly) fragment.append(exportForm());
+      if (!readOnly) fragment.append(exportForm(), guidedAuthoringForm());
       fragment.append(metadataBundlePanel());
       if (bundleEffectsSupported()) fragment.append(bundleEffectsPanel());
       if (sourceBundleEffectsSupported()) fragment.append(sourceBundleEffectsPanel());
@@ -1093,9 +1099,17 @@ function operationPreviewFailure(row, failure) {
   refreshOperationActions(row);
 }
 
+/** PRD 061 artifact facts for one status line. Draft states are authoring states. */
+function authoringStatus(result) {
+  const counts = result.gap_counts;
+  const label = {plan:"Drafting plan", provenance:"Provenance graph", skeleton:"Policy skeleton"}[result.artifact_kind];
+  const states = (result.policies || []).map(policy => `${policy.policy_key}: ${policy.state}`).join(", ");
+  return `${label} prepared from ${counts.total} gaps (${counts.assigned} assigned, ${counts.deferred} deferred, ${counts.unresolved} unresolved). Draft states: ${states || "none"}.`;
+}
+
 /** Accept each declared preparation family and report capture facts without inventing byte publication. */
 function acceptOperation(row, value) {
-  const expectedKind = { "/conversions": "conversion", "/applicability/analyses": "applicability-analysis", "/mapping/builds": "mapping-build", "/exports": "export", "/project/bundle-exports": "export", "/project/source-bundle-exports": "export", "/project/source-stream-exports": "export" }[row.path];
+  const expectedKind = { "/conversions": "conversion", "/applicability/analyses": "applicability-analysis", "/mapping/builds": "mapping-build", "/exports": "export", "/project/bundle-exports": "export", "/project/source-bundle-exports": "export", "/project/source-stream-exports": "export", "/authoring/artifacts": "guided-authoring" }[row.path];
   if (value?.operation_id !== row.id || !expectedKind || value.kind !== expectedKind ||
       !["pending", "running", "succeeded", "failed", "cancelled"].includes(value.state) || typeof value.cancel_requested !== "boolean" ||
       !Number.isFinite(Date.parse(value.created_at)) || !Number.isFinite(Date.parse(value.updated_at))) throw new Error("The operation returned an unsupported state or identity. Check its status before continuing.");
@@ -1108,7 +1122,8 @@ function acceptOperation(row, value) {
   if (value.state === "succeeded" && !(value.result?.preview?.preview_id || value.result?.report_preview?.preview_id)) throw new Error("The operation succeeded without a verified prepared-write reference. Check its status before continuing.");
   row.last = value; row.cancelRequested ||= value.cancel_requested; row.unknown = false; row.error.hidden = true;
   row.terminal = !["pending", "running"].includes(value.state);
-  const text = value.state === "succeeded" ? "Operation succeeded. Preparation is ready for review; no write has been confirmed." :
+  const prepared = row.path === "/authoring/artifacts" && value.result?.gap_counts ? `${authoringStatus(value.result)} ` : "";
+  const text = value.state === "succeeded" ? `Operation succeeded. ${prepared}Preparation is ready for review; no write has been confirmed.` :
     value.state === "failed" ? `Operation failed. ${value.error?.message || "No prepared write is available."}` :
     value.state === "cancelled" ? "Operation cancelled. No prepared write is available." :
     `Operation ${value.state}. ${row.cancelRequested ? "Cancellation requested; awaiting terminal state. " : ""}${progress}`;
@@ -1722,6 +1737,21 @@ function exportForm() {
   const kind=field(form,"Report","select",[["applicability-gap","Applicability counts"],["mapping-collection","Mapping participation"],["trace","Trace summary"]]);
   const target=field(form,"Report destination within project");
   form.append(button("Prepare export",()=>effect("/exports","POST",{report_kind:kind.value,target_path:target.value,format:"static-html",redaction_profile:"strict-default"})));
+  form.addEventListener("submit",event=>event.preventDefault());return form;
+}
+/** PRD 062 S-2: one PRD 061 artifact per confirmed single-file write, produced by the shared engine. */
+function guidedAuthoringForm() {
+  const form=node("form");form.append(node("h2","Add a PRD 061 drafting artifact"),
+    node("p","Runs the PRD 061 services on the gaps of the reviewed applicability analysis. Baseline files must be registered. Human clause files cannot be attached from the browser yet, so their sections keep the missing-clause marker. Draft states are authoring states: no policy prose is generated and nothing is approved."));
+  const artifact=field(form,"Authoring artifact","select",[["plan","Drafting plan"],["provenance","Provenance graph"],["skeleton","Policy skeleton"]]);
+  const policy=field(form,"Policy key (skeleton only)");policy.required=false;
+  const project=field(form,"Author project document","textarea");
+  const projectPath=field(form,"Author project path within project");
+  const pack=field(form,"Authoring pack document","textarea");
+  const target=field(form,"Artifact destination within project");
+  form.append(button("Prepare authoring artifact",()=>effect("/authoring/artifacts","POST",{artifact_kind:artifact.value,
+    ...(artifact.value==="skeleton"?{policy_key:policy.value}:{}),author_project:project.value,author_project_path:projectPath.value,
+    authoring_pack:pack.value,target_path:target.value})));
   form.addEventListener("submit",event=>event.preventDefault());return form;
 }
 window.addEventListener("beforeunload",event=>{if(dirty){event.preventDefault();event.returnValue="";}});

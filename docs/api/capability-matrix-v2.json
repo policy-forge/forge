@@ -851,5 +851,23 @@
     ],
     "authorization": "browser-write",
     "notes": "PRD 068 S-1 response-file client over the shared review respond() path for the closed /1 /2 /3 /4 families. Write-scoped capability only; loopback, exact-Host pin, project confinement and native no-replace publication. Asserted identities and quorum never grant domain approval; the portable response wire contract is unchanged."
+  },
+  {
+    "id": "CM-54",
+    "action": "Prepare a PRD 061 drafting plan, provenance graph or policy skeleton for the gaps of the reviewed applicability analysis",
+    "golden_path_step": "cross-cutting",
+    "user_stories": [
+      "US-5",
+      "US-9",
+      "US-13"
+    ],
+    "operations": [
+      "prepareAuthoringArtifact",
+      "getOperation",
+      "getEffectPreview",
+      "commitEffectPreview"
+    ],
+    "authorization": "browser-write",
+    "notes": "PRD 062 S-2 over the shared PRD 061 services. The author project, authoring pack and optional human clause files are exact request bytes; baseline files are read only from registered resources through a private snapshot and the standard confined loader, so output equals forge author plan and forge author build. One single-file effect per artifact. Draft states are authoring states; no prose is generated and nothing is approved."
   }
 ]

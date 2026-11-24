@@ -1,0 +1,7 @@
+{
+  "artifact_kind": "plan",
+  "author_project_path": "author-project.json",
+  "author_project": "{\n  \"schema_version\": \"forge.author-project/1\"\n}\n",
+  "authoring_pack": "{\n  \"schema_version\": \"forge.authoring-pack/1\"\n}\n",
+  "target_path": "authoring/plan.json"
+}

@@ -1138,6 +1138,26 @@ class Workspace:
             operation = self.request("GET", self.api_path("/operations/" + operation_id))
         return operation
 
+    def prepare_authoring_artifact(self, artifact_kind, author_project, author_project_path, authoring_pack, target_path,
+                                   *, policy_key=None, human_clauses=None, idempotency_key):
+        """Prepare one PRD 061 artifact (plan, provenance or skeleton) from exact reviewer-pinned text; not a confirmed write."""
+        if artifact_kind not in ("plan", "provenance", "skeleton"):
+            raise ValueError("artifact_kind must be plan, provenance or skeleton")
+        if (artifact_kind == "skeleton") != (policy_key is not None):
+            raise ValueError("policy_key is required for a policy skeleton and is never sent otherwise")
+        if not idempotency_key:
+            raise ValueError("An idempotency key is required")
+        if any(not isinstance(value, str) or not value
+               for value in (author_project, author_project_path, authoring_pack, target_path)):
+            raise ValueError("The author project, its path, the pack and the destination are required exact text")
+        body = {"artifact_kind": artifact_kind, "author_project": author_project, "author_project_path": author_project_path,
+                "authoring_pack": authoring_pack, "target_path": target_path}
+        if policy_key is not None:
+            body["policy_key"] = policy_key
+        if human_clauses is not None:
+            body["human_clauses"] = [{"path": clause["path"], "content": clause["content"]} for clause in human_clauses]
+        return self.request("POST", self.api_path("/authoring/artifacts"), body, idempotency_key=idempotency_key)
+
     def commit(self, preview, *, confirmed, idempotency_key):
         """Confirm the exact session-owned preview on the selected major, with its original key."""
         if confirmed is not True:

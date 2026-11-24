@@ -1020,7 +1020,7 @@ mod s3_api2_contracts {
         let first = operations(&one);
         let second = operations(&two);
         assert_eq!(first.len(), 39);
-        assert_eq!(second.len(), 66);
+        assert_eq!(second.len(), 67);
         let mut left: Vec<_> = first
             .iter()
             .map(|operation| {
@@ -1241,6 +1241,71 @@ mod api2_artifact_drift {
     const FIXTURE_INDEX_REL: &str = "docs/api/fixtures-v2/index.json";
     const MATRIX_JSON_REL: &str = "docs/api/capability-matrix-v2.json";
     const MATRIX_MD_REL: &str = "docs/api/capability-matrix-v2.md";
+
+    /// Strings of a schema enum or required list.
+    fn strings(value: &Value) -> Vec<&str> {
+        value.as_array().expect("array").iter().filter_map(Value::as_str).collect()
+    }
+
+    /// PRD 062 S-2: one additive guided-authoring operation with three single-file artifact kinds.
+    #[test]
+    fn guided_authoring_artifact_operation_declares_its_request_result_and_enums() {
+        let document = load_openapi();
+        let schemas = &document["components"]["schemas"];
+
+        let operation = &document["paths"]["/api/v2/authoring/artifacts"]["post"];
+        assert_eq!(operation["operationId"], "prepareAuthoringArtifact");
+        let request = &schemas["AuthoringArtifactRequest"];
+        for field in [
+            "artifact_kind",
+            "author_project",
+            "author_project_path",
+            "authoring_pack",
+            "target_path",
+        ] {
+            assert!(strings(&request["required"]).contains(&field), "{field} is required");
+        }
+        assert_eq!(
+            strings(&request["properties"]["artifact_kind"]["enum"]),
+            ["plan", "provenance", "skeleton"]
+        );
+
+        assert_eq!(
+            strings(&schemas["Operation"]["properties"]["kind"]["enum"]),
+            [
+                "conversion",
+                "applicability-analysis",
+                "mapping-build",
+                "commit",
+                "export",
+                "guided-authoring"
+            ]
+        );
+        let result = &schemas["GuidedAuthoringResult"];
+        for field in ["artifact_kind", "gap_counts", "policies", "preview", "validation"] {
+            assert!(strings(&result["required"]).contains(&field), "result requires {field}");
+        }
+        assert_eq!(
+            strings(&result["properties"]["policies"]["items"]["properties"]["state"]["enum"]),
+            ["planned", "blocked-context", "skeleton-ready", "human-draft-present"]
+        );
+        assert!(
+            schemas["Operation"]["properties"]["result"]["oneOf"]
+                .as_array()
+                .expect("typed results")
+                .iter()
+                .any(|schema| schema["$ref"] == "#/components/schemas/GuidedAuthoringResult"),
+            "the Operation result union includes GuidedAuthoringResult"
+        );
+
+        let preview_types =
+            strings(&schemas["EffectPreview"]["properties"]["operation_type"]["enum"]);
+        for kind in
+            ["authoring-plan-write", "authoring-provenance-write", "authoring-skeleton-write"]
+        {
+            assert!(preview_types.contains(&kind), "{kind} is an EffectPreview operation type");
+        }
+    }
 
     /// Resolve the sole unauthenticated operation within this v2 artifact family.
     fn unlock_operation_id(document: &Value) -> String {
@@ -1625,7 +1690,7 @@ fn release_inventory_contains_both_current_api_families() {
         let document = load_yaml_as_json(&repo_path(document_path));
         assert_eq!(document["info"]["version"], version);
         let declared_operations = operations(&document);
-        assert_eq!(declared_operations.len(), if major == 1 { 39 } else { 66 });
+        assert_eq!(declared_operations.len(), if major == 1 { 39 } else { 67 });
         assert!(
             declared_operations
                 .iter()

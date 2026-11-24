@@ -31,6 +31,18 @@ pub(crate) fn error(message: impl Into<String>) -> ForgeError {
     ForgeError::Authoring(message.into())
 }
 
+/// Validate a project and return its loaded inputs and the drafting plan.
+///
+/// # Errors
+/// Returns an authoring error for invalid inputs, stale pins, or unsafe paths.
+pub(crate) fn load_project(
+    manifest: &Path,
+) -> Result<(model::LoadedAuthorProject, AuthoringPlan), ForgeError> {
+    let prepared = input::prepare(manifest)?;
+    let plan = plan::build_plan(&prepared.loaded)?;
+    Ok((prepared.loaded, plan))
+}
+
 /// The drafting plan, project root and question prompts a reuse run needs.
 ///
 /// The plan already carries every unresolved section; prompts are the one

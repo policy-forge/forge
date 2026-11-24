@@ -2881,6 +2881,62 @@ test("API2 confirmed redacted export download never falls back to the foreign AP
   lifecycleRequestOwnership(app, 2);
 });
 
+/** PRD 062 S-2: a drafting plan travels as exact reviewer-pinned text and is confirmed like every single-file write. */
+test("API2 guided authoring sends exact PRD 061 documents and confirms one drafting plan", async () => {
+  const preview = {...proposedWrite(), operation_type:"authoring-plan-write", target:{status:"create", path:"authoring-plan.json"}};
+  const summary = {artifact_kind:"plan", gap_counts:{total:2, assigned:2, deferred:0, unresolved:0},
+    policies:[{policy_key:"sample-policy", state:"planned"}], validation:preview.validation, preview};
+  const app = await lifecycleWriteApp(2, {
+    "/authoring/artifacts":() => operation("succeeded", {kind:"guided-authoring", result:summary}),
+    "/effects/previews/prev_synthetic000001":() => preview,
+    [operationRoute]:() => committedWrite("authoring-plan.json"),
+  });
+  await app.run('navigate("Trace & Reports")');
+  app.byLabel("Authoring artifact").value = "plan";
+  const project = "{\n  \"schema_version\": \"forge.author-project/1\"\n}\n";
+  const pack = "{\n  \"schema_version\": \"forge.authoring-pack/1\"\n}\n";
+  for (const [label, value] of [["Author project document", project], ["Author project path within project", "project.json"],
+    ["Authoring pack document", pack], ["Artifact destination within project", "authoring-plan.json"]]) {
+    const input = app.byLabel(label); input.value = value; await input.fire("input");
+  }
+  assert.equal(app.requests.some(request => request.route === "/authoring/artifacts"), false, "nothing is sent before the explicit action");
+  const invoker = app.byButton("Prepare authoring artifact"); invoker.focus(); await invoker.fire("click");
+  const sent = app.requests.find(request => request.route === "/authoring/artifacts");
+  assert.equal(sent.url, "/api/v2/authoring/artifacts");
+  assert.deepEqual(JSON.parse(sent.options.body), {artifact_kind:"plan", author_project:project, author_project_path:"project.json",
+    authoring_pack:pack, target_path:"authoring-plan.json"});
+  assert.equal(app.byId("preview-dialog").open, true);
+  assert.equal(app.requests.some(request => request.route === "/effects/commits"), false);
+  const status = app.document.querySelector('[data-operation-status]').textContent;
+  assert(status.includes("Drafting plan prepared from 2 gaps (2 assigned, 0 deferred, 0 unresolved). Draft states: sample-policy: planned."), status);
+  await app.byButton("Confirm this exact write", app.byId("preview-dialog")).fire("click");
+  oneExactCommit(app);
+});
+
+/** A skeleton names one policy; its policy key is sent only for that artifact and the status keeps authoring terminology. */
+test("API2 guided authoring sends the policy key only for a skeleton", async () => {
+  const preview = {...proposedWrite(), operation_type:"authoring-skeleton-write", target:{status:"create", path:"drafts/sample-policy.md"}};
+  const summary = {artifact_kind:"skeleton", policy_key:"sample-policy", gap_counts:{total:2, assigned:2, deferred:0, unresolved:0},
+    policies:[{policy_key:"sample-policy", state:"skeleton-ready"}], validation:preview.validation, preview};
+  const app = await lifecycleWriteApp(2, {
+    "/authoring/artifacts":() => operation("succeeded", {kind:"guided-authoring", result:summary}),
+    "/effects/previews/prev_synthetic000001":() => preview,
+    [operationRoute]:() => committedWrite("drafts/sample-policy.md"),
+  });
+  await app.run('navigate("Trace & Reports")');
+  app.byLabel("Authoring artifact").value = "skeleton";
+  for (const [label, value] of [["Policy key (skeleton only)", "sample-policy"], ["Author project document", "{}"], ["Author project path within project", "project.json"],
+    ["Authoring pack document", "{}"], ["Artifact destination within project", "drafts/sample-policy.md"]]) {
+    const input = app.byLabel(label); input.value = value; await input.fire("input");
+  }
+  const invoker = app.byButton("Prepare authoring artifact"); invoker.focus(); await invoker.fire("click");
+  const body = JSON.parse(app.requests.find(request => request.route === "/authoring/artifacts").options.body);
+  assert.equal(body.policy_key, "sample-policy"); assert.equal(body.artifact_kind, "skeleton"); assert.equal(body.target_path, "drafts/sample-policy.md");
+  const status = app.document.querySelector('[data-operation-status]').textContent;
+  assert(status.includes("Policy skeleton prepared from 2 gaps (2 assigned, 0 deferred, 0 unresolved). Draft states: sample-policy: skeleton-ready."), status);
+  assert(/approved|compliant|implemented|effective|certified/i.test(status) === false, "authoring states never claim approval: " + status);
+});
+
 /** A pending registration keeps its native trigger focused and rejects repeated activation before any second effect request. */
 test("busy registration preserves trigger focus and blocks duplicate preparation until its exact preview arrives", async () => {
   const pending = deferred();

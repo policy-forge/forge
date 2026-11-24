@@ -1,0 +1,50 @@
+{
+  "artifact_kind": "plan",
+  "gap_counts": {
+    "assigned": 2,
+    "deferred": 0,
+    "total": 2,
+    "unresolved": 0
+  },
+  "policies": [
+    {
+      "policy_key": "sample-policy",
+      "state": "skeleton-ready"
+    }
+  ],
+  "preview": {
+    "preview_id": "prev_2c3d4e5f60718293",
+    "operation_type": "authoring-plan-write",
+    "target": {
+      "path": "authoring/plan.json",
+      "status": "create"
+    },
+    "base_sha256": null,
+    "exact_bytes_sha256": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90",
+    "input_hashes": [
+      {
+        "resource_id": "res_0f1e2d3c4b5a69788796a5b4",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "validation": {
+      "state": "valid",
+      "error_count": 0,
+      "warning_count": 0,
+      "diagnostics": []
+    },
+    "semantic_summary": "Prepare the PRD 061 drafting plan from the reviewed applicability gaps. Draft states are authoring states; no policy prose is generated and nothing is approved.",
+    "diff_text": "--- /dev/null\n+++ b/artifacts/acceptable-use_catalog.json\n@@ -0,0 +1,3 @@\n+{\n+  \"catalog\": { ... }\n+}\n",
+    "diff_truncated": true,
+    "receipt": {
+      "token": "rcpt_2c3d4e5f60718293a4b5c6d7",
+      "expires_at": "2026-09-08T14:20:00Z"
+    }
+  },
+  "validation": {
+    "state": "valid",
+    "error_count": 0,
+    "warning_count": 0,
+    "diagnostics": []
+  }
+}

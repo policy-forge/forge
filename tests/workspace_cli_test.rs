@@ -2378,6 +2378,11 @@ mod s3_registration_and_bundles {
                 )
                 .unwrap();
             }
+            Self::start_api2_project(project, read_only)
+        }
+
+        /// Launch an explicitly selected API2 process on an already prepared project directory.
+        fn start_api2_project(project: tempfile::TempDir, read_only: bool) -> Self {
             let mut command = Command::new(env!("CARGO_BIN_EXE_forge"));
             command.args(["workspace", "--project"]).arg(project.path()).args([
                 "--machine-session",
@@ -2477,6 +2482,302 @@ mod s3_registration_and_bundles {
         assert_eq!(operation["kind"], "commit");
         assert_eq!(operation["state"], "succeeded");
         operation
+    }
+
+    /// PRD 062 S-2: PRD 061 artifacts through one single-file effect, equal to the CLI output.
+    mod guided_authoring {
+        use super::{Server, s3_commit, s3_json};
+        use serde_json::{Value, json};
+        use std::path::{Path, PathBuf};
+        use std::process::Command;
+
+        const FILES: [&str; 6] = [
+            "applicability.json",
+            "framework.json",
+            "gap-report.json",
+            "pack.json",
+            "clause.md",
+            "project.json",
+        ];
+
+        fn example(name: &str) -> Vec<u8> {
+            std::fs::read(
+                Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/authoring").join(name),
+            )
+            .expect("checked-in PRD 061 example")
+        }
+
+        fn text(name: &str) -> String {
+            String::from_utf8(example(name)).unwrap()
+        }
+
+        fn write_example_files(directory: &Path) {
+            for name in FILES {
+                std::fs::write(directory.join(name), example(name)).unwrap();
+            }
+        }
+
+        /// A workspace project holding the checked-in example with its baseline registered.
+        fn example_project() -> tempfile::TempDir {
+            let project = tempfile::tempdir().unwrap();
+            write_example_files(project.path());
+            // Single-file effects write into existing directories only.
+            std::fs::create_dir_all(project.path().join("authoring/drafts")).unwrap();
+            let index = json!({"schema_version":"forge.workspace/1","label":"Guided authoring example","resources":[
+                {"key":"applicability","role":"applicability-manifest","path":"applicability.json"},
+                {"key":"framework","role":"oscal-catalog-artifact","path":"framework.json"},
+                {"key":"gap-report","role":"applicability-report","path":"gap-report.json"}]});
+            std::fs::write(
+                project.path().join("forge.workspace.json"),
+                serde_json::to_vec(&index).unwrap(),
+            )
+            .unwrap();
+            project
+        }
+
+        fn files_under(root: &Path) -> Vec<String> {
+            fn visit(base: &Path, directory: &Path, files: &mut Vec<String>) {
+                for entry in std::fs::read_dir(directory).unwrap().flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        visit(base, &path, files);
+                    } else {
+                        files.push(path.strip_prefix(base).unwrap().to_string_lossy().to_string());
+                    }
+                }
+            }
+            let mut files = Vec::new();
+            visit(root, root, &mut files);
+            files.sort();
+            files
+        }
+
+        /// Run the PRD 061 CLI on a private copy of the example; return its output directory.
+        fn cli_output(build: bool) -> PathBuf {
+            let copy = tempfile::tempdir().unwrap();
+            write_example_files(copy.path());
+            let output = if build { "cli-build" } else { "cli-plan" };
+            let status = Command::new(env!("CARGO_BIN_EXE_forge"))
+                .args([
+                    "author",
+                    if build { "build" } else { "plan" },
+                    "--manifest",
+                    "project.json",
+                    "--output-dir",
+                    output,
+                    "--format",
+                    "json",
+                ])
+                .current_dir(copy.path())
+                .status()
+                .unwrap();
+            assert!(status.success(), "PRD 061 CLI reference run");
+            copy.keep().join(output)
+        }
+
+        fn body(kind: &str, target: &str, policy_key: Option<&str>) -> Value {
+            let mut value = json!({
+                "artifact_kind": kind,
+                "author_project": text("project.json"),
+                "author_project_path": "project.json",
+                "authoring_pack": text("pack.json"),
+                "human_clauses": [{"path": "clause.md", "content": text("clause.md")}],
+                "target_path": target,
+            });
+            if let Some(key) = policy_key {
+                value["policy_key"] = json!(key);
+            }
+            value
+        }
+
+        fn prepare(server: &Server, key: &str, value: &Value) -> (u16, Value) {
+            s3_json(server, "POST", "/api/v2/authoring/artifacts", Some(key), value)
+        }
+
+        /// Require the settled guided-authoring operation and return its typed result.
+        fn prepared(server: &Server, key: &str, value: &Value) -> Value {
+            let (status, operation) = prepare(server, key, value);
+            assert_eq!(status, 202, "{operation}");
+            assert_eq!(operation["kind"], "guided-authoring", "{operation}");
+            assert_eq!(operation["state"], "succeeded", "{operation}");
+            operation["result"].clone()
+        }
+
+        /// Confirm the exact previewed bytes and read the committed file from the project.
+        fn committed(server: &Server, key: &str, result: &Value) -> Vec<u8> {
+            s3_commit(server, &result["preview"], key);
+            std::fs::read(
+                server.project.path().join(result["preview"]["target"]["path"].as_str().unwrap()),
+            )
+            .unwrap()
+        }
+
+        #[test]
+        fn plan_bytes_equal_the_cli_and_only_the_registered_baseline_is_pinned() {
+            let server = Server::start_api2_project(example_project(), false);
+            let result = prepared(
+                &server,
+                "authoring-plan-0001",
+                &body("plan", "authoring-plan.json", None),
+            );
+            let preview = &result["preview"];
+            assert_eq!(preview["operation_type"], "authoring-plan-write");
+            assert_eq!(preview["target"]["path"], "authoring-plan.json");
+            assert_eq!(preview["target"]["status"], "create");
+            let mut pinned: Vec<&str> = preview["input_hashes"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|hash| hash["sha256"].as_str().unwrap())
+                .collect();
+            pinned.sort_unstable();
+            let mut baseline: Vec<String> =
+                ["applicability.json", "framework.json", "gap-report.json"]
+                    .iter()
+                    .map(|name| super::super::bundle_fixture_sha256(&example(name)))
+                    .collect();
+            baseline.sort_unstable();
+            assert_eq!(pinned, baseline.iter().map(String::as_str).collect::<Vec<_>>());
+            assert_eq!(result["artifact_kind"], "plan");
+            assert_eq!(result["policies"][0]["policy_key"], "sample-policy");
+
+            let bytes = committed(&server, "authoring-plan-0002", &result);
+            let cli = cli_output(false).join("plan.json");
+            assert_eq!(bytes, std::fs::read(&cli).unwrap());
+            let cli: Value = serde_json::from_slice(&bytes).unwrap();
+            assert_eq!(result["gap_counts"], cli["counts"]);
+            assert_eq!(result["policies"][0]["state"], cli["policies"][0]["state"]);
+        }
+
+        #[test]
+        fn skeleton_and_provenance_bytes_equal_the_cli_build() {
+            let server = Server::start_api2_project(example_project(), false);
+            let output = cli_output(true);
+            let skeleton = prepared(
+                &server,
+                "authoring-skeleton-0001",
+                &body("skeleton", "authoring/drafts/sample-policy.md", Some("sample-policy")),
+            );
+            assert_eq!(skeleton["policy_key"], "sample-policy");
+            assert_eq!(skeleton["preview"]["operation_type"], "authoring-skeleton-write");
+            let bytes = committed(&server, "authoring-skeleton-0002", &skeleton);
+            let markdown: Vec<String> = files_under(&output)
+                .into_iter()
+                .filter(|path| Path::new(path).extension().is_some_and(|ext| ext == "md"))
+                .collect();
+            assert_eq!(markdown.len(), 1, "{markdown:?}");
+            assert_eq!(bytes, std::fs::read(output.join(&markdown[0])).unwrap());
+
+            let provenance = prepared(
+                &server,
+                "authoring-provenance-0001",
+                &body("provenance", "authoring/provenance.json", None),
+            );
+            assert_eq!(
+                committed(&server, "authoring-provenance-0002", &provenance),
+                std::fs::read(output.join("provenance.json")).unwrap()
+            );
+        }
+
+        #[test]
+        fn refusals_write_nothing() {
+            let readonly = Server::start_api2_project(example_project(), true);
+            let (status, error) = prepare(
+                &readonly,
+                "authoring-readonly-0001",
+                &body("plan", "authoring-plan.json", None),
+            );
+            assert_eq!(
+                (status, error["code"].as_str()),
+                (403, Some("read-only-session")),
+                "{error}"
+            );
+
+            let server = Server::start_api2_project(example_project(), false);
+            let before = files_under(server.project.path());
+            let (status, error) = server.json(
+                "POST",
+                "/api/v1/authoring/artifacts",
+                Some("authoring-v1-0001"),
+                &body("plan", "authoring-plan.json", None),
+            );
+            assert_eq!(status, 404, "the operation is API 2 only: {error}");
+
+            let cases: Vec<(&str, Value, u16, &str)> = vec![
+                (
+                    "authoring-unknown-policy-0001",
+                    body("skeleton", "authoring/drafts/other.md", Some("other-policy")),
+                    422,
+                    "validation-failed",
+                ),
+                (
+                    "authoring-stale-pin-0001",
+                    {
+                        let mut value = body("plan", "authoring/plan.json", None);
+                        value["authoring_pack"] = json!(format!("{} ", text("pack.json")));
+                        value
+                    },
+                    422,
+                    "validation-failed",
+                ),
+                (
+                    "authoring-unregistered-baseline-0001",
+                    {
+                        let mut value = body("plan", "authoring/plan.json", None);
+                        value["author_project"] = json!(text("project.json").replacen(
+                            "\"path\": \"gap-report.json\"",
+                            "\"path\": \"other-report.json\"",
+                            1
+                        ));
+                        value
+                    },
+                    422,
+                    "validation-failed",
+                ),
+                (
+                    "authoring-registered-target-0001",
+                    body("plan", "gap-report.json", None),
+                    403,
+                    "resource-containment",
+                ),
+            ];
+            for (key, value, expected_status, expected_code) in cases {
+                let (status, error) = prepare(&server, key, &value);
+                assert_eq!(
+                    (status, error["code"].as_str()),
+                    (expected_status, Some(expected_code)),
+                    "{key}: {error}"
+                );
+            }
+            assert_eq!(files_under(server.project.path()), before, "a refusal wrote a file");
+        }
+
+        #[test]
+        fn a_changed_registered_baseline_invalidates_the_receipt() {
+            let server = Server::start_api2_project(example_project(), false);
+            let result = prepared(
+                &server,
+                "authoring-drift-0001",
+                &body("plan", "authoring-plan.json", None),
+            );
+            let framework = server.project.path().join("framework.json");
+            std::fs::write(&framework, [example("framework.json"), b" ".to_vec()].concat())
+                .unwrap();
+            let preview = &result["preview"];
+            let (status, error) = s3_json(
+                &server,
+                "POST",
+                "/api/v2/effects/commits",
+                Some("authoring-drift-0002"),
+                &json!({"receipt":preview["receipt"]["token"],"observed_version":preview["target_version"],"confirmed":true}),
+            );
+            assert_eq!(
+                (status, error["code"].as_str()),
+                (409, Some("version-conflict")),
+                "{error}"
+            );
+            assert!(!server.project.path().join("authoring-plan.json").exists());
+        }
     }
 
     /// Fetch the actual API2 metadata preview with no receipt, source excerpt or write authority.
