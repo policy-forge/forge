@@ -156,3 +156,45 @@ Pull request: the upkeep change that also renews the 40 stale exceptions, cited 
   gate` clean; `test_dependency_inventory.py` 47 passed;
   `test_generate_sbom.py` 21 passed; the pre-commit full suite passed. CI
   evidence is the run attached to this commit on PR #299.
+
+## `clap` 4.6.7 → 4.6.8 with its proc-macro chain (Dependabot PR #296)
+
+- **Transition.** Lockfile only; `Cargo.toml` unchanged. Five identities move
+  (archive checksums in the packet): `clap` 4.6.8, `clap_derive` 4.6.8,
+  `proc-macro2` 1.0.107, `quote` 1.0.47 and `syn` 3.0.10. `main` at
+  `2b93cfa` was merged into the Dependabot branch without conflicts, and
+  `cargo fetch --locked` accepted the merged lockfile.
+- **Source examination.** None of these crates ships a changelog, so this is
+  read from `diff -ru` of each crate's `src/` and published manifest.
+  - `clap`: 42 changed lines, all doc comments in the tutorial and FAQ; no
+    code change. The manifest pins `clap_derive` to exactly 4.6.8.
+  - `clap_derive`: the generated `augment_args`, `augment_args_for_update`
+    and subcommand code now assigns in place through a `mut` parameter instead
+    of shadowing with `let`, and allows `clippy::self_assignment` on the
+    generated code. Behaviour is unchanged. It requires `syn` 3.0.10,
+    `quote` 1.0.47 and `proc-macro2` 1.0.107.
+  - `syn` (55 added, 15 removed): a clearer error for an unexpected `<-`
+    operator, a lookahead fix so a label followed by `::` is not parsed as a
+    labelled expression, and a refactor of rightmost-subexpression precedence
+    scanning. Parser fixes can change which code compiles; Forge's command
+    line derives build and the full suite passes.
+  - `quote` (146 added, 152 removed): doc links and macro documentation.
+  - `proc-macro2` (7 added, 8 removed): doc links, `map_or` to `is_some_and`,
+    one span-invalidation branch removed, and `rust-version` raised from 1.68
+    to 1.71, below Forge's 1.88.
+- **Exposure.** `clap` is Forge's command-line parser. The other four are
+  build-time procedural-macro crates whose output is compiled into Forge;
+  they sit outside the runtime closure for the inventory.
+- **Advisory scan.** `cargo audit` exits 0 with the three allowed unmaintained
+  warnings; `cargo deny check` reports advisories, bans, licenses and sources ok.
+- **Bookkeeping.** Five cargo-vet `safe-to-deploy` exemptions, because
+  procedural macros generate deployed code. One exact owned exception for
+  `clap` 4.6.8, the only new runtime identity the gate names. The owned
+  records for `clap` 4.6.7, `clap_derive` 4.6.7 and `syn` 3.0.6 are retired
+  with their identities. The graph and the committed draft SBOM were
+  regenerated.
+- **Verification at the pushed head.** `cargo vet --locked` succeeded (298
+  exempted); `dependency_graph.py check` qualified; `dependency_inventory.py
+  gate` clean; `test_dependency_inventory.py` 47 passed;
+  `test_generate_sbom.py` 21 passed; the pre-commit full suite passed. CI
+  evidence is the run attached to this commit on PR #296.
