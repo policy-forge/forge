@@ -31,6 +31,21 @@
       "version": "0.6.0"
     },
     {
+      "approval_reference": "docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md",
+      "checksum": "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5",
+      "created_on": "2026-11-23",
+      "criteria": [
+        "safe-to-deploy"
+      ],
+      "expires_on": "2027-02-21",
+      "name": "base64",
+      "owner": "brianluby",
+      "rationale": "Owner-approved exact-identity temporary integration exception for the base64 0.22.1 -> 0.23.1 update (Dependabot PR #298); see docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md. Full-rooted accepted source audit remains outstanding; the source examination, advisory scan and compatibility tests are separate evidence, not audit credit or release acceptance.",
+      "review_by": "2026-12-23",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "version": "0.23.1"
+    },
+    {
       "approval_reference": "https://github.com/policy-forge/forge/pull/280",
       "checksum": "56d87354e4229f54a44f7bf2435906a4656dba36026ab6eaca629a2c436a691c",
       "created_on": "2026-11-14",
