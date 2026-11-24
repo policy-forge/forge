@@ -238,6 +238,11 @@ version = "4.6.7"
 criteria = "safe-to-deploy"
 notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
 
+[[exemptions.clap]]
+version = "4.6.8"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md."
+
 [[exemptions.clap_builder]]
 version = "4.6.0"
 criteria = "safe-to-deploy"
@@ -255,6 +260,11 @@ criteria = "safe-to-deploy"
 version = "4.6.7"
 criteria = "safe-to-deploy"
 notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-10-06-merge-dependency-update-decisions.md."
+
+[[exemptions.clap_derive]]
+version = "4.6.8"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md."
 
 [[exemptions.clap_lex]]
 version = "1.0.0"
@@ -855,6 +865,11 @@ notes = "OWNER-APPROVED 2026-11-14 (PR #291); Dependabot upgrade PRs #280/#281/#
 version = "1.0.106"
 criteria = "safe-to-deploy"
 
+[[exemptions.proc-macro2]]
+version = "1.0.107"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md."
+
 [[exemptions.proptest]]
 version = "1.10.0"
 criteria = "safe-to-run"
@@ -889,6 +904,11 @@ notes = "OWNER-APPROVED 2026-11-20 (PR #294); quick-xml 0.42 API migration, see 
 [[exemptions.quote]]
 version = "1.0.45"
 criteria = "safe-to-deploy"
+
+[[exemptions.quote]]
+version = "1.0.47"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md."
 
 [[exemptions.r-efi]]
 version = "5.3.0"
@@ -1157,6 +1177,11 @@ criteria = "safe-to-deploy"
 version = "3.0.6"
 criteria = "safe-to-deploy"
 notes = "Temporary owner-approved exception: docs/plans/2026-10-06-merge-dependency-decisions.md; owner brianluby; review 2026-10-20; expires 2026-11-05. No accepted source audit is asserted."
+
+[[exemptions.syn]]
+version = "3.0.10"
+criteria = "safe-to-deploy"
+notes = "Owner-approved exact-identity temporary exception; see docs/plans/2026-11-23-dependency-renewal-and-bump-decisions.md."
 
 [[exemptions.synstructure]]
 version = "0.13.2"
